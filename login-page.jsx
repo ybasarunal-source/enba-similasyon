@@ -28,7 +28,7 @@ function LoginPage({ onLogin }) {
                     options: {
                         data: {
                             full_name: username,
-                            role: 'operator'
+                            role: email.endsWith('@enbarecycling.com') || email.endsWith('@enbacompany.com') ? 'admin' : 'operator'
                         }
                     }
                 });
@@ -50,11 +50,13 @@ function LoginPage({ onLogin }) {
                 if (signInError) throw signInError;
                 
                 // MOCK_USERS uyumluluğu için
+                const userEmail = data.user.email || '';
+                const isAdminDomain = userEmail.endsWith('@enbarecycling.com') || userEmail.endsWith('@enbacompany.com');
                 const mappedUser = {
                     id: data.user.id,
                     username: username,
                     name: data.user.user_metadata?.full_name || username,
-                    role: 'admin', // Şimdilik herkes admin, role tablosundan alacağız normalde
+                    role: data.user.user_metadata?.role || (isAdminDomain ? 'admin' : 'operator'),
                     avatar: null
                 };
                 

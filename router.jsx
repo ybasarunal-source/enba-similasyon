@@ -34,11 +34,13 @@ function EnbaRouter() {
         // Değişiklikleri dinle
         const { data: { subscription } } = window.supabaseClient.auth.onAuthStateChange((_event, session) => {
             if (session) {
+                const userEmail = session.user.email || '';
+                const isAdminDomain = userEmail.endsWith('@enbarecycling.com') || userEmail.endsWith('@enbacompany.com');
                 const userData = {
                     id: session.user.id,
-                    username: session.user.email?.split('@')[0],
-                    name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0],
-                    role: session.user.user_metadata?.role || 'operator',
+                    username: userEmail.split('@')[0],
+                    name: session.user.user_metadata?.full_name || userEmail.split('@')[0],
+                    role: session.user.user_metadata?.role || (isAdminDomain ? 'admin' : 'operator'),
                     avatar: null
                 };
                 setUser(userData);
