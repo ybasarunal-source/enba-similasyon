@@ -587,13 +587,15 @@ function App() {
 
                     <h4 style={{color: 'var(--enba-dark)', margin: '15px 0 10px 0', textTransform: 'uppercase', fontSize: '13px', letterSpacing: '1px'}}>Tesisteki Aktif İPK'lar:</h4>
                     <div className="active-cards">
-                        {aktifPlanlar.map(plan => (
+                        {aktifPlanlar
+                            .filter(p => !p.plan_type || p.plan_type === 'fast')
+                            .map(plan => (
                             <div key={plan.id} className="active-card" onClick={() => IpkDuzenle(plan)} style={{cursor: 'pointer'}}>
                                 <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
                                     <span style={{fontWeight: 'bold', color: 'var(--enba-dark)', textTransform: 'uppercase', fontSize: '14px'}}>{plan.baslik}</span>
                                     <span style={{fontSize: '14px'}}>✏️</span>
                                 </div>
-                                <div style={{fontSize: '11px', color: '#7F8C8D', marginBottom: '5px'}}>Giriş: {window.fmt(plan.parametreler.aylikTon)} T | Ã‡ıkış: {window.fmt(plan.kutleDengesi?.toplamSatisTon)} T</div>
+                                <div style={{fontSize: '11px', color: '#7F8C8D', marginBottom: '5px'}}>Giriş: {window.fmt(plan.parametreler?.aylikTon)} T | Çıkış: {window.fmt(plan.kutleDengesi?.toplamSatisTon)} T</div>
                                 
                                 <div style={{fontSize:'12px', color:'#34495E', borderTop:'1px dashed var(--border-grey)', paddingTop:'8px', paddingBottom:'8px'}}>
                                     <div style={{display:'flex', justifyContent:'space-between', marginBottom:'4px'}}><span>Gelir:</span> <span style={{color:'var(--enba-orange-dark)', fontWeight: '600'}}>+ {window.fmt(plan.ozetGelir)} ₺</span></div>

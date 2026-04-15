@@ -97,8 +97,17 @@ function EnbaRouter() {
         const loadPlans = async () => {
             const allPlans = await window.DataService.getPlans();
             // Veritabanından gelen formatı uygulama formatına çevir (content içinde saklıyoruz)
-            const extracted = allPlans.map(p => ({ ...p.content, id: p.id, status: p.status }));
-            setBekleyenPlanlar(extracted.filter(p => p.status === 'pending'));
+            // Eğer content yoksa boş bir nesne ile yayılmasını sağla
+            const extracted = allPlans.map(p => {
+                const content = p.content || {};
+                return { 
+                    ...content, 
+                    id: p.id, 
+                    status: p.status || 'pending',
+                    plan_type: p.plan_type || (content.ayVerileri ? 'detailed' : 'fast')
+                };
+            });
+            setBekleyenPlanlar(extracted.filter(p => !p.status || p.status === 'pending'));
             setAktifPlanlar(extracted.filter(p => p.status === 'active'));
         };
         loadPlans();

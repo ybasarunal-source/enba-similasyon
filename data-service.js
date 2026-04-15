@@ -31,59 +31,88 @@ window.DataService = {
     },
 
     /**
-     * Stoka ait alış kayıtlarını getir (stock_records)
+     * Stoka ait alış kayıtlarını getir (stock_records) + Mapping
      */
     async getAlislar() {
-        return this.fetchData('stock_records', '*');
+        const data = await this.fetchData('stock_records', '*');
+        return data.map(r => ({
+            id: r.id, tarih: r.tarih, tedarikciAdi: r.tedarikci_adi, hammaddeTuru: r.hammadde_turu,
+            brutMiktar: r.brut_miktar, netMiktar: r.net_miktar, alisFiyati: r.alis_fiyati,
+            nakliyeBedeli: r.nakliye_bedeli, ymFire: r.ym_fire, nemFire: r.nem_fire,
+            birimMaliyet: r.birim_maliyet, notlar: r.notlar
+        }));
     },
 
     /**
-     * Satış kayıtlarını getir (sales_records)
+     * Satış kayıtlarını getir (sales_records) + Mapping
      */
     async getSatislar() {
-        return this.fetchData('sales_records', '*');
+        const data = await this.fetchData('sales_records', '*');
+        return data.map(r => ({
+            id: r.id, tarih: r.tarih, musteriAdi: r.musteri_adi, stokTuru: r.stok_turu,
+            hammadde_turu: r.hammadde_turu, mamul_turu: r.mamul_turu, miktar: r.miktar,
+            satisFiyati: r.satis_fiyati, nakliyeBedeli: r.nakliye_bedeli, notlar: r.notlar
+        }));
     },
 
     /**
-     * Tedarikçileri getir (contacts - type: supplier)
+     * Tedarikçileri ve Müşterileri Getir (contacts)
      */
     async getTedarikciler() {
         if (!window.supabaseClient) return [];
-        const { data, error } = await window.supabaseClient
-            .from('contacts')
-            .select('*')
-            .eq('contact_type', 'supplier');
+        const { data, error } = await window.supabaseClient.from('contacts').select('*').eq('contact_type', 'supplier');
         return error ? [] : data;
     },
 
-    /**
-     * Müşterileri getir (contacts - type: customer)
-     */
     async getMusteriler() {
         if (!window.supabaseClient) return [];
-        const { data, error } = await window.supabaseClient
-            .from('contacts')
-            .select('*')
-            .eq('contact_type', 'customer');
+        const { data, error } = await window.supabaseClient.from('contacts').select('*').eq('contact_type', 'customer');
         return error ? [] : data;
     },
 
     /**
-     * Yeni giriş (insert)
+     * Kayıt Ekleme (Genel + Özel Maplemeler)
      */
     async insertData(table, payload) {
         if (!window.supabaseClient) return null;
         
         const { data: { session } } = await window.supabaseClient.auth.getSession();
-        const dataToInsert = { 
+        let p = { 
             ...payload, 
             user_id: session?.user?.id || null,
             created_at: new Date().toISOString()
         };
 
+        // Tablo bazlı özel alan eşleşmeleri (Snake case dönüşümü)
+        if (table === 'stock_records') {
+            p = {
+                ...p,
+                tedarikci_adi: payload.tedarikciAdi,
+                hammadde_turu: payload.hammaddeTuru,
+                brut_miktar: payload.brutMiktar,
+                net_miktar: payload.netMiktar,
+                alis_fiyati: payload.alisFiyati,
+                nakliye_bedeli: payload.nakliyeBedeli,
+                ym_fire: payload.ymFire,
+                nem_fire: payload.nemFire,
+                birim_maliyet: payload.birimMaliyet
+            };
+        } else if (table === 'sales_records') {
+            p = {
+                ...p,
+                musteri_adi: payload.musteriAdi,
+                stok_turu: payload.stokTuru,
+                hammadde_turu: payload.hammaddeTuru,
+                mamul_turu: payload.mamulTuru,
+                miktar: payload.miktar,
+                satis_fiyati: payload.satisFiyati,
+                nakliye_bedeli: payload.nakliyeBedeli
+            };
+        }
+
         const { data, error } = await window.supabaseClient
             .from(table)
-            .insert([dataToInsert])
+            .insert([p])
             .select();
 
         if (error) throw error;
@@ -91,14 +120,42 @@ window.DataService = {
     },
 
     /**
-     * Güncelleme (update)
+     * Güncelleme (Genel + Özel Maplemeler)
      */
     async updateData(table, id, payload) {
         if (!window.supabaseClient) return null;
         
+        let p = { ...payload, updated_at: new Date().toISOString() };
+
+        if (table === 'stock_records') {
+            p = {
+                ...p,
+                tedarikci_adi: payload.tedarikciAdi,
+                hammadde_turu: payload.hammaddeTuru,
+                brut_miktar: payload.brutMiktar,
+                net_miktar: payload.netMiktar,
+                alis_fiyati: payload.alisFiyati,
+                nakliye_bedeli: payload.nakliyeBedeli,
+                ym_fire: payload.ymFire,
+                nem_fire: payload.nemFire,
+                birim_maliyet: payload.birimMaliyet
+            };
+        } else if (table === 'sales_records') {
+            p = {
+                ...p,
+                musteri_adi: payload.musteriAdi,
+                stok_turu: payload.stokTuru,
+                hammadde_turu: payload.hammaddeTuru,
+                mamul_turu: payload.mamulTuru,
+                miktar: payload.miktar,
+                satis_fiyati: payload.satisFiyati,
+                nakliye_bedeli: payload.nakliyeBedeli
+            };
+        }
+
         const { data, error } = await window.supabaseClient
             .from(table)
-            .update(payload)
+            .update(p)
             .eq('id', id)
             .select();
 
@@ -357,80 +414,6 @@ window.DataService = {
             }, { onConflict: 'plan_id' })
             .select();
         
-        if (error) throw error;
-        return data?.[0];
-    },
-
-    /**
-     * Stok ve Ticaret (stock_records, sales_records, contacts)
-     */
-    async getAlislar() {
-        const data = await this.fetchData('stock_records', '*');
-        return data.map(r => ({
-            id: r.id, tarih: r.tarih, tedarikciAdi: r.tedarikci_adi, hammaddeTuru: r.hammadde_turu,
-            brutMiktar: r.brut_miktar, netMiktar: r.net_miktar, alisFiyati: r.alis_fiyati,
-            nakliyeBedeli: r.nakliye_bedeli, ymFire: r.ym_fire, nemFire: r.nem_fire,
-            birimMaliyet: r.birim_maliyet, notlar: r.notlar
-        }));
-    },
-
-    async getSatislar() {
-        const data = await this.fetchData('sales_records', '*');
-        return data.map(r => ({
-            id: r.id, tarih: r.tarih, musteriAdi: r.musteri_adi, stokTuru: r.stok_turu,
-            hammaddeTuru: r.hammadde_turu, mamulTuru: r.mamul_turu, miktar: r.miktar,
-            satisFiyati: r.satis_fiyati, nakliyeBedeli: r.nakliye_bedeli, notlar: r.notlar
-        }));
-    },
-
-    async getTedarikciler() {
-        return window.supabaseClient.from('contacts').select('*').eq('contact_type', 'supplier').then(r => r.data || []);
-    },
-
-    async getMusteriler() {
-        return window.supabaseClient.from('contacts').select('*').eq('contact_type', 'customer').then(r => r.data || []);
-    },
-
-    async insertData(table, payload) {
-        if (!window.supabaseClient) return null;
-        let p = { ...payload };
-        if (table === 'stock_records') {
-            p = {
-                tarih: payload.tarih, tedarikci_adi: payload.tedarikciAdi, hammadde_turu: payload.hammaddeTuru,
-                brut_miktar: payload.brutMiktar, net_miktar: payload.netMiktar, alis_fiyati: payload.alisFiyati,
-                nakliye_bedeli: payload.nakliyeBedeli, ym_fire: payload.ymFire, nem_fire: payload.nemFire,
-                birim_maliyet: payload.birimMaliyet, notlar: payload.notlar
-            };
-        } else if (table === 'sales_records') {
-            p = {
-                tarih: payload.tarih, musteri_adi: payload.musteriAdi, stok_turu: payload.stokTuru,
-                hammadde_turu: payload.hammaddeTuru, mamul_turu: payload.mamulTuru, miktar: payload.miktar,
-                satis_fiyati: payload.satisFiyati, nakliye_bedeli: payload.nakliyeBedeli, notlar: payload.notlar
-            };
-        }
-        const { data, error } = await window.supabaseClient.from(table).insert([p]).select();
-        if (error) throw error;
-        return data?.[0];
-    },
-
-    async updateData(table, id, payload) {
-        if (!window.supabaseClient) return null;
-        let p = { ...payload };
-        if (table === 'stock_records') {
-            p = {
-                tarih: payload.tarih, tedarikci_adi: payload.tedarikciAdi, hammadde_turu: payload.hammaddeTuru,
-                brut_miktar: payload.brutMiktar, net_miktar: payload.netMiktar, alis_fiyati: payload.alisFiyati,
-                nakliye_bedeli: payload.nakliyeBedeli, ym_fire: payload.ymFire, nem_fire: payload.nemFire,
-                birim_maliyet: payload.birimMaliyet, notlar: payload.notlar
-            };
-        } else if (table === 'sales_records') {
-            p = {
-                tarih: payload.tarih, musteri_adi: payload.musteriAdi, stok_turu: payload.stokTuru,
-                hammadde_turu: payload.hammaddeTuru, mamul_turu: payload.mamulTuru, miktar: payload.miktar,
-                satis_fiyati: payload.satisFiyati, nakliye_bedeli: payload.nakliyeBedeli, notlar: payload.notlar
-            };
-        }
-        const { data, error } = await window.supabaseClient.from(table).update(p).eq('id', id).select();
         if (error) throw error;
         return data?.[0];
     },

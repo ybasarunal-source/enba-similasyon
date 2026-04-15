@@ -34,10 +34,12 @@ window.Sidebar = function Sidebar({
                 <h2 style={{ textTransform: 'lowercase' }}>📋 İPK LİSTESİ</h2>
                 <p style={{ fontSize: '12px', color: '#607d8b' }}>Oluşturduğunuz modelleri tesise sürükleyin.</p>
                 
-                {bekleyenPlanlar.map(plan => (
+                {bekleyenPlanlar
+                    .filter(p => !p.plan_type || p.plan_type === 'fast')
+                    .map(plan => (
                     <div key={plan.id} className="card" draggable onDragStart={(e) => suruklemeBasladi(e, plan.id)}>
                         <div className="card-title">{plan.baslik}</div>
-                        <div className="card-info">Giriş: {window.fmt(plan.parametreler.aylikTon)} Ton | Çıkış: {window.fmt(plan.kutleDengesi?.toplamSatisTon || plan.parametreler.aylikTon)} Ton</div>
+                        <div className="card-info">Giriş: {window.fmt(plan.parametreler?.aylikTon)} Ton | Çıkış: {window.fmt(plan.kutleDengesi?.toplamSatisTon || plan.parametreler?.aylikTon)} Ton</div>
                         <div style={{fontSize:'12px', display:'flex', justifyContent:'space-between', borderTop:'1px solid rgba(255,255,255,0.1)', marginTop:'5px', paddingTop:'5px'}}>
                             <span>Net Kâr:</span> <strong style={{color: plan.netKar >= 0 ? '#82A12E' : '#ef5350'}}>{window.fmt(plan.netKar)} ₺</strong>
                         </div>
