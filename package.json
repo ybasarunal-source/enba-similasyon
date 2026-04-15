@@ -1,0 +1,12 @@
+{
+  "name": "enba-similasyon",
+  "version": "1.0.0",
+  "description": "Enba Recycling Kapasite ve Finans Simülasyon Platformu",
+  "scripts": {
+    "start": "serve .",
+    "build": "echo 'No build step required'"
+  },
+  "keywords": [],
+  "author": "Enba Recycling",
+  "license": "ISC"
+}

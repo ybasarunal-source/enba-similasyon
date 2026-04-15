@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Enba Sim">
+    <meta name="theme-color" content="#15222E">
+    <meta name="description" content="Enba Recycling Kapasite ve Finans Simülasyon Platformu">
+
+    <title>Enba Recycling - Kapasite ve Finans Simülasyonu</title>
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Uygulama İkonları -->
+    <link rel="shortcut icon" href="icons/icon-32.png?v=3">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=3">
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png?v=3">
+    <link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png?v=3">
+    <link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png?v=3">
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-192.png?v=3">
+
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <!-- Phosphor Icons: Premium Vektör İkon Seti -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="root"></div>
+
+    <!-- Supabase CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Supabase İstemcisi ve Ortak Veri Katmanı -->
+    <script src="supabase-client.js"></script>
+    <script src="data-service.js"></script>
+
+    <script src="data.js"></script>
+    <script src="translations.js"></script>
+    <script src="finance-utils.js"></script>
+    <script src="io-utils.js"></script>
+    <script type="text/babel" src="components/Sidebar.jsx"></script>
+    <script type="text/babel" src="components/DashboardMatrix.jsx"></script>
+    <script type="text/babel" src="app.jsx"></script>
+    <script type="text/babel" src="components/wizard/detailed/DetStep1_Suppliers.jsx"></script>
+    <script type="text/babel" src="components/wizard/detailed/DetStep2_Customers.jsx"></script>
+    <script type="text/babel" src="components/wizard/detailed/DetStep3_Operations.jsx"></script>
+    <script type="text/babel" src="components/wizard/detailed/DetStep4_Personnel.jsx"></script>
+    <script type="text/babel" src="components/wizard/detailed/DetStep5_Expenses.jsx"></script>
+    <script type="text/babel" src="components/wizard/detailed/DetStep6_Investment.jsx"></script>
+    <script type="text/babel" src="components/wizard/detailed/DetStep7_Report.jsx"></script>
+    <script type="text/babel" src="detailed-plan.jsx"></script>
+    <script type="text/babel" src="landing.jsx"></script>
+    <script type="text/babel" src="login-page.jsx"></script>
+    <script type="text/babel" src="router.jsx"></script>
+    <script type="text/babel" src="pnl-module.jsx"></script>
+    <script type="text/babel" src="production-module.jsx"></script>
+    <script type="text/babel" src="logistics-module.jsx"></script>
+    <script type="text/babel" src="catalog-module.jsx"></script>
+    <script type="text/babel" src="makina-modulu.jsx"></script>
+    <script type="text/babel" src="production-line-module.jsx"></script>
+    <script type="text/babel" src="cashflow-module.jsx"></script>
+    <script type="text/babel" src="production-plan-module.jsx"></script>
+    <script type="text/babel" src="arsiv-module.jsx"></script>
+    <script type="text/babel" src="stok-module.jsx"></script>
+    <script type="text/babel" src="lisans-module.jsx"></script>
+    <script type="text/babel" src="tasks-module.jsx"></script>
+    <script type="text/babel" src="yetki-yonetimi.jsx"></script>
+    <script type="text/babel" src="messaging-module.jsx"></script>
+    <script type="text/babel" src="ai-assistant.jsx"></script>
+    <script type="text/babel" src="messenger-overlay.jsx"></script>
+    <script type="text/babel" src="profile-module.jsx"></script>
+    <script type="text/babel" src="org-chart-module.jsx"></script>
+    <script type="text/babel" src="hr-module.jsx"></script>
+    <script type="text/babel" src="payments-module.jsx"></script>
+
+    <!-- Face Detection & Tracking Lib -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tracking.js/1.1.3/tracking-min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tracking.js/1.1.3/data/face-min.js"></script>
+
+    <!-- Service Worker Kaydı -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('SW kayıtlı:', reg.scope))
+                    .catch(err => console.log('SW hatası:', err));
+            });
+        }
+    </script>
+</body>
+</html>
