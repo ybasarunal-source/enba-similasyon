@@ -554,12 +554,15 @@ function App() {
         }
     };
 
+    const Sidebar = window.Sidebar;
+    const DashboardMatrix = window.DashboardMatrix;
+
     if (aktifSayfa === 'anaSayfa') {
         return (
             <div className="container">
                 <div className={`sidebar-overlay${mobileSidebarAcik ? ' visible' : ''}`} onClick={() => setMobileSidebarAcik(false)} />
 
-                <window.Sidebar 
+                <Sidebar 
                     sidebarAcik={sidebarAcik} setSidebarAcik={setSidebarAcik}
                     mobileSidebarAcik={mobileSidebarAcik} setMobileSidebarAcik={setMobileSidebarAcik}
                     bekleyenPlanlar={bekleyenPlanlar} setBekleyenPlanlar={setBekleyenPlanlar}
@@ -575,7 +578,7 @@ function App() {
                     <div className="factory-header"><span className="enba">enba</span><span className="recycling">recycling</span></div>
                     <div className="factory-subheader">KÖMÜRCÜLER TESİSİ - KAPASİTE VE FİNANS SİMÜLASYONU</div>
                     
-                    <window.DashboardMatrix 
+                    <DashboardMatrix 
                         aktifPlanlar={aktifPlanlar}
                         sonuc={sonuc}
                         grupGosterim={grupGosterim}

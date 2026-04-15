@@ -1,4 +1,4 @@
-const CACHE_NAME = 'enba-sim-v14';
+const CACHE_NAME = 'enba-sim-v15';
 
 const STATIC_ASSETS = [
   '/',

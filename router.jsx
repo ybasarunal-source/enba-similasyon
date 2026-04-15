@@ -112,9 +112,35 @@ function EnbaRouter() {
         setSayfa(hedef);
     };
 
+    // Komponentleri window nesnesinden güvenli bir şekilde al
+    const LoginPage = window.LoginPage;
+    const LandingPage = window.LandingPage;
+    const App = window.App;
+    const DetayliPlanModulu = window.DetayliPlanModulu;
+    const PnlRaporu = window.PnlRaporu;
+    const UretimTakipModulu = window.UretimTakipModulu;
+    const LojistikModulu = window.LojistikModulu;
+    const KatalogModulu = window.KatalogModulu;
+    const MakinaKatalog = window.MakinaKatalog;
+    const ProductionLineModule = window.ProductionLineModule;
+    const NakitAkisModulu = window.NakitAkisModulu;
+    const UretimPlanlamaModulu = window.UretimPlanlamaModulu;
+    const ArsivModulu = window.ArsivModulu;
+    const StokModulu = window.StokModulu;
+    const LisansRuhsatModulu = window.LisansRuhsatModulu;
+    const GorevModulu = window.GorevModulu;
+    const MessagingModule = window.MessagingModule;
+    const ProfileModule = window.ProfileModule;
+    const YetkiYonetimi = window.YetkiYonetimi;
+    const OrgChartModule = window.OrgChartModule;
+    const HrModule = window.HrModule;
+    const PaymentsModule = window.PaymentsModule;
+    const EnbaCoPilot = window.EnbaCoPilot;
+    const EnbaMessenger = window.EnbaMessenger;
+
     // Giriş yapmamışsa Login ekranını göster
     if (!user) {
-        return <window.LoginPage onLogin={onLogin} />;
+        return <LoginPage onLogin={onLogin} />;
     }
 
     // Yetki kontrolü (landing hariç her sayfa için)
@@ -136,40 +162,40 @@ function EnbaRouter() {
             {/* Üst Navigasyon — tüm sayfalarda görünür */}
             <TopNav aktifSayfa={sayfa} navigate={navigate} user={user} onLogout={onLogout} currentLang={lang} onLangChange={handleLangChange} />
 
-            {sayfa === 'landing'     && <window.LandingPage navigate={navigate} user={user} t={window.t} />}
-            {sayfa === 'isPlanlama'  && <window.App />}
+            {sayfa === 'landing'     && <LandingPage navigate={navigate} user={user} t={window.t} />}
+            {sayfa === 'isPlanlama'  && <App />}
             {sayfa === 'detayliPlan' && (
-                <window.DetayliPlanModulu
+                <DetayliPlanModulu
                     navigate={navigate}
                     aktifPlanlar={aktifPlanlar}
                     bekleyenPlanlar={bekleyenPlanlar}
                 />
             )}
-            {sayfa === 'pnlRapor' && <window.PnlRaporu />}
-            {sayfa === 'uretimTakip' && <window.UretimTakipModulu />}
-            {sayfa === 'lojistikTakip' && <window.LojistikModulu />}
-            {sayfa === 'katalog' && <window.KatalogModulu />}
-            {sayfa === 'makina'     && <window.MakinaKatalog />}
-            {sayfa === 'uretimHatti' && (window.ProductionLineModule ? <window.ProductionLineModule /> : <div style={{padding:'100px', textAlign:'center', color:'#fff'}}>Yükleniyor...</div>)}
-            {sayfa === 'nakitAkis'   && <window.NakitAkisModulu aktifPlanlar={aktifPlanlar} />}
-            {sayfa === 'uretimPlan' && <window.UretimPlanlamaModulu />}
-            {sayfa === 'arsiv' && <window.ArsivModulu user={user} />}
-            {sayfa === 'stok'  && <window.StokModulu />}
-            {sayfa === 'lisansTakip' && <window.LisansRuhsatModulu />}
-            {sayfa === 'gorevler' && <window.GorevModulu navigate={navigate} />}
-            {sayfa === 'mesajlar' && <window.MessagingModule user={user} />}
-            {sayfa === 'profilim' && (window.ProfileModule ? 
-                <window.ProfileModule user={user} onUpdate={(updated) => { setUser(updated); localStorage.setItem('enba_current_user', JSON.stringify(updated)); }} /> 
+            {sayfa === 'pnlRapor' && <PnlRaporu />}
+            {sayfa === 'uretimTakip' && <UretimTakipModulu />}
+            {sayfa === 'lojistikTakip' && <LojistikModulu />}
+            {sayfa === 'katalog' && <KatalogModulu />}
+            {sayfa === 'makina'     && <MakinaKatalog />}
+            {sayfa === 'uretimHatti' && (ProductionLineModule ? <ProductionLineModule /> : <div style={{padding:'100px', textAlign:'center', color:'#fff'}}>Yükleniyor...</div>)}
+            {sayfa === 'nakitAkis'   && <NakitAkisModulu aktifPlanlar={aktifPlanlar} />}
+            {sayfa === 'uretimPlan' && <UretimPlanlamaModulu />}
+            {sayfa === 'arsiv' && <ArsivModulu user={user} />}
+            {sayfa === 'stok'  && <StokModulu />}
+            {sayfa === 'lisansTakip' && <LisansRuhsatModulu />}
+            {sayfa === 'gorevler' && <GorevModulu navigate={navigate} />}
+            {sayfa === 'mesajlar' && <MessagingModule user={user} />}
+            {sayfa === 'profilim' && (ProfileModule ? 
+                <ProfileModule user={user} onUpdate={(updated) => { setUser(updated); localStorage.setItem('enba_current_user', JSON.stringify(updated)); }} /> 
                 : <div style={{padding:'100px', textAlign:'center', color:'#fff'}}>Modül yükleniyor...</div>
             )}
-            {sayfa === 'yetkiYonetimi' && (window.YetkiYonetimi ? <window.YetkiYonetimi /> : <div style={{padding:'100px', textAlign:'center', color:'#fff'}}>Yükleniyor...</div>)}
-            {sayfa === 'orgChart' && (window.OrgChartModule ? <window.OrgChartModule /> : <div style={{padding:'100px', textAlign:'center', color:'#fff'}}>Yükleniyor...</div>)}
-            {sayfa === 'insanKaynaklari' && (window.HrModule ? <window.HrModule /> : <div style={{padding:'100px', textAlign:'center', color:'#fff'}}>Modül yükleniyor...</div>)}
-            {sayfa === 'odemeTakip' && (window.PaymentsModule ? <window.PaymentsModule /> : <div style={{padding:'100px', textAlign:'center', color:'#fff'}}>Modül yükleniyor...</div>)}
+            {sayfa === 'yetkiYonetimi' && (YetkiYonetimi ? <YetkiYonetimi /> : <div style={{padding:'100px', textAlign:'center', color:'#fff'}}>Yükleniyor...</div>)}
+            {sayfa === 'orgChart' && (OrgChartModule ? <OrgChartModule /> : <div style={{padding:'100px', textAlign:'center', color:'#fff'}}>Yükleniyor...</div>)}
+            {sayfa === 'insanKaynaklari' && (HrModule ? <HrModule /> : <div style={{padding:'100px', textAlign:'center', color:'#fff'}}>Modül yükleniyor...</div>)}
+            {sayfa === 'odemeTakip' && (PaymentsModule ? <PaymentsModule /> : <div style={{padding:'100px', textAlign:'center', color:'#fff'}}>Modül yükleniyor...</div>)}
 
             {/* AI Assistant & Messenger — Tüm sayfalarda yüzen butonlar olarak görünür */}
-            <window.EnbaCoPilot activePage={sayfa} />
-            <window.EnbaMessenger user={user} />
+            {EnbaCoPilot && <EnbaCoPilot activePage={sayfa} />}
+            {EnbaMessenger && <EnbaMessenger user={user} />}
         </div>
     );
 }

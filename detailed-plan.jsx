@@ -8,6 +8,15 @@ const ACILIR_KODLAR     = ['609', '610']; // Alt kalem girişine açılan kodlar
 // Unified finance logic moved to finance-utils.js
 
 function DetayliPlanWizard({ initialData, onSave, onCancel }) {
+    // Adım bileşenlerini window nesnesinden al (Babel Standalone JSX uyumu)
+    const DetStep1_Suppliers = window.DetStep1_Suppliers;
+    const DetStep2_Customers = window.DetStep2_Customers;
+    const DetStep3_Operations = window.DetStep3_Operations;
+    const DetStep4_Personnel = window.DetStep4_Personnel;
+    const DetStep5_Expenses = window.DetStep5_Expenses;
+    const DetStep6_Investment = window.DetStep6_Investment;
+    const DetStep7_Report = window.DetStep7_Report;
+
     const [adim, setAdim] = React.useState(1);
     const plTableRef = React.useRef(null);
 
