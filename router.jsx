@@ -136,10 +136,10 @@ function EnbaRouter() {
             {/* Üst Navigasyon — tüm sayfalarda görünür */}
             <TopNav aktifSayfa={sayfa} navigate={navigate} user={user} onLogout={onLogout} currentLang={lang} onLangChange={handleLangChange} />
 
-            {sayfa === 'landing'     && <LandingPage navigate={navigate} user={user} t={window.t} />}
-            {sayfa === 'isPlanlama'  && <App />}
+            {sayfa === 'landing'     && <window.LandingPage navigate={navigate} user={user} t={window.t} />}
+            {sayfa === 'isPlanlama'  && <window.App />}
             {sayfa === 'detayliPlan' && (
-                <DetayliPlanModulu
+                <window.DetayliPlanModulu
                     navigate={navigate}
                     aktifPlanlar={aktifPlanlar}
                     bekleyenPlanlar={bekleyenPlanlar}
