@@ -56,7 +56,7 @@ function LoginPage({ onLogin }) {
                     id: data.user.id,
                     username: username,
                     name: data.user.user_metadata?.full_name || username,
-                    role: data.user.user_metadata?.role || (isAdminDomain ? 'admin' : 'operator'),
+                    role: isAdminDomain ? 'admin' : (data.user.user_metadata?.role || 'operator'),
                     avatar: null
                 };
                 

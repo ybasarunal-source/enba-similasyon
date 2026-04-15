@@ -26,7 +26,7 @@ function EnbaRouter() {
                     id: session.user.id,
                     username: userEmail.split('@')[0],
                     name: session.user.user_metadata?.full_name || userEmail.split('@')[0],
-                    role: session.user.user_metadata?.role || (isAdminDomain ? 'admin' : 'operator'),
+                    role: isAdminDomain ? 'admin' : (session.user.user_metadata?.role || 'operator'),
                     avatar: null
                 };
                 setUser(userData);
@@ -42,7 +42,7 @@ function EnbaRouter() {
                     id: session.user.id,
                     username: userEmail.split('@')[0],
                     name: session.user.user_metadata?.full_name || userEmail.split('@')[0],
-                    role: session.user.user_metadata?.role || (isAdminDomain ? 'admin' : 'operator'),
+                    role: isAdminDomain ? 'admin' : (session.user.user_metadata?.role || 'operator'),
                     avatar: null
                 };
                 setUser(userData);
