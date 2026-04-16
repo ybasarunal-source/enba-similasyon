@@ -1059,8 +1059,10 @@ function DetayliPlanModulu({ navigate, bekleyenPlanlar, setBekleyenPlanlar, akti
                                             onClick={(e) => { e.stopPropagation(); IpkDuzenle(plan); }}>DÜZENLE</button>
                                         <button className="btn btn-success" style={{flex:1, fontSize:'11px', padding:'8px 5px'}} 
                                             onClick={(e) => { e.stopPropagation(); fabrikayaBrakildi({ preventDefault: () => {}, dataTransfer: { getData: () => plan.id } }); }}>AKTİF ET</button>
-                                        <button className="btn btn-danger" style={{padding:'8px 10px', fontSize:'12px', fontWeight:'700'}} 
-                                            onClick={(e) => { e.stopPropagation(); IpkSil(plan.id); }}>X</button>
+                                        <button className="btn btn-danger" 
+                                            style={{padding:'10px 14px', fontSize:'14px', fontWeight:'800', border:'2px solid rgba(255,255,255,0.2)', borderRadius:'8px', cursor:'pointer'}} 
+                                            title="Bu Planı Tamamen Sil"
+                                            onClick={(e) => { e.stopPropagation(); e.preventDefault(); IpkSil(plan.id); }}>X</button>
                                     </div>
                                 </div>
                             ))}
@@ -1407,7 +1409,9 @@ function DetayliPlanModulu({ navigate, bekleyenPlanlar, setBekleyenPlanlar, akti
                                         <span style={{fontWeight: '600', color: 'var(--enba-dark)'}}>Net Kâr:</span> <strong style={{color: s.net >= 0 ? 'var(--enba-orange-dark)' : 'var(--btn-red-dark)'}}>{fmt(s.net)} ₺</strong>
                                     </div>
 
-                                    <button className="remove-btn" onClick={(e) => { e.stopPropagation(); kartiCikar(plan.id); }}>Geri Al / Durdur</button>
+                                    <button className="remove-btn" 
+                                        style={{padding:'12px 20px', fontSize:'12px', fontWeight:'800', background:'var(--error)', color:'#fff', marginTop:'15px'}}
+                                        onClick={(e) => { e.stopPropagation(); e.preventDefault(); kartiCikar(plan.id); }}>Geri Al / Durdur</button>
                                 </div>
                             )})}
                         </div>

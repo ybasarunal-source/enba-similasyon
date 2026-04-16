@@ -114,112 +114,6 @@ function App() {
         XLSX.writeFile(wb, "Enba_Finansal_Rapor.xlsx");
     };
 
-    const sablonIndir = () => {
-        const satirlar = [];
-
-        // Başlık satırı
-        satirlar.push(["KOD", "KALEM ADI", "TUTAR (₺)"]);
-
-        // Gelirler bölümü
-        satirlar.push(["--- GELİRLER ---", "", ""]);
-        window.SABLON_GELIRLER.forEach(g => {
-            satirlar.push([g.kodu, g.adi, ""]);
-        });
-
-        // Giderler bölümü - gruplara göre
-        window.GIDER_GRUPLARI.forEach(grup => {
-            satirlar.push([`--- ${grup.ad.toUpperCase()} ---`, "", ""]);
-            window.SABLON_GIDERLER.filter(g => g.grup === grup.id).forEach(g => {
-                satirlar.push([g.kodu, g.adi, ""]);
-            });
-        });
-
-        const ws = XLSX.utils.aoa_to_sheet(satirlar);
-
-        // Sütun genişlikleri
-        ws['!cols'] = [{ wch: 10 }, { wch: 45 }, { wch: 18 }];
-
-        // Başlık satırı kalın
-        const headerCells = ['A1', 'B1', 'C1'];
-        headerCells.forEach(ref => {
-            if (ws[ref]) ws[ref].s = { font: { bold: true } };
-        });
-
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "İPK Şablonu");
-        XLSX.writeFile(wb, "Enba_IPK_Sablonu.xlsx");
-    };
-
-    const excelIceAktar = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const planAdi = window.prompt("Yüklenecek İPK için bir plan adı girin:", file.name.replace(/\.[^/.]+$/, ""));
-        if (!planAdi || !planAdi.trim()) {
-            e.target.value = null;
-            return;
-        }
-
-        const gelirKodlari = new Set(window.SABLON_GELIRLER.map(g => g.kodu));
-
-        const reader = new FileReader();
-        reader.onload = (evt) => {
-            try {
-                const bstr = evt.target.result;
-                const wb = XLSX.read(bstr, { type: 'binary' });
-
-                const planData = { gelirler: {}, giderler: {}, opex: 0, gelir: 0 };
-
-                wb.SheetNames.forEach(sheetName => {
-                    const sheet = wb.Sheets[sheetName];
-                    const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-
-                    json.forEach(row => {
-                        // Şablon formatı: [KOD, KALEM ADI, TUTAR]
-                        const kod = String(row[0] || "").trim();
-                        const tutar = Number(row[2]);
-
-                        // Yalnızca 2-3 haneli sayısal kod olan satırları işle
-                        if (/^\d{2,3}$/.test(kod) && tutar > 0) {
-                            if (gelirKodlari.has(kod)) {
-                                planData.gelir += tutar;
-                                planData.gelirler[kod] = (planData.gelirler[kod] || 0) + tutar;
-                            } else {
-                                planData.opex += tutar;
-                                planData.giderler[kod] = (planData.giderler[kod] || 0) + tutar;
-                            }
-                        }
-                    });
-                });
-
-                if (planData.opex > 0 || planData.gelir > 0) {
-                    const yeniPlan = {
-                        id: "excel_ipk_" + Date.now(),
-                        baslik: planAdi.trim(),
-                        parametreler: { aylikTon: 0, alisFiyati: 0, satisFiyati: 0, aylikGun: 26, gunlukSaat: 10, elektrikKwFiyat: 4.07, gunlukYemekUcreti: 200, alisNakliye: 0, satisNakliye: 0, ayiklamaHizi: 1 },
-                        uretimRecetesi: { ayristirmaVar: false, copOrani: 5, copBertarafFiyati: 0, uretimFiresi: 3, altUrunler: [] },
-                        kutleDengesi: { girenTon: 0, copTon: 0, uretimGirenTon: 0, uretimFireTon: 0, toplamSatisTon: 0, netAnaUrunTon: 0 },
-                        personelListesi: [], disHizmetlerListesi: [], satisDetaylari: [], kurulumKalemleri: [], amortismanSuresi: 36, aylikAmortisman: 0,
-                        gelirler: planData.gelirler,
-                        giderler: planData.giderler,
-                        ozetGelir: planData.gelir,
-                        ozetOpex: planData.opex,
-                        ebitda: planData.gelir - planData.opex,
-                        netKar: planData.gelir - planData.opex
-                    };
-                    setBekleyenPlanlar(prev => [...prev, yeniPlan]);
-                    alert(`"${planAdi.trim()}" adıyla yeni İPK oluşturuldu!`);
-                } else {
-                    alert("İşlenebilir bir finansal veri bulunamadı. Lütfen şablonu kullanarak C sütununa tutarları girdiğinizden emin olun.");
-                }
-            } catch (error) {
-                alert("Dosya okunurken bir hata oluştu: " + error.message);
-            }
-            e.target.value = null;
-        };
-        reader.readAsBinaryString(file);
-    };
-
     useEffect(() => {
         if (aktifSayfa === 'planEkle') {
             let girenTon = Number(planParametreleri.aylikTon);
@@ -1135,11 +1029,13 @@ function App() {
                     <div className="factory-header"><span className="enba">enba</span><span className="recycling">recycling</span></div>
                     <div className="factory-subheader">KÖMÜRCÜLER TESİSİ - KAPASİTE VE FİNANS SİMÜLASYONU</div>
                     
-                    <DashboardMatrix 
+                    <DashboardMatrix
                         aktifPlanlar={aktifPlanlar}
                         sonuc={sonuc}
                         grupGosterim={grupGosterim}
                         setGrupGosterim={setGrupGosterim}
+                        exportToExcel={exportToExcel}
+                        exportToPDF={exportToPDF}
                     />
 
                     <h4 style={{color: 'var(--enba-dark)', margin: '15px 0 10px 0', textTransform: 'uppercase', fontSize: '13px', letterSpacing: '1px'}}>Tesisteki Aktif İPK'lar:</h4>
@@ -1165,7 +1061,9 @@ function App() {
                                     <span style={{fontWeight: '600', color: 'var(--enba-dark)'}}>Net Kâr:</span> <strong style={{color: plan.netKar >= 0 ? 'var(--enba-orange-dark)' : 'var(--btn-red-dark)'}}>{window.fmt(plan.netKar)} ₺</strong>
                                 </div>
 
-                                <button className="remove-btn" onClick={(e) => { e.stopPropagation(); kartiCikar(plan.id); }}>Geri Al / Durdur</button>
+                                <button className="remove-btn" 
+                                    style={{padding:'12px 20px', fontSize:'12px', fontWeight:'800', background:'var(--error)', color:'#fff', marginTop:'15px'}}
+                                    onClick={(e) => { e.stopPropagation(); e.preventDefault(); kartiCikar(plan.id); }}>Geri Al / Durdur</button>
                             </div>
                         ))}
                     </div>

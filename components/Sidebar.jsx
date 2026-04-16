@@ -46,7 +46,10 @@ window.Sidebar = function Sidebar({
                         <div style={{ display:'flex', gap:'5px', marginTop:'10px' }}>
                             <button className="btn btn-warning" style={{flex:1, fontSize:'10px', padding:'5px'}} onClick={() => IpkDuzenle(plan)}>DÜZENLE</button>
                             <button className="btn btn-success" style={{flex:1, fontSize:'10px', padding:'5px'}} onClick={() => { setAktifPlanlar([...aktifPlanlar, plan]); setBekleyenPlanlar(bekleyenPlanlar.filter(x=>x.id!==plan.id)); }}>AKTİF ET</button>
-                            <button className="btn btn-danger" style={{padding:'5px', fontSize:'10px'}} onClick={() => IpkSil(plan.id)}>X</button>
+                            <button className="btn btn-danger" 
+                                style={{padding:'8px 12px', fontSize:'14px', fontWeight:'800', border:'2px solid rgba(255,255,255,0.1)', borderRadius:'8px'}} 
+                                title="Bu Planı Tamamen Sil"
+                                onClick={(e) => { e.stopPropagation(); e.preventDefault(); IpkSil(plan.id); }}>X</button>
                         </div>
                     </div>
                 ))}
