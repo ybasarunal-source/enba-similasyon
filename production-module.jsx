@@ -140,7 +140,7 @@ function UretimTakipModulu() {
         XLSX.writeFile(wb, "Enba_Uretim_Takip_" + new Date().toISOString().split('T')[0] + ".xlsx");
     };
 
-    const numFmt = (num) => new Intl.NumberFormat(localStorage.getItem('enba_lang') === 'TR' ? 'tr-TR' : 'en-US', { minimumFractionDigits: 1, maximumFractionDigits: 2 }).format(num || 0);
+    const numFmt = (num) => new Intl.NumberFormat(localStorage.getItem('enba_lang') === 'TR' ? 'tr-TR' : 'en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(num || 0);
 
     return (
         <div className="page-container" style={{maxWidth: '96%', margin: '0 auto', padding: '20px 10px'}}>

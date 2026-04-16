@@ -31,15 +31,28 @@ function App() {
     // Verileri Supabase'den çek
     useEffect(() => {
         const load = async () => {
-            const allPlans = await window.DataService.getPlans();
-            const extracted = allPlans.map(p => ({ ...p.content, id: p.id, status: p.status }));
-            setBekleyenPlanlar(extracted.filter(p => p.status === 'pending' && p.plan_type !== 'detailed'));
-            setAktifPlanlar(extracted.filter(p => p.status === 'active' && p.plan_type !== 'detailed'));
+            try {
+                const allPlans = await window.DataService.getPlans();
+                const extracted = allPlans.map(p => ({ ...p.content, id: p.id, status: p.status }));
+                setBekleyenPlanlar(extracted.filter(p => p.status === 'pending' && p.plan_type !== 'detailed'));
+                setAktifPlanlar(extracted.filter(p => p.status === 'active' && p.plan_type !== 'detailed'));
 
-            const net = await window.DataService.getSetting('asgariNet', 28075.5);
-            const sgk = await window.DataService.getSetting('asgariSgk', 12799.13);
-            setAsgariNet(Number(net));
-            setAsgariSgk(Number(sgk));
+                const net = await window.DataService.getSetting('asgariNet', 28075.5);
+                const sgk = await window.DataService.getSetting('asgariSgk', 12799.13);
+                setAsgariNet(Number(net));
+                setAsgariSgk(Number(sgk));
+            } catch (err) {
+                console.error("Başlangıç verileri yüklenemedi:", err);
+            } finally {
+                // Uygulama hazır olduğunda (veya hata aldığında) splash screen'i kaldır
+                const splash = document.getElementById('enba-splash');
+                if (splash) {
+                    setTimeout(() => {
+                        splash.classList.add('hidden');
+                        setTimeout(() => splash.style.display = 'none', 500);
+                    }, 400); 
+                }
+            }
         };
         load();
     }, []);

@@ -181,7 +181,9 @@ function EnbaRouter() {
                 <DetayliPlanModulu
                     navigate={navigate}
                     aktifPlanlar={aktifPlanlar}
+                    setAktifPlanlar={setAktifPlanlar}
                     bekleyenPlanlar={bekleyenPlanlar}
+                    setBekleyenPlanlar={setBekleyenPlanlar}
                 />
             )}
             {sayfa === 'pnlRapor' && <PnlRaporu />}

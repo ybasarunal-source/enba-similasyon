@@ -32,8 +32,8 @@ const RED    = '#f06060';
 const TEAL   = '#28c9a0';
 
 function fmtN(n, d) {
-    if (window.fmt) return window.fmt(n, d !== undefined ? d : 0);
-    return (n || 0).toLocaleString('tr-TR', { minimumFractionDigits: d || 0, maximumFractionDigits: d || 0 });
+    if (window.fmt) return window.fmt(n, d !== undefined ? d : 1);
+    return (n || 0).toLocaleString('tr-TR', { minimumFractionDigits: d !== undefined ? d : 1, maximumFractionDigits: d !== undefined ? d : 1 });
 }
 
 function tarihFmt(iso) {
@@ -326,7 +326,7 @@ function StokModulu() {
                             {[
                                 { lbl: 'Net Kabul (kg)', val: fmtN(alisNetMiktar, 0), c: GREEN },
                                 { lbl: 'Toplam Fire',    val: (100 - (alisNetMiktar / (parseFloat(alisForm.brutMiktar) || 1) * 100)).toFixed(1) + '%', c: AMBER },
-                                { lbl: '₺/kg (nakliye dahil)', val: alisBirimMaliyet.toFixed(2), c: TXT },
+                                { lbl: '₺/kg (nakliye dahil)', val: alisBirimMaliyet.toFixed(1), c: TXT },
                                 { lbl: 'Toplam Maliyet ₺', val: fmtN(alisNetMiktar * alisBirimMaliyet), c: TXT },
                             ].map(x => (
                                 <div key={x.lbl}>
@@ -395,7 +395,7 @@ function StokModulu() {
                                         <td style={{ ...tdR, color: GREEN, fontWeight: 700 }}>{fmtN(parseFloat(a.netMiktar) || 0, 0)}</td>
                                         <td style={tdR}>{parseFloat(a.alisFiyati) || 0}</td>
                                         <td style={tdR}>{fmtN(parseFloat(a.nakliyeBedeli) || 0)}</td>
-                                        <td style={{ ...tdR, fontWeight: 700 }}>{(parseFloat(a.birimMaliyet) || 0).toFixed(2)}</td>
+                                        <td style={{ ...tdR, fontWeight: 700 }}>{(parseFloat(a.birimMaliyet) || 0).toFixed(1)}</td>
                                         <td style={{ ...tdR, color: AMBER }}>{fmtN((parseFloat(a.netMiktar) || 0) * (parseFloat(a.birimMaliyet) || 0))}</td>
                                         <td style={{ ...tdL, color: TXT3, maxWidth: '110px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.notlar}</td>
                                         <td style={{ padding: '9px 10px', textAlign: 'center', whiteSpace: 'nowrap' }}>
@@ -589,7 +589,7 @@ function StokModulu() {
                                                     <td style={tdR}>{fmtN(o.netAlis, 0)} kg</td>
                                                     <td style={tdR}>{fmtN(o.satilanKg, 0)} kg</td>
                                                     <td style={{ ...tdR, fontWeight: 700, color: o.netStok > 0 ? GREEN : RED }}>{fmtN(Math.max(0, o.netStok), 0)} kg</td>
-                                                    <td style={tdR}>{o.ortMal.toFixed(2)}</td>
+                                                    <td style={tdR}>{o.ortMal.toFixed(1)}</td>
                                                     <td style={{ ...tdR, color: AMBER, fontWeight: 700 }}>{fmtN(o.stokDeg)}</td>
                                                     <td style={tdL}><span style={{ fontSize: '11px', padding: '3px 11px', borderRadius: '1rem', background: dur.c + '22', color: dur.c, fontWeight: 700 }}>{dur.lbl}</span></td>
                                                 </tr>
@@ -673,7 +673,7 @@ function StokModulu() {
                                             <td style={tdR}>{fmtN(o.brutKg, 0)}</td>
                                             <td style={{ ...tdR, color: GREEN, fontWeight: 700 }}>{fmtN(o.netKg, 0)}</td>
                                             <td style={{ ...tdR, color: AMBER, fontWeight: 700 }}>₺ {fmtN(o.mal)}</td>
-                                            <td style={tdR}>{o.netKg > 0 ? (o.mal / o.netKg).toFixed(2) : '—'} ₺/kg</td>
+                                            <td style={tdR}>{o.netKg > 0 ? (o.mal / o.netKg).toFixed(1) : '—'} ₺/kg</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -694,7 +694,7 @@ function StokModulu() {
                                             <td style={tdR}>{o.adet}</td>
                                             <td style={tdR}>{fmtN(o.kg, 0)}</td>
                                             <td style={{ ...tdR, color: GREEN, fontWeight: 700 }}>₺ {fmtN(o.gelir)}</td>
-                                            <td style={tdR}>{o.kg > 0 ? (o.gelir / o.kg).toFixed(2) : '—'} ₺/kg</td>
+                                            <td style={tdR}>{o.kg > 0 ? (o.gelir / o.kg).toFixed(1) : '—'} ₺/kg</td>
                                         </tr>
                                     ))}
                                 </tbody>

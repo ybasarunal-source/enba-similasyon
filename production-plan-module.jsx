@@ -151,7 +151,7 @@ const UretimPlanlamaModulu = () => {
   }, [form.baslangicTarihi, form.bitisTarihi, form.calismaGunleri, form.ozelGunler]);
 
   const gunlukHedefPreview = formCalismaDays > 0 && form.hedefCikanTon
-    ? (Number(form.hedefCikanTon) / formCalismaDays).toFixed(2)
+    ? (Number(form.hedefCikanTon) / formCalismaDays).toFixed(1)
     : null;
 
   // ── CRUD ──────────────────────────────────────────────────────
@@ -409,7 +409,7 @@ const UretimPlanlamaModulu = () => {
               <div style={{ marginTop: "0.75rem", padding: "0.75rem 1rem", background: "var(--surface-container-low)", borderRadius: "0.75rem", fontSize: "0.85rem", color: "var(--enba-dark)", fontWeight: 600 }}>
                 {formCalismaDays} çalışma günü
                 {gunlukHedefPreview && ` — günlük ${gunlukHedefPreview} ton hedef`}
-                {form.verimOrani && gunlukHedefPreview && ` — günlük ${(Number(gunlukHedefPreview) / (form.verimOrani / 100)).toFixed(2)} ton hammadde gerekli`}
+                {form.verimOrani && gunlukHedefPreview && ` — günlük ${(Number(gunlukHedefPreview) / (form.verimOrani / 100)).toFixed(1)} ton hammadde gerekli`}
               </div>
             )}
 
@@ -534,8 +534,8 @@ const UretimPlanlamaModulu = () => {
         {/* Summary KPIs */}
         <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
           <KPIKart baslik="Toplam Çalışma Günü" deger={calismaDays.length} alt="planlanmış" />
-          <KPIKart baslik="Günlük Hedef Çıkan" deger={gunlukHedef.toFixed(2) + " ton"} alt="çalışma günü başına" />
-          <KPIKart baslik="Günlük Hedef Giren" deger={gunlukGiren.toFixed(2) + " ton"} alt={`%${p.verimOrani} verim ile`} />
+          <KPIKart baslik="Günlük Hedef Çıkan" deger={gunlukHedef.toFixed(1) + " ton"} alt="çalışma günü başına" />
+          <KPIKart baslik="Günlük Hedef Giren" deger={gunlukGiren.toFixed(1) + " ton"} alt={`%${p.verimOrani} verim ile`} />
           <KPIKart baslik="Tatil / Bakım Günü" deger={tatilSayisi} alt="özel gün" renk="#ef6c00" />
         </div>
 
@@ -577,12 +577,12 @@ const UretimPlanlamaModulu = () => {
                   <td style={{ ...S.tdStyle(i), fontWeight: s.bugunmu ? 700 : 400 }}>{s.tarih}</td>
                   <td style={S.tdStyle(i)}>{gunAdiTam[s.dow]}</td>
                   <td style={S.tdStyle(i)}>{s.turText}</td>
-                  <td style={{ ...S.tdStyle(i), textAlign: "right" }}>{s.calisan ? s.hedefGiren.toFixed(2) : "—"}</td>
-                  <td style={{ ...S.tdStyle(i), textAlign: "right" }}>{s.calisan ? s.hedefCikan.toFixed(2) : "—"}</td>
-                  <td style={{ ...S.tdStyle(i), textAlign: "right" }}>{s.gercGiren > 0 ? s.gercGiren.toFixed(2) : "—"}</td>
-                  <td style={{ ...S.tdStyle(i), textAlign: "right" }}>{s.gercCikan > 0 ? s.gercCikan.toFixed(2) : "—"}</td>
+                  <td style={{ ...S.tdStyle(i), textAlign: "right" }}>{s.calisan ? s.hedefGiren.toFixed(1) : "—"}</td>
+                  <td style={{ ...S.tdStyle(i), textAlign: "right" }}>{s.calisan ? s.hedefCikan.toFixed(1) : "—"}</td>
+                  <td style={{ ...S.tdStyle(i), textAlign: "right" }}>{s.gercGiren > 0 ? s.gercGiren.toFixed(1) : "—"}</td>
+                  <td style={{ ...S.tdStyle(i), textAlign: "right" }}>{s.gercCikan > 0 ? s.gercCikan.toFixed(1) : "—"}</td>
                   <td style={{ ...S.tdStyle(i), textAlign: "right", color: s.sapma === null ? undefined : s.sapma >= 0 ? "#1b5e20" : "#b71c1c", fontWeight: 600 }}>
-                    {s.sapma !== null ? (s.sapma >= 0 ? "+" : "") + s.sapma.toFixed(2) : "—"}
+                    {s.sapma !== null ? (s.sapma >= 0 ? "+" : "") + s.sapma.toFixed(1) : "—"}
                   </td>
                   <td style={{ ...S.tdStyle(i), textAlign: "right" }}>{s.verimPct !== null ? s.verimPct.toFixed(1) + "%" : "—"}</td>
                   <td style={S.tdStyle(i)}><DurumBadge durum={s.durum} /></td>
@@ -597,12 +597,12 @@ const UretimPlanlamaModulu = () => {
               {/* Totals row */}
               <tr style={{ background: "var(--enba-dark)", color: "#fff", fontWeight: 700 }}>
                 <td colSpan={3} style={{ padding: "0.6rem 0.75rem", fontFamily: "'Manrope', sans-serif", fontSize: "0.82rem" }}>TOPLAM</td>
-                <td style={{ padding: "0.6rem 0.75rem", textAlign: "right", fontSize: "0.82rem" }}>{totalHedefGiren.toFixed(2)}</td>
-                <td style={{ padding: "0.6rem 0.75rem", textAlign: "right", fontSize: "0.82rem" }}>{totalHedefCikan.toFixed(2)}</td>
-                <td style={{ padding: "0.6rem 0.75rem", textAlign: "right", fontSize: "0.82rem" }}>{totalGercGiren.toFixed(2)}</td>
-                <td style={{ padding: "0.6rem 0.75rem", textAlign: "right", fontSize: "0.82rem" }}>{totalGercCikan.toFixed(2)}</td>
+                <td style={{ padding: "0.6rem 0.75rem", textAlign: "right", fontSize: "0.82rem" }}>{totalHedefGiren.toFixed(1)}</td>
+                <td style={{ padding: "0.6rem 0.75rem", textAlign: "right", fontSize: "0.82rem" }}>{totalHedefCikan.toFixed(1)}</td>
+                <td style={{ padding: "0.6rem 0.75rem", textAlign: "right", fontSize: "0.82rem" }}>{totalGercGiren.toFixed(1)}</td>
+                <td style={{ padding: "0.6rem 0.75rem", textAlign: "right", fontSize: "0.82rem" }}>{totalGercCikan.toFixed(1)}</td>
                 <td style={{ padding: "0.6rem 0.75rem", textAlign: "right", fontSize: "0.82rem", color: totalGercCikan - totalHedefCikan >= 0 ? "#b9f6ca" : "#ffcdd2" }}>
-                  {(totalGercCikan - totalHedefCikan >= 0 ? "+" : "") + (totalGercCikan - totalHedefCikan).toFixed(2)}
+                  {(totalGercCikan - totalHedefCikan >= 0 ? "+" : "") + (totalGercCikan - totalHedefCikan).toFixed(1)}
                 </td>
                 <td style={{ padding: "0.6rem 0.75rem", textAlign: "right", fontSize: "0.82rem" }}>
                   {totalGercGiren > 0 ? ((totalGercCikan / totalGercGiren) * 100).toFixed(1) + "%" : "—"}
@@ -721,8 +721,8 @@ const UretimPlanlamaModulu = () => {
                 return (
                   <tr key={h.label}>
                     <td style={S.tdStyle(i)}>{h.label}</td>
-                    <td style={{ ...S.tdStyle(i), textAlign: "right" }}>{h.hedef.toFixed(2)}</td>
-                    <td style={{ ...S.tdStyle(i), textAlign: "right" }}>{h.gercCikan.toFixed(2)}</td>
+                    <td style={{ ...S.tdStyle(i), textAlign: "right" }}>{h.hedef.toFixed(1)}</td>
+                    <td style={{ ...S.tdStyle(i), textAlign: "right" }}>{h.gercCikan.toFixed(1)}</td>
                     <td style={{ ...S.tdStyle(i), textAlign: "right", color: oran >= 95 ? "#1b5e20" : oran >= 80 ? "#bf360c" : "#b71c1c", fontWeight: 600 }}>
                       {oran.toFixed(1)}%
                     </td>
@@ -734,7 +734,7 @@ const UretimPlanlamaModulu = () => {
               <tr style={{ background: "var(--enba-dark)", color: "#fff", fontWeight: 700 }}>
                 <td style={{ padding: "0.6rem 0.75rem", fontSize: "0.82rem", fontFamily: "'Manrope', sans-serif" }}>TOPLAM</td>
                 <td style={{ padding: "0.6rem 0.75rem", textAlign: "right", fontSize: "0.82rem" }}>{p.hedefCikanTon}</td>
-                <td style={{ padding: "0.6rem 0.75rem", textAlign: "right", fontSize: "0.82rem" }}>{toplamGercCikan.toFixed(2)}</td>
+                <td style={{ padding: "0.6rem 0.75rem", textAlign: "right", fontSize: "0.82rem" }}>{toplamGercCikan.toFixed(1)}</td>
                 <td style={{ padding: "0.6rem 0.75rem", textAlign: "right", fontSize: "0.82rem", color: hedefOrani >= 95 ? "#b9f6ca" : "#ffcdd2" }}>
                   {hedefOrani.toFixed(1)}%
                 </td>

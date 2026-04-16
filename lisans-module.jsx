@@ -290,7 +290,7 @@ function LisansRuhsatModulu() {
                 </div>
                 <div style={statCardStyle}>
                     <i className="ph ph-coins" style={{fontSize: '28px', color: 'var(--enba-dark)', marginBottom: '8px'}}></i>
-                    <div style={statValueStyle}>{stats.totalCost.toLocaleString('tr-TR')} ₺</div>
+                    <div style={statValueStyle}>{stats.totalCost.toLocaleString('tr-TR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} ₺</div>
                     <div style={statLabelStyle}>Toplam Gider</div>
                 </div>
                 <div style={{...statCardStyle, background: stats.expiringCount > 0 ? '#FEF9E7' : '#fff'}}>
@@ -354,7 +354,7 @@ function LisansRuhsatModulu() {
                                                     </div>
                                                 </td>
                                                 <td style={{padding: '16px 12px', textAlign: 'right', fontWeight: 700, color: 'var(--enba-dark)'}}>
-                                                    {k.maliyet ? k.maliyet.toLocaleString('tr-TR') + ' ₺' : '0 ₺'}
+                                                    {k.maliyet ? k.maliyet.toLocaleString('tr-TR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' ₺' : '0.0 ₺'}
                                                 </td>
                                                 <td style={{padding: '16px 24px', textAlign: 'right'}}>
                                                     <div style={{display: 'flex', gap: '8px', justifyContent: 'flex-end'}}>
