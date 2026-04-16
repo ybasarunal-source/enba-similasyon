@@ -89,7 +89,7 @@ function EnbaRouter() {
 
     const hasAccess = (pageId) => {
         if (!user) return false;
-        if (pageId === 'profilim' || pageId === 'landing') return true;
+        if (pageId === 'profilim' || pageId === 'landing' || pageId === 'ayarlar') return true;
         
         if (user.role === window.USER_ROLES.ADMIN) return true;
         
@@ -100,6 +100,17 @@ function EnbaRouter() {
         // 2. Manual override check
         return user.allowedModules && user.allowedModules.includes(pageId);
     };
+
+    // Global Ayarlar
+    const VARSAYILAN_AYARLAR = { paraBirimi: 'TRY', olcumBirimi: 'ton' };
+    const [globalAyarlar, setGlobalAyarlar] = React.useState(VARSAYILAN_AYARLAR);
+
+    React.useEffect(() => {
+        if (!user) return;
+        window.DataService.getSetting('globalAyarlar', VARSAYILAN_AYARLAR).then(a => {
+            if (a) setGlobalAyarlar({ ...VARSAYILAN_AYARLAR, ...a });
+        });
+    }, [user]);
 
     // App bileşeninin bekleyenPlanlar & aktifPlanlar state'i
     const [bekleyenPlanlar, setBekleyenPlanlar] = React.useState([]);
@@ -158,7 +169,8 @@ function EnbaRouter() {
     const OrgChartModule = window.OrgChartModule;
     const HrModule = window.HrModule;
     const PaymentsModule = window.PaymentsModule;
-    const EnbaCoPilot = window.EnbaCoPilot;
+    const AyarlarModulu = window.AyarlarModulu;
+    const EnbaCoPilot = window.EnbaAsistan;
     const EnbaMessenger = window.EnbaMessenger;
 
     // Giriş yapmamışsa Login ekranını göster
@@ -186,7 +198,7 @@ function EnbaRouter() {
             <TopNav aktifSayfa={sayfa} navigate={navigate} user={user} onLogout={onLogout} currentLang={lang} onLangChange={handleLangChange} />
 
             {sayfa === 'landing'     && <LandingPage navigate={navigate} user={user} t={window.t} />}
-            {sayfa === 'isPlanlama'  && <App />}
+            {sayfa === 'isPlanlama'  && <App globalAyarlar={globalAyarlar} />}
             {sayfa === 'detayliPlan' && (
                 <DetayliPlanModulu
                     navigate={navigate}
@@ -194,7 +206,12 @@ function EnbaRouter() {
                     setAktifPlanlar={setAktifPlanlar}
                     bekleyenPlanlar={bekleyenPlanlar}
                     setBekleyenPlanlar={setBekleyenPlanlar}
+                    globalAyarlar={globalAyarlar}
                 />
+            )}
+            {sayfa === 'ayarlar' && (AyarlarModulu
+                ? <AyarlarModulu globalAyarlar={globalAyarlar} setGlobalAyarlar={setGlobalAyarlar} />
+                : <div style={{padding:'100px', textAlign:'center', color:'#fff'}}>Yükleniyor...</div>
             )}
             {sayfa === 'pnlRapor' && <PnlRaporu />}
             {sayfa === 'uretimTakip' && <UretimTakipModulu />}
@@ -264,9 +281,10 @@ const getNavGroups = () => [
     {
         id: 'sistem', label: window.t('nav.sistem'), icon: 'ph-gear',
         items: [
-            { sayfa: 'orgChart',      label: window.t('nav.org_chart'), icon: 'ph-users-three' },
-            { sayfa: 'insanKaynaklari', label: window.t('modules.hr'), icon: 'ph-identification-card' },
-            { sayfa: 'yetkiYonetimi', label: window.t('nav.auth_mgmt'), icon: 'ph-shield-check' },
+            { sayfa: 'ayarlar',       label: 'Sistem Ayarları',           icon: 'ph-sliders-horizontal' },
+            { sayfa: 'orgChart',      label: window.t('nav.org_chart'),   icon: 'ph-users-three' },
+            { sayfa: 'insanKaynaklari', label: window.t('modules.hr'),   icon: 'ph-identification-card' },
+            { sayfa: 'yetkiYonetimi', label: window.t('nav.auth_mgmt'),  icon: 'ph-shield-check' },
         ]
     },
     {

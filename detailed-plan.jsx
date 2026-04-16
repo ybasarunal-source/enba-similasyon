@@ -7,7 +7,7 @@ const ACILIR_KODLAR     = ['609', '610']; // Alt kalem girişine açılan kodlar
 
 // Unified finance logic moved to finance-utils.js
 
-function DetayliPlanWizard({ initialData, onSave, onCancel }) {
+function DetayliPlanWizard({ initialData, onSave, onCancel, varsayilanAyarlar }) {
     // Adım bileşenlerini window nesnesinden al (Babel Standalone JSX uyumu)
     const DetStep1_Suppliers = window.DetStep1_Suppliers;
     const DetStep2_Customers = window.DetStep2_Customers;
@@ -19,6 +19,10 @@ function DetayliPlanWizard({ initialData, onSave, onCancel }) {
 
     const [adim, setAdim] = React.useState(1);
     const plTableRef = React.useRef(null);
+
+    const _varsayilan = varsayilanAyarlar || { paraBirimi: 'TRY', olcumBirimi: 'ton' };
+    const [planParaBirimi, setPlanParaBirimi] = React.useState(initialData?.paraBirimi || _varsayilan.paraBirimi);
+    const [planOlcumBirimi, setPlanOlcumBirimi] = React.useState(initialData?.olcumBirimi || _varsayilan.olcumBirimi);
 
     const [planAdi, setPlanAdi]           = React.useState(initialData?.baslik || 'Yeni Detaylı Plan');
     const [baslangicYili, setBaslangicYili] = React.useState(initialData?.baslangicYili || new Date().getFullYear());
@@ -606,7 +610,8 @@ function DetayliPlanWizard({ initialData, onSave, onCancel }) {
             opGider,
             asgariNet, asgariSgk, gunlukYemek, personelListesi,
             tonajBuyume, fiyatBuyume, sabitMaliyet, degiskenMaliyet,
-            yilOzet, projeksiyon, aylikSonuclar, hesaplanmisAyVerileri
+            yilOzet, projeksiyon, aylikSonuclar, hesaplanmisAyVerileri,
+            paraBirimi: planParaBirimi, olcumBirimi: planOlcumBirimi
         });
         setSaveToast(true);
         setTimeout(() => setSaveToast(false), 3000);
@@ -630,11 +635,23 @@ function DetayliPlanWizard({ initialData, onSave, onCancel }) {
                 </div>
             )}
             <div className="page-header" style={{ position:'sticky', top:0, zIndex:100, background:'linear-gradient(135deg, var(--primary-container), var(--primary))', color:'#fff', padding:'20px 40px', boxShadow:'0 4px 12px rgba(0,0,0,0.1)', borderBottom:'none' }}>
-                <div style={{ display:'flex', alignItems:'center', gap:'16px' }}>
+                <div style={{ display:'flex', alignItems:'center', gap:'16px', flexWrap:'wrap' }}>
                     <button onClick={onCancel} style={{ background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.2)', color:'#fff', padding:'8px 18px', borderRadius:'2rem', cursor:'pointer', fontSize:'13px', whiteSpace:'nowrap' }}>
                         ← İptal
                     </button>
                     <h1 style={{ fontFamily:"'Manrope', sans-serif", fontWeight:800, fontSize:'clamp(16px,4vw,24px)', margin:0 }}>⚡  İş Planlaması</h1>
+                    <select value={planParaBirimi} onChange={e => setPlanParaBirimi(e.target.value)}
+                        style={{ background:'rgba(255,255,255,0.15)', border:'1px solid rgba(255,255,255,0.3)', color:'#fff', padding:'6px 12px', borderRadius:'1rem', fontSize:'13px', cursor:'pointer', fontWeight:600 }}>
+                        <option value="TRY">₺ TRY</option>
+                        <option value="USD">$ USD</option>
+                        <option value="EUR">€ EUR</option>
+                        <option value="GBP">£ GBP</option>
+                    </select>
+                    <select value={planOlcumBirimi} onChange={e => setPlanOlcumBirimi(e.target.value)}
+                        style={{ background:'rgba(255,255,255,0.15)', border:'1px solid rgba(255,255,255,0.3)', color:'#fff', padding:'6px 12px', borderRadius:'1rem', fontSize:'13px', cursor:'pointer', fontWeight:600 }}>
+                        <option value="ton">Ton</option>
+                        <option value="kg">Kilogram</option>
+                    </select>
                 </div>
                 <div className="btn-group">
                     <button onClick={handleSave} style={{ background:'var(--enba-orange)', color:'#fff', border:'none', padding:'10px 24px', borderRadius:'2rem', cursor:'pointer', fontWeight:800, fontSize:'14px', boxShadow:'0 4px 6px rgba(0,0,0,0.1)', width:'100%' }}>
@@ -759,7 +776,8 @@ function DetayliPlanWizard({ initialData, onSave, onCancel }) {
     );
 }
 
-function DetayliPlanModulu({ navigate, bekleyenPlanlar, setBekleyenPlanlar, aktifPlanlar, setAktifPlanlar }) {
+function DetayliPlanModulu({ navigate, bekleyenPlanlar, setBekleyenPlanlar, aktifPlanlar, setAktifPlanlar, globalAyarlar }) {
+    const varsayilanAyarlar = globalAyarlar || { paraBirimi: 'TRY', olcumBirimi: 'ton' };
     const [aktifSayfa, setAktifSayfa] = React.useState('dashboard'); // 'dashboard' or 'wizard'
     const [duzenlenenPlan, setDuzenlenenPlan] = React.useState(null);
 
@@ -1032,7 +1050,7 @@ function DetayliPlanModulu({ navigate, bekleyenPlanlar, setBekleyenPlanlar, akti
     };
 
     if (aktifSayfa === 'wizard') {
-        return <DetayliPlanWizard initialData={duzenlenenPlan} onSave={planGuncelle} onCancel={() => setAktifSayfa('dashboard')} />;
+        return <DetayliPlanWizard initialData={duzenlenenPlan} onSave={planGuncelle} onCancel={() => setAktifSayfa('dashboard')} varsayilanAyarlar={varsayilanAyarlar} />;
     }
 
     const fmt = window.fmt || ((v) => Number(v || 0).toLocaleString('tr-TR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }));

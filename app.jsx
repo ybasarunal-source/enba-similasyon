@@ -1,7 +1,8 @@
 const { useState, useEffect } = React;
 
-function App() {
-    const [aktifSayfa, setAktifSayfa] = useState('anaSayfa'); 
+function App({ globalAyarlar }) {
+    const varsayilanAyarlar = globalAyarlar || { paraBirimi: 'TRY', olcumBirimi: 'ton' };
+    const [aktifSayfa, setAktifSayfa] = useState('anaSayfa');
     const [planSekmesi, setPlanSekmesi] = useState('operasyon'); 
     const [duzenlenenPlanId, setDuzenlenenPlanId] = useState(null);
     const [sihirbazAcik, setSihirbazAcik] = useState(false);
@@ -13,7 +14,9 @@ function App() {
         elektrikKwFiyat: '4.07', kiraTesis: '', kiraDiger: '',
         personelSayisi: '', ayiklamaHizi: '1', makineKapasite: '',
         alisFiyatiKg: '', alisNakliyeKg: '', satisFiyatiKg: '', satisNakliyeKg: '',
-        bakimOnarimYuzde: '2', genelYonetimYuzde: '5'
+        bakimOnarimYuzde: '2', genelYonetimYuzde: '5',
+        paraBirimi: varsayilanAyarlar.paraBirimi,
+        olcumBirimi: varsayilanAyarlar.olcumBirimi,
     });
     
     const [sidebarAcik, setSidebarAcik] = useState(true);
@@ -60,6 +63,8 @@ function App() {
     }, [asgariNet, asgariSgk]);
 
     const [yeniPlanBaslik, setYeniPlanBaslik] = useState("");
+    const [planParaBirimi, setPlanParaBirimi] = useState(varsayilanAyarlar.paraBirimi);
+    const [planOlcumBirimi, setPlanOlcumBirimi] = useState(varsayilanAyarlar.olcumBirimi);
     const [yeniPlanGiderler, setYeniPlanGiderler] = useState({});
     const [yeniPlanGelirler, setYeniPlanGelirler] = useState({});
     const [satisDetaylari, setSatisDetaylari] = useState([]); 
@@ -378,12 +383,14 @@ function App() {
 
     const klasikIpkBaslat = () => {
         setYeniPlanBaslik("");
+        setPlanParaBirimi(varsayilanAyarlar.paraBirimi);
+        setPlanOlcumBirimi(varsayilanAyarlar.olcumBirimi);
         setPlanParametreleri({ aylikTon: 0, alisFiyati: 0, satisFiyati: 0, aylikGun: 26, gunlukSaat: 10, elektrikKwFiyat: 4.07, gunlukYemekUcreti: 200, alisNakliye: 0, satisNakliye: 0, ayiklamaHizi: 1 });
         setUretimRecetesi({ ayristirmaVar: false, copOrani: 5, copBertarafFiyati: 0, uretimFiresi: 3, altUrunler: [] });
         setYeniPlanGiderler({});
         setYeniPlanGelirler({});
         setPersonelListesi([]);
-        setDisHizmetlerListesi([]); 
+        setDisHizmetlerListesi([]);
         setKiralamaListesi([]);
         setKurulumKalemleri([]);
         setPlanSekmesi('operasyon');
@@ -393,10 +400,12 @@ function App() {
     const IpkDuzenle = (p) => {
         setDuzenlenenPlanId(p.id);
         setYeniPlanBaslik(p.baslik);
+        setPlanParaBirimi(p.paraBirimi || varsayilanAyarlar.paraBirimi);
+        setPlanOlcumBirimi(p.olcumBirimi || varsayilanAyarlar.olcumBirimi);
         setPlanParametreleri(p.parametreler);
         setUretimRecetesi(p.uretimRecetesi);
         setPersonelListesi(p.personelListesi);
-        setDisHizmetlerListesi(p.disHizmetlerListesi || []); 
+        setDisHizmetlerListesi(p.disHizmetlerListesi || []);
         setKiralamaListesi(p.kiralamaListesi || []);
         setKurulumKalemleri(p.kurulumKalemleri || []);
         setAmortismanSuresi(p.amortismanSuresi || 36);
@@ -555,13 +564,15 @@ function App() {
         const planData = {
             id: duzenlenenPlanId, // Update ise dolu, yeni ise null
             baslik: yeniPlanBaslik,
+            paraBirimi: planParaBirimi,
+            olcumBirimi: planOlcumBirimi,
             parametreler: { ...planParametreleri },
             uretimRecetesi: { ...uretimRecetesi },
             kutleDengesi: { ...kutleDengesiOzet },
             personelListesi: [...personelListesi],
             disHizmetlerListesi: [...disHizmetlerListesi],
             kiralamaListesi: [...kiralamaListesi],
-            satisDetaylari: [...satisDetaylari], 
+            satisDetaylari: [...satisDetaylari],
             kurulumKalemleri: [...kurulumKalemleri],
             amortismanSuresi: amortismanSuresi,
             aylikAmortisman: aylikAmortisman,
@@ -599,6 +610,8 @@ function App() {
     const finalizeWizard = () => {
         const v = sihirbazVeri;
         setYeniPlanBaslik(v.baslik);
+        setPlanParaBirimi(v.paraBirimi || varsayilanAyarlar.paraBirimi);
+        setPlanOlcumBirimi(v.olcumBirimi || varsayilanAyarlar.olcumBirimi);
         
         // Birim dönüşümleri (kg -> Ton)
         const alisFiyati = (Number(v.alisFiyatiKg) || 0) * 1000;
@@ -701,11 +714,50 @@ function App() {
                     </div>
 
                     {sihirbazAdim === 0 && (
-                        <div style={{ textAlign: 'center' }}>
-                            <div style={{ fontSize: '40px', marginBottom: '20px' }}>🚀</div>
-                            <h2 style={{ fontSize: '24px', fontWeight: 800, color: 'var(--enba-dark)' }}>Yeni Bir İş Planı Başlatalım</h2>
-                            <p style={{ color: '#666', marginBottom: '30px' }}>İşinizi adım adım, akıllı maliyet öngörüleriyle birlikte planlamak ister misiniz?</p>
-                            <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
+                        <div>
+                            <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+                                <div style={{ fontSize: '40px', marginBottom: '12px' }}>🚀</div>
+                                <h2 style={{ fontSize: '24px', fontWeight: 800, color: 'var(--enba-dark)', margin: '0 0 8px' }}>Yeni Bir İş Planı Başlatalım</h2>
+                                <p style={{ color: '#666', margin: 0 }}>Bu planın para birimini ve ölçüm birimini seçin. İstediğiniz zaman değiştirebilirsiniz.</p>
+                            </div>
+
+                            {/* Para Birimi */}
+                            <div style={{ marginBottom: '20px' }}>
+                                <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--enba-dark)', textTransform: 'uppercase', letterSpacing: '1px', display: 'block', marginBottom: '10px' }}>💱 Para Birimi</label>
+                                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                                    {[{ kod:'TRY', sembol:'₺', ad:'Türk Lirası' }, { kod:'USD', sembol:'$', ad:'Dolar' }, { kod:'EUR', sembol:'€', ad:'Euro' }, { kod:'GBP', sembol:'£', ad:'Sterlin' }].map(pb => (
+                                        <div key={pb.kod} onClick={() => update('paraBirimi', pb.kod)}
+                                            style={{ flex: 1, minWidth: '90px', padding: '14px 10px', borderRadius: '12px', textAlign: 'center', cursor: 'pointer',
+                                                border: `2px solid ${v.paraBirimi === pb.kod ? 'var(--enba-orange)' : '#e0e0e0'}`,
+                                                background: v.paraBirimi === pb.kod ? 'rgba(227,82,5,0.06)' : '#fafafa',
+                                                transition: 'all 0.2s' }}>
+                                            <div style={{ fontSize: '22px', fontWeight: 800, color: v.paraBirimi === pb.kod ? 'var(--enba-orange)' : '#555' }}>{pb.sembol}</div>
+                                            <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--enba-dark)', marginTop: '4px' }}>{pb.kod}</div>
+                                            <div style={{ fontSize: '10px', color: '#999' }}>{pb.ad}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Ölçüm Birimi */}
+                            <div style={{ marginBottom: '28px' }}>
+                                <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--enba-dark)', textTransform: 'uppercase', letterSpacing: '1px', display: 'block', marginBottom: '10px' }}>📏 Ağırlık Birimi</label>
+                                <div style={{ display: 'flex', gap: '10px' }}>
+                                    {[{ kod:'ton', ad:'Ton', aciklama:'Metrik ton (1.000 kg)', icon:'🏗️' }, { kod:'kg', ad:'Kilogram', aciklama:'Kilogram (kg)', icon:'⚖️' }].map(ob => (
+                                        <div key={ob.kod} onClick={() => update('olcumBirimi', ob.kod)}
+                                            style={{ flex: 1, padding: '16px', borderRadius: '12px', cursor: 'pointer',
+                                                border: `2px solid ${v.olcumBirimi === ob.kod ? 'var(--enba-orange)' : '#e0e0e0'}`,
+                                                background: v.olcumBirimi === ob.kod ? 'rgba(227,82,5,0.06)' : '#fafafa',
+                                                transition: 'all 0.2s' }}>
+                                            <div style={{ fontSize: '22px', marginBottom: '6px' }}>{ob.icon}</div>
+                                            <div style={{ fontWeight: 700, fontSize: '15px', color: v.olcumBirimi === ob.kod ? 'var(--enba-orange)' : 'var(--enba-dark)' }}>{ob.ad}</div>
+                                            <div style={{ fontSize: '11px', color: '#999', marginTop: '2px' }}>{ob.aciklama}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
                                 <button className="btn btn-warning" style={{ padding: '15px 30px', fontSize: '16px', borderRadius: '12px' }} onClick={next}>✨ Adım Adım Başla</button>
                                 <button className="btn btn-outline" style={{ padding: '15px 30px', fontSize: '16px', borderRadius: '12px', border: '1px solid #ddd' }} onClick={klasikIpkBaslat}>Hızlı Boş Form</button>
                             </div>
@@ -1100,9 +1152,24 @@ function App() {
             </div>
         </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '25px', background: '#fff', padding: '20px', borderRadius: '12px', border: '1px solid var(--border-grey)', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
-                <label style={{ fontSize: '14px', fontWeight: '600', marginRight: '20px', textTransform: 'uppercase', color: 'var(--enba-dark)', letterSpacing: '1px' }}>İPK ADI:</label>
-                <input type="text" style={{ flex: 1, padding: '12px 15px', fontSize: '16px', border: '2px solid var(--border-grey)', borderRadius: '8px', fontFamily: 'Poppins, sans-serif', outline: 'none' }} placeholder="Örn: LDPE Mevcut Durum" value={yeniPlanBaslik} onChange={(e) => setYeniPlanBaslik(e.target.value)} onFocus={window.selectOnFocus} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '25px', background: '#fff', padding: '16px 20px', borderRadius: '12px', border: '1px solid var(--border-grey)', boxShadow: '0 2px 10px rgba(0,0,0,0.02)', flexWrap: 'wrap' }}>
+                <label style={{ fontSize: '14px', fontWeight: '600', textTransform: 'uppercase', color: 'var(--enba-dark)', letterSpacing: '1px', flexShrink: 0 }}>İPK ADI:</label>
+                <input type="text" style={{ flex: 1, minWidth: '180px', padding: '12px 15px', fontSize: '16px', border: '2px solid var(--border-grey)', borderRadius: '8px', fontFamily: 'Poppins, sans-serif', outline: 'none' }} placeholder="Örn: LDPE Mevcut Durum" value={yeniPlanBaslik} onChange={(e) => setYeniPlanBaslik(e.target.value)} onFocus={window.selectOnFocus} />
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
+                    <label style={{ fontSize: '11px', fontWeight: 700, color: '#999', textTransform: 'uppercase' }}>Para:</label>
+                    <select value={planParaBirimi} onChange={e => setPlanParaBirimi(e.target.value)}
+                        style={{ padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--border-grey)', fontSize: '13px', fontWeight: 700, cursor: 'pointer', color: 'var(--enba-dark)', background: '#f9f9f9' }}>
+                        {[{kod:'TRY',sembol:'₺'},{kod:'USD',sembol:'$'},{kod:'EUR',sembol:'€'},{kod:'GBP',sembol:'£'}].map(pb =>
+                            <option key={pb.kod} value={pb.kod}>{pb.sembol} {pb.kod}</option>
+                        )}
+                    </select>
+                    <label style={{ fontSize: '11px', fontWeight: 700, color: '#999', textTransform: 'uppercase' }}>Birim:</label>
+                    <select value={planOlcumBirimi} onChange={e => setPlanOlcumBirimi(e.target.value)}
+                        style={{ padding: '8px 10px', borderRadius: '8px', border: '1px solid var(--border-grey)', fontSize: '13px', fontWeight: 700, cursor: 'pointer', color: 'var(--enba-dark)', background: '#f9f9f9' }}>
+                        <option value="ton">Ton</option>
+                        <option value="kg">kg</option>
+                    </select>
+                </div>
             </div>
 
             {/* SEKME MENÜSÜ */}
