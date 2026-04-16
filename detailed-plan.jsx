@@ -1055,9 +1055,12 @@ function DetayliPlanModulu({ navigate, bekleyenPlanlar, setBekleyenPlanlar, akti
                                         <span>Net Kâr (Yıl 1):</span> <strong style={{color: (plan.yilOzet?.net || 0) >= 0 ? '#82A12E' : '#ef5350'}}>{fmt(plan.yilOzet?.net || 0)} ₺</strong>
                                     </div>
                                     <div style={{ display:'flex', gap:'5px', marginTop:'10px' }}>
-                                        <button className="btn btn-warning" style={{flex:1, fontSize:'10px', padding:'5px'}} onClick={() => IpkDuzenle(plan)}>DÜZENLE</button>
-                                        <button className="btn btn-success" style={{flex:1, fontSize:'10px', padding:'5px'}} onClick={() => { fabrikayaBrakildi({ preventDefault: () => {}, dataTransfer: { getData: () => plan.id } }); }}>AKTİF ET</button>
-                                        <button className="btn btn-danger" style={{padding:'5px', fontSize:'10px'}} onClick={() => IpkSil(plan.id)}>X</button>
+                                        <button className="btn btn-warning" style={{flex:1, fontSize:'11px', padding:'8px 5px'}} 
+                                            onClick={(e) => { e.stopPropagation(); IpkDuzenle(plan); }}>DÜZENLE</button>
+                                        <button className="btn btn-success" style={{flex:1, fontSize:'11px', padding:'8px 5px'}} 
+                                            onClick={(e) => { e.stopPropagation(); fabrikayaBrakildi({ preventDefault: () => {}, dataTransfer: { getData: () => plan.id } }); }}>AKTİF ET</button>
+                                        <button className="btn btn-danger" style={{padding:'8px 10px', fontSize:'12px', fontWeight:'700'}} 
+                                            onClick={(e) => { e.stopPropagation(); IpkSil(plan.id); }}>X</button>
                                     </div>
                                 </div>
                             ))}
