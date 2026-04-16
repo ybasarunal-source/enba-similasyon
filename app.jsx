@@ -619,7 +619,26 @@ function App() {
         e.target.value = ""; 
     };
 
-    const sonuc = window.EnbaFinance.anasayfaHesapla(aktifPlanlar);
+    const EnbaFinance = window.EnbaFinance;
+    const DashboardMatrix = window.DashboardMatrix;
+    const Sidebar = window.Sidebar;
+
+    // Merkezi Güvenlik Kontrolü: Kritik bağımlılıklar (finance engine, components) henüz yüklenmediyse bekle.
+    // Bu, Babel Standalone ve yavaş ağ koşullarındaki "undefined" çökmelerini önler.
+    if (!EnbaFinance || !DashboardMatrix || !Sidebar) {
+        return (
+            <div style={{ 
+                height: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', 
+                backgroundColor: '#15222E', color: '#fff', fontFamily: "'Manrope', sans-serif" 
+            }}>
+                <div style={{ fontSize: '40px', marginBottom: '20px', animation: 'pulse 2s infinite' }}>⚡ </div>
+                <div style={{ letterSpacing: '2px', fontSize: '12px', opacity: 0.6, textTransform: 'uppercase' }}>Sistem Hazırlanıyor...</div>
+                <style>{`@keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }`}</style>
+            </div>
+        );
+    }
+
+    const sonuc = EnbaFinance.anasayfaHesapla(aktifPlanlar);
 
     const planKaydet = async () => {
         if(!yeniPlanBaslik) { alert("Lütfen İPK'ya bir isim verin!"); return; }
@@ -1092,14 +1111,6 @@ function App() {
             </div>
         );
     };
-    const DashboardMatrix = window.DashboardMatrix;
-    const Sidebar = window.Sidebar;
-
-    // Bileşenlerin yüklendiğinden emin ol (Babel Standalone gecikmeleri için)
-    if (aktifSayfa === 'anaSayfa' && (!DashboardMatrix || !Sidebar)) {
-        return <div style={{ padding: '50px', textAlign: 'center', color: '#fff' }}>Modüller hazırlanıyor...</div>;
-    }
-
     if (aktifSayfa === 'anaSayfa') {
         return (
             <div className="container">
