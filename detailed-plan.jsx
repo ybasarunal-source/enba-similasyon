@@ -282,9 +282,15 @@ function DetayliPlanWizard({ initialData, onSave, onCancel }) {
     const aylikSonuclar = hesaplanmisAyVerileri.map(a => window.EnbaFinance.hesaplaAylikSonuc(a, tedarikciler, musteriler));
 
     const yilOzet = aylikSonuclar.reduce((t, a) => ({
-        gelir: t.gelir + a.gelir, opex: t.opex + a.opex, ebitda: t.ebitda + a.ebitda, alisTon: t.alisTon + a.alisTon,
-        toplamSatisTon: t.toplamSatisTon + a.toplamSatisTon, alisGideri: t.alisGideri + a.alisGideri, alisNakliye: t.alisNakliye + a.alisNakliye,
-        satisNakliye: t.satisNakliye + a.satisNakliye, digerOpex: t.digerOpex + a.digerOpex
+        gelir: (t.gelir || 0) + (a?.gelir || 0), 
+        opex: (t.opex || 0) + (a?.opex || 0), 
+        ebitda: (t.ebitda || 0) + (a?.ebitda || 0), 
+        alisTon: (t.alisTon || 0) + (a?.alisTon || 0),
+        toplamSatisTon: (t.toplamSatisTon || 0) + (a?.toplamSatisTon || 0), 
+        alisGideri: (t.alisGideri || 0) + (a?.alisGideri || 0), 
+        alisNakliye: (t.alisNakliye || 0) + (a?.alisNakliye || 0),
+        satisNakliye: (t.satisNakliye || 0) + (a?.satisNakliye || 0), 
+        digerOpex: (t.digerOpex || 0) + (a?.digerOpex || 0)
     }), { gelir:0, opex:0, ebitda:0, alisTon:0, toplamSatisTon:0, alisGideri:0, alisNakliye:0, satisNakliye:0, digerOpex:0 });
 
     const aylikAmortismanlar = Array.from({length:12}, (_, i) =>
@@ -1029,9 +1035,9 @@ function DetayliPlanModulu({ navigate, bekleyenPlanlar, setBekleyenPlanlar, akti
                             {detayliBekleyen.map(plan => (
                                 <div key={plan.id} className="card" draggable onDragStart={(e) => suruklemeBasladi(e, plan.id)}>
                                     <div className="card-title">{plan.baslik}</div>
-                                    <div className="card-info">Satış: {fmt(plan.yilOzet.toplamSatisTon)} Ton/Yıl</div>
+                                    <div className="card-info">Satış: {fmt(plan.yilOzet?.toplamSatisTon || 0)} Ton/Yıl</div>
                                     <div style={{fontSize:'12px', display:'flex', justifyContent:'space-between', borderTop:'1px solid rgba(255,255,255,0.1)', marginTop:'5px', paddingTop:'5px'}}>
-                                        <span>Net Kâr (Yıl 1):</span> <strong style={{color: plan.yilOzet.net >= 0 ? '#82A12E' : '#ef5350'}}>{fmt(plan.yilOzet.net)} ₺</strong>
+                                        <span>Net Kâr (Yıl 1):</span> <strong style={{color: (plan.yilOzet?.net || 0) >= 0 ? '#82A12E' : '#ef5350'}}>{fmt(plan.yilOzet?.net || 0)} ₺</strong>
                                     </div>
                                     <div style={{ display:'flex', gap:'5px', marginTop:'10px' }}>
                                         <button className="btn btn-warning" style={{flex:1, fontSize:'10px', padding:'5px'}} onClick={() => IpkDuzenle(plan)}>DÜZENLE</button>
@@ -1098,7 +1104,7 @@ function DetayliPlanModulu({ navigate, bekleyenPlanlar, setBekleyenPlanlar, akti
                                                     const colAbs = birlestirmeYil * 12 + birlestirmeAy + i;
                                                     const planStart = (p.baslangicYili || birlestirmeYil) * 12 + p.baslangicAyi;
                                                     const op = colAbs - planStart;
-                                                    return (op >= 0 && op < 12) ? p.aylikSonuclar[op] : null;
+                                                    return (op >= 0 && op < 12) ? p.aylikSonuclar?.[op] : null;
                                                 };
                                                 const getHm = (p, i) => {
                                                     const colAbs = birlestirmeYil * 12 + birlestirmeAy + i;

@@ -33,7 +33,12 @@ function App() {
         const load = async () => {
             try {
                 const allPlans = await window.DataService.getPlans();
-                const extracted = allPlans.map(p => ({ ...p.content, id: p.id, status: p.status }));
+                const extracted = allPlans.map(p => ({ 
+                    ...p, 
+                    id: p.id, 
+                    status: p.status 
+                }));
+                // Hızlı planlama modülünde sadece ilgili planları göster
                 setBekleyenPlanlar(extracted.filter(p => p.status === 'pending' && p.plan_type !== 'detailed'));
                 setAktifPlanlar(extracted.filter(p => p.status === 'active' && p.plan_type !== 'detailed'));
 
