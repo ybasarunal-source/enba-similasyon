@@ -793,7 +793,7 @@ function DetayliPlanModulu({ navigate, bekleyenPlanlar, setBekleyenPlanlar, akti
         const planToSave = { ...plan, plan_type: 'detailed', status: plan.status || 'pending' };
         try {
             const saved = await window.DataService.savePlan(planToSave);
-            const savedPlan = { ...saved.content, id: saved.id, status: saved.status };
+            const savedPlan = { ...saved };
             
             if (duzenlenenPlan) {
                 setAktifPlanlar(prev => prev.map(x => x.id === saved.id ? savedPlan : x));
@@ -824,7 +824,7 @@ function DetayliPlanModulu({ navigate, bekleyenPlanlar, setBekleyenPlanlar, akti
         try {
             const updated = await window.DataService.savePlan({ ...tasinan, status: 'active', plan_type: 'detailed' });
             setBekleyenPlanlar(prev => prev.filter(p => p.id !== planId));
-            setAktifPlanlar(prev => [...prev, { ...updated.content, id: updated.id, status: updated.status }]);
+            setAktifPlanlar(prev => [...prev, { ...updated }]);
         } catch (err) { alert("Hata: " + err.message); }
     };
     const kartiCikar = async (planId) => {
@@ -834,7 +834,7 @@ function DetayliPlanModulu({ navigate, bekleyenPlanlar, setBekleyenPlanlar, akti
         try {
             const updated = await window.DataService.savePlan({ ...cikarilan, status: 'pending', plan_type: 'detailed' });
             setAktifPlanlar(prev => prev.filter(p => p.id !== planId));
-            setBekleyenPlanlar(prev => [...prev, { ...updated.content, id: updated.id, status: updated.status }]);
+            setBekleyenPlanlar(prev => [...prev, { ...updated }]);
         } catch (err) { alert("Hata: " + err.message); }
     };
 
