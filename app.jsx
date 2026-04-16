@@ -1095,6 +1095,11 @@ function App() {
     const DashboardMatrix = window.DashboardMatrix;
     const Sidebar = window.Sidebar;
 
+    // Bileşenlerin yüklendiğinden emin ol (Babel Standalone gecikmeleri için)
+    if (aktifSayfa === 'anaSayfa' && (!DashboardMatrix || !Sidebar)) {
+        return <div style={{ padding: '50px', textAlign: 'center', color: '#fff' }}>Modüller hazırlanıyor...</div>;
+    }
+
     if (aktifSayfa === 'anaSayfa') {
         return (
             <div className="container">
