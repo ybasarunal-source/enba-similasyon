@@ -557,11 +557,15 @@ function App() {
         };
         
         try {
-            const saved = await window.DataService.savePlan(planData);
-            const savedPlan = { ...saved.content, id: saved.id, status: saved.status };
+            const savedPlan = await window.DataService.savePlan(planData);
             
+            if (!savedPlan) {
+                alert("Hata: Kayıt işlemi başarısız oldu.");
+                return;
+            }
+
             if (duzenlenenPlanId) {
-                if (saved.status === 'active') {
+                if (savedPlan.status === 'active') {
                     setAktifPlanlar(aktifPlanlar.map(p => p.id === duzenlenenPlanId ? savedPlan : p));
                 } else {
                     setBekleyenPlanlar(bekleyenPlanlar.map(p => p.id === duzenlenenPlanId ? savedPlan : p));

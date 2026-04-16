@@ -176,13 +176,23 @@ window.DataService = {
         const { data, error } = await window.supabaseClient
             .from('business_plans')
             .select('*')
-            .or(`user_id.eq.${session.user.id},shared_with.cs.{${session.user.id}}`); // Kendi planları + ona paylaşılanlar
+            .or(`user_id.eq.${session.user.id},shared_with.cs.{${session.user.id}}`); 
 
         if (error) {
             console.error("Planlar çekilemedi:", error);
             throw error;
         }
-        return data || [];
+        // DB'deki 'data' alanını dışarıya düzleştirerek (flatten) veriyoruz ki UI doğrudan erişebilsin
+        return (data || []).map(r => ({
+            ...r.data,
+            id: r.id,
+            user_id: r.user_id,
+            title: r.title,
+            year: r.year,
+            status: r.status,
+            created_at: r.created_at,
+            updated_at: r.updated_at
+        }));
     },
 
     /**
@@ -192,33 +202,38 @@ window.DataService = {
         if (!window.supabaseClient) return null;
         const { data: { session } } = await window.supabaseClient.auth.getSession();
         
+        // Supabase şemasıyla tam uyumlu payload
         const payload = {
             user_id: session?.user?.id,
             plan_type: planData.plan_type || (planData.ayVerileri ? 'detailed' : 'fast'),
             status: planData.status || 'pending',
             title: planData.baslik || planData.title || 'Adsız Plan',
-            content: planData,
+            year: planData.year || new Date().getFullYear(),
+            data: planData, // DB sütun ismi 'data'
             updated_at: new Date().toISOString()
         };
 
         // Eğer planın zaten bir UUID'si varsa güncelle, yoksa yeni oluştur
-        if (planData.id && planData.id.length > 30) { // UUID check (simple)
+        if (planData.id && planData.id.length > 30) {
             const { data, error } = await window.supabaseClient
                 .from('business_plans')
                 .update(payload)
                 .eq('id', planData.id)
                 .select();
             if (error) throw error;
-            return data?.[0];
+            // Kaydedilen veriyi UI dostu formatta dön
+            const r = data?.[0];
+            return r ? { ...r.data, id: r.id, status: r.status } : null;
         } else {
             // Yeni kayıt
-            delete planData.id; // Eski string ID'yi kaldır
+            delete planData.id; 
             const { data, error } = await window.supabaseClient
                 .from('business_plans')
                 .insert([{ ...payload, created_at: new Date().toISOString() }])
                 .select();
             if (error) throw error;
-            return data?.[0];
+            const r = data?.[0];
+            return r ? { ...r.data, id: r.id, status: r.status } : null;
         }
     },
 
