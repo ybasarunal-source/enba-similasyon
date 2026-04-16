@@ -841,15 +841,26 @@ function DetayliPlanModulu({ navigate, bekleyenPlanlar, setBekleyenPlanlar, akti
     const scaleData = (plan) => {
         const scaleFactor = gorunum === 'aylik' ? (1/12) : 1;
         if (gorunum === 'yillikOrtalama') {
-            const avg = (key) => plan.projeksiyon.reduce((acc, p) => acc + p[key], 0) / 5;
+            const proj = plan.projeksiyon || [];
+            const avg = (key) => proj.length > 0 ? proj.reduce((acc, p) => acc + (p[key] || 0), 0) / proj.length : 0;
             return {
                 gelir: avg('gelir'), opex: avg('opex'), ebitda: avg('ebitda'), amortisman: avg('amortisman'), net: avg('net'), alisTon: avg('alisTon'), satisTon: avg('satisTon'),
                 alisGideri: 0, alisNakliye: 0, satisNakliye: 0, digerOpex: 0
             };
         } else {
+            const ozet = plan.yilOzet || {};
             return {
-                gelir: plan.yilOzet.gelir * scaleFactor, opex: plan.yilOzet.opex * scaleFactor, ebitda: plan.yilOzet.ebitda * scaleFactor, amortisman: plan.yilOzet.amortisman * scaleFactor, net: plan.yilOzet.net * scaleFactor, alisTon: plan.yilOzet.alisTon * scaleFactor, satisTon: plan.yilOzet.toplamSatisTon * scaleFactor,
-                alisGideri: plan.yilOzet.alisGideri * scaleFactor, alisNakliye: plan.yilOzet.alisNakliye * scaleFactor, satisNakliye: plan.yilOzet.satisNakliye * scaleFactor, digerOpex: plan.yilOzet.digerOpex * scaleFactor,
+                gelir: (ozet.gelir || 0) * scaleFactor, 
+                opex: (ozet.opex || 0) * scaleFactor, 
+                ebitda: (ozet.ebitda || 0) * scaleFactor, 
+                amortisman: (ozet.amortisman || 0) * scaleFactor, 
+                net: (ozet.net || 0) * scaleFactor, 
+                alisTon: (ozet.alisTon || 0) * scaleFactor, 
+                satisTon: (ozet.toplamSatisTon || 0) * scaleFactor,
+                alisGideri: (ozet.alisGideri || 0) * scaleFactor, 
+                alisNakliye: (ozet.alisNakliye || 0) * scaleFactor, 
+                satisNakliye: (ozet.satisNakliye || 0) * scaleFactor, 
+                digerOpex: (ozet.digerOpex || 0) * scaleFactor,
             };
         }
     };
@@ -857,7 +868,11 @@ function DetayliPlanModulu({ navigate, bekleyenPlanlar, setBekleyenPlanlar, akti
     const toplamTesis = aktifPlanlar.reduce((t, plan) => {
         const scaled = scaleData(plan);
         return {
-            gelir: t.gelir + scaled.gelir, opex: t.opex + scaled.opex, ebitda: t.ebitda + scaled.ebitda, amortisman: t.amortisman + scaled.amortisman, net: t.net + scaled.net
+            gelir: (t.gelir || 0) + (scaled.gelir || 0), 
+            opex: (t.opex || 0) + (scaled.opex || 0), 
+            ebitda: (t.ebitda || 0) + (scaled.ebitda || 0), 
+            amortisman: (t.amortisman || 0) + (scaled.amortisman || 0), 
+            net: (t.net || 0) + (scaled.net || 0)
         }
     }, { gelir: 0, opex: 0, ebitda: 0, amortisman: 0, net: 0 });
 
