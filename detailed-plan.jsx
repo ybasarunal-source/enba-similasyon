@@ -512,11 +512,14 @@ function DetayliPlanWizard({ initialData, onSave, onCancel }) {
             Object.keys(topluTedarikler).forEach(tId => {
                 const td = topluTedarikler[tId];
                 if (i < (td.baslangicAy || 0)) return;
-                if (!yt[tId]) yt[tId] = { miktar: 0, fiyat: 0, nakliye: 0, urun: '' };
-                if (td.urun !== undefined && td.urun !== '') yt[tId].urun = td.urun;
-                if (td.miktar !== undefined && td.miktar !== '') yt[tId].miktar = Number(td.miktar);
-                if (td.fiyat !== undefined && td.fiyat !== '') yt[tId].fiyat = Number(td.fiyat);
-                if (td.nakliye !== undefined && td.nakliye !== '') yt[tId].nakliye = Number(td.nakliye);
+                const mevcut = yt[tId] || { miktar: 0, fiyat: 0, nakliye: 0, urun: '' };
+                yt[tId] = {
+                    ...mevcut,
+                    ...(td.urun   !== undefined && td.urun   !== '' ? { urun:   td.urun }            : {}),
+                    ...(td.miktar !== undefined && td.miktar !== '' ? { miktar: Number(td.miktar) }  : {}),
+                    ...(td.fiyat  !== undefined && td.fiyat  !== '' ? { fiyat:  Number(td.fiyat) }   : {}),
+                    ...(td.nakliye !== undefined && td.nakliye !== '' ? { nakliye: Number(td.nakliye) } : {}),
+                };
             });
             return { ...a, tedarikler: yt };
         }));
