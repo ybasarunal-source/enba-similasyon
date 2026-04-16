@@ -522,6 +522,103 @@ function App() {
         }
     };
 
+    const sablonIndir = () => {
+        if (!window.XLSX) { alert("Excel kütüphanesi yüklenemedi!"); return; }
+        const wb = XLSX.utils.book_new();
+        
+        // Sheet 1: Operasyonel Parametreler
+        const paramData = [
+            ["Parametre", "Değer", "Açıklama"],
+            ["aylikTon", 100, "Aylık giren malzeme miktarı (Ton)"],
+            ["alisFiyati", 5000, "Mal alış fiyatı (₺/Ton)"],
+            ["satisFiyati", 15000, "Mal satış fiyatı (₺/Ton)"],
+            ["aylikGun", 26, "Aylık çalışma gün sayısı"],
+            ["gunlukSaat", 10, "Günlük çalışma saati"],
+            ["vardiyaSayisi", 1, "Vardiya sayısı (1-3)"],
+            ["ayiklamaHizi", 1, "Personel ayıklama hızı (Ton/Saat)"],
+            ["alisNakliye", 500, "Alış nakliye (₺/Ton)"],
+            ["satisNakliye", 500, "Satış nakliye (₺/Ton)"],
+            ["elektrikKwFiyat", 4.07, "Elektrik birim fiyatı (₺/kWh)"],
+            ["gunlukYemekUcreti", 200, "Günlük yemek ücreti (₺)"]
+        ];
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(paramData), "Parametreler");
+
+        // Sheet 2: Gider Kalemleri (Dinamik)
+        const giderHeaders = [["KOD", "KALEM ADI", "AYLIK TUTAR (₺)"]];
+        const giderRows = window.SABLON_GIDERLER.map(g => [g.kodu, g.adi, 0]);
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([...giderHeaders, ...giderRows]), "Giderler");
+
+        // Sheet 3: Personel Listesi
+        const personelData = [
+            ["UNVAN", "KISI SAYISI", "AYIKLAMA YAPAR MI? (Evet/Hayır)", "EK MAAS (₺)", "EK SGK (₺)", "EK YEMEK (₺)"],
+            ["Vasıfsız İşçi", 2, "Evet", 0, 0, 0],
+            ["Usta Basi", 1, "Hayır", 5000, 1000, 500]
+        ];
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(personelData), "Personel");
+
+        XLSX.writeFile(wb, "Enba_Hizli_Planlama_Sablonu.xlsx");
+    };
+
+    const excelIceAktar = (e) => {
+        if (!window.XLSX) { alert("Excel kütüphanesi yüklenemedi!"); return; }
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            try {
+                const data = evt.target.result;
+                const wb = XLSX.read(data, { type: 'binary' });
+                
+                // Read Parameters
+                const paramSheet = wb.Sheets["Parametreler"];
+                if (paramSheet) {
+                    const params = XLSX.utils.sheet_to_json(paramSheet);
+                    setPlanParametreleri(prev => {
+                        const next = { ...prev };
+                        params.forEach(p => {
+                            if (p.Parametre && p.Değer !== undefined) next[p.Parametre] = Number(p.Değer);
+                        });
+                        return next;
+                    });
+                }
+
+                // Read Giderler
+                const giderSheet = wb.Sheets["Giderler"];
+                if (giderSheet) {
+                    const giderler = XLSX.utils.sheet_to_json(giderSheet);
+                    const newGiderler = {};
+                    giderler.forEach(g => {
+                        const tutar = Number(g["AYLIK TUTAR (₺)"]);
+                        if (g.KOD && !isNaN(tutar) && tutar > 0) {
+                            newGiderler[String(g.KOD)] = tutar;
+                        }
+                    });
+                    setYeniPlanGiderler(newGiderler);
+                }
+
+                // Read Personel
+                const personelSheet = wb.Sheets["Personel"];
+                if (personelSheet) {
+                    const personelRaw = XLSX.utils.sheet_to_json(personelSheet);
+                    const newList = personelRaw.map((p, idx) => ({
+                        id: Date.now() + idx,
+                        unvan: p.UNVAN || "Belirtilmedi",
+                        kisiSayisi: Number(p["KISI SAYISI"]) || 1,
+                        isAyiklama: String(p["AYIKLAMA YAPAR MI? (Evet/Hayır)"]).toLowerCase() === 'evet',
+                        ekMaas: Number(p["EK MAAS (₺)"]) || 0,
+                        ekSgk: Number(p["EK SGK (₺)"]) || 0,
+                        ekYemek: Number(p["EK YEMEK (₺)"]) || 0
+                    }));
+                    setPersonelListesi(newList);
+                }
+                
+                alert("Excel verileri başarıyla yüklendi!");
+            } catch (err) { alert("Excel okuma hatası: " + err.message); }
+        };
+        reader.readAsBinaryString(file);
+        e.target.value = ""; 
+    };
+
     const sonuc = window.EnbaFinance.anasayfaHesapla(aktifPlanlar);
 
     const planKaydet = async () => {
@@ -1009,6 +1106,8 @@ function App() {
                     bekleyenPlanlar={bekleyenPlanlar} setBekleyenPlanlar={setBekleyenPlanlar}
                     aktifPlanlar={aktifPlanlar} setAktifPlanlar={setAktifPlanlar}
                     yeniIpkBaslat={yeniIpkBaslat}
+                    excelIceAktar={excelIceAktar}
+                    sablonIndir={sablonIndir}
                     suruklemeBasladi={suruklemeBasladi}
                     IpkDuzenle={IpkDuzenle}
                     IpkSil={IpkSil}
