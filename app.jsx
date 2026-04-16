@@ -1093,6 +1093,7 @@ function App() {
         );
     };
     const DashboardMatrix = window.DashboardMatrix;
+    const Sidebar = window.Sidebar;
 
     if (aktifSayfa === 'anaSayfa') {
         return (
