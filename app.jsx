@@ -43,15 +43,6 @@ function App() {
                 setAsgariSgk(Number(sgk));
             } catch (err) {
                 console.error("Başlangıç verileri yüklenemedi:", err);
-            } finally {
-                // Uygulama hazır olduğunda (veya hata aldığında) splash screen'i kaldır
-                const splash = document.getElementById('enba-splash');
-                if (splash) {
-                    setTimeout(() => {
-                        splash.classList.add('hidden');
-                        setTimeout(() => splash.style.display = 'none', 500);
-                    }, 400); 
-                }
             }
         };
         load();

@@ -61,6 +61,16 @@ function EnbaRouter() {
             if (saved) setAllUsers(JSON.parse(saved));
         };
         window.addEventListener('enba_users_updated', handleUpdate);
+        
+        // Splash screen'i kaldır (Uygulama bileşeni mount olduğunda)
+        const splash = document.getElementById('enba-splash');
+        if (splash) {
+            setTimeout(() => {
+                splash.classList.add('hidden');
+                setTimeout(() => splash.style.display = 'none', 500);
+            }, 600); // Babel compilation için güvenli bir süre bırak
+        }
+
         return () => window.removeEventListener('enba_users_updated', handleUpdate);
     }, []);
 
