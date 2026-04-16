@@ -198,11 +198,11 @@ window.GorevModulu = function({ navigate }) {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                             <div>
                                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, marginBottom: '6px', color: '#475569' }}>Başlık</label>
-                                <input required value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }} placeholder="Ne yapılacak?" />
+                                <input required value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }} placeholder="Ne yapılacak?" onFocus={window.selectOnFocus} />
                             </div>
                             <div>
                                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, marginBottom: '6px', color: '#475569' }}>Açıklama</label>
-                                <textarea value={formData.desc} onChange={e => setFormData({...formData, desc: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0', minHeight: '100px' }} placeholder="Detaylar..." />
+                                <textarea value={formData.desc} onChange={e => setFormData({...formData, desc: e.target.value})} style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0', minHeight: '100px' }} placeholder="Detaylar..." onFocus={window.selectOnFocus} />
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                                 <div>
@@ -247,7 +247,7 @@ window.GorevModulu = function({ navigate }) {
                 <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
                     <div style={{ background: '#fff', width: '100%', maxWidth: '400px', borderRadius: '24px', padding: '32px' }}>
                         <h2 style={{ margin: '0 0 24px', fontFamily: "'Manrope', sans-serif", fontWeight: 800 }}>Yeni Proje Grubu</h2>
-                        <input id="newProjName" style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0', marginBottom: '24px' }} placeholder="Proje Adı" onKeyDown={e => {
+                        <input id="newProjName" style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0', marginBottom: '24px' }} placeholder="Proje Adı" onFocus={window.selectOnFocus} onKeyDown={e => {
                             if(e.key === 'Enter') {
                                 const val = e.target.value.trim();
                                 if(val) {

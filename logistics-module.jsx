@@ -119,11 +119,11 @@ function LojistikModulu() {
                         <div style={{display: 'flex', gap: '10px', background: '#ebf5fb', padding: '10px', borderRadius: '8px', border: '1px solid #d4e6f1'}}>
                             <div style={{flex: 1}}>
                                 <label style={{display: 'block', fontSize: '11px', fontWeight: 'bold', color: '#2980b9', marginBottom: '4px'}}>BAŞLANGIÇ KM</label>
-                                <input type="number" value={baslangicKm} onChange={e => setBaslangicKm(e.target.value)} required placeholder="Örn: 100000" style={{width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #3498db', outline: 'none'}} />
+                                <input type="number" value={baslangicKm} onChange={e => setBaslangicKm(e.target.value)} required placeholder="Örn: 100000" style={{width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #3498db', outline: 'none'}} onFocus={window.selectOnFocus} />
                             </div>
                             <div style={{flex: 1}}>
                                 <label style={{display: 'block', fontSize: '11px', fontWeight: 'bold', color: '#2980b9', marginBottom: '4px'}}>BİTİŞ KM</label>
-                                <input type="number" value={bitisKm} onChange={e => setBitisKm(e.target.value)} required placeholder="Örn: 100150" style={{width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #3498db', outline: 'none'}} />
+                                <input type="number" value={bitisKm} onChange={e => setBitisKm(e.target.value)} required placeholder="Örn: 100150" style={{width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #3498db', outline: 'none'}} onFocus={window.selectOnFocus} />
                             </div>
                         </div>
 

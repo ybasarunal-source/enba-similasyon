@@ -207,7 +207,7 @@ window.DetStep7_Report = function DetStep7_Report({
                     ].map(p => (
                         <div key={p.label}>
                             <label style={{ fontSize:'11px', fontWeight:600, color:'var(--on-surface-variant)', textTransform:'uppercase', display:'block', marginBottom:'6px' }}>{p.label}</label>
-                            <input type='number' step='0.5' value={p.val} onChange={e => p.set(Number(e.target.value))} style={{ width:'100%', padding:'12px 14px', borderRadius:'0.75rem', border:'1px solid var(--surface-container-highest)', outline:'none', boxSizing:'border-box' }} />
+                            <input type='number' step='0.5' value={p.val} onChange={e => p.set(Number(e.target.value))} style={{ width:'100%', padding:'12px 14px', borderRadius:'0.75rem', border:'1px solid var(--surface-container-highest)', outline:'none', boxSizing:'border-box' }} onFocus={window.selectOnFocus} />
                         </div>
                     ))}
                 </div>

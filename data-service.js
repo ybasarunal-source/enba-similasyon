@@ -25,7 +25,7 @@ window.DataService = {
             
         if (error) {
             console.error(`${table} verisi çekilemedi:`, error);
-            return [];
+            throw error; // Artık boş array dönmüyor, hata fırlatıyor
         }
         return data || [];
     },
@@ -61,13 +61,15 @@ window.DataService = {
     async getTedarikciler() {
         if (!window.supabaseClient) return [];
         const { data, error } = await window.supabaseClient.from('contacts').select('*').eq('contact_type', 'supplier');
-        return error ? [] : data;
+        if (error) throw error;
+        return data || [];
     },
 
     async getMusteriler() {
         if (!window.supabaseClient) return [];
         const { data, error } = await window.supabaseClient.from('contacts').select('*').eq('contact_type', 'customer');
-        return error ? [] : data;
+        if (error) throw error;
+        return data || [];
     },
 
     /**
@@ -178,7 +180,7 @@ window.DataService = {
 
         if (error) {
             console.error("Planlar çekilemedi:", error);
-            return [];
+            throw error;
         }
         return data || [];
     },

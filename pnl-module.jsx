@@ -661,7 +661,7 @@ function PnlRaporu() {
                             {/* CAPEX Toggle */}
                             <div style={{display: 'flex', alignItems: 'center', gap: '6px', background: '#fdf2e9', padding: '4px 8px', borderRadius: '20px', border: '1px solid #fdebd0'}}>
                                 <span style={{fontSize: '11px', fontWeight: 'bold', color: '#e67e22', marginLeft: '4px'}}>VADE (AY):</span>
-                                <input type="number" min="1" max="120" value={capexVade} onChange={(e) => setCapexVade(Number(e.target.value) || 1)} disabled={capexActive} style={{width: '45px', padding: '4px', borderRadius: '4px', border: '1px solid #f39c12', outline: 'none', textAlign: 'center', fontSize: '12px', background: capexActive ? '#fcf3cf' : '#fff'}} />
+                                <input type="number" min="1" max="120" value={capexVade} onChange={(e) => setCapexVade(Number(e.target.value) || 1)} disabled={capexActive} style={{width: '45px', padding: '4px', borderRadius: '4px', border: '1px solid #f39c12', outline: 'none', textAlign: 'center', fontSize: '12px', background: capexActive ? '#fcf3cf' : '#fff'}} onFocus={window.selectOnFocus} />
                                 <button 
                                     onClick={() => setCapexActive(!capexActive)}
                                     style={{padding: '6px 14px', background: capexActive ? '#f39c12' : '#fff', color: capexActive ? '#fff' : '#f39c12', border: capexActive ? 'none' : '1px solid #f39c12', borderRadius: '14px', fontWeight: 'bold', cursor: 'pointer', transition: '0.2s', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', boxShadow: capexActive ? '0 2px 8px rgba(243, 156, 18, 0.3)' : 'none'}}>

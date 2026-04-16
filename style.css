@@ -1432,6 +1432,14 @@ body {
     animation: shake 0.4s ease-in-out;
 }
 
+.error-technical-code {
+    display: block;
+    font-size: 10px;
+    opacity: 0.7;
+    font-family: monospace;
+    margin-top: 4px;
+}
+
 @keyframes shake {
     0%, 100% { transform: translateX(0); }
     25% { transform: translateX(-5px); }

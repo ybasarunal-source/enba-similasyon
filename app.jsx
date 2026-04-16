@@ -4,6 +4,17 @@ function App() {
     const [aktifSayfa, setAktifSayfa] = useState('anaSayfa'); 
     const [planSekmesi, setPlanSekmesi] = useState('operasyon'); 
     const [duzenlenenPlanId, setDuzenlenenPlanId] = useState(null);
+    const [sihirbazAcik, setSihirbazAcik] = useState(false);
+    const [sihirbazAdim, setSihirbazAdim] = useState(0); 
+    const [sihirbazVeri, setSihirbazVeri] = useState({
+        baslik: '', aciklama: '', model: { alSat: false, uretim: false, komisyon: false },
+        atıkCinsi: '', hedefUrun: '', alSatUrun: '', komisyonIsi: '',
+        ayristirmaVar: true, aylikTon: '', symFire: '', nemFire: '', uretimFiresi: '',
+        elektrikKwFiyat: '4.07', kiraTesis: '', kiraDiger: '',
+        personelSayisi: '', ayiklamaHizi: '1', makineKapasite: '',
+        alisFiyatiKg: '', alisNakliyeKg: '', satisFiyatiKg: '', satisNakliyeKg: '',
+        bakimOnarimYuzde: '2', genelYonetimYuzde: '5'
+    });
     
     const [sidebarAcik, setSidebarAcik] = useState(true);
     const [mobileSidebarAcik, setMobileSidebarAcik] = useState(false);
@@ -432,7 +443,7 @@ function App() {
             const updated = await window.DataService.savePlan({ ...tasinanPlan, status: 'active' });
             setBekleyenPlanlar(bekleyenPlanlar.filter(p => p.id !== planId));
             setAktifPlanlar([...aktifPlanlar, { ...updated.content, id: updated.id, status: updated.status }]);
-        } catch (err) { alert("Hata: " + err.message); }
+        } catch (err) { alert(window.getErrorMessage(err)); }
     };
 
     const kartiCikar = async (planId) => {
@@ -443,13 +454,29 @@ function App() {
             const updated = await window.DataService.savePlan({ ...cikarilanPlan, status: 'pending' });
             setAktifPlanlar(aktifPlanlar.filter(p => p.id !== planId));
             setBekleyenPlanlar([...bekleyenPlanlar, { ...updated.content, id: updated.id, status: updated.status }]);
-        } catch (err) { alert("Hata: " + err.message); }
+        } catch (err) { alert(window.getErrorMessage(err)); }
     };
 
     const yeniIpkBaslat = () => {
         setDuzenlenenPlanId(null);
+        setSihirbazAdim(0);
+        setSihirbazAcik(true);
+        // Reset wizard data if needed
+        setSihirbazVeri({
+            baslik: '', aciklama: '', model: { alSat: false, uretim: false, komisyon: false },
+            atıkCinsi: '', hedefUrun: '', alSatUrun: '', komisyonIsi: '',
+            ayristirmaVar: true, aylikTon: '', symFire: '', nemFire: '', uretimFiresi: '',
+            elektrikKwFiyat: '4.07', kiraTesis: '', kiraDiger: '',
+            personelSayisi: '', ayiklamaHizi: '1', makineKapasite: '',
+            alisFiyatiKg: '', alisNakliyeKg: '', satisFiyatiKg: '', satisNakliyeKg: '',
+            bakimOnarimYuzde: '2', genelYonetimYuzde: '5'
+        });
+    };
+
+    const klasikIpkBaslat = () => {
         setYeniPlanBaslik("");
         setPlanParametreleri({ aylikTon: 0, alisFiyati: 0, satisFiyati: 0, aylikGun: 26, gunlukSaat: 10, elektrikKwFiyat: 4.07, gunlukYemekUcreti: 200, alisNakliye: 0, satisNakliye: 0, ayiklamaHizi: 1 });
+        setUretimRecetesi({ ayristirmaVar: false, copOrani: 5, copBertarafFiyati: 0, uretimFiresi: 3, altUrunler: [] });
         setYeniPlanGiderler({});
         setYeniPlanGelirler({});
         setPersonelListesi([]);
@@ -458,8 +485,8 @@ function App() {
         setKurulumKalemleri([]);
         setPlanSekmesi('operasyon');
         setAktifSayfa('planEkle');
+        setSihirbazAcik(false);
     };
-
     const IpkDuzenle = (p) => {
         setDuzenlenenPlanId(p.id);
         setYeniPlanBaslik(p.baslik);
@@ -482,7 +509,7 @@ function App() {
                 await window.DataService.deleteData('business_plans', id);
                 setBekleyenPlanlar(bekleyenPlanlar.filter(x => x.id !== id));
                 setAktifPlanlar(aktifPlanlar.filter(x => x.id !== id));
-            } catch (err) { alert("Silme hatası: " + err.message); }
+            } catch (err) { alert(window.getErrorMessage(err)); }
         }
     };
 
@@ -543,7 +570,71 @@ function App() {
                 setBekleyenPlanlar([...bekleyenPlanlar, savedPlan]);
             }
             setAktifSayfa('anaSayfa');
-        } catch (err) { alert("Kaydetme hatası: " + err.message); }
+        } catch (err) { alert(window.getErrorMessage(err)); }
+    };
+
+    const finalizeWizard = () => {
+        const v = sihirbazVeri;
+        setYeniPlanBaslik(v.baslik);
+        
+        // Birim dönüşümleri (kg -> Ton)
+        const alisFiyati = (Number(v.alisFiyatiKg) || 0) * 1000;
+        const alisNakliye = (Number(v.alisNakliyeKg) || 0) * 1000;
+        const satisFiyati = (Number(v.satisFiyatiKg) || 0) * 1000;
+        const satisNakliye = (Number(v.satisNakliyeKg) || 0) * 1000;
+
+        setPlanParametreleri({
+            ...planParametreleri,
+            aylikTon: Number(v.aylikTon) || 0,
+            alisFiyati,
+            alisNakliye,
+            satisFiyati,
+            satisNakliye,
+            elektrikKwFiyat: Number(v.elektrikKwFiyat) || 4.07,
+            ayiklamaHizi: Number(v.ayiklamaHizi) || 1
+        });
+
+        const topFire = (Number(v.symFire) || 0) + (Number(v.nemFire) || 0);
+        setUretimRecetesi({
+            ...uretimRecetesi,
+            ayristirmaVar: v.ayristirmaVar,
+            copOrani: topFire,
+            uretimFiresi: Number(v.uretimFiresi) || 0
+        });
+
+        // Kira kalemleri
+        const kiralar = [];
+        if (v.kiraTesis) kiralar.push({ id: Date.now() + 1, ad: 'Tesis Kirası', tutar: Number(v.kiraTesis) });
+        if (v.kiraDiger) kiralar.push({ id: Date.now() + 2, ad: 'Diğer Kiralamalar', tutar: Number(v.kiraDiger) });
+        setKiralamaListesi(kiralar);
+
+        // Personel
+        if (v.personelSayisi) {
+            setPersonelListesi([{
+                id: Date.now() + 3,
+                unvan: 'Tesis Personeli (Sihirbaz)',
+                kisiSayisi: Number(v.personelSayisi),
+                ekMaas: 0, ekSgk: 0, ekYemek: 0,
+                isAyiklama: v.ayristirmaVar
+            }]);
+        }
+
+        // Ek Giderler (Bakım & Genel Yönetim)
+        const disHizmetler = [];
+        const alisMaliyeti = (Number(v.aylikTon) || 0) * alisFiyati;
+        
+        if (v.bakimOnarimYuzde) {
+            const tutar = (alisMaliyeti * Number(v.bakimOnarimYuzde) / 100);
+            disHizmetler.push({ id: Date.now() + 5, ad: `Bakım-Onarım Fonu (%${v.bakimOnarimYuzde})`, tutar });
+        }
+        if (v.genelYonetimYuzde) {
+            const tutar = (alisMaliyeti * Number(v.genelYonetimYuzde) / 100);
+            disHizmetler.push({ id: Date.now() + 6, ad: `Genel Yönetim Gideri (%${v.genelYonetimYuzde})`, tutar });
+        }
+        setDisHizmetlerListesi(disHizmetler);
+
+        setSihirbazAcik(false);
+        setAktifSayfa('planEkle');
     };
 
     const verileriSifirla = () => {
@@ -554,12 +645,349 @@ function App() {
         }
     };
 
-    const Sidebar = window.Sidebar;
+    const renderSihirbaz = () => {
+        if (!sihirbazAcik) return null;
+
+        const next = () => setSihirbazAdim(sihirbazAdim + 1);
+        const prev = () => setSihirbazAdim(sihirbazAdim - 1);
+        const update = (field, val) => setSihirbazVeri({ ...sihirbazVeri, [field]: val });
+
+        // Hesaplamalar
+        const v = sihirbazVeri;
+        const symFireKg = (Number(v.aylikTon) || 0) * 1000 * (Number(v.symFire) / 100 || 0);
+        const nemFireKg = (Number(v.aylikTon) || 0) * 1000 * (Number(v.nemFire) / 100 || 0);
+        const uretimFireKg = (Number(v.aylikTon) || 0) * 1000 * (Number(v.uretimFiresi) / 100 || 0);
+        const totalLossKg = symFireKg + nemFireKg + uretimFireKg;
+        const lossTl = totalLossKg * (Number(v.alisFiyatiKg) || 0);
+        
+        const netProductKg = ((Number(v.aylikTon) || 0) * 1000) - totalLossKg;
+        const realUnitCost = netProductKg > 0 ? ((Number(v.aylikTon) || 0) * 1000 * (Number(v.alisFiyatiKg) || 0)) / netProductKg : 0;
+
+        const capacityMonthly = (Number(v.personelSayisi) || 0) * (Number(v.ayiklamaHizi) || 1) * 26 * 8; // Basit hesap
+        const isCapacityOk = capacityMonthly >= (Number(v.aylikTon) || 0);
+
+        return (
+            <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(5px)' }}>
+                <div style={{ backgroundColor: '#fff', width: '90%', maxWidth: '700px', borderRadius: '20px', padding: '40px', boxShadow: '0 20px 50px rgba(0,0,0,0.3)', position: 'relative', overflowY: 'auto', maxHeight: '90vh' }}>
+                    
+                    {/* Progress Bar */}
+                    <div style={{ display: 'flex', gap: '5px', marginBottom: '30px' }}>
+                        {[0,1,2,3,4,5,6].map(i => (
+                            <div key={i} style={{ flex: 1, height: '4px', borderRadius: '2px', backgroundColor: i <= sihirbazAdim ? 'var(--enba-orange)' : '#eee' }}></div>
+                        ))}
+                    </div>
+
+                    {sihirbazAdim === 0 && (
+                        <div style={{ textAlign: 'center' }}>
+                            <div style={{ fontSize: '40px', marginBottom: '20px' }}>🚀</div>
+                            <h2 style={{ fontSize: '24px', fontWeight: 800, color: 'var(--enba-dark)' }}>Yeni Bir İş Planı Başlatalım</h2>
+                            <p style={{ color: '#666', marginBottom: '30px' }}>İşinizi adım adım, akıllı maliyet öngörüleriyle birlikte planlamak ister misiniz?</p>
+                            <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
+                                <button className="btn btn-warning" style={{ padding: '15px 30px', fontSize: '16px', borderRadius: '12px' }} onClick={next}>✨ Adım Adım Başla</button>
+                                <button className="btn btn-outline" style={{ padding: '15px 30px', fontSize: '16px', borderRadius: '12px', border: '1px solid #ddd' }} onClick={klasikIpkBaslat}>Hızlı Boş Form</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {sihirbazAdim === 1 && (
+                        <div>
+                            <h3 style={{ fontSize: '20px', fontWeight: 800, marginBottom: '20px' }}>1. İşinize Bir İsim Verin</h3>
+                            <div className="form-group">
+                                <label>PLAN BAŞLIĞI</label>
+                                <input type="text" placeholder="Örn: 2026 LDPE Geri Dönüşüm Projesi" value={v.baslik} onChange={e => update('baslik', e.target.value)} onFocus={window.selectOnFocus} />
+                            </div>
+                            <div className="form-group">
+                                <label>KISA AÇIKLAMA</label>
+                                <textarea placeholder="Bu plan neyi hedefliyor?" value={v.aciklama} onChange={e => update('aciklama', e.target.value)} style={{ width: '100%', height: '80px', borderRadius: '10px', padding: '10px', border: '1px solid #ddd' }} onFocus={window.selectOnFocus}></textarea>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '30px' }}>
+                                <button className="btn btn-outline" onClick={prev}>Geri</button>
+                                <button className="btn btn-warning" disabled={!v.baslik} onClick={next}>Devam Et</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {sihirbazAdim === 2 && (
+                        <div>
+                            <h3 style={{ fontSize: '20px', fontWeight: 800, marginBottom: '20px' }}>2. İş Modelinizi Seçin</h3>
+                            <p style={{ fontSize: '14px', color: '#666', marginBottom: '20px' }}>Bu projenin gelir kaynakları neler olacak? (Birden fazla seçebilirsiniz)</p>
+                            
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '15px', padding: '20px', border: '1px solid #eee', borderRadius: '15px', cursor: 'pointer', backgroundColor: v.model.uretim ? 'rgba(227,82,5,0.05)' : '#fff' }}>
+                                    <input type="checkbox" checked={v.model.uretim} onChange={e => update('model', { ...v.model, uretim: e.target.checked })} style={{ width: '20px', height: '20px' }} />
+                                    <div>
+                                        <div style={{ fontWeight: 800 }}>⚙️ Üretim & Geri Dönüşüm</div>
+                                        <div style={{ fontSize: '12px', color: '#888' }}>Atığı hammaddeye veya ürüne dönüştürme</div>
+                                    </div>
+                                </label>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '15px', padding: '20px', border: '1px solid #eee', borderRadius: '15px', cursor: 'pointer', backgroundColor: v.model.alSat ? 'rgba(227,82,5,0.05)' : '#fff' }}>
+                                    <input type="checkbox" checked={v.model.alSat} onChange={e => update('model', { ...v.model, alSat: e.target.checked })} style={{ width: '20px', height: '20px' }} />
+                                    <div>
+                                        <div style={{ fontWeight: 800 }}>📦 Al-Sat (Ticaret)</div>
+                                        <div style={{ fontSize: '12px', color: '#888' }}>Hammadde veya ürün ticareti</div>
+                                    </div>
+                                </label>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '15px', padding: '20px', border: '1px solid #eee', borderRadius: '15px', cursor: 'pointer', backgroundColor: v.model.komisyon ? 'rgba(227,82,5,0.05)' : '#fff' }}>
+                                    <input type="checkbox" checked={v.model.komisyon} onChange={e => update('model', { ...v.model, komisyon: e.target.checked })} style={{ width: '20px', height: '20px' }} />
+                                    <div>
+                                        <div style={{ fontWeight: 800 }}>💰 Komisyon</div>
+                                        <div style={{ fontSize: '12px', color: '#888' }}>İş bağlama veya aracılık hizmetleri</div>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '30px' }}>
+                                <button className="btn btn-outline" onClick={prev}>Geri</button>
+                                <button className="btn btn-warning" disabled={!(v.model.uretim || v.model.alSat || v.model.komisyon)} onClick={next}>Devam Et</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {sihirbazAdim === 3 && (
+                        <div>
+                            <h3 style={{ fontSize: '20px', fontWeight: 800, marginBottom: '20px' }}>3. İş Detayları</h3>
+                            
+                            {v.model.uretim && (
+                                <div style={{ marginBottom: '25px', padding: '15px', background: '#fcfcfc', borderRadius: '10px' }}>
+                                    <div style={{ fontWeight: 800, color: 'var(--enba-orange)', marginBottom: '10px' }}>ÜRETİM ROTASI</div>
+                                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                        <input type="text" placeholder="Girdi atık (Örn: Buruşuk Naylon)" value={v.atıkCinsi} onChange={e => update('atıkCinsi', e.target.value)} onFocus={window.selectOnFocus} />
+                                        <span>➔</span>
+                                        <input type="text" placeholder="Çıktı ürün (Örn: LDPE Granül)" value={v.hedefUrun} onChange={e => update('hedefUrun', e.target.value)} onFocus={window.selectOnFocus} />
+                                    </div>
+                                    <div style={{ marginTop: '15px', padding: '15px', background: '#f0f0f0', borderRadius: '10px', border: '1px solid #ddd' }}>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                                            <input type="checkbox" checked={v.ayristirmaVar} onChange={e => update('ayristirmaVar', e.target.checked)} style={{ width: '18px', height: '18px' }} />
+                                            <span style={{ fontWeight: 700 }}>Ürün ayrıştırmaya (sorting/manuel ayıklama) girecek mi?</span>
+                                        </label>
+                                        {!v.ayristirmaVar && <p style={{ fontSize: '11px', color: '#888', margin: '5px 0 0 28px' }}>Plandan ayrıştırma/manuel işçilik maliyetleri ve hız hesaplamaları çıkarılacaktır.</p>}
+                                    </div>
+                                </div>
+                            )}
+
+                            {v.model.alSat && (
+                                <div className="form-group">
+                                    <label>TİCARETİ YAPILACAK ÜRÜN</label>
+                                    <input type="text" placeholder="Örn: ABS Levha Çapağı" value={v.alSatUrun} onChange={e => update('alSatUrun', e.target.value)} onFocus={window.selectOnFocus} />
+                                </div>
+                            )}
+
+                            {v.model.komisyon && (
+                                <div className="form-group">
+                                    <label>KOMİSYON ALINACAK İŞ TANIMI</label>
+                                    <input type="text" placeholder="Örn: Hurda Satış Aracılığı" value={v.komisyonIsi} onChange={e => update('komisyonIsi', e.target.value)} onFocus={window.selectOnFocus} />
+                                </div>
+                            )}
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '30px' }}>
+                                <button className="btn btn-outline" onClick={prev}>Geri</button>
+                                <button className="btn btn-warning" onClick={next}>Devam Et</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {sihirbazAdim === 4 && (
+                        <div>
+                            <h3 style={{ fontSize: '20px', fontWeight: 800, marginBottom: '20px' }}>4. Operasyonel Veriler</h3>
+                            
+                            <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                                <div className="form-group">
+                                    <label>AYLIK GİRECEK MALZEME (TON/AY)</label>
+                                    <input type="number" value={v.aylikTon} onChange={e => update('aylikTon', e.target.value)} onFocus={window.selectOnFocus} />
+                                </div>
+                                
+                                {v.ayristirmaVar && (
+                                    <div className="form-group">
+                                        <label>AYRIŞTIRMA HIZI (TON/SAAT/KİŞİ)</label>
+                                        <input type="number" value={v.ayiklamaHizi} onChange={e => update('ayiklamaHizi', e.target.value)} onFocus={window.selectOnFocus} />
+                                    </div>
+                                )}
+
+                                <div className="form-group" style={{ gridColumn: 'span 2', padding: '15px', border: '1px solid #FFEBE0', borderRadius: '15px', background: '#FFF7F2' }}>
+                                    <label style={{ color: 'var(--enba-orange)', fontWeight: 800 }}>FİRE ORANLARI (%)</label>
+                                    <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                                        {v.ayristirmaVar && (
+                                            <div style={{ flex: 1 }}>
+                                                <label style={{ fontSize: '10px' }}>YABANCI MADDE</label>
+                                                <input type="number" placeholder="%" value={v.symFire} onChange={e => update('symFire', e.target.value)} onFocus={window.selectOnFocus} />
+                                            </div>
+                                        )}
+                                        <div style={{ flex: 1 }}>
+                                            <label style={{ fontSize: '10px' }}>NEM FİRESİ</label>
+                                            <input type="number" placeholder="%" value={v.nemFire} onChange={e => update('nemFire', e.target.value)} onFocus={window.selectOnFocus} />
+                                        </div>
+                                        <div style={{ flex: 1 }}>
+                                            <label style={{ fontSize: '10px' }}>ÜRETİM FİRESİ</label>
+                                            <input type="number" placeholder="%" value={v.uretimFiresi} onChange={e => update('uretimFiresi', e.target.value)} onFocus={window.selectOnFocus} />
+                                        </div>
+                                    </div>
+                                    
+                                    {totalLossKg > 0 && (
+                                        <div style={{ marginTop: '15px', padding: '10px', backgroundColor: '#fff', borderRadius: '8px', border: '1px dashed var(--enba-orange)' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+                                                <span>Toplam Fire Kaybı:</span>
+                                                <strong style={{ color: '#e74c3c' }}>{window.fmt(totalLossKg)} kg</strong>
+                                            </div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginTop: '4px' }}>
+                                                <span>Kaybedilen Değer:</span>
+                                                <strong style={{ color: '#e74c3c' }}>{window.fmt(lossTl)} ₺</strong>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="form-group">
+                                    <label>SİSTEME PERSONEL SAYISI (ADET)</label>
+                                    <input type="number" value={v.personelSayisi} onChange={e => update('personelSayisi', e.target.value)} onFocus={window.selectOnFocus} />
+                                </div>
+
+                                <div className="form-group">
+                                    <label>MAKİNE SAATLİK KAPASİTE (TON/H)</label>
+                                    <input type="number" value={v.makineKapasite} onChange={e => update('makineKapasite', e.target.value)} onFocus={window.selectOnFocus} />
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '30px' }}>
+                                <button className="btn btn-outline" onClick={prev}>Geri</button>
+                                <button className="btn btn-warning" onClick={next}>Devam Et</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {sihirbazAdim === 5 && (
+                        <div>
+                            <h3 style={{ fontSize: '20px', fontWeight: 800, marginBottom: '20px' }}>5. Giderler ve Operetif Parametreler</h3>
+                            
+                            <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                                <div className="form-group">
+                                    <label>TESİS KİRASI (AYLIK ₺)</label>
+                                    <input type="number" value={v.kiraTesis} onChange={e => update('kiraTesis', e.target.value)} onFocus={window.selectOnFocus} />
+                                </div>
+                                <div className="form-group">
+                                    <label>DİĞER KİRALAMALAR (₺)</label>
+                                    <input type="number" placeholder="Forklift, araç vb." value={v.kiraDiger} onChange={e => update('kiraDiger', e.target.value)} onFocus={window.selectOnFocus} />
+                                </div>
+                                <div className="form-group">
+                                    <label>ELEKTRİK BİRİM (₺/kWh)</label>
+                                    <input type="number" value={v.elektrikKwFiyat} onChange={e => update('elektrikKwFiyat', e.target.value)} onFocus={window.selectOnFocus} />
+                                </div>
+
+                                <div style={{ gridColumn: 'span 2', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', background: '#fcfcfc', padding: '15px', borderRadius: '15px', border: '1px solid #eee' }}>
+                                    <div className="form-group">
+                                        <label>BAKIM-ONARIM PAYI (%)</label>
+                                        <input type="number" value={v.bakimOnarimYuzde} onChange={e => update('bakimOnarimYuzde', e.target.value)} onFocus={window.selectOnFocus} />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>GENEL YÖNETİM GİDERİ (%)</label>
+                                        <input type="number" value={v.genelYonetimYuzde} onChange={e => update('genelYonetimYuzde', e.target.value)} onFocus={window.selectOnFocus} />
+                                    </div>
+                                    <p style={{ gridColumn: 'span 2', fontSize: '11px', color: '#999', margin: 0 }}>* Bu oranlar ciro üzerinden tahmini gider olarak planda varsayılan olarak yer alacaktır.</p>
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '30px' }}>
+                                <button className="btn btn-outline" onClick={prev}>Geri</button>
+                                <button className="btn btn-warning" onClick={next}>Devam Et</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {sihirbazAdim === 6 && (
+                        <div>
+                            <h3 style={{ fontSize: '20px', fontWeight: 800, marginBottom: '20px' }}>6. Alış ve Satış Parametreleri</h3>
+                            <p style={{ fontSize: '12px', color: '#7F8C8D', marginBottom: '20px' }}>Lütfen verileri sahada kullanılan <b>TL/kg</b> biriminden giriniz.</p>
+                            
+                            <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                                <div style={{ background: '#F4F9F1', padding: '20px', borderRadius: '15px', border: '1px solid #D5E8D4' }}>
+                                    <div style={{ fontWeight: 800, color: '#1a7f4b', marginBottom: '15px', borderBottom: '1px solid #D5E8D4', paddingBottom: '10px' }}>📥 ALIŞ (KG BAZLI)</div>
+                                    <div className="form-group">
+                                        <label>HAMMADDE ALIŞ (₺/kg)</label>
+                                        <input type="number" value={v.alisFiyatiKg} onChange={e => update('alisFiyatiKg', e.target.value)} onFocus={window.selectOnFocus} />
+                                    </div>
+                                    <div className="form-group" style={{ marginBottom: 0 }}>
+                                        <label>ALIŞ NAKLİYESİ (₺/kg)</label>
+                                        <input type="number" value={v.alisNakliyeKg} onChange={e => update('alisNakliyeKg', e.target.value)} onFocus={window.selectOnFocus} />
+                                    </div>
+                                </div>
+
+                                <div style={{ background: '#FFF7EF', padding: '20px', borderRadius: '15px', border: '1px solid #FFEBE0' }}>
+                                    <div style={{ fontWeight: 800, color: 'var(--enba-orange)', marginBottom: '15px', borderBottom: '1px solid #FFEBE0', paddingBottom: '10px' }}>📤 SATIŞ (KG BAZLI)</div>
+                                    <div className="form-group">
+                                        <label>MAMUL SATIŞ (₺/kg)</label>
+                                        <input type="number" value={v.satisFiyatiKg} onChange={e => update('satisFiyatiKg', e.target.value)} onFocus={window.selectOnFocus} />
+                                    </div>
+                                    <div className="form-group" style={{ marginBottom: 0 }}>
+                                        <label>SATIŞ NAKLİYESİ (₺/kg)</label>
+                                        <input type="number" value={v.satisNakliyeKg} onChange={e => update('satisNakliyeKg', e.target.value)} onFocus={window.selectOnFocus} />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style={{ marginTop: '20px', padding: '20px', background: '#F8F9FA', borderRadius: '15px', border: '1px solid #eee' }}>
+                                <div style={{ marginBottom: '10px', display: 'flex', justifyContent: 'space-between' }}>
+                                    <span>Görünür Alış:</span><strong>{v.alisFiyatiKg} ₺/kg</strong>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#e74c3c' }}>
+                                    <span>Fire Sonrası <b>Gerçek Maliyet</b>:</span>
+                                    <strong style={{ fontSize: '18px' }}>{window.fmt(realUnitCost)} ₺/kg</strong>
+                                </div>
+                                <p style={{ fontSize: '11px', color: '#999', marginTop: '10px', fontStyle: 'italic' }}>* Fireler nedeniyle kaybettiğiniz miktar, kalan ürünün birim maliyetini bu seviyeye çıkarmaktadır.</p>
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '30px' }}>
+                                <button className="btn btn-outline" onClick={prev}>Geri</button>
+                                <button className="btn btn-warning" style={{ background: 'var(--enba-dark)', color: '#fff' }} onClick={next}>Son Özeti Gör</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {sihirbazAdim === 7 && (
+                        <div>
+                            <h3 style={{ fontSize: '20px', fontWeight: 800, marginBottom: '20px' }}>🏁 Plan Özeti ve Kapasite Kontrolü</h3>
+                            
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                                <div style={{ padding: '20px', background: isCapacityOk ? '#F1F9F1' : '#FFF1F1', borderRadius: '15px', textAlign: 'center', border: `1px solid ${isCapacityOk ? '#D5E8D4' : '#FADBD8'}` }}>
+                                    <div style={{ fontSize: '12px', color: '#666' }}>PERSONEL KAPASİTESİ</div>
+                                    <div style={{ fontSize: '24px', fontWeight: 800, color: isCapacityOk ? '#1a7f4b' : '#c0392b' }}>
+                                        {isCapacityOk ? '✓ Yeterli' : '⚠ Yetersiz'}
+                                    </div>
+                                    <div style={{ fontSize: '11px', marginTop: '5px' }}>Talep: {v.aylikTon} T | Mevcut: {window.fmt(capacityMonthly)} T</div>
+                                </div>
+                                
+                                <div style={{ padding: '20px', background: '#F8F9FA', borderRadius: '15px', textAlign: 'center', border: '1px solid #eee' }}>
+                                    <div style={{ fontSize: '12px', color: '#666' }}>TAHMİNİ NET KÂR MARJI</div>
+                                    <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--enba-orange)' }}>
+                                        %{window.fmt(( (Number(v.satisFiyatiKg) - realUnitCost - (Number(v.alisNakliyeKg) || 0) - (Number(v.satisNakliyeKg) || 0)) / (Number(v.satisFiyatiKg) || 1) ) * 100)}
+                                    </div>
+                                    <div style={{ fontSize: '11px', marginTop: '5px' }}>(Brüt Operasyonel Marj)</div>
+                                </div>
+                            </div>
+
+                            <div style={{ marginTop: '20px', padding: '20px', border: '1px solid #eee', borderRadius: '15px' }}>
+                                <h4 style={{ margin: '0 0 10px 0', fontSize: '14px' }}>Öne Çıkan Notlar:</h4>
+                                <ul style={{ fontSize: '13px', color: '#666', paddingLeft: '20px' }}>
+                                    <li>Fire nedeniyle toplam <b>{window.fmt(lossTl)} ₺</b> kayıp yaşanıyor.</li>
+                                    <li>Ton başına alış maliyetiniz: <b>{window.fmt(realUnitCost * 1000)} ₺</b></li>
+                                    <li>Operasyonel ton maliyetine %{v.bakimOnarimYuzde} bakım ve %{v.genelYonetimYuzde} G.Y.G eklendi.</li>
+                                </ul>
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '30px' }}>
+                                <button className="btn btn-outline" onClick={prev}>Düzenle</button>
+                                <button className="btn btn-warning" style={{ padding: '15px 40px', fontSize: '16px' }} onClick={finalizeWizard}>VERİLERİ TABLOYA AKTAR VE BİTİR</button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    };
     const DashboardMatrix = window.DashboardMatrix;
 
     if (aktifSayfa === 'anaSayfa') {
         return (
             <div className="container">
+                {renderSihirbaz()}
                 <div className={`sidebar-overlay${mobileSidebarAcik ? ' visible' : ''}`} onClick={() => setMobileSidebarAcik(false)} />
 
                 <Sidebar 
@@ -647,7 +1075,7 @@ function App() {
 
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: '25px', background: '#fff', padding: '20px', borderRadius: '12px', border: '1px solid var(--border-grey)', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
                 <label style={{ fontSize: '14px', fontWeight: '600', marginRight: '20px', textTransform: 'uppercase', color: 'var(--enba-dark)', letterSpacing: '1px' }}>İPK ADI:</label>
-                <input type="text" style={{ flex: 1, padding: '12px 15px', fontSize: '16px', border: '2px solid var(--border-grey)', borderRadius: '8px', fontFamily: 'Poppins, sans-serif', outline: 'none' }} placeholder="Örn: LDPE Mevcut Durum" value={yeniPlanBaslik} onChange={(e) => setYeniPlanBaslik(e.target.value)} />
+                <input type="text" style={{ flex: 1, padding: '12px 15px', fontSize: '16px', border: '2px solid var(--border-grey)', borderRadius: '8px', fontFamily: 'Poppins, sans-serif', outline: 'none' }} placeholder="Örn: LDPE Mevcut Durum" value={yeniPlanBaslik} onChange={(e) => setYeniPlanBaslik(e.target.value)} onFocus={window.selectOnFocus} />
             </div>
 
             {/* SEKME MENÜSÜ */}
@@ -663,18 +1091,18 @@ function App() {
                     <p style={{fontSize: '12px', color: '#7F8C8D', margin: 0}}>Tesise giren hammadde ve genel çalışma parametreleri.</p>
                     
                     <div className="params-grid">
-                        <div className="param-box"><label>aylık giren malzeme (ton)</label><input type="number" value={planParametreleri.aylikTon} onChange={(e) => parametreDegisti('aylikTon', e.target.value)} /></div>
-                        <div className="param-box"><label>mal alış fiyatı (₺/ton)</label><input type="number" value={planParametreleri.alisFiyati} onChange={(e) => parametreDegisti('alisFiyati', e.target.value)} /></div>
-                        <div className="param-box"><label>ana ürün satış fiyatı (₺/ton)</label><input type="number" value={planParametreleri.satisFiyati} onChange={(e) => parametreDegisti('satisFiyati', e.target.value)} /></div>
+                        <div className="param-box"><label>aylık giren malzeme (ton)</label><input type="number" value={planParametreleri.aylikTon} onChange={(e) => parametreDegisti('aylikTon', e.target.value)} onFocus={window.selectOnFocus} /></div>
+                        <div className="param-box"><label>mal alış fiyatı (₺/ton)</label><input type="number" value={planParametreleri.alisFiyati} onChange={(e) => parametreDegisti('alisFiyati', e.target.value)} onFocus={window.selectOnFocus} /></div>
+                        <div className="param-box"><label>ana ürün satış fiyatı (₺/ton)</label><input type="number" value={planParametreleri.satisFiyati} onChange={(e) => parametreDegisti('satisFiyati', e.target.value)} onFocus={window.selectOnFocus} /></div>
                         
-                        <div className="param-box"><label>aylık çalışma gün sayısı</label><input type="number" value={planParametreleri.aylikGun} onChange={(e) => parametreDegisti('aylikGun', e.target.value)} /></div>
-                        <div className="param-box"><label>tek vardiya çalışma saati</label><input type="number" value={planParametreleri.gunlukSaat} onChange={(e) => parametreDegisti('gunlukSaat', e.target.value)} /></div>
-                        <div className="param-box"><label>vardiya sayısı</label><input type="number" min="1" max="3" value={planParametreleri.vardiyaSayisi} onChange={(e) => parametreDegisti('vardiyaSayisi', e.target.value)} /></div>
-                        <div className="param-box"><label>ayıklama personeli saatlik hızı (ton)</label><input type="number" step="0.1" value={planParametreleri.ayiklamaHizi} onChange={(e) => parametreDegisti('ayiklamaHizi', e.target.value)} /></div>
+                        <div className="param-box"><label>aylık çalışma gün sayısı</label><input type="number" value={planParametreleri.aylikGun} onChange={(e) => parametreDegisti('aylikGun', e.target.value)} onFocus={window.selectOnFocus} /></div>
+                        <div className="param-box"><label>tek vardiya çalışma saati</label><input type="number" value={planParametreleri.gunlukSaat} onChange={(e) => parametreDegisti('gunlukSaat', e.target.value)} onFocus={window.selectOnFocus} /></div>
+                        <div className="param-box"><label>vardiya sayısı</label><input type="number" min="1" max="3" value={planParametreleri.vardiyaSayisi} onChange={(e) => parametreDegisti('vardiyaSayisi', e.target.value)} onFocus={window.selectOnFocus} /></div>
+                        <div className="param-box"><label>ayıklama personeli saatlik hızı (ton)</label><input type="number" step="0.1" value={planParametreleri.ayiklamaHizi} onChange={(e) => parametreDegisti('ayiklamaHizi', e.target.value)} onFocus={window.selectOnFocus} /></div>
                         
-                        <div className="param-box"><label>alış nakliye (₺/ton)</label><input type="number" value={planParametreleri.alisNakliye} onChange={(e) => parametreDegisti('alisNakliye', e.target.value)} /></div>
-                        <div className="param-box"><label>satış nakliye (₺/ton)</label><input type="number" value={planParametreleri.satisNakliye} onChange={(e) => parametreDegisti('satisNakliye', e.target.value)} /></div>
-                        <div className="param-box"><label>elektrik kw fiyatı (₺)</label><input type="number" step="0.01" value={planParametreleri.elektrikKwFiyat} onChange={(e) => parametreDegisti('elektrikKwFiyat', e.target.value)} /></div>
+                        <div className="param-box"><label>alış nakliye (₺/ton)</label><input type="number" value={planParametreleri.alisNakliye} onChange={(e) => parametreDegisti('alisNakliye', e.target.value)} onFocus={window.selectOnFocus} /></div>
+                        <div className="param-box"><label>satış nakliye (₺/ton)</label><input type="number" value={planParametreleri.satisNakliye} onChange={(e) => parametreDegisti('satisNakliye', e.target.value)} onFocus={window.selectOnFocus} /></div>
+                        <div className="param-box"><label>elektrik kw fiyatı (₺)</label><input type="number" step="0.01" value={planParametreleri.elektrikKwFiyat} onChange={(e) => parametreDegisti('elektrikKwFiyat', e.target.value)} onFocus={window.selectOnFocus} /></div>
                     </div>
                 </div>
 
@@ -691,12 +1119,12 @@ function App() {
                                     <h4>1. Ayrıştırma Aşaması (Çıkanlar)</h4>
                                     <div className="sub-product-row">
                                         <input type="text" value="⚡ ️ Ayrıştırma Çöpü / Fire" disabled style={{fontWeight: '600', color: 'var(--btn-red-dark)', backgroundColor: '#FDEDEC'}}/>
-                                        <input type="number" placeholder="Oran %" value={uretimRecetesi.copOrani} onChange={e => setUretimRecetesi({...uretimRecetesi, copOrani: e.target.value})} />
+                                        <input type="number" placeholder="Oran %" value={uretimRecetesi.copOrani} onChange={e => setUretimRecetesi({...uretimRecetesi, copOrani: e.target.value})} onFocus={window.selectOnFocus} />
                                         <span style={{fontSize: '12px', color: '#7F8C8D', flex: 1, fontWeight: '600'}}>% (Çöp)</span>
                                     </div>
                                     <div className="sub-product-row">
                                         <span style={{flex: 2}}></span>
-                                        <input type="number" placeholder="Bertaraf ₺/Ton" value={uretimRecetesi.copBertarafFiyati} onChange={e => setUretimRecetesi({...uretimRecetesi, copBertarafFiyati: e.target.value})} />
+                                        <input type="number" placeholder="Bertaraf ₺/Ton" value={uretimRecetesi.copBertarafFiyati} onChange={e => setUretimRecetesi({...uretimRecetesi, copBertarafFiyati: e.target.value})} onFocus={window.selectOnFocus} />
                                         <span style={{fontSize: '12px', color: '#7F8C8D', flex: 1, fontWeight: '600'}}>₺/Ton Gider</span>
                                     </div>
                                     
@@ -704,8 +1132,8 @@ function App() {
                                     {uretimRecetesi.altUrunler.map((urun) => (
                                         <div key={urun.id} className="sub-product-row" style={{background: 'var(--light-grey)', padding: '10px', borderRadius: '8px', border: '1px solid var(--border-grey)'}}>
                                             <input type="text" value={urun.ad} onChange={(e) => altUrunGuncelle(urun.id, 'ad', e.target.value)} placeholder="Ürün Adı"/>
-                                            <input type="number" value={urun.oran} onChange={(e) => altUrunGuncelle(urun.id, 'oran', e.target.value)} placeholder="% Oran"/>
-                                            <input type="number" value={urun.fiyat} onChange={(e) => altUrunGuncelle(urun.id, 'fiyat', e.target.value)} placeholder="Satış ₺/Ton"/>
+                                            <input type="number" value={urun.oran} onChange={(e) => altUrunGuncelle(urun.id, 'oran', e.target.value)} placeholder="% Oran" onFocus={window.selectOnFocus} />
+                                            <input type="number" value={urun.fiyat} onChange={(e) => altUrunGuncelle(urun.id, 'fiyat', e.target.value)} placeholder="Satış ₺/Ton" onFocus={window.selectOnFocus} />
                                             <label style={{fontSize: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 0.8, fontWeight: '600', color: 'var(--enba-dark)'}}>
                                                 <span>Üretime Girer</span>
                                                 <input type="checkbox" checked={urun.uretimeGirer} onChange={(e) => altUrunGuncelle(urun.id, 'uretimeGirer', e.target.checked)} style={{marginTop: '4px'}}/>
@@ -721,7 +1149,7 @@ function App() {
                                 <h4>2. Üretim Aşaması (Makine)</h4>
                                 <div className="sub-product-row">
                                     <span style={{flex: 2, fontWeight: '600', color: 'var(--enba-dark)'}}>⚙️ Üretim Firesi (Buhar, Gaz vb.):</span>
-                                    <input type="number" value={uretimRecetesi.uretimFiresi} onChange={e => setUretimRecetesi({...uretimRecetesi, uretimFiresi: e.target.value})} style={{flex: 1}}/>
+                                    <input type="number" value={uretimRecetesi.uretimFiresi} onChange={e => setUretimRecetesi({...uretimRecetesi, uretimFiresi: e.target.value})} style={{flex: 1}} onFocus={window.selectOnFocus} />
                                     <span style={{flex: 1, fontSize: '12px', fontWeight: '600', color: '#7F8C8D'}}>% (Fire)</span>
                                 </div>
                             </div>
@@ -761,9 +1189,9 @@ function App() {
                     <h3 style={{marginTop: 0, color: 'var(--enba-orange-dark)', textTransform: 'uppercase', fontSize: '15px', letterSpacing: '1px'}}>⚡  personel maliyet yönetimi</h3>
                     
                     <div style={{ display: 'flex', gap: '20px', marginBottom: '20px', background: 'white', padding: '15px', borderRadius: '8px', border: '1px solid var(--enba-orange)' }}>
-                        <div style={{fontSize: '13px', textTransform: 'uppercase', fontWeight: '600', color: 'var(--enba-dark)'}}><strong>Asgari Ücret (Net):</strong> <input type="number" step="0.01" style={{width: '100px', padding: '6px', border: '1px solid var(--border-grey)', borderRadius: '4px', marginLeft: '5px', outline: 'none'}} value={asgariNet} onChange={e=>setAsgariNet(Number(e.target.value))} /> ₺</div>
-                        <div style={{fontSize: '13px', textTransform: 'uppercase', fontWeight: '600', color: 'var(--enba-dark)'}}><strong>Asgari SGK Maliyeti:</strong> <input type="number" step="0.01" style={{width: '100px', padding: '6px', border: '1px solid var(--border-grey)', borderRadius: '4px', marginLeft: '5px', outline: 'none'}} value={asgariSgk} onChange={e=>setAsgariSgk(Number(e.target.value))} /> ₺</div>
-                        <div style={{fontSize: '13px', textTransform: 'uppercase', fontWeight: '600', color: 'var(--enba-dark)'}}><strong>Günlük Yemek:</strong> <input type="number" step="0.01" style={{width: '80px', padding: '6px', border: '1px solid var(--border-grey)', borderRadius: '4px', marginLeft: '5px', outline: 'none'}} value={planParametreleri.gunlukYemekUcreti} onChange={e=>parametreDegisti('gunlukYemekUcreti', e.target.value)} /> ₺</div>
+                        <div style={{fontSize: '13px', textTransform: 'uppercase', fontWeight: '600', color: 'var(--enba-dark)'}}><strong>Asgari Ücret (Net):</strong> <input type="number" step="0.01" style={{width: '100px', padding: '6px', border: '1px solid var(--border-grey)', borderRadius: '4px', marginLeft: '5px', outline: 'none'}} value={asgariNet} onChange={e=>setAsgariNet(Number(e.target.value))} onFocus={window.selectOnFocus} /> ₺</div>
+                        <div style={{fontSize: '13px', textTransform: 'uppercase', fontWeight: '600', color: 'var(--enba-dark)'}}><strong>Asgari SGK Maliyeti:</strong> <input type="number" step="0.01" style={{width: '100px', padding: '6px', border: '1px solid var(--border-grey)', borderRadius: '4px', marginLeft: '5px', outline: 'none'}} value={asgariSgk} onChange={e=>setAsgariSgk(Number(e.target.value))} onFocus={window.selectOnFocus} /> ₺</div>
+                        <div style={{fontSize: '13px', textTransform: 'uppercase', fontWeight: '600', color: 'var(--enba-dark)'}}><strong>Günlük Yemek:</strong> <input type="number" step="0.01" style={{width: '80px', padding: '6px', border: '1px solid var(--border-grey)', borderRadius: '4px', marginLeft: '5px', outline: 'none'}} value={planParametreleri.gunlukYemekUcreti} onChange={e=>parametreDegisti('gunlukYemekUcreti', e.target.value)} onFocus={window.selectOnFocus} /> ₺</div>
                     </div>
 
                     {personelListesi.length > 0 && (
@@ -807,15 +1235,15 @@ function App() {
                     )}
 
                     <div className="personnel-form">
-                        <div className="form-group" style={{flex: 2}}><label>ünvan</label><input type="text" placeholder="Örn: Vasıfsız İşçi" value={yeniPersonel.unvan} onChange={e => setYeniPersonel({...yeniPersonel, unvan: e.target.value})} /></div>
+                        <div className="form-group" style={{flex: 2}}><label>ünvan</label><input type="text" placeholder="Örn: Vasıfsız İşçi" value={yeniPersonel.unvan} onChange={e => setYeniPersonel({...yeniPersonel, unvan: e.target.value})} onFocus={window.selectOnFocus} /></div>
                         <div className="form-group" style={{ flex: 0.5, alignItems: 'center', justifyContent: 'center', paddingBottom: '8px' }}>
                             <label style={{textAlign: 'center', color: 'var(--enba-dark)'}}>Ayıklama<br/>Yapar mı?</label>
                             <input type="checkbox" checked={yeniPersonel.isAyiklama} onChange={e => setYeniPersonel({...yeniPersonel, isAyiklama: e.target.checked})} style={{ width: '20px', height: '20px', cursor: 'pointer' }} />
                         </div>
-                        <div className="form-group"><label>kişi sayısı</label><input type="number" min="1" value={yeniPersonel.kisiSayisi} onChange={e => setYeniPersonel({...yeniPersonel, kisiSayisi: e.target.value})} /></div>
-                        <div className="form-group"><label>ek maaş (+₺)</label><input type="number" placeholder="0" value={yeniPersonel.ekMaas} onChange={e => setYeniPersonel({...yeniPersonel, ekMaas: e.target.value})} /></div>
-                        <div className="form-group"><label>ek sgk (+₺)</label><input type="number" placeholder="0" value={yeniPersonel.ekSgk} onChange={e => setYeniPersonel({...yeniPersonel, ekSgk: e.target.value})} /></div>
-                        <div className="form-group"><label>ek yemek (+₺)</label><input type="number" placeholder="0" value={yeniPersonel.ekYemek} onChange={e => setYeniPersonel({...yeniPersonel, ekYemek: e.target.value})} /></div>
+                        <div className="form-group"><label>kişi sayısı</label><input type="number" min="1" value={yeniPersonel.kisiSayisi} onChange={e => setYeniPersonel({...yeniPersonel, kisiSayisi: e.target.value})} onFocus={window.selectOnFocus} /></div>
+                        <div className="form-group"><label>ek maaş (+₺)</label><input type="number" placeholder="0" value={yeniPersonel.ekMaas} onChange={e => setYeniPersonel({...yeniPersonel, ekMaas: e.target.value})} onFocus={window.selectOnFocus} /></div>
+                        <div className="form-group"><label>ek sgk (+₺)</label><input type="number" placeholder="0" value={yeniPersonel.ekSgk} onChange={e => setYeniPersonel({...yeniPersonel, ekSgk: e.target.value})} onFocus={window.selectOnFocus} /></div>
+                        <div className="form-group"><label>ek yemek (+₺)</label><input type="number" placeholder="0" value={yeniPersonel.ekYemek} onChange={e => setYeniPersonel({...yeniPersonel, ekYemek: e.target.value})} onFocus={window.selectOnFocus} /></div>
                         <button className="btn btn-info" style={{marginBottom: '0', padding: '10px 20px'}} onClick={personelEkle}>+ EKLE</button>
                     </div>
                 </div>
@@ -827,11 +1255,11 @@ function App() {
                     <div className="personnel-form" style={{border: '1px solid #AED6F1', backgroundColor: '#fff'}}>
                         <div className="form-group" style={{flex: 2}}>
                             <label style={{color: 'var(--info-blue)'}}>HİZMET ADI</label>
-                            <input type="text" placeholder="Örn: Muhasebe / Güvenlik Hizmeti" value={yeniDisHizmet.ad} onChange={e => setYeniDisHizmet({...yeniDisHizmet, ad: e.target.value})} style={{borderColor: '#AED6F1'}} />
+                            <input type="text" placeholder="Örn: Muhasebe / Güvenlik Hizmeti" value={yeniDisHizmet.ad} onChange={e => setYeniDisHizmet({...yeniDisHizmet, ad: e.target.value})} style={{borderColor: '#AED6F1'}} onFocus={window.selectOnFocus} />
                         </div>
                         <div className="form-group">
                             <label style={{color: 'var(--info-blue)'}}>AYLIK TUTAR (₺)</label>
-                            <input type="number" placeholder="0" value={yeniDisHizmet.tutar} onChange={e => setYeniDisHizmet({...yeniDisHizmet, tutar: e.target.value})} style={{borderColor: '#AED6F1'}} />
+                            <input type="number" placeholder="0" value={yeniDisHizmet.tutar} onChange={e => setYeniDisHizmet({...yeniDisHizmet, tutar: e.target.value})} style={{borderColor: '#AED6F1'}} onFocus={window.selectOnFocus} />
                         </div>
                         <button className="btn btn-info" style={{marginBottom: '0', padding: '10px 20px', backgroundColor: 'var(--info-blue)'}} onClick={disHizmetEkle}>+ EKLE</button>
                     </div>
@@ -878,11 +1306,11 @@ function App() {
                     <div className="personnel-form" style={{border: '1px solid #F6DDCC', backgroundColor: '#fff'}}>
                         <div className="form-group" style={{flex: 2}}>
                             <label style={{color: '#D35400'}}>KİRALAMA MADDE ADI</label>
-                            <input type="text" placeholder="Örn: Tesis Kirası / Elektrikli Forklift" value={yeniKiralama.ad} onChange={e => setYeniKiralama({...yeniKiralama, ad: e.target.value})} style={{borderColor: '#F5CBA7'}} />
+                            <input type="text" placeholder="Örn: Tesis Kirası / Elektrikli Forklift" value={yeniKiralama.ad} onChange={e => setYeniKiralama({...yeniKiralama, ad: e.target.value})} style={{borderColor: '#F5CBA7'}} onFocus={window.selectOnFocus} />
                         </div>
                         <div className="form-group">
                             <label style={{color: '#D35400'}}>AYLIK KİRA (₺)</label>
-                            <input type="number" placeholder="0" value={yeniKiralama.tutar} onChange={e => setYeniKiralama({...yeniKiralama, tutar: e.target.value})} style={{borderColor: '#F5CBA7'}} />
+                            <input type="number" placeholder="0" value={yeniKiralama.tutar} onChange={e => setYeniKiralama({...yeniKiralama, tutar: e.target.value})} style={{borderColor: '#F5CBA7'}} onFocus={window.selectOnFocus} />
                         </div>
                         <button className="btn btn-warning" style={{marginBottom: '0', padding: '10px 20px', backgroundColor: '#D35400', color: 'white'}} onClick={kiralamaEkle}>+ EKLE</button>
                     </div>
@@ -930,7 +1358,7 @@ function App() {
                                         return (
                                             <div className="input-row" key={kalem.kodu}>
                                                 <label>{kalem.kodu} - {kalem.adi}:</label>
-                                                <input type="number" placeholder="0 ₺" value={yeniPlanGiderler[kalem.kodu] || ""} onChange={(e) => setYeniPlanGiderler({...yeniPlanGiderler, [kalem.kodu]: e.target.value})} disabled={isOtoHesaplanan} />
+                                                <input type="number" placeholder="0 ₺" value={yeniPlanGiderler[kalem.kodu] || ""} onChange={(e) => setYeniPlanGiderler({...yeniPlanGiderler, [kalem.kodu]: e.target.value})} disabled={isOtoHesaplanan} onFocus={window.selectOnFocus} />
                                             </div>
                                         )
                                     })}
@@ -945,7 +1373,7 @@ function App() {
                             <div key={kalem.kodu} style={{ maxWidth: '500px', marginTop: '20px' }}>
                                 <div className="input-row">
                                     <label>{kalem.kodu} - {kalem.adi}:</label>
-                                    <input type="number" placeholder="0 ₺" value={yeniPlanGelirler[kalem.kodu] || ""} onChange={(e) => setYeniPlanGelirler({...yeniPlanGelirler, [kalem.kodu]: e.target.value})} disabled={kalem.kodu === '109'} style={{fontSize: '16px', color: 'var(--enba-orange)', fontWeight: 'bold'}}/>
+                                    <input type="number" placeholder="0 ₺" value={yeniPlanGelirler[kalem.kodu] || ""} onChange={(e) => setYeniPlanGelirler({...yeniPlanGelirler, [kalem.kodu]: e.target.value})} disabled={kalem.kodu === '109'} style={{fontSize: '16px', color: 'var(--enba-orange)', fontWeight: 'bold'}} onFocus={window.selectOnFocus} />
                                 </div>
                                 
                                 {kalem.kodu === '109' && satisDetaylari.length > 0 && (
@@ -977,11 +1405,11 @@ function App() {
                         <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-end', marginBottom: '20px' }}>
                             <div className="input-row" style={{ flex: 2, marginBottom: 0 }}>
                                 <label style={{color: 'var(--capex-purple)'}}>Yatırım Kalemi Adı (Örn: Kırma Makinesi)</label>
-                                <input type="text" value={yeniKurulum.ad} onChange={e => setYeniKurulum({...yeniKurulum, ad: e.target.value})} style={{borderColor: '#D7BDE2'}} />
+                                <input type="text" value={yeniKurulum.ad} onChange={e => setYeniKurulum({...yeniKurulum, ad: e.target.value})} style={{borderColor: '#D7BDE2'}} onFocus={window.selectOnFocus} />
                             </div>
                             <div className="input-row" style={{ flex: 1, marginBottom: 0 }}>
                                 <label style={{color: 'var(--capex-purple)'}}>Tutar (₺)</label>
-                                <input type="number" value={yeniKurulum.tutar} onChange={e => setYeniKurulum({...yeniKurulum, tutar: e.target.value})} style={{borderColor: '#D7BDE2'}} />
+                                <input type="number" value={yeniKurulum.tutar} onChange={e => setYeniKurulum({...yeniKurulum, tutar: e.target.value})} style={{borderColor: '#D7BDE2'}} onFocus={window.selectOnFocus} />
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '15px', padding: '10px', background: '#F5EEF8', borderRadius: '6px', border: '1px solid #EBDEF0' }}>
                                 <input type="checkbox" id="isMakineCheck" checked={yeniKurulum.isMakine} onChange={e => setYeniKurulum({...yeniKurulum, isMakine: e.target.checked})} style={{width: '20px', height: '20px', cursor: 'pointer'}} />
@@ -995,11 +1423,11 @@ function App() {
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
                                     <div className="input-row" style={{marginBottom: 0}}>
                                         <label style={{color: '#6A1B9A', fontSize: '11px'}}>Üretim Kapasitesi (Ton/Saat)</label>
-                                        <input type="number" step="0.1" value={yeniKurulum.kapasite} onChange={e => setYeniKurulum({...yeniKurulum, kapasite: e.target.value})} placeholder="Örn: 5" style={{borderColor: '#D7BDE2'}}/>
+                                        <input type="number" step="0.1" value={yeniKurulum.kapasite} onChange={e => setYeniKurulum({...yeniKurulum, kapasite: e.target.value})} placeholder="Örn: 5" style={{borderColor: '#D7BDE2'}} onFocus={window.selectOnFocus} />
                                     </div>
                                     <div className="input-row" style={{marginBottom: 0}}>
                                         <label style={{color: '#6A1B9A', fontSize: '11px'}}>Verimlilik Katsayısı (%)</label>
-                                        <input type="number" value={yeniKurulum.verimlilik} onChange={e => setYeniKurulum({...yeniKurulum, verimlilik: e.target.value})} style={{borderColor: '#D7BDE2'}}/>
+                                        <input type="number" value={yeniKurulum.verimlilik} onChange={e => setYeniKurulum({...yeniKurulum, verimlilik: e.target.value})} style={{borderColor: '#D7BDE2'}} onFocus={window.selectOnFocus} />
                                     </div>
                                 </div>
 
@@ -1043,15 +1471,15 @@ function App() {
                                     <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
                                         <div className="input-row" style={{ flex: 3, marginBottom: 0 }}>
                                             <label style={{ color: '#6A1B9A', fontSize: '11px' }}>Motor / Kaynak Adı</label>
-                                            <input type="text" value={yeniMotor.ad} onChange={e => setYeniMotor({...yeniMotor, ad: e.target.value})} placeholder="Örn: Ana Motor, Fanlı Soğutucu" style={{ borderColor: '#D7BDE2' }} />
+                                            <input type="text" value={yeniMotor.ad} onChange={e => setYeniMotor({...yeniMotor, ad: e.target.value})} placeholder="Örn: Ana Motor, Fanlı Soğutucu" style={{ borderColor: '#D7BDE2' }} onFocus={window.selectOnFocus} />
                                         </div>
                                         <div className="input-row" style={{ flex: 1, marginBottom: 0 }}>
                                             <label style={{ color: '#6A1B9A', fontSize: '11px' }}>Güç (kW)</label>
-                                            <input type="number" value={yeniMotor.gucu} onChange={e => setYeniMotor({...yeniMotor, gucu: e.target.value})} placeholder="kW" style={{ borderColor: '#D7BDE2' }} />
+                                            <input type="number" value={yeniMotor.gucu} onChange={e => setYeniMotor({...yeniMotor, gucu: e.target.value})} placeholder="kW" style={{ borderColor: '#D7BDE2' }} onFocus={window.selectOnFocus} />
                                         </div>
                                         <div className="input-row" style={{ flex: 1, marginBottom: 0 }}>
                                             <label style={{ color: '#6A1B9A', fontSize: '11px' }}>Yük Katsayısı (%)</label>
-                                            <input type="number" value={yeniMotor.yukKatsayisi} onChange={e => setYeniMotor({...yeniMotor, yukKatsayisi: e.target.value})} style={{ borderColor: '#D7BDE2' }} />
+                                            <input type="number" value={yeniMotor.yukKatsayisi} onChange={e => setYeniMotor({...yeniMotor, yukKatsayisi: e.target.value})} style={{ borderColor: '#D7BDE2' }} onFocus={window.selectOnFocus} />
                                         </div>
                                         <button className="btn btn-purple" style={{ padding: '10px 18px', fontSize: '12px', whiteSpace: 'nowrap' }} onClick={motorEkle}>+ Motor Ekle</button>
                                     </div>
@@ -1143,7 +1571,7 @@ function App() {
                         <div style={{flex: 1}}>
                             <label style={{fontSize: '14px', fontWeight: 'bold', color: 'var(--capex-purple)', display: 'block', marginBottom: '8px'}}>AMORTİSMAN / GERİ ÖDEME SÜRESİ (AY):</label>
                             <p style={{fontSize: '12px', color: '#7F8C8D', margin: '0 0 12px 0'}}>Toplam maliyet bu süreye bölünerek net kârdan düşülecektir.</p>
-                            <input type="number" value={amortismanSuresi} onChange={e => setAmortismanSuresi(Number(e.target.value))} style={{padding: '12px', fontSize: '18px', border: '2px solid var(--capex-purple)', borderRadius: '8px', width: '150px', outline: 'none', color: 'var(--enba-dark)', fontWeight: 'bold'}} />
+                            <input type="number" value={amortismanSuresi} onChange={e => setAmortismanSuresi(Number(e.target.value))} style={{padding: '12px', fontSize: '18px', border: '2px solid var(--capex-purple)', borderRadius: '8px', width: '150px', outline: 'none', color: 'var(--enba-dark)', fontWeight: 'bold'}} onFocus={window.selectOnFocus} />
                         </div>
                         <div style={{flex: 1, textAlign: 'right'}}>
                             <span style={{fontSize: '14px', color: '#7F8C8D', display: 'block', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1px'}}>Aylık Kârdan Düşülecek Amortisman Payı:</span>

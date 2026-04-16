@@ -337,6 +337,7 @@ function ArsivModulu({ user }) {
                         value={aramaMetni}
                         onChange={e => setAramaMetni(e.target.value)}
                         style={{ ...inp, paddingLeft: '40px' }}
+                        onFocus={window.selectOnFocus}
                     />
                 </div>
                 <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -527,7 +528,7 @@ function ArsivModulu({ user }) {
                                                 <div style={{ flex: '2 1 220px' }}>
                                                     <label style={lbl}>Dosya Adı</label>
                                                     <input style={inp} value={duzenleForm.ad}
-                                                        onChange={e => setDuzenleForm(p => ({ ...p, ad: e.target.value }))} />
+                                                        onChange={e => setDuzenleForm(p => ({ ...p, ad: e.target.value }))} onFocus={window.selectOnFocus} />
                                                 </div>
                                                 <div style={{ flex: '1 1 160px' }}>
                                                     <label style={lbl}>Kategori</label>
@@ -559,6 +560,7 @@ function ArsivModulu({ user }) {
                                                             setYeniEtiket('');
                                                         }}
                                                         style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: '13px', flex: 1, minWidth: '100px', color: 'var(--on-surface)' }}
+                                                        onFocus={window.selectOnFocus}
                                                     />
                                                 </div>
                                                 {/* Mevcut etiketlerden öneri */}
@@ -576,7 +578,7 @@ function ArsivModulu({ user }) {
                                             <div>
                                                 <label style={lbl}>Notlar</label>
                                                 <textarea style={{ ...inp, resize: 'vertical', minHeight: '60px' }} value={duzenleForm.notlar}
-                                                    onChange={e => setDuzenleForm(p => ({ ...p, notlar: e.target.value }))} rows={2} />
+                                                    onChange={e => setDuzenleForm(p => ({ ...p, notlar: e.target.value }))} rows={2} onFocus={window.selectOnFocus} />
                                             </div>
                                             <div style={{ display: 'flex', gap: '8px' }}>
                                                 <button onClick={duzenleKaydet} style={btnNavy}>⚡  Kaydet</button>

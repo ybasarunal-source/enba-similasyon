@@ -418,7 +418,7 @@ function LisansRuhsatModulu() {
                                 </div>
                                 <div>
                                     <label style={labelStyle}>MALİYET (₺)</label>
-                                    <input type="number" value={formMaliyet} onChange={e => setFormMaliyet(e.target.value)} placeholder="0" style={inputStyle} />
+                                    <input type="number" value={formMaliyet} onChange={e => setFormMaliyet(e.target.value)} placeholder="0" style={inputStyle} onFocus={window.selectOnFocus} />
                                 </div>
                             </div>
 

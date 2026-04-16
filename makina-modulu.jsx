@@ -518,7 +518,7 @@ function MakinaKatalog() {
                             </div>
                             <div style={{ flex: '1 1 130px' }}>
                                 <label style={labelStyle}>{window.t('assets.power')} (kW)</label>
-                                <input style={inputStyle} type="number" value={mMotorGucu} onChange={e => setMMotorGucu(e.target.value)} placeholder="Örn: 150" />
+                                <input style={inputStyle} type="number" value={mMotorGucu} onChange={e => setMMotorGucu(e.target.value)} placeholder="Örn: 150" onFocus={window.selectOnFocus} />
                             </div>
                             <div style={{ flex: '1 1 160px' }}>
                                 <label style={labelStyle}>{window.t('assets.category')}</label>
@@ -532,7 +532,7 @@ function MakinaKatalog() {
                             </div>
                             <div style={{ flex: '1 1 120px' }}>
                                 <label style={labelStyle}>{window.t('assets.capacity')} (Ton/Sa)</label>
-                                <input style={inputStyle} type="number" value={mKapasite} onChange={e => setMKapasite(e.target.value)} placeholder="Örn: 10" />
+                                <input style={inputStyle} type="number" value={mKapasite} onChange={e => setMKapasite(e.target.value)} placeholder="Örn: 10" onFocus={window.selectOnFocus} />
                             </div>
                             <div style={{ flex: '1 1 120px' }}>
                                 <label style={labelStyle}>{window.t('assets.size')}</label>
@@ -544,7 +544,7 @@ function MakinaKatalog() {
                             </div>
                             <div style={{ flex: '1 1 140px' }}>
                                 <label style={labelStyle}>{window.t('assets.price')} (₺)</label>
-                                <input style={inputStyle} type="number" value={mYatirim} onChange={e => setMYatirim(e.target.value)} placeholder="Örn: 500000" />
+                                <input style={inputStyle} type="number" value={mYatirim} onChange={e => setMYatirim(e.target.value)} placeholder="Örn: 500000" onFocus={window.selectOnFocus} />
                             </div>
                             <div style={{ display: 'flex', gap: '10px', flexShrink: 0 }}>
                                 <button onClick={() => setMFormAcik(false)} style={btnSecondary}>{window.t('common.cancel')}</button>
@@ -654,7 +654,7 @@ function MakinaKatalog() {
                             </div>
                             <div style={{ flex: '1 1 160px' }}>
                                 <label style={labelStyle}>{window.t('assets.price')} (₺)</label>
-                                <input style={inputStyle} type="number" value={dYatirim} onChange={e => setDYatirim(e.target.value)} placeholder="Örn: 25000" />
+                                <input style={inputStyle} type="number" value={dYatirim} onChange={e => setDYatirim(e.target.value)} placeholder="Örn: 25000" onFocus={window.selectOnFocus} />
                             </div>
                             <div style={{ flex: '1 1 140px' }}>
                                 <label style={labelStyle}>{window.t('assets.date')}</label>
@@ -774,7 +774,7 @@ function MakinaKatalog() {
                             </div>
                             <div style={{ flex: '1 1 150px' }}>
                                 <label style={labelStyle}>{window.t('assets.price')} (₺) *</label>
-                                <input style={inputStyle} type="number" value={bMaliyet} onChange={e => setBMaliyet(e.target.value)} placeholder="Örn: 15000" />
+                                <input style={inputStyle} type="number" value={bMaliyet} onChange={e => setBMaliyet(e.target.value)} placeholder="Örn: 15000" onFocus={window.selectOnFocus} />
                             </div>
                             <div style={{ display: 'flex', gap: '10px', flexShrink: 0 }}>
                                 <button onClick={() => setBFormAcik(false)} style={btnSecondary}>{window.t('common.cancel')}</button>

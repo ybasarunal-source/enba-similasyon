@@ -34,16 +34,16 @@ window.DetStep3_Operations = function DetStep3_Operations({
                 {Array.from({length: vardiyaSayisi}, (_, i) => (
                     <div key={i} style={{flex:1, minWidth:'150px'}}>
                         <label style={{ fontSize:'11px', fontWeight:600, color:'var(--on-surface-variant)', textTransform:'uppercase', display:'block', marginBottom:'6px' }}>{i+1}. Vardiya (Saat / Gün)</label>
-                        <input type='number' value={vardiyaSaatleri[i+1] || 8} onChange={e => setVardiyaSaatleri({...vardiyaSaatleri, [i+1]: Number(e.target.value)})} style={{ width:'100%', padding:'10px', borderRadius:'0.5rem', border:'1px solid var(--surface-container-highest)' }} />
+                        <input type='number' value={vardiyaSaatleri[i+1] || 8} onChange={e => setVardiyaSaatleri({...vardiyaSaatleri, [i+1]: Number(e.target.value)})} style={{ width:'100%', padding:'10px', borderRadius:'0.5rem', border:'1px solid var(--surface-container-highest)' }} onFocus={window.selectOnFocus} />
                     </div>
                 ))}
                 <div style={{flex:1, minWidth:'150px'}}>
                     <label style={{ fontSize:'11px', fontWeight:600, color:'var(--on-surface-variant)', textTransform:'uppercase', display:'block', marginBottom:'6px' }}>Aylık Çalışma Günü</label>
-                    <input type='number' value={aylikCalismaGunu} onChange={e => setAylikCalismaGunu(Number(e.target.value))} style={{ width:'100%', padding:'10px', borderRadius:'0.5rem', border:'1px solid var(--surface-container-highest)' }} />
+                    <input type='number' value={aylikCalismaGunu} onChange={e => setAylikCalismaGunu(Number(e.target.value))} style={{ width:'100%', padding:'10px', borderRadius:'0.5rem', border:'1px solid var(--surface-container-highest)' }} onFocus={window.selectOnFocus} />
                 </div>
                 <div style={{flex:1, minWidth:'150px'}}>
                     <label style={{ fontSize:'11px', fontWeight:600, color:'var(--enba-orange-dark)', textTransform:'uppercase', display:'block', marginBottom:'6px' }}>⚡ Elektrik Birim Fiyatı (₺/kWh)</label>
-                    <input type='number' step='0.1' value={elektrikBirimFiyat} onChange={e => setElektrikBirimFiyat(Number(e.target.value))} style={{ width:'100%', padding:'10px', borderRadius:'0.5rem', border:'1px solid var(--surface-container-highest)' }} />
+                    <input type='number' step='0.1' value={elektrikBirimFiyat} onChange={e => setElektrikBirimFiyat(Number(e.target.value))} style={{ width:'100%', padding:'10px', borderRadius:'0.5rem', border:'1px solid var(--surface-container-highest)' }} onFocus={window.selectOnFocus} />
                 </div>
             </div>
 
@@ -53,11 +53,11 @@ window.DetStep3_Operations = function DetStep3_Operations({
                     <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px' }}>
                         <div>
                             <label style={{ fontSize:'10px', fontWeight:600, color:'var(--on-surface-variant)', display:'block', marginBottom:'4px' }}>ÇUVAL KAPASİTESİ (TON/ADET)</label>
-                            <input type='number' step='0.01' value={opGider.cuvalKapasite} onChange={e => setOpGider({...opGider, cuvalKapasite: Number(e.target.value)})} style={{ width:'100%', padding:'10px', borderRadius:'0.5rem', border:'1px solid #ccc', background:'var(--surface-container-lowest)' }} />
+                            <input type='number' step='0.01' value={opGider.cuvalKapasite} onChange={e => setOpGider({...opGider, cuvalKapasite: Number(e.target.value)})} style={{ width:'100%', padding:'10px', borderRadius:'0.5rem', border:'1px solid #ccc', background:'var(--surface-container-lowest)' }} onFocus={window.selectOnFocus} />
                         </div>
                         <div>
                             <label style={{ fontSize:'10px', fontWeight:600, color:'var(--on-surface-variant)', display:'block', marginBottom:'4px' }}>ÇUVAL BİRİM FİYATI (₺)</label>
-                            <input type='number' step='0.1' value={opGider.cuvalFiyat} onChange={e => setOpGider({...opGider, cuvalFiyat: Number(e.target.value)})} style={{ width:'100%', padding:'10px', borderRadius:'0.5rem', border:'1px solid #ccc', background:'var(--surface-container-lowest)' }} />
+                            <input type='number' step='0.1' value={opGider.cuvalFiyat} onChange={e => setOpGider({...opGider, cuvalFiyat: Number(e.target.value)})} style={{ width:'100%', padding:'10px', borderRadius:'0.5rem', border:'1px solid #ccc', background:'var(--surface-container-lowest)' }} onFocus={window.selectOnFocus} />
                         </div>
                     </div>
                 </div>
@@ -98,11 +98,11 @@ window.DetStep3_Operations = function DetStep3_Operations({
                                 </div>
                                 <div style={{ width:'100px' }}>
                                     <label style={{ fontSize:'10px', display:'block', marginBottom:'4px' }}>Verimlilik (%)</label>
-                                    <input type='number' value={sm.verimlilik} onChange={e=> setSeciliMakinalar(prev => prev.map(x => x.id===sm.id ? {...x, verimlilik: Number(e.target.value)} : x))} style={{ width:'100%', padding:'6px', borderRadius:'0.5rem', border:'1px solid #ccc' }} />
+                                    <input type='number' value={sm.verimlilik} onChange={e=> setSeciliMakinalar(prev => prev.map(x => x.id===sm.id ? {...x, verimlilik: Number(e.target.value)} : x))} style={{ width:'100%', padding:'6px', borderRadius:'0.5rem', border:'1px solid #ccc' }} onFocus={window.selectOnFocus} />
                                 </div>
                                 <div style={{ width:'100px' }}>
                                     <label style={{ fontSize:'10px', display:'block', marginBottom:'4px' }}>Güç Katsayısı</label>
-                                    <input type='number' step='0.1' value={sm.katsayi} onChange={e=> setSeciliMakinalar(prev => prev.map(x => x.id===sm.id ? {...x, katsayi: Number(e.target.value)} : x))} style={{ width:'100%', padding:'6px', borderRadius:'0.5rem', border:'1px solid #ccc' }} />
+                                    <input type='number' step='0.1' value={sm.katsayi} onChange={e=> setSeciliMakinalar(prev => prev.map(x => x.id===sm.id ? {...x, katsayi: Number(e.target.value)} : x))} style={{ width:'100%', padding:'6px', borderRadius:'0.5rem', border:'1px solid #ccc' }} onFocus={window.selectOnFocus} />
                                 </div>
                                 <button onClick={() => setSeciliMakinalar(seciliMakinalar.filter(x => x.id !== sm.id))} style={{ background:'none', border:'none', color:'var(--error)', cursor:'pointer', fontWeight:800 }}>✖ Kaldır</button>
                             </div>

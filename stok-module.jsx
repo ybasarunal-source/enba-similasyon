@@ -308,15 +308,15 @@ function StokModulu() {
                         <div><label style={lbl}>Hammadde Türü</label>
                             <input type="text" list="ham-list" style={inp} placeholder="Tür seçin veya yazın..." value={alisForm.hammaddeTuru} onChange={e => setAlisForm(f => ({ ...f, hammaddeTuru: e.target.value }))} /></div>
                         <div><label style={lbl}>Brüt Miktar (kg) *</label>
-                            <input type="number" min="0" style={inp} placeholder="0" value={alisForm.brutMiktar} onChange={e => setAlisForm(f => ({ ...f, brutMiktar: e.target.value }))} /></div>
+                            <input type="number" min="0" style={inp} placeholder="0" value={alisForm.brutMiktar} onChange={e => setAlisForm(f => ({ ...f, brutMiktar: e.target.value }))} onFocus={window.selectOnFocus} /></div>
                         <div><label style={lbl}>Alış Fiyatı (₺/kg) *</label>
-                            <input type="number" min="0" step="0.01" style={inp} placeholder="0.00" value={alisForm.alisFiyati} onChange={e => setAlisForm(f => ({ ...f, alisFiyati: e.target.value }))} /></div>
+                            <input type="number" min="0" step="0.01" style={inp} placeholder="0.00" value={alisForm.alisFiyati} onChange={e => setAlisForm(f => ({ ...f, alisFiyati: e.target.value }))} onFocus={window.selectOnFocus} /></div>
                         <div><label style={lbl}>Nakliye Bedeli (₺)</label>
-                            <input type="number" min="0" style={inp} placeholder="0" value={alisForm.nakliyeBedeli} onChange={e => setAlisForm(f => ({ ...f, nakliyeBedeli: e.target.value }))} /></div>
+                            <input type="number" min="0" style={inp} placeholder="0" value={alisForm.nakliyeBedeli} onChange={e => setAlisForm(f => ({ ...f, nakliyeBedeli: e.target.value }))} onFocus={window.selectOnFocus} /></div>
                         <div><label style={lbl}>Yab. Madde Fire (%)</label>
-                            <input type="number" min="0" max="100" step="0.1" style={inp} placeholder="0" value={alisForm.ymFire} onChange={e => setAlisForm(f => ({ ...f, ymFire: e.target.value }))} /></div>
+                            <input type="number" min="0" max="100" step="0.1" style={inp} placeholder="0" value={alisForm.ymFire} onChange={e => setAlisForm(f => ({ ...f, ymFire: e.target.value }))} onFocus={window.selectOnFocus} /></div>
                         <div><label style={lbl}>Nem Fire (%)</label>
-                            <input type="number" min="0" max="100" step="0.1" style={inp} placeholder="0" value={alisForm.nemFire} onChange={e => setAlisForm(f => ({ ...f, nemFire: e.target.value }))} /></div>
+                            <input type="number" min="0" max="100" step="0.1" style={inp} placeholder="0" value={alisForm.nemFire} onChange={e => setAlisForm(f => ({ ...f, nemFire: e.target.value }))} onFocus={window.selectOnFocus} /></div>
                         <div><label style={lbl}>Notlar</label>
                             <input type="text" style={inp} placeholder="..." value={alisForm.notlar} onChange={e => setAlisForm(f => ({ ...f, notlar: e.target.value }))} /></div>
                     </div>
@@ -444,11 +444,11 @@ function StokModulu() {
                                 value={satisForm.stokTuru === 'hammadde' ? satisForm.hammaddeTuru : satisForm.mamulTuru}
                                 onChange={e => setSatisForm(f => satisForm.stokTuru === 'hammadde' ? { ...f, hammaddeTuru: e.target.value } : { ...f, mamulTuru: e.target.value })} /></div>
                         <div><label style={lbl}>Miktar (kg) *</label>
-                            <input type="number" min="0" style={inp} placeholder="0" value={satisForm.miktar} onChange={e => setSatisForm(f => ({ ...f, miktar: e.target.value }))} /></div>
+                            <input type="number" min="0" style={inp} placeholder="0" value={satisForm.miktar} onChange={e => setSatisForm(f => ({ ...f, miktar: e.target.value }))} onFocus={window.selectOnFocus} /></div>
                         <div><label style={lbl}>Satış Fiyatı (₺/kg) *</label>
-                            <input type="number" min="0" step="0.01" style={inp} placeholder="0.00" value={satisForm.satisFiyati} onChange={e => setSatisForm(f => ({ ...f, satisFiyati: e.target.value }))} /></div>
+                            <input type="number" min="0" step="0.01" style={inp} placeholder="0.00" value={satisForm.satisFiyati} onChange={e => setSatisForm(f => ({ ...f, satisFiyati: e.target.value }))} onFocus={window.selectOnFocus} /></div>
                         <div><label style={lbl}>Nakliye Bedeli (₺)</label>
-                            <input type="number" min="0" style={inp} placeholder="0" value={satisForm.nakliyeBedeli} onChange={e => setSatisForm(f => ({ ...f, nakliyeBedeli: e.target.value }))} /></div>
+                            <input type="number" min="0" style={inp} placeholder="0" value={satisForm.nakliyeBedeli} onChange={e => setSatisForm(f => ({ ...f, nakliyeBedeli: e.target.value }))} onFocus={window.selectOnFocus} /></div>
                         <div><label style={lbl}>Notlar</label>
                             <input type="text" style={inp} placeholder="..." value={satisForm.notlar} onChange={e => setSatisForm(f => ({ ...f, notlar: e.target.value }))} /></div>
                     </div>

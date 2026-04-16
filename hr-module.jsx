@@ -217,6 +217,7 @@ function HrModule() {
                                                     fontSize: '13px', outline: 'none',
                                                     transition: 'border-color 0.2s'
                                                 }}
+                                                onFocus={window.selectOnFocus}
                                             />
                                             {hasValue && (
                                                 <button
@@ -401,7 +402,7 @@ function HrModule() {
                             <div style={{ marginBottom: '16px', display: 'flex', gap: '12px' }}>
                                 <div style={{ flex: 1 }}>
                                     <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>{window.t('hr.salary')} (₺)</label>
-                                    <input name="salary" type="number" defaultValue={editingItem?.salary} required style={{ width: '100%', padding: '10px', borderRadius: '0.5rem', border: '1px solid #ddd' }} />
+                                    <input name="salary" type="number" defaultValue={editingItem?.salary} required style={{ width: '100%', padding: '10px', borderRadius: '0.5rem', border: '1px solid #ddd' }} onFocus={window.selectOnFocus} />
                                 </div>
                                 <div style={{ flex: 1 }}>
                                     <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>{window.t('hr.sgk')}</label>
@@ -450,21 +451,21 @@ function HrModule() {
                             <div style={{ marginBottom: '16px', display: 'flex', gap: '12px' }}>
                                 <div style={{ flex: 1 }}>
                                     <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>Ay</label>
-                                    <input name="month" type="number" min="1" max="12" defaultValue={new Date().getMonth() + 1} required style={{ width: '100%', padding: '10px', borderRadius: '0.5rem', border: '1px solid #ddd' }} />
+                                    <input name="month" type="number" min="1" max="12" defaultValue={new Date().getMonth() + 1} required style={{ width: '100%', padding: '10px', borderRadius: '0.5rem', border: '1px solid #ddd' }} onFocus={window.selectOnFocus} />
                                 </div>
                                 <div style={{ flex: 1 }}>
                                     <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>Yıl</label>
-                                    <input name="year" type="number" defaultValue={new Date().getFullYear()} required style={{ width: '100%', padding: '10px', borderRadius: '0.5rem', border: '1px solid #ddd' }} />
+                                    <input name="year" type="number" defaultValue={new Date().getFullYear()} required style={{ width: '100%', padding: '10px', borderRadius: '0.5rem', border: '1px solid #ddd' }} onFocus={window.selectOnFocus} />
                                 </div>
                             </div>
                             <div style={{ marginBottom: '16px', display: 'flex', gap: '12px' }}>
                                 <div style={{ flex: 1 }}>
                                     <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>Çalışma Saati</label>
-                                    <input name="workHours" type="number" defaultValue={225} style={{ width: '100%', padding: '10px', borderRadius: '0.5rem', border: '1px solid #ddd' }} />
+                                    <input name="workHours" type="number" defaultValue={225} style={{ width: '100%', padding: '10px', borderRadius: '0.5rem', border: '1px solid #ddd' }} onFocus={window.selectOnFocus} />
                                 </div>
                                 <div style={{ flex: 1 }}>
                                     <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>Mesai</label>
-                                    <input name="overtimeHours" type="number" defaultValue={0} style={{ width: '100%', padding: '10px', borderRadius: '0.5rem', border: '1px solid #ddd' }} />
+                                    <input name="overtimeHours" type="number" defaultValue={0} style={{ width: '100%', padding: '10px', borderRadius: '0.5rem', border: '1px solid #ddd' }} onFocus={window.selectOnFocus} />
                                 </div>
                             </div>
                             <div style={{ marginBottom: '24px' }}>
@@ -506,7 +507,7 @@ function HrModule() {
                             </div>
                             <div style={{ marginBottom: '16px' }}>
                                 <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>Miktar (₺)</label>
-                                <input name="amount" type="number" required style={{ width: '100%', padding: '10px', borderRadius: '0.5rem', border: '1px solid #ddd' }} />
+                                <input name="amount" type="number" required style={{ width: '100%', padding: '10px', borderRadius: '0.5rem', border: '1px solid #ddd' }} onFocus={window.selectOnFocus} />
                             </div>
                             <div style={{ marginBottom: '24px' }}>
                                 <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>Durum</label>
@@ -560,7 +561,7 @@ function HrModule() {
                             </div>
                             <div style={{ marginBottom: '16px' }}>
                                 <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>Tutar (₺)</label>
-                                <input name="amount" type="number" required style={{ width: '100%', padding: '10px', borderRadius: '0.5rem', border: '1px solid #ddd' }} />
+                                <input name="amount" type="number" required style={{ width: '100%', padding: '10px', borderRadius: '0.5rem', border: '1px solid #ddd' }} onFocus={window.selectOnFocus} />
                             </div>
                             <div style={{ marginBottom: '24px' }}>
                                 <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>Açıklama</label>

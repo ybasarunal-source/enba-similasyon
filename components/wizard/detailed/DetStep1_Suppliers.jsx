@@ -18,11 +18,11 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
                 <div style={{ display:'flex', gap:'20px', flexWrap:'wrap' }}>
                     <div style={{flex:1, minWidth:'200px'}}>
                         <label style={{ fontSize:'11px', fontWeight:600, color:'var(--on-surface-variant)', textTransform:'uppercase', display:'block', marginBottom:'6px' }}>Plan Adı</label>
-                        <input type='text' value={planAdi} onChange={e => setPlanAdi(e.target.value)} style={{ width:'100%', padding:'10px', borderRadius:'0.5rem', border:'1px solid var(--surface-container-highest)' }} />
+                        <input type='text' value={planAdi} onChange={e => setPlanAdi(e.target.value)} style={{ width:'100%', padding:'10px', borderRadius:'0.5rem', border:'1px solid var(--surface-container-highest)' }} onFocus={window.selectOnFocus} />
                     </div>
                     <div style={{width:'120px'}}>
                         <label style={{ fontSize:'11px', fontWeight:600, color:'var(--on-surface-variant)', textTransform:'uppercase', display:'block', marginBottom:'6px' }}>Başlangıç Yılı</label>
-                        <input type='number' value={baslangicYili} onChange={e => setBaslangicYili(Number(e.target.value))} style={{ width:'100%', padding:'10px', borderRadius:'0.5rem', border:'1px solid var(--surface-container-highest)' }} />
+                        <input type='number' value={baslangicYili} onChange={e => setBaslangicYili(Number(e.target.value))} style={{ width:'100%', padding:'10px', borderRadius:'0.5rem', border:'1px solid var(--surface-container-highest)' }} onFocus={window.selectOnFocus} />
                     </div>
                     <div style={{width:'150px'}}>
                         <label style={{ fontSize:'11px', fontWeight:600, color:'var(--on-surface-variant)', textTransform:'uppercase', display:'block', marginBottom:'6px' }}>Başlangıç Ayı</label>
@@ -36,13 +36,13 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
             <div style={{ background:'var(--surface-container-lowest)', borderRadius:'1.5rem', padding:'28px', boxShadow:'var(--shadow-card)', marginBottom:'24px' }}>
                 <h2 style={{ fontFamily:"'Manrope', sans-serif", fontWeight:700, fontSize:'16px', color:'var(--enba-dark)', margin:'0 0 20px' }}>1. Tedarikçi Yönetimi</h2>
                 <div style={{ display:'flex', gap:'12px', marginBottom:'16px' }}>
-                    <input type='text' value={yeniTedarikci} onChange={e => setYeniTedarikci(e.target.value)} placeholder='Yeni tedarikçi adı...' style={{ flex:1, maxWidth:'300px', padding:'10px 14px', borderRadius:'0.75rem', border:'1px solid var(--surface-container-highest)' }} />
+                    <input type='text' value={yeniTedarikci} onChange={e => setYeniTedarikci(e.target.value)} placeholder='Yeni tedarikçi adı...' style={{ flex:1, maxWidth:'300px', padding:'10px 14px', borderRadius:'0.75rem', border:'1px solid var(--surface-container-highest)' }} onFocus={window.selectOnFocus} />
                     <button onClick={() => { if(yeniTedarikci.trim()){ setTedarikciler(p => [...p, { id: Date.now(), ad: yeniTedarikci.trim() }]); setYeniTedarikci(''); } }} style={{ background:'var(--enba-dark)', color:'#fff', border:'none', padding:'0 20px', borderRadius:'0.75rem', cursor:'pointer' }}>+ Ekle</button>
                 </div>
                 <div style={{ display:'flex', gap:'10px', flexWrap:'wrap', marginBottom:'24px' }}>
                     {tedarikciler.map(t => (
                         <div key={t.id} style={{ display:'flex', alignItems:'center', gap:'8px', background:'var(--surface-container-low)', padding:'6px 14px', borderRadius:'2rem', border:'1px solid var(--surface-container-highest)' }}>
-                            <input type="text" value={t.ad || ''} onChange={e => setTedarikciler(p => p.map(x => x.id === t.id ? { ...x, ad: e.target.value } : x))} style={{ fontWeight:600, border:'1px solid var(--surface-container-highest)', background:'var(--surface-container-lowest)', outline:'none', padding:'4px 10px', borderRadius:'0.5rem', width: '150px', color:'var(--enba-dark)' }} />
+                            <input type="text" value={t.ad || ''} onChange={e => setTedarikciler(p => p.map(x => x.id === t.id ? { ...x, ad: e.target.value } : x))} style={{ fontWeight:600, border:'1px solid var(--surface-container-highest)', background:'var(--surface-container-lowest)', outline:'none', padding:'4px 10px', borderRadius:'0.5rem', width: '150px', color:'var(--enba-dark)' }} onFocus={window.selectOnFocus} />
                             {tedarikciler.length > 1 && <button onClick={() => setTedarikciler(p => p.filter(x => x.id !== t.id))} style={{ background:'none', border:'none', color:'var(--error)', cursor:'pointer', fontWeight:800, padding:'4px' }}>✖</button>}
                         </div>
                     ))}
@@ -71,16 +71,16 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
                                     <tr key={t.id} style={{ borderBottom:'1px solid rgba(255,255,255,0.05)' }}>
                                         <td style={{ padding:'12px', fontWeight:600 }}>{t.ad}</td>
                                         <td style={{ padding:'8px 12px' }}>
-                                            <input type="text" placeholder="Örn: Hurda" value={td.urun || ''} onChange={e => guncelleTopluTedarik(t.id, 'urun', e.target.value)} style={{ padding:'8px', width:'100%', borderRadius:'0.5rem', border:'1px solid rgba(255,255,255,0.2)', background:'rgba(255,255,255,0.05)', color:'#fff' }} />
+                                            <input type="text" placeholder="Örn: Hurda" value={td.urun || ''} onChange={e => guncelleTopluTedarik(t.id, 'urun', e.target.value)} style={{ padding:'8px', width:'100%', borderRadius:'0.5rem', border:'1px solid rgba(255,255,255,0.2)', background:'rgba(255,255,255,0.05)', color:'#fff' }} onFocus={window.selectOnFocus} />
                                         </td>
                                         <td style={{ padding:'8px 12px' }}>
-                                            <input type="number" placeholder="Miktar" value={td.miktar} onChange={e => guncelleTopluTedarik(t.id, 'miktar', e.target.value)} style={{ padding:'8px', width:'100%', textAlign:'right', borderRadius:'0.5rem', border:'1px solid rgba(255,255,255,0.2)', background:'rgba(255,255,255,0.05)', color:'#fff' }} />
+                                            <input type="number" placeholder="Miktar" value={td.miktar} onChange={e => guncelleTopluTedarik(t.id, 'miktar', e.target.value)} style={{ padding:'8px', width:'100%', textAlign:'right', borderRadius:'0.5rem', border:'1px solid rgba(255,255,255,0.2)', background:'rgba(255,255,255,0.05)', color:'#fff' }} onFocus={window.selectOnFocus} />
                                         </td>
                                         <td style={{ padding:'8px 12px' }}>
-                                            <input type="number" placeholder="Fiyat" value={td.fiyat} onChange={e => guncelleTopluTedarik(t.id, 'fiyat', e.target.value)} style={{ padding:'8px', width:'100%', textAlign:'right', borderRadius:'0.5rem', border:'1px solid rgba(255,255,255,0.2)', background:'rgba(255,255,255,0.05)', color:'#fff' }} />
+                                            <input type="number" placeholder="Fiyat" value={td.fiyat} onChange={e => guncelleTopluTedarik(t.id, 'fiyat', e.target.value)} style={{ padding:'8px', width:'100%', textAlign:'right', borderRadius:'0.5rem', border:'1px solid rgba(255,255,255,0.2)', background:'rgba(255,255,255,0.05)', color:'#fff' }} onFocus={window.selectOnFocus} />
                                         </td>
                                         <td style={{ padding:'8px 12px' }}>
-                                            <input type="number" placeholder="Nakliye" value={td.nakliye} onChange={e => guncelleTopluTedarik(t.id, 'nakliye', e.target.value)} style={{ padding:'8px', width:'100%', textAlign:'right', borderRadius:'0.5rem', border:'1px solid rgba(255,255,255,0.2)', background:'rgba(255,255,255,0.05)', color:'#fff' }} />
+                                            <input type="number" placeholder="Nakliye" value={td.nakliye} onChange={e => guncelleTopluTedarik(t.id, 'nakliye', e.target.value)} style={{ padding:'8px', width:'100%', textAlign:'right', borderRadius:'0.5rem', border:'1px solid rgba(255,255,255,0.2)', background:'rgba(255,255,255,0.05)', color:'#fff' }} onFocus={window.selectOnFocus} />
                                         </td>
                                         <td style={{ padding:'8px 12px', textAlign:'center' }}>
                                             <select value={td.baslangicAy || 0} onChange={e => guncelleTopluTedarik(t.id, 'baslangicAy', Number(e.target.value))} style={{ padding:'6px 8px', borderRadius:'0.5rem', border:'1px solid rgba(245,158,11,0.4)', background:'rgba(245,158,11,0.08)', color:'#F59E0B', fontSize:'12px', fontWeight:600, cursor:'pointer' }}>
@@ -142,16 +142,16 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
                                                                 <tr key={t.id} style={{ borderBottom:'1px solid var(--surface-container-highest)' }}>
                                                                     <td style={{ padding:'8px 12px', fontWeight:700, color:'var(--enba-dark)' }}>⚡  {t.ad}</td>
                                                                     <td style={{ padding:'8px 12px' }}>
-                                                                        <input type="text" placeholder="Örn: Hurda Karton" value={td.urun || ''} onChange={e => tedarikGuncelle(i, t.id, 'urun', e.target.value)} style={{ width:'120px', padding:'6px', borderRadius:'0.25rem', border:'1px solid #ccc' }} />
+                                                                        <input type="text" placeholder="Örn: Hurda Karton" value={td.urun || ''} onChange={e => tedarikGuncelle(i, t.id, 'urun', e.target.value)} style={{ width:'120px', padding:'6px', borderRadius:'0.25rem', border:'1px solid #ccc' }} onFocus={window.selectOnFocus} />
                                                                     </td>
                                                                     <td style={{ padding:'8px 12px', textAlign:'right' }}>
-                                                                        <input type="number" value={td.miktar} onChange={e => tedarikGuncelle(i, t.id, 'miktar', e.target.value)} style={{ width:'80px', padding:'6px', textAlign:'right', borderRadius:'0.25rem', border:'1px solid #ccc' }} />
+                                                                        <input type="number" value={td.miktar} onChange={e => tedarikGuncelle(i, t.id, 'miktar', e.target.value)} style={{ width:'80px', padding:'6px', textAlign:'right', borderRadius:'0.25rem', border:'1px solid #ccc' }} onFocus={window.selectOnFocus} />
                                                                     </td>
                                                                     <td style={{ padding:'8px 12px', textAlign:'right' }}>
-                                                                        <input type="number" value={td.fiyat} onChange={e => tedarikGuncelle(i, t.id, 'fiyat', e.target.value)} style={{ width:'80px', padding:'6px', textAlign:'right', borderRadius:'0.25rem', border:'1px solid #ccc' }} />
+                                                                        <input type="number" value={td.fiyat} onChange={e => tedarikGuncelle(i, t.id, 'fiyat', e.target.value)} style={{ width:'80px', padding:'6px', textAlign:'right', borderRadius:'0.25rem', border:'1px solid #ccc' }} onFocus={window.selectOnFocus} />
                                                                     </td>
                                                                     <td style={{ padding:'8px 12px', textAlign:'right' }}>
-                                                                        <input type="number" value={td.nakliye} onChange={e => tedarikGuncelle(i, t.id, 'nakliye', e.target.value)} style={{ width:'80px', padding:'6px', textAlign:'right', borderRadius:'0.25rem', border:'1px solid #ccc' }} />
+                                                                        <input type="number" value={td.nakliye} onChange={e => tedarikGuncelle(i, t.id, 'nakliye', e.target.value)} style={{ width:'80px', padding:'6px', textAlign:'right', borderRadius:'0.25rem', border:'1px solid #ccc' }} onFocus={window.selectOnFocus} />
                                                                     </td>
                                                                     <td style={{ padding:'8px 12px', textAlign:'center' }}>
                                                                         <button onClick={() => tedarikSonrakiAylara(i, t.id)} style={{ fontSize:'10px', background:'var(--enba-dark)', color:'#fff', border:'none', padding:'4px 8px', borderRadius:'4px', cursor:'pointer' }}>⬇ Takip Edenlere Kopyala</button>

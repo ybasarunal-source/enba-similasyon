@@ -527,7 +527,7 @@ function NakitAkisModulu({ aktifPlanlar = [] }) {
                                 <label style={labelStyle}>Başlangıç Kasası (₺)</label>
                                 <input type="number" style={inputStyle} value={params.baslangicKasasi}
                                     onChange={e => setParams(p => ({ ...p, baslangicKasasi: Number(e.target.value)||0 }))}
-                                    placeholder="Örn: 500000" />
+                                    placeholder="Örn: 500000" onFocus={window.selectOnFocus} />
                             </div>
 
                             {/* Vade girişi — yardımcı bileşen */}
@@ -554,6 +554,7 @@ function NakitAkisModulu({ aktifPlanlar = [] }) {
                                                 style={{ ...inputStyle, width:'80px', flexShrink:0 }}
                                                 value={gun}
                                                 onChange={e => setParams(p => ({ ...p, [key]: Math.max(0, Number(e.target.value)||0) }))}
+                                                onFocus={window.selectOnFocus}
                                             />
                                             <span style={{ fontSize:'13px', color:'var(--on-surface-variant)', flexShrink:0 }}>gün</span>
                                         </div>
@@ -590,7 +591,7 @@ function NakitAkisModulu({ aktifPlanlar = [] }) {
                             <div style={{ flex:'1 1 180px' }}>
                                 <label style={labelStyle}>Vergi Oranı (%)</label>
                                 <input type="number" style={inputStyle} value={params.vergiorani} min={0} max={100}
-                                    onChange={e => setParams(p => ({ ...p, vergiorani: Number(e.target.value)||0 }))} />
+                                    onChange={e => setParams(p => ({ ...p, vergiorani: Number(e.target.value)||0 }))} onFocus={window.selectOnFocus} />
                             </div>
                             <div style={{ flex:'1 1 180px' }}>
                                 <label style={labelStyle}>Ödeme Periyodu</label>
@@ -616,22 +617,22 @@ function NakitAkisModulu({ aktifPlanlar = [] }) {
                                 <div style={{ flex:'1 1 180px' }}>
                                     <label style={labelStyle}>Kredi Adı</label>
                                     <input type="text" style={inputStyle} value={krediForm.ad}
-                                        onChange={e => setKrediForm(p=>({...p, ad:e.target.value}))} placeholder="Örn: Makina Kredisi" />
+                                        onChange={e => setKrediForm(p=>({...p, ad:e.target.value}))} placeholder="Örn: Makina Kredisi" onFocus={window.selectOnFocus} />
                                 </div>
                                 <div style={{ flex:'1 1 150px' }}>
                                     <label style={labelStyle}>Anapara (₺)</label>
                                     <input type="number" style={inputStyle} value={krediForm.anapara}
-                                        onChange={e => setKrediForm(p=>({...p, anapara:e.target.value}))} placeholder="Örn: 2000000" />
+                                        onChange={e => setKrediForm(p=>({...p, anapara:e.target.value}))} placeholder="Örn: 2000000" onFocus={window.selectOnFocus} />
                                 </div>
                                 <div style={{ flex:'1 1 130px' }}>
                                     <label style={labelStyle}>Yıllık Faiz (%)</label>
                                     <input type="number" style={inputStyle} value={krediForm.faizYillik}
-                                        onChange={e => setKrediForm(p=>({...p, faizYillik:e.target.value}))} placeholder="Örn: 48" />
+                                        onChange={e => setKrediForm(p=>({...p, faizYillik:e.target.value}))} placeholder="Örn: 48" onFocus={window.selectOnFocus} />
                                 </div>
                                 <div style={{ flex:'1 1 120px' }}>
                                     <label style={labelStyle}>Vade (Ay)</label>
                                     <input type="number" style={inputStyle} value={krediForm.vadeAy}
-                                        onChange={e => setKrediForm(p=>({...p, vadeAy:Number(e.target.value)}))} />
+                                        onChange={e => setKrediForm(p=>({...p, vadeAy:Number(e.target.value)}))} onFocus={window.selectOnFocus} />
                                 </div>
                                 <div style={{ flex:'1 1 130px' }}>
                                     <label style={labelStyle}>Çekim Ayı (0-11)</label>
@@ -710,12 +711,12 @@ function NakitAkisModulu({ aktifPlanlar = [] }) {
                                 <div style={{ flex:'2 1 200px' }}>
                                     <label style={labelStyle}>Açıklama</label>
                                     <input type="text" style={inputStyle} value={ozForm.aciklama}
-                                        onChange={e => setOzForm(p=>({...p, aciklama:e.target.value}))} placeholder="Örn: Ortak sermaye girişi" />
+                                        onChange={e => setOzForm(p=>({...p, aciklama:e.target.value}))} placeholder="Örn: Ortak sermaye girişi" onFocus={window.selectOnFocus} />
                                 </div>
                                 <div style={{ flex:'1 1 140px' }}>
                                     <label style={labelStyle}>Tutar (₺)</label>
                                     <input type="number" style={inputStyle} value={ozForm.tutar}
-                                        onChange={e => setOzForm(p=>({...p, tutar:e.target.value}))} />
+                                        onChange={e => setOzForm(p=>({...p, tutar:e.target.value}))} onFocus={window.selectOnFocus} />
                                 </div>
                                 <div style={{ flex:'1 1 140px' }}>
                                     <label style={labelStyle}>Tür</label>

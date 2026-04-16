@@ -58,5 +58,27 @@ window.EnbaIO = {
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "İPK Şablonu");
         XLSX.writeFile(wb, "Enba_IPK_Sablonu.xlsx");
+    },
+
+    /**
+     * Hata mesajını ve kodunu formatlar
+     */
+        if (code) {
+            if (asHtml) {
+                return `${message} <span class="error-technical-code">(Kod: ${code})</span>`;
+            }
+            return `${message} (Kod: ${code})`;
+        }
+        return message;
+    },
+
+    /**
+     * Input odaklandığında içeriği otomatik seçer (0'ı silmekle uğraşmamak için)
+     */
+    selectOnFocus: (e) => {
+        e.target.select();
     }
 };
+
+window.getErrorMessage = window.EnbaIO.getErrorMessage;
+window.selectOnFocus = window.EnbaIO.selectOnFocus;

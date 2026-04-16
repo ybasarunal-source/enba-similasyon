@@ -188,20 +188,20 @@ function ProfileModule({ user, onUpdate }) {
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                             <div className="form-group">
                                 <label className="form-label" style={{ fontSize: '12px', fontWeight: 700 }}>AD SOYAD</label>
-                                <input className="form-control" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required />
+                                <input className="form-control" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required onFocus={window.selectOnFocus} />
                             </div>
                             <div className="form-group">
                                 <label className="form-label" style={{ fontSize: '12px', fontWeight: 700 }}>E-POSTA</label>
-                                <input className="form-control" type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+                                <input className="form-control" type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} onFocus={window.selectOnFocus} />
                             </div>
                         </div>
                         <div className="form-group">
                             <label className="form-label" style={{ fontSize: '12px', fontWeight: 700 }}>TELEFON NO</label>
-                            <input className="form-control" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} placeholder="+90 5XX XXX XX XX" />
+                            <input className="form-control" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} placeholder="+90 5XX XXX XX XX" onFocus={window.selectOnFocus} />
                         </div>
                         <div className="form-group">
                             <label className="form-label" style={{ fontSize: '12px', fontWeight: 700 }}>KISA BİYOGRAFİ</label>
-                            <textarea className="form-control" rows="3" value={formData.bio} onChange={e => setFormData({...formData, bio: e.target.value})} placeholder="Kendinizden bahsedin..." style={{ borderRadius: '1rem' }} />
+                            <textarea className="form-control" rows="3" value={formData.bio} onChange={e => setFormData({...formData, bio: e.target.value})} placeholder="Kendinizden bahsedin..." style={{ borderRadius: '1rem' }} onFocus={window.selectOnFocus} />
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
                             <button type="submit" disabled={status.loading} className="btn btn-primary" style={{ padding: '12px 32px', borderRadius: '2rem', fontWeight: 800 }}>{status.loading ? 'Güncelleniyor...' : 'Değişiklikleri Kaydet'}</button>

@@ -35,6 +35,7 @@ window.DetStep5_Expenses = function DetStep5_Expenses({
                                     onChange={e => guncelleTopluGider(g.kodu, e.target.value)}
                                     placeholder={isDynamic ? "Oto" : "0"}
                                     style={{ width:'70px', padding:'6px', borderRadius:'0.25rem', border:'1px solid var(--surface-container-highest)', textAlign:'right', fontSize:'12px' }}
+                                    onFocus={window.selectOnFocus}
                                 />
                             </div>
                         );
@@ -72,6 +73,7 @@ window.DetStep5_Expenses = function DetStep5_Expenses({
                                                         value={Number(a.giderler?.[g.kodu]) || ''}
                                                         onChange={e => giderGuncelle(i, g.kodu, e.target.value)}
                                                         style={{ width:'80px', padding:'6px', borderRadius:'0.25rem', border:'1px solid var(--surface-container-highest)', textAlign:'right' }}
+                                                        onFocus={window.selectOnFocus}
                                                     />
                                                 ) : <span style={{color:'#999', fontSize:'10px'}}>As. Tabloya Bakınız</span>}
                                             </td>
@@ -91,6 +93,7 @@ window.DetStep5_Expenses = function DetStep5_Expenses({
                                                                 value={yeniAltAdlar[g.kodu] || ''}
                                                                 onChange={e => setYeniAltAdlar(p => ({ ...p, [g.kodu]: e.target.value }))}
                                                                 style={{ padding:'6px 12px', borderRadius:'0.5rem', border:'1px solid #ccc', fontSize:'12px' }}
+                                                                onFocus={window.selectOnFocus}
                                                             />
                                                             <button onClick={() => altKalemEkle(g.kodu)} style={{ background:'var(--enba-dark)', color:'#fff', border:'none', padding:'6px 12px', borderRadius:'0.5rem', fontSize:'12px', cursor:'pointer' }}>+ KAT</button>
                                                         </div>
@@ -115,6 +118,7 @@ window.DetStep5_Expenses = function DetStep5_Expenses({
                                                                                 value={Number(a.giderler?.[ak.id]) || ''}
                                                                                 onChange={e => giderGuncelle(i, ak.id, e.target.value)}
                                                                                 style={{ width:'70px', padding:'6px', borderRadius:'0.25rem', border:'1px solid #eee', textAlign:'right' }}
+                                                                                onFocus={window.selectOnFocus}
                                                                             />
                                                                         </td>
                                                                     ))}

@@ -367,19 +367,19 @@ const UretimPlanlamaModulu = () => {
               </div>
               <div>
                 <label style={S.label}>Hedef Çıkan (ton) *</label>
-                <input type="number" style={S.input} value={form.hedefCikanTon} onChange={(e) => formDegistir("hedefCikanTon", e.target.value)} placeholder="500" />
+                <input type="number" style={S.input} value={form.hedefCikanTon} onChange={(e) => formDegistir("hedefCikanTon", e.target.value)} placeholder="500" onFocus={window.selectOnFocus} />
               </div>
               <div>
                 <label style={S.label}>Verim Oranı (%)</label>
-                <input type="number" style={S.input} value={form.verimOrani} onChange={(e) => formDegistir("verimOrani", e.target.value)} min={1} max={100} />
+                <input type="number" style={S.input} value={form.verimOrani} onChange={(e) => formDegistir("verimOrani", e.target.value)} min={1} max={100} onFocus={window.selectOnFocus} />
               </div>
               <div>
                 <label style={S.label}>Vardiya Sayısı</label>
-                <input type="number" style={S.input} value={form.vardiyaSayisi} onChange={(e) => formDegistir("vardiyaSayisi", e.target.value)} min={1} max={3} />
+                <input type="number" style={S.input} value={form.vardiyaSayisi} onChange={(e) => formDegistir("vardiyaSayisi", e.target.value)} min={1} max={3} onFocus={window.selectOnFocus} />
               </div>
               <div>
                 <label style={S.label}>Vardiya Saati</label>
-                <input type="number" style={S.input} value={form.vardiyaSaati} onChange={(e) => formDegistir("vardiyaSaati", e.target.value)} min={1} max={24} />
+                <input type="number" style={S.input} value={form.vardiyaSaati} onChange={(e) => formDegistir("vardiyaSaati", e.target.value)} min={1} max={24} onFocus={window.selectOnFocus} />
               </div>
               <div>
                 <label style={S.label}>Ürün Türü</label>

@@ -204,7 +204,7 @@ function PaymentsModule() {
                     <div style={{ fontSize: '24px', fontWeight: 800 }}>{window.fmt(initialCash)} ₺</div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <input type="number" value={initialCash} onChange={(e) => setInitialCash(Number(e.target.value))} 
+                    <input type="number" value={initialCash} onChange={(e) => setInitialCash(Number(e.target.value))} onFocus={window.selectOnFocus}
                         style={{ padding: '8px', borderRadius: '8px', border: 'none', width: '150px', fontSize: '14px' }} placeholder={window.t('payments.update_balance_placeholder')} />
                 </div>
             </div>
@@ -338,7 +338,7 @@ function PaymentsModule() {
                             <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
                                 <div style={{ flex: 1 }}>
                                     <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '5px' }}>{window.t('payments.amount')} (₺)</label>
-                                    <input name="amount" type="number" defaultValue={editingItem?.amount} required style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }} />
+                                    <input name="amount" type="number" defaultValue={editingItem?.amount} required style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ddd' }} onFocus={window.selectOnFocus} />
                                 </div>
                                 <div style={{ flex: 1 }}>
                                     <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '5px' }}>{window.t('payments.type')}</label>

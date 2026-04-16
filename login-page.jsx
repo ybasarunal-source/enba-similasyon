@@ -64,7 +64,7 @@ function LoginPage({ onLogin }) {
             }
         } catch (err) {
             console.error("Auth hatası:", err);
-            setError(err.message || window.t('auth.error_invalid'));
+            setError(window.getErrorMessage(err, true)); // HTML formatında hata mesajı
             setLoading(false);
         }
     };
@@ -82,7 +82,7 @@ function LoginPage({ onLogin }) {
                     <p>{window.t('auth.welcome_desc')}</p>
                 </div>
 
-                {error && <div className="auth-error">{error}</div>}
+                {error && <div className="auth-error" dangerouslySetInnerHTML={{ __html: error }}></div>}
 
                 <form className="auth-form" onSubmit={handleSubmit}>
                     <div className="auth-input-group">
@@ -95,6 +95,7 @@ function LoginPage({ onLogin }) {
                             onChange={(e) => setUsername(e.target.value)}
                             required
                             autoFocus
+                            onFocus={window.selectOnFocus}
                         />
                     </div>
 
@@ -107,6 +108,7 @@ function LoginPage({ onLogin }) {
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             required
+                            onFocus={window.selectOnFocus}
                         />
                     </div>
 

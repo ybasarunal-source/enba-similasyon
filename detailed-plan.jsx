@@ -1080,7 +1080,7 @@ function DetayliPlanModulu({ navigate, bekleyenPlanlar, setBekleyenPlanlar, akti
                                                 <select value={birlestirmeAy} onChange={e=>setBirlestirmeAy(Number(e.target.value))} style={{padding:'5px 8px', borderRadius:'6px', border:'1px solid rgba(255,255,255,0.15)', background:'var(--surface-container)', color:'var(--on-surface)', fontSize:'12px'}}>
                                                     {AYLAR.map((ay, idx) => <option key={idx} value={idx}>{ay}</option>)}
                                                 </select>
-                                                <input type="number" value={birlestirmeYil} onChange={e=>setBirlestirmeYil(Number(e.target.value))} min="2020" max="2050" style={{width:'72px', padding:'5px 8px', borderRadius:'6px', border:'1px solid rgba(255,255,255,0.15)', background:'var(--surface-container)', color:'var(--on-surface)', fontSize:'12px'}} />
+                                                <input type="number" value={birlestirmeYil} onChange={e=>setBirlestirmeYil(Number(e.target.value))} min="2020" max="2050" style={{width:'72px', padding:'5px 8px', borderRadius:'6px', border:'1px solid rgba(255,255,255,0.15)', background:'var(--surface-container)', color:'var(--on-surface)', fontSize:'12px'}} onFocus={window.selectOnFocus} />
                                             </div>
                                             <div style={{display:'flex', gap:'6px'}}>
                                                 <button onClick={birlestirmeExcelExport} style={{display:'flex', alignItems:'center', gap:'5px', background:'#1a7f4b', color:'#fff', border:'none', padding:'6px 14px', borderRadius:'2rem', cursor:'pointer', fontWeight:600, fontSize:'12px', whiteSpace:'nowrap'}}

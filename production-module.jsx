@@ -211,7 +211,7 @@ function UretimTakipModulu() {
                                             <div style={{flex: 1, fontSize: '13px', fontWeight: 600}}>{c.name}</div>
                                             <div style={{display: 'flex', alignItems: 'center', gap: '5px'}}>
                                                 <label style={{fontSize: '10px', fontWeight: 700, color: '#f39c12'}}>{window.t('prod.overtime')}:</label>
-                                                <input type="number" step="0.5" value={c.overtime} onChange={(e) => guncelleFazlaMesai(c.id, e.target.value)} style={{width: '50px', padding: '4px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '12px'}} />
+                                                <input type="number" step="0.5" value={c.overtime} onChange={(e) => guncelleFazlaMesai(c.id, e.target.value)} style={{width: '50px', padding: '4px', borderRadius: '4px', border: '1px solid #ddd', fontSize: '12px'}} onFocus={window.selectOnFocus} />
                                             </div>
                                             <button type="button" onClick={() => cikarPersonel(c.id)} style={{background: 'none', border: 'none', color: '#e74c3c', cursor: 'pointer', fontSize: '14px'}}>✕</button>
                                         </div>
@@ -223,22 +223,22 @@ function UretimTakipModulu() {
                         <div style={{display: 'flex', gap: '10px', background: '#fdf2e9', padding: '10px', borderRadius: '8px', border: '1px solid #fdebd0'}}>
                             <div style={{flex: 1}}>
                                 <label style={{display: 'block', fontSize: '11px', fontWeight: 'bold', color: '#d35400', marginBottom: '4px'}}>{window.t('prod.raw_input')}</label>
-                                <input type="number" step="0.01" value={girenHammadde} onChange={e => setGirenHammadde(e.target.value)} required placeholder="Örn: 1500" style={{width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #f39c12', outline: 'none'}} />
+                                <input type="number" step="0.01" value={girenHammadde} onChange={e => setGirenHammadde(e.target.value)} required placeholder="Örn: 1500" style={{width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #f39c12', outline: 'none'}} onFocus={window.selectOnFocus} />
                             </div>
                             <div style={{flex: 1}}>
                                 <label style={{display: 'block', fontSize: '11px', fontWeight: 'bold', color: '#27ae60', marginBottom: '4px'}}>{window.t('prod.finished_output')}</label>
-                                <input type="number" step="0.01" value={cikanUrun} onChange={e => setCikanUrun(e.target.value)} required placeholder="Örn: 1250" style={{width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #2ecc71', outline: 'none'}} />
+                                <input type="number" step="0.01" value={cikanUrun} onChange={e => setCikanUrun(e.target.value)} required placeholder="Örn: 1250" style={{width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #2ecc71', outline: 'none'}} onFocus={window.selectOnFocus} />
                             </div>
                         </div>
 
                         <div style={{display: 'flex', gap: '10px', background: '#ebf5fb', padding: '10px', borderRadius: '8px', border: '1px solid #d4e6f1'}}>
                             <div style={{flex: 1}}>
                                 <label style={{display: 'block', fontSize: '11px', fontWeight: 'bold', color: '#2980b9', marginBottom: '4px'}}>{window.t('prod.meter_start')}</label>
-                                <input type="number" step="0.1" value={sayacBasi} onChange={e => setSayacBasi(e.target.value)} required placeholder="Örn: 24500" style={{width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #3498db', outline: 'none'}} />
+                                <input type="number" step="0.1" value={sayacBasi} onChange={e => setSayacBasi(e.target.value)} required placeholder="Örn: 24500" style={{width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #3498db', outline: 'none'}} onFocus={window.selectOnFocus} />
                             </div>
                             <div style={{flex: 1}}>
                                 <label style={{display: 'block', fontSize: '11px', fontWeight: 'bold', color: '#2980b9', marginBottom: '4px'}}>{window.t('prod.meter_end')}</label>
-                                <input type="number" step="0.1" value={sayacSonu} onChange={e => setSayacSonu(e.target.value)} required placeholder="Örn: 24900" style={{width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #3498db', outline: 'none'}} />
+                                <input type="number" step="0.1" value={sayacSonu} onChange={e => setSayacSonu(e.target.value)} required placeholder="Örn: 24900" style={{width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #3498db', outline: 'none'}} onFocus={window.selectOnFocus} />
                             </div>
                         </div>
 

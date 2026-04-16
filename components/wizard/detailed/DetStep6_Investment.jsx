@@ -36,7 +36,7 @@ window.DetStep6_Investment = function DetStep6_Investment({
                 <div style={{ display:'flex', gap:'12px', flexWrap:'wrap', alignItems:'flex-end' }}>
                     <div style={{flex:2, minWidth:'200px'}}>
                         <label style={{ fontSize:'11px', fontWeight:600, color:'var(--on-surface-variant)', display:'block', marginBottom:'6px' }}>Yatırım Kalemi / Makine Adı</label>
-                        <input type='text' value={yeniYatirimAd} onChange={e => setYeniYatirimAd(e.target.value)} placeholder='Örn: Trafo, Kırma Hattı, İnşaat' style={{ width:'100%', padding:'10px', borderRadius:'0.5rem', border:'1px solid var(--surface-container-highest)' }} />
+                        <input type='text' value={yeniYatirimAd} onChange={e => setYeniYatirimAd(e.target.value)} placeholder='Örn: Trafo, Kırma Hattı, İnşaat' style={{ width:'100%', padding:'10px', borderRadius:'0.5rem', border:'1px solid var(--surface-container-highest)' }} onFocus={window.selectOnFocus} />
                     </div>
                     <div style={{width:'150px'}}>
                         <label style={{ fontSize:'11px', fontWeight:600, color:'var(--on-surface-variant)', display:'block', marginBottom:'6px' }}>Tür</label>
@@ -48,15 +48,15 @@ window.DetStep6_Investment = function DetStep6_Investment({
                     </div>
                     <div style={{width:'150px'}}>
                         <label style={{ fontSize:'11px', fontWeight:600, color:'var(--on-surface-variant)', display:'block', marginBottom:'6px' }}>Maliyet (₺)</label>
-                        <input type='number' value={yeniYatirimMaliyet} onChange={e => setYeniYatirimMaliyet(e.target.value)} style={{ width:'100%', padding:'10px', borderRadius:'0.5rem', border:'1px solid var(--surface-container-highest)' }} />
+                        <input type='number' value={yeniYatirimMaliyet} onChange={e => setYeniYatirimMaliyet(e.target.value)} style={{ width:'100%', padding:'10px', borderRadius:'0.5rem', border:'1px solid var(--surface-container-highest)' }} onFocus={window.selectOnFocus} />
                     </div>
                     <div style={{width:'120px'}}>
                         <label style={{ fontSize:'11px', fontWeight:600, color:'var(--on-surface-variant)', display:'block', marginBottom:'6px' }}>Amortisman (Ay)</label>
-                        <input type='number' value={yeniYatirimGeriOdeme} onChange={e => setYeniYatirimGeriOdeme(e.target.value)} style={{ width:'100%', padding:'10px', borderRadius:'0.5rem', border:'1px solid var(--surface-container-highest)' }} />
+                        <input type='number' value={yeniYatirimGeriOdeme} onChange={e => setYeniYatirimGeriOdeme(e.target.value)} style={{ width:'100%', padding:'10px', borderRadius:'0.5rem', border:'1px solid var(--surface-container-highest)' }} onFocus={window.selectOnFocus} />
                     </div>
                     <div style={{width:'120px'}}>
                         <label style={{ fontSize:'11px', fontWeight:600, color:'var(--on-surface-variant)', display:'block', marginBottom:'6px' }}>Erteleme (Ay)</label>
-                        <input type='number' value={yeniYatirimErteleme} onChange={e => setYeniYatirimErteleme(e.target.value)} title="Yatırımın kaç ay sonra başlayacağı" style={{ width:'100%', padding:'10px', borderRadius:'0.5rem', border:'1px solid var(--surface-container-highest)' }} />
+                        <input type='number' value={yeniYatirimErteleme} onChange={e => setYeniYatirimErteleme(e.target.value)} title="Yatırımın kaç ay sonra başlayacağı" style={{ width:'100%', padding:'10px', borderRadius:'0.5rem', border:'1px solid var(--surface-container-highest)' }} onFocus={window.selectOnFocus} />
                     </div>
                     <button onClick={yatirimEkle} style={{ background:'var(--enba-dark)', color:'#fff', border:'none', padding:'11px 24px', borderRadius:'0.75rem', cursor:'pointer', fontWeight:700 }}>+ EKLE</button>
                 </div>
