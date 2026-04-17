@@ -13,6 +13,7 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
     ayVerileri, acikAylar, setAcikAylar, tedarikGuncelle, tedarikSonrakiAylara,
     planOlcumBirimi, fmt, AYLAR, setAdim
 }) {
+    const wt = k => window.t('wizard.' + k);
     const birimEtiketi = planOlcumBirimi === 'kg' ? 'kg' : 'T';
     // Convert stored-tons to display value and back
     const tonToDisplay = (tons) => planOlcumBirimi === 'kg' ? (Number(tons) || 0) * 1000 : (Number(tons) || 0);
@@ -60,18 +61,18 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
         <div>
             {/* Genel Ayarlar */}
             <div style={{ background:'var(--surface-container-lowest)', borderRadius:'1.5rem', padding:'28px', boxShadow:'var(--shadow-card)', marginBottom:'24px' }}>
-                <h2 style={{ fontFamily:"'Manrope', sans-serif", fontWeight:700, fontSize:'16px', color:'var(--enba-dark)', margin:'0 0 20px' }}>Genel Ayarlar</h2>
+                <h2 style={{ fontFamily:"'Manrope', sans-serif", fontWeight:700, fontSize:'16px', color:'var(--enba-dark)', margin:'0 0 20px' }}>{wt('general_settings')}</h2>
                 <div style={{ display:'flex', gap:'20px', flexWrap:'wrap' }}>
                     <div style={{flex:1, minWidth:'200px'}}>
-                        <label style={{ fontSize:'11px', fontWeight:600, color:'var(--on-surface-variant)', textTransform:'uppercase', display:'block', marginBottom:'6px' }}>Plan Adı</label>
+                        <label style={{ fontSize:'11px', fontWeight:600, color:'var(--on-surface-variant)', textTransform:'uppercase', display:'block', marginBottom:'6px' }}>{wt('plan_name')}</label>
                         <input type='text' value={planAdi} onChange={e => setPlanAdi(e.target.value)} style={{ width:'100%', padding:'10px', borderRadius:'0.5rem', border:'1px solid var(--surface-container-highest)' }} onFocus={window.selectOnFocus} />
                     </div>
                     <div style={{width:'120px'}}>
-                        <label style={{ fontSize:'11px', fontWeight:600, color:'var(--on-surface-variant)', textTransform:'uppercase', display:'block', marginBottom:'6px' }}>Başlangıç Yılı</label>
+                        <label style={{ fontSize:'11px', fontWeight:600, color:'var(--on-surface-variant)', textTransform:'uppercase', display:'block', marginBottom:'6px' }}>{wt('start_year')}</label>
                         <input type='number' value={baslangicYili} onChange={e => setBaslangicYili(Number(e.target.value))} style={{ width:'100%', padding:'10px', borderRadius:'0.5rem', border:'1px solid var(--surface-container-highest)' }} onFocus={window.selectOnFocus} />
                     </div>
                     <div style={{width:'150px'}}>
-                        <label style={{ fontSize:'11px', fontWeight:600, color:'var(--on-surface-variant)', textTransform:'uppercase', display:'block', marginBottom:'6px' }}>Başlangıç Ayı</label>
+                        <label style={{ fontSize:'11px', fontWeight:600, color:'var(--on-surface-variant)', textTransform:'uppercase', display:'block', marginBottom:'6px' }}>{wt('start_month')}</label>
                         <select value={baslangicAyi} onChange={e => setBaslangicAyi(Number(e.target.value))} style={{ width:'100%', padding:'10px', borderRadius:'0.5rem', border:'1px solid var(--surface-container-highest)' }}>
                             {AYLAR.map((ay, idx) => <option key={idx} value={idx}>{ay}</option>)}
                         </select>
@@ -81,11 +82,11 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
 
             {/* Tedarikçi Yönetimi */}
             <div style={{ background:'var(--surface-container-lowest)', borderRadius:'1.5rem', padding:'28px', boxShadow:'var(--shadow-card)', marginBottom:'24px' }}>
-                <h2 style={{ fontFamily:"'Manrope', sans-serif", fontWeight:700, fontSize:'16px', color:'var(--enba-dark)', margin:'0 0 20px' }}>1. Tedarikçi Yönetimi</h2>
+                <h2 style={{ fontFamily:"'Manrope', sans-serif", fontWeight:700, fontSize:'16px', color:'var(--enba-dark)', margin:'0 0 20px' }}>{wt('s1_title')}</h2>
 
                 {/* Add supplier */}
                 <div style={{ display:'flex', gap:'12px', marginBottom:'16px' }}>
-                    <input type='text' value={yeniTedarikci} onChange={e => setYeniTedarikci(e.target.value)} placeholder='Yeni tedarikçi adı...' style={{ flex:1, maxWidth:'300px', padding:'10px 14px', borderRadius:'0.75rem', border:'1px solid var(--surface-container-highest)' }} onFocus={window.selectOnFocus} />
+                    <input type='text' value={yeniTedarikci} onChange={e => setYeniTedarikci(e.target.value)} placeholder={wt('s1_new_placeholder')} style={{ flex:1, maxWidth:'300px', padding:'10px 14px', borderRadius:'0.75rem', border:'1px solid var(--surface-container-highest)' }} onFocus={window.selectOnFocus} />
                     <button onClick={() => { if(yeniTedarikci.trim()){ setTedarikciler(p => [...p, { id: Date.now(), ad: yeniTedarikci.trim() }]); setYeniTedarikci(''); } }} style={{ background:'var(--enba-dark)', color:'#fff', border:'none', padding:'0 20px', borderRadius:'0.75rem', cursor:'pointer' }}>+ Ekle</button>
                 </div>
                 <div style={{ display:'flex', gap:'10px', flexWrap:'wrap', marginBottom:'24px' }}>
@@ -101,15 +102,13 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
                 <div style={{ padding:'20px', background: DARK_BG, color:'#fff', borderRadius:'1rem', marginBottom:'24px' }}>
                     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: topluAcik ? '4px' : '0' }}>
                         <h3 style={{ fontSize:'14px', margin:0, fontFamily:"'Manrope', sans-serif", fontWeight:700 }}>
-                            ⚡ Toplu Veri Girişi
+                            {wt('bulk_title')}
                         </h3>
                         <button onClick={() => setTopluAcik(p => !p)} style={{ background:'rgba(255,255,255,0.1)', color:'#fff', border:'1px solid rgba(255,255,255,0.15)', padding:'5px 14px', borderRadius:'0.5rem', cursor:'pointer', fontSize:'12px', fontWeight:600 }}>
-                            {topluAcik ? '▲ Gizle' : '▼ Göster'}
+                            {topluAcik ? wt('hide') : wt('show')}
                         </button>
                     </div>
-                    {topluAcik && <p style={{ fontSize:'12px', color:'rgba(255,255,255,0.45)', margin:'4px 0 16px' }}>
-                        Başlangıç ayına girilen değer takip eden tüm aylara otomatik uygulanır. İstediğiniz ayı manuel düzenleyebilirsiniz.
-                    </p>}
+                    {topluAcik && <p style={{ fontSize:'12px', color:'rgba(255,255,255,0.45)', margin:'4px 0 16px' }}>{wt('bulk_desc')}</p>}
                     {topluAcik && <React.Fragment>
 
                     <div style={{ overflowX:'auto', borderRadius:'0.5rem' }}>
@@ -122,10 +121,10 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
                             <thead>
                                 <tr style={{ background:'rgba(0,0,0,0.35)' }}>
                                     <th style={stickyCell(0, 'rgba(15,25,35,0.98)', { padding:'10px 12px', textAlign:'left', fontSize:'12px', fontWeight:700, color:'rgba(255,255,255,0.85)' })}>
-                                        Tedarikçi
+                                        {wt('s1_supplier_col')}
                                     </th>
                                     <th style={stickyCell(COL1, 'rgba(15,25,35,0.98)', { padding:'10px 8px', textAlign:'left', fontSize:'11px', fontWeight:600, color:'rgba(255,255,255,0.55)' })}>
-                                        Alan
+                                        {wt('field_col')}
                                     </th>
                                     {ayBasliklari.map((a, i) => (
                                         <th key={i} style={{ padding:'10px 4px', textAlign:'center', fontSize:'11px', fontWeight:700, color:'rgba(255,255,255,0.8)', whiteSpace:'nowrap' }}>
@@ -157,7 +156,7 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
                                         const disabled = i < baslangicAy;
                                         const isStart = i === baslangicAy;
                                         const topluVal = (tData[i] || {})[alan];
-                                        const fallbackRaw = ayVerileri[i]?.tedarikler?.[t.id]?.[alan];
+                                        const fallbackRaw = ayVerileri[(baslangicAyi + i) % 12]?.tedarikler?.[t.id]?.[alan];
                                         let displayVal = '';
                                         if (topluVal !== undefined && topluVal !== '') {
                                             displayVal = topluVal;
@@ -200,7 +199,7 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
                                                         style={{ padding:'4px 8px', width:'100%', borderRadius:'0.375rem', border:'1px solid rgba(255,255,255,0.18)', background:'rgba(255,255,255,0.06)', color:'#fff', fontSize:'12px', marginBottom:'8px' }}
                                                     />
                                                     <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
-                                                        <span style={{ fontSize:'10px', color:'rgba(255,255,255,0.4)', fontWeight:600, whiteSpace:'nowrap' }}>Başl. Ay:</span>
+                                                        <span style={{ fontSize:'10px', color:'rgba(255,255,255,0.4)', fontWeight:600, whiteSpace:'nowrap' }}>{wt('start_month_short')}</span>
                                                         <select
                                                             value={baslangicAy}
                                                             onChange={e => guncelleTopluTedarikBaslangicAy(t.id, e.target.value)}
@@ -212,17 +211,17 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
                                                         </select>
                                                     </div>
                                                 </td>
-                                                {labelTd(`Miktar (${birimEtiketi})`)}
+                                                {labelTd(`${wt('s1_quantity')} (${birimEtiketi})`)}
                                                 {monthCells('miktar')}
                                             </tr>
                                             {/* Row 2: Alış Fiyatı */}
                                             <tr style={{ background: rowBg }}>
-                                                {labelTd('Alış Fiy. (₺)')}
+                                                {labelTd(`${wt('s1_price')} (₺)`)}
                                                 {monthCells('fiyat')}
                                             </tr>
                                             {/* Row 3: Nakliye */}
                                             <tr style={{ background: rowBg, borderBottom:'2px solid rgba(255,255,255,0.1)' }}>
-                                                {labelTd('Nakliye (₺)')}
+                                                {labelTd(`${wt('s1_freight')} (₺)`)}
                                                 {monthCells('nakliye')}
                                             </tr>
                                         </React.Fragment>
@@ -237,13 +236,13 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
                             onClick={tumTedarikVerileriniTemizle}
                             style={{ background:'rgba(220,53,69,0.12)', color:'#ff6b7a', border:'1px solid rgba(220,53,69,0.25)', padding:'8px 16px', borderRadius:'0.5rem', cursor:'pointer', fontWeight:600, fontSize:'12px' }}
                         >
-                            🗑 Aylık Tabloyu Temizle
+                            {wt('clear_table')}
                         </button>
                         <button
                             onClick={uygulaTopluTedarik}
                             style={{ background:'var(--enba-orange)', color:'#fff', border:'none', padding:'12px 28px', borderRadius:'2rem', cursor:'pointer', fontWeight:800, fontSize:'14px', boxShadow:'0 4px 12px rgba(227,82,5,0.35)' }}
                         >
-                            ✅ Aylık Tabloya Uygula
+                            {wt('apply_table')}
                         </button>
                     </div>
                 </React.Fragment>}
@@ -253,14 +252,15 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
                 <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'13px' }}>
                     <thead>
                         <tr style={{ background:'var(--primary-container)' }}>
-                            <th style={{ padding:'12px', textAlign:'left' }}>Ay</th>
-                            <th style={{ padding:'12px', textAlign:'right' }}>Toplam Alış Tonajı</th>
-                            <th style={{ padding:'12px', textAlign:'right' }}>Detay</th>
+                            <th style={{ padding:'12px', textAlign:'left' }}>{wt('month_col')}</th>
+                            <th style={{ padding:'12px', textAlign:'right' }}>{wt('s1_total_purchase')}</th>
+                            <th style={{ padding:'12px', textAlign:'right' }}>{wt('detail_col')}</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {ayVerileri.map((a, i) => {
+                        {Array.from({length: 12}, (_, i) => {
                             const gercekAyIdx = (baslangicAyi + i) % 12;
+                            const a = ayVerileri[gercekAyIdx] || { tedarikler: {}, musteriler: {}, giderler: {}, personeller: {} };
                             const isOpen = acikAylar[i];
                             let ayTon = 0; tedarikciler.forEach(t => { ayTon += (a.tedarikler?.[t.id]?.miktar || 0); });
                             const ayMiktar = tonToDisplay(ayTon);
@@ -269,7 +269,7 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
                                     <tr style={{ background:'var(--surface)', cursor:'pointer', borderBottom:'1px solid var(--surface-container)' }} onClick={() => setAcikAylar(p => ({ ...p, [i]: !p[i] }))}>
                                         <td style={{ padding:'14px', fontWeight:600 }}>{isOpen ? '▼' : '▶'} {AYLAR[gercekAyIdx]}</td>
                                         <td style={{ padding:'14px', textAlign:'right', fontWeight:700 }}>{fmt(ayMiktar)} {birimEtiketi}</td>
-                                        <td style={{ padding:'14px', textAlign:'right', color:'var(--enba-orange)' }}>Genişlet</td>
+                                        <td style={{ padding:'14px', textAlign:'right', color:'var(--enba-orange)' }}>{wt('expand')}</td>
                                     </tr>
                                     {isOpen && (
                                         <tr>
@@ -277,12 +277,12 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
                                                 <table style={{ width:'100%', borderCollapse:'collapse', background:'var(--surface-container-lowest)', borderRadius:'0.5rem', overflow:'hidden' }}>
                                                     <thead>
                                                         <tr style={{ background:'rgba(0,0,0,0.05)' }}>
-                                                            <th style={{ padding:'8px 12px', textAlign:'left', fontSize:'12px', color:'var(--enba-dark)' }}>Tedarikçi</th>
-                                                            <th style={{ padding:'8px 12px', textAlign:'left', fontSize:'12px', color:'var(--enba-dark)' }}>Açıklama / Ürün</th>
-                                                            <th style={{ padding:'8px 12px', textAlign:'right', fontSize:'12px', color:'var(--enba-dark)' }}>Miktar ({birimEtiketi})</th>
-                                                            <th style={{ padding:'8px 12px', textAlign:'right', fontSize:'12px', color:'var(--enba-dark)' }}>Alış Fiy. (₺)</th>
-                                                            <th style={{ padding:'8px 12px', textAlign:'right', fontSize:'12px', color:'var(--enba-dark)' }}>Nakliye (₺)</th>
-                                                            <th style={{ padding:'8px 12px', textAlign:'center', fontSize:'12px', color:'var(--enba-dark)' }}>İşlem</th>
+                                                            <th style={{ padding:'8px 12px', textAlign:'left', fontSize:'12px', color:'var(--enba-dark)' }}>{wt('s1_supplier_col')}</th>
+                                                            <th style={{ padding:'8px 12px', textAlign:'left', fontSize:'12px', color:'var(--enba-dark)' }}>{wt('s1_product_col')}</th>
+                                                            <th style={{ padding:'8px 12px', textAlign:'right', fontSize:'12px', color:'var(--enba-dark)' }}>{wt('s1_quantity')} ({birimEtiketi})</th>
+                                                            <th style={{ padding:'8px 12px', textAlign:'right', fontSize:'12px', color:'var(--enba-dark)' }}>{wt('s1_price')} (₺)</th>
+                                                            <th style={{ padding:'8px 12px', textAlign:'right', fontSize:'12px', color:'var(--enba-dark)' }}>{wt('s1_freight')} (₺)</th>
+                                                            <th style={{ padding:'8px 12px', textAlign:'center', fontSize:'12px', color:'var(--enba-dark)' }}>{wt('operation_col')}</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
@@ -292,19 +292,19 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
                                                                 <tr key={t.id} style={{ borderBottom:'1px solid var(--surface-container-highest)' }}>
                                                                     <td style={{ padding:'8px 12px', fontWeight:700, color:'var(--enba-dark)' }}>⚡ {t.ad}</td>
                                                                     <td style={{ padding:'8px 12px' }}>
-                                                                        <input type="text" placeholder="Örn: Hurda Karton" value={td.urun || ''} onChange={e => tedarikGuncelle(i, t.id, 'urun', e.target.value)} style={{ width:'120px', padding:'6px', borderRadius:'0.25rem', border:'1px solid #ccc' }} onFocus={window.selectOnFocus} />
+                                                                        <input type="text" placeholder="Örn: Hurda Karton" value={td.urun || ''} onChange={e => tedarikGuncelle(gercekAyIdx, t.id, 'urun', e.target.value)} style={{ width:'120px', padding:'6px', borderRadius:'0.25rem', border:'1px solid #ccc' }} onFocus={window.selectOnFocus} />
                                                                     </td>
                                                                     <td style={{ padding:'8px 12px', textAlign:'right' }}>
-                                                                        <input type="number" value={td.miktar !== '' && td.miktar !== undefined ? tonToDisplay(td.miktar) : ''} onChange={e => tedarikGuncelle(i, t.id, 'miktar', displayToTon(e.target.value))} style={{ width:'80px', padding:'6px', textAlign:'right', borderRadius:'0.25rem', border:'1px solid #ccc' }} onFocus={window.selectOnFocus} />
+                                                                        <input type="number" value={td.miktar !== '' && td.miktar !== undefined ? tonToDisplay(td.miktar) : ''} onChange={e => tedarikGuncelle(gercekAyIdx, t.id, 'miktar', displayToTon(e.target.value))} style={{ width:'80px', padding:'6px', textAlign:'right', borderRadius:'0.25rem', border:'1px solid #ccc' }} onFocus={window.selectOnFocus} />
                                                                     </td>
                                                                     <td style={{ padding:'8px 12px', textAlign:'right' }}>
-                                                                        <input type="number" value={td.fiyat} onChange={e => tedarikGuncelle(i, t.id, 'fiyat', e.target.value)} style={{ width:'80px', padding:'6px', textAlign:'right', borderRadius:'0.25rem', border:'1px solid #ccc' }} onFocus={window.selectOnFocus} />
+                                                                        <input type="number" value={td.fiyat} onChange={e => tedarikGuncelle(gercekAyIdx, t.id, 'fiyat', e.target.value)} style={{ width:'80px', padding:'6px', textAlign:'right', borderRadius:'0.25rem', border:'1px solid #ccc' }} onFocus={window.selectOnFocus} />
                                                                     </td>
                                                                     <td style={{ padding:'8px 12px', textAlign:'right' }}>
-                                                                        <input type="number" value={td.nakliye} onChange={e => tedarikGuncelle(i, t.id, 'nakliye', e.target.value)} style={{ width:'80px', padding:'6px', textAlign:'right', borderRadius:'0.25rem', border:'1px solid #ccc' }} onFocus={window.selectOnFocus} />
+                                                                        <input type="number" value={td.nakliye} onChange={e => tedarikGuncelle(gercekAyIdx, t.id, 'nakliye', e.target.value)} style={{ width:'80px', padding:'6px', textAlign:'right', borderRadius:'0.25rem', border:'1px solid #ccc' }} onFocus={window.selectOnFocus} />
                                                                     </td>
                                                                     <td style={{ padding:'8px 12px', textAlign:'center' }}>
-                                                                        <button onClick={() => tedarikSonrakiAylara(i, t.id)} style={{ fontSize:'10px', background:'var(--enba-dark)', color:'#fff', border:'none', padding:'4px 8px', borderRadius:'4px', cursor:'pointer' }}>⬇ Takip Edenlere Kopyala</button>
+                                                                        <button onClick={() => tedarikSonrakiAylara(gercekAyIdx, t.id)} style={{ fontSize:'10px', background:'var(--enba-dark)', color:'#fff', border:'none', padding:'4px 8px', borderRadius:'4px', cursor:'pointer' }}>{wt('copy_forward')}</button>
                                                                     </td>
                                                                 </tr>
                                                             );
@@ -322,8 +322,8 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
             </div>
 
             <div style={{ display:'flex', justifyContent:'space-between', marginTop:'20px' }}>
-                <button onClick={() => setAdim(1)} style={{ padding:'12px 24px', background:'var(--surface-container-high)', color:'var(--on-surface-variant)', border:'none', borderRadius:'2rem', fontWeight:600, cursor:'pointer' }}>← Geri: Yatırım</button>
-                <button onClick={() => setAdim(3)} style={{ padding:'12px 24px', background:'var(--enba-orange)', color:'#fff', border:'none', borderRadius:'2rem', fontWeight:700, cursor:'pointer' }}>Sonraki: Operasyon & Makinalar →</button>
+                <button onClick={() => setAdim(1)} style={{ padding:'12px 24px', background:'var(--surface-container-high)', color:'var(--on-surface-variant)', border:'none', borderRadius:'2rem', fontWeight:600, cursor:'pointer' }}>{wt('s1_back')}</button>
+                <button onClick={() => setAdim(3)} style={{ padding:'12px 24px', background:'var(--enba-orange)', color:'#fff', border:'none', borderRadius:'2rem', fontWeight:700, cursor:'pointer' }}>{wt('s1_next')}</button>
             </div>
         </div>
     );

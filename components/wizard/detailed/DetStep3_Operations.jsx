@@ -11,68 +11,70 @@ window.DetStep3_Operations = function DetStep3_Operations({
     seciliMakinalar, setSeciliMakinalar,
     aylikKapasiteToplam, aylikSonuclar, AYLAR, baslangicAyi, fmt
 }) {
+    const wt = k => window.t('wizard.' + k);
+
     return (
         <div style={{ background:'var(--surface-container-lowest)', borderRadius:'1.5rem', padding:'28px', boxShadow:'var(--shadow-card)', marginBottom:'24px' }}>
-            <h2 style={{ fontFamily:"'Manrope', sans-serif", fontWeight:700, fontSize:'16px', color:'var(--enba-dark)', margin:'0 0 20px' }}>3. Operasyon ve Makina Yönetimi</h2>
-            
+            <h2 style={{ fontFamily:"'Manrope', sans-serif", fontWeight:700, fontSize:'16px', color:'var(--enba-dark)', margin:'0 0 20px' }}>{wt('s3_title')}</h2>
+
             {globalMakinalar.length === 0 && (
                 <div style={{ background: 'var(--error-container)', color: 'var(--error)', padding: '20px', borderRadius: '1rem', marginBottom:'24px' }}>
-                    Makina kataloğunda henüz hiç makina tanımlanmamış. İş planında makine kullanabilmek için lütfen sol menüdeki "Makina ve Teçhizat" bölümünden sisteme yeni donanım tanımlayın.
+                    {wt('s3_no_machine')}
                 </div>
             )}
 
             <div style={{ display:'flex', alignItems:'center', gap:'12px', marginBottom:'20px', background:'var(--surface-container-low)', padding:'12px 20px', borderRadius:'1rem', border:'1px solid var(--surface-container-highest)' }}>
-                <label style={{ fontSize:'12px', fontWeight:700, color:'var(--enba-dark)' }}>Tesisteki Günlük Vardiya Sayısı:</label>
+                <label style={{ fontSize:'12px', fontWeight:700, color:'var(--enba-dark)' }}>{wt('s3_shift_count')}</label>
                 <select value={vardiyaSayisi} onChange={e => setVardiyaSayisi(Number(e.target.value))} style={{ padding:'8px', borderRadius:'0.5rem', border:'1px solid var(--surface-container-highest)', background:'var(--surface-container-lowest)', color:'var(--on-surface)', fontWeight:600 }}>
-                    <option value={1}>1 Vardiya (Gündüz)</option>
-                    <option value={2}>2 Vardiya</option>
-                    <option value={3}>3 Vardiya (24 Saat)</option>
+                    <option value={1}>{wt('s3_shift1')}</option>
+                    <option value={2}>{wt('s3_shift2')}</option>
+                    <option value={3}>{wt('s3_shift3')}</option>
                 </select>
             </div>
 
             <div style={{ display:'flex', gap:'20px', flexWrap:'wrap', marginBottom:'24px', background:'var(--surface-container-low)', padding:'24px', borderRadius:'1.5rem', border:'1px solid var(--surface-container-highest)' }}>
                 {Array.from({length: vardiyaSayisi}, (_, i) => (
                     <div key={i} style={{flex:1, minWidth:'150px'}}>
-                        <label style={{ fontSize:'11px', fontWeight:600, color:'var(--on-surface-variant)', textTransform:'uppercase', display:'block', marginBottom:'6px' }}>{i+1}. Vardiya (Saat / Gün)</label>
+                        <label style={{ fontSize:'11px', fontWeight:600, color:'var(--on-surface-variant)', textTransform:'uppercase', display:'block', marginBottom:'6px' }}>{i+1}{wt('s3_shift_hours')}</label>
                         <input type='number' value={vardiyaSaatleri[i+1] || 8} onChange={e => setVardiyaSaatleri({...vardiyaSaatleri, [i+1]: Number(e.target.value)})} style={{ width:'100%', padding:'10px', borderRadius:'0.5rem', border:'1px solid var(--surface-container-highest)' }} onFocus={window.selectOnFocus} />
                     </div>
                 ))}
                 <div style={{flex:1, minWidth:'150px'}}>
-                    <label style={{ fontSize:'11px', fontWeight:600, color:'var(--on-surface-variant)', textTransform:'uppercase', display:'block', marginBottom:'6px' }}>Aylık Çalışma Günü</label>
+                    <label style={{ fontSize:'11px', fontWeight:600, color:'var(--on-surface-variant)', textTransform:'uppercase', display:'block', marginBottom:'6px' }}>{wt('s3_work_days')}</label>
                     <input type='number' value={aylikCalismaGunu} onChange={e => setAylikCalismaGunu(Number(e.target.value))} style={{ width:'100%', padding:'10px', borderRadius:'0.5rem', border:'1px solid var(--surface-container-highest)' }} onFocus={window.selectOnFocus} />
                 </div>
                 <div style={{flex:1, minWidth:'150px'}}>
-                    <label style={{ fontSize:'11px', fontWeight:600, color:'var(--enba-orange-dark)', textTransform:'uppercase', display:'block', marginBottom:'6px' }}>⚡ Elektrik Birim Fiyatı (₺/kWh)</label>
+                    <label style={{ fontSize:'11px', fontWeight:600, color:'var(--enba-orange-dark)', textTransform:'uppercase', display:'block', marginBottom:'6px' }}>{wt('s3_electricity')}</label>
                     <input type='number' step='0.1' value={elektrikBirimFiyat} onChange={e => setElektrikBirimFiyat(Number(e.target.value))} style={{ width:'100%', padding:'10px', borderRadius:'0.5rem', border:'1px solid var(--surface-container-highest)' }} onFocus={window.selectOnFocus} />
                 </div>
             </div>
 
             <div style={{ marginBottom:'24px', background:'rgba(243, 156, 18, 0.05)', padding:'24px', borderRadius:'1.5rem', border:'1px solid rgba(243, 156, 18, 0.3)', display:'flex', gap:'20px', flexWrap:'wrap', alignItems:'center' }}>
                 <div style={{ flex:1, minWidth:'180px' }}>
-                    <h3 style={{ fontSize:'16px', margin:'0 0 16px', color:'var(--enba-dark)' }}>⚡  Ambalaj / Çuval Gideri Hesaplama</h3>
+                    <h3 style={{ fontSize:'16px', margin:'0 0 16px', color:'var(--enba-dark)' }}>{wt('s3_bag_title')}</h3>
                     <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px' }}>
                         <div>
-                            <label style={{ fontSize:'10px', fontWeight:600, color:'var(--on-surface-variant)', display:'block', marginBottom:'4px' }}>ÇUVAL KAPASİTESİ (TON/ADET)</label>
+                            <label style={{ fontSize:'10px', fontWeight:600, color:'var(--on-surface-variant)', display:'block', marginBottom:'4px' }}>{wt('s3_bag_capacity')}</label>
                             <input type='number' step='0.01' value={opGider.cuvalKapasite} onChange={e => setOpGider({...opGider, cuvalKapasite: Number(e.target.value)})} style={{ width:'100%', padding:'10px', borderRadius:'0.5rem', border:'1px solid #ccc', background:'var(--surface-container-lowest)' }} onFocus={window.selectOnFocus} />
                         </div>
                         <div>
-                            <label style={{ fontSize:'10px', fontWeight:600, color:'var(--on-surface-variant)', display:'block', marginBottom:'4px' }}>ÇUVAL BİRİM FİYATI (₺)</label>
+                            <label style={{ fontSize:'10px', fontWeight:600, color:'var(--on-surface-variant)', display:'block', marginBottom:'4px' }}>{wt('s3_bag_price')}</label>
                             <input type='number' step='0.1' value={opGider.cuvalFiyat} onChange={e => setOpGider({...opGider, cuvalFiyat: Number(e.target.value)})} style={{ width:'100%', padding:'10px', borderRadius:'0.5rem', border:'1px solid #ccc', background:'var(--surface-container-lowest)' }} onFocus={window.selectOnFocus} />
                         </div>
                     </div>
                 </div>
                 <div style={{ display:'flex', alignItems:'flex-end', paddingTop:'24px', paddingLeft:'16px' }}>
                     <span style={{ fontSize:'12px', color:'var(--enba-dark)', background:'var(--surface-container-highest)', padding:'10px 16px', borderRadius:'1rem', display:'flex', gap:'8px', alignItems:'center', border:'1px solid var(--enba-orange)' }}>
-                        <span>✅</span> Çuval Gideri (315), aylık tedarik tonajinize göre doğrudan otomatik ve eş zamanlı hesaplanır.
+                        {wt('s3_bag_note')}
                     </span>
                 </div>
             </div>
 
             <div style={{ marginBottom:'24px', background:'var(--surface-container-low)', padding:'20px', borderRadius:'1rem' }}>
-                <h3 style={{ fontSize:'14px', margin:'0 0 16px', color:'var(--enba-dark)' }}>⚙️ İşletme Planına Makina Ekle</h3>
+                <h3 style={{ fontSize:'14px', margin:'0 0 16px', color:'var(--enba-dark)' }}>{wt('s3_add_machine')}</h3>
                 <div style={{ display:'flex', gap:'12px', flexWrap:'wrap' }}>
                     <select id="yeniMakineSecim" style={{ flex:1, minWidth:'200px', padding:'10px', borderRadius:'0.75rem', border:'1px solid var(--surface-container-highest)' }}>
-                        <option value="">Katalogdan Makina Seç...</option>
+                        <option value="">{wt('s3_select_machine')}</option>
                         {globalMakinalar.map(m => (
                             <option key={m.id} value={m.id}>{m.adi} ({m.kapasite} T/saat - {m.motorGucu} kW)</option>
                         ))}
@@ -97,14 +99,14 @@ window.DetStep3_Operations = function DetStep3_Operations({
                                     <div style={{ fontSize:'11px', color:'var(--on-surface-variant)' }}>Kapasite: {gm.kapasite} T/saat | Motor: {gm.motorGucu} kW</div>
                                 </div>
                                 <div style={{ width:'100px' }}>
-                                    <label style={{ fontSize:'10px', display:'block', marginBottom:'4px' }}>Verimlilik (%)</label>
+                                    <label style={{ fontSize:'10px', display:'block', marginBottom:'4px' }}>{wt('s3_efficiency')}</label>
                                     <input type='number' value={sm.verimlilik} onChange={e=> setSeciliMakinalar(prev => prev.map(x => x.id===sm.id ? {...x, verimlilik: Number(e.target.value)} : x))} style={{ width:'100%', padding:'6px', borderRadius:'0.5rem', border:'1px solid #ccc' }} onFocus={window.selectOnFocus} />
                                 </div>
                                 <div style={{ width:'100px' }}>
-                                    <label style={{ fontSize:'10px', display:'block', marginBottom:'4px' }}>Güç Katsayısı</label>
+                                    <label style={{ fontSize:'10px', display:'block', marginBottom:'4px' }}>{wt('s3_power_coef')}</label>
                                     <input type='number' step='0.1' value={sm.katsayi} onChange={e=> setSeciliMakinalar(prev => prev.map(x => x.id===sm.id ? {...x, katsayi: Number(e.target.value)} : x))} style={{ width:'100%', padding:'6px', borderRadius:'0.5rem', border:'1px solid #ccc' }} onFocus={window.selectOnFocus} />
                                 </div>
-                                <button onClick={() => setSeciliMakinalar(seciliMakinalar.filter(x => x.id !== sm.id))} style={{ background:'none', border:'none', color:'var(--error)', cursor:'pointer', fontWeight:800 }}>✖ Kaldır</button>
+                                <button onClick={() => setSeciliMakinalar(seciliMakinalar.filter(x => x.id !== sm.id))} style={{ background:'none', border:'none', color:'var(--error)', cursor:'pointer', fontWeight:800 }}>{wt('s3_remove')}</button>
                             </div>
                         )
                     })}
@@ -118,15 +120,15 @@ window.DetStep3_Operations = function DetStep3_Operations({
             </div>
 
             <div>
-                <h3 style={{ fontSize:'14px', margin:'0 0 16px', color:'var(--enba-dark)' }}>⚡  Kapasite Analizi (Aylık)</h3>
+                <h3 style={{ fontSize:'14px', margin:'0 0 16px', color:'var(--enba-dark)' }}>{wt('s3_capacity_analysis')}</h3>
                 <div style={{ overflowX: 'auto' }}>
                     <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'13px' }}>
                         <thead>
                             <tr style={{ background:'var(--primary-container)' }}>
-                                <th style={{ padding:'10px', textAlign:'left' }}>Ay</th>
-                                <th style={{ padding:'10px', textAlign:'right' }}>Kurulu Kapasite</th>
-                                <th style={{ padding:'10px', textAlign:'right' }}>Alış Hedefi</th>
-                                <th style={{ padding:'10px', textAlign:'right' }}>Durum</th>
+                                <th style={{ padding:'10px', textAlign:'left' }}>{wt('month_col')}</th>
+                                <th style={{ padding:'10px', textAlign:'right' }}>{wt('s3_installed_cap')}</th>
+                                <th style={{ padding:'10px', textAlign:'right' }}>{wt('s3_purchase_target')}</th>
+                                <th style={{ padding:'10px', textAlign:'right' }}>{wt('s3_status')}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -141,7 +143,7 @@ window.DetStep3_Operations = function DetStep3_Operations({
                                         <td style={{ padding:'10px', textAlign:'right' }}>{fmt(toplamKuruluKapasite)} T</td>
                                         <td style={{ padding:'10px', textAlign:'right' }}>{fmt(aT)} T</td>
                                         <td style={{ padding:'10px', textAlign:'right', fontWeight:700, color: uyari ? 'var(--error)' : 'var(--enba-orange-dark)' }}>
-                                            {uyari ? `⚠️ ${fmt(Math.abs(fark))} T Kapasite Aşımı` : `✅ ${fmt(fark)} T Boş Kapasite`}
+                                            {uyari ? `⚠️ ${fmt(Math.abs(fark))} ${wt('s3_cap_over')}` : `✅ ${fmt(fark)} ${wt('s3_cap_free')}`}
                                         </td>
                                     </tr>
                                 )
@@ -152,8 +154,8 @@ window.DetStep3_Operations = function DetStep3_Operations({
             </div>
 
             <div style={{ display:'flex', justifyContent:'space-between', marginTop:'20px' }}>
-                <button onClick={() => window.setAdim(2)} style={{ padding:'12px 24px', background:'var(--surface-container-high)', border:'none', borderRadius:'2rem', fontWeight:700, cursor:'pointer' }}>← Geri</button>
-                <button onClick={() => window.setAdim(4)} style={{ padding:'12px 24px', background:'var(--enba-orange)', color:'#fff', border:'none', borderRadius:'2rem', fontWeight:700, cursor:'pointer' }}>Sonraki: Personel Planlama →</button>
+                <button onClick={() => window.setAdim(2)} style={{ padding:'12px 24px', background:'var(--surface-container-high)', border:'none', borderRadius:'2rem', fontWeight:700, cursor:'pointer' }}>{wt('s3_back')}</button>
+                <button onClick={() => window.setAdim(4)} style={{ padding:'12px 24px', background:'var(--enba-orange)', color:'#fff', border:'none', borderRadius:'2rem', fontWeight:700, cursor:'pointer' }}>{wt('s3_next')}</button>
             </div>
         </div>
     );

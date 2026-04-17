@@ -64,20 +64,20 @@ window.DetStep5_Expenses = function DetStep5_Expenses({
                                         <td style={{ padding:'10px 12px', fontWeight:700, position:'sticky', left:0, background:'var(--surface-container-lowest)', zIndex:5, borderRight:'1px solid var(--surface-container-highest)', color: isDynamic ? 'var(--enba-orange-dark)' : 'var(--enba-dark)' }}>
                                             {isDynamic && '⚡ '} {g.kodu} - {g.adi}
                                         </td>
-                                        {ayVerileri.map((a, i) => (
+                                        {Array.from({length: 12}, (_, i) => { const calIdx=(baslangicAyi+i)%12; const a=ayVerileri[calIdx]||{giderler:{}}; return (
                                             <td key={i} style={{ padding:'6px 8px', textAlign:'center' }}>
                                                 {!isExpandable ? (
                                                     <input
                                                         type="number"
                                                         disabled={isDynamic}
                                                         value={Number(a.giderler?.[g.kodu]) || ''}
-                                                        onChange={e => giderGuncelle(i, g.kodu, e.target.value)}
+                                                        onChange={e => giderGuncelle(calIdx, g.kodu, e.target.value)}
                                                         style={{ width:'80px', padding:'6px', borderRadius:'0.25rem', border:'1px solid var(--surface-container-highest)', textAlign:'right' }}
                                                         onFocus={window.selectOnFocus}
                                                     />
                                                 ) : <span style={{color:'#999', fontSize:'10px'}}>As. Tabloya Bakınız</span>}
                                             </td>
-                                        ))}
+                                        ); })}
                                     </tr>
 
                                     {isExpandable && (
@@ -111,17 +111,17 @@ window.DetStep5_Expenses = function DetStep5_Expenses({
                                                             {altGiderKalemleri.filter(ak => ak.parentKod === g.kodu).map(ak => (
                                                                 <tr key={ak.id} style={{ borderBottom:'1px solid #eee' }}>
                                                                     <td style={{ padding:'8px', fontWeight:600 }}>{ak.ad}</td>
-                                                                    {ayVerileri.map((a, i) => (
+                                                                    {Array.from({length:12}, (_, i) => { const cI=(baslangicAyi+i)%12; const aI=ayVerileri[cI]||{giderler:{}}; return (
                                                                         <td key={i} style={{ padding:'4px 8px', textAlign:'center' }}>
                                                                             <input
                                                                                 type="number"
-                                                                                value={Number(a.giderler?.[ak.id]) || ''}
-                                                                                onChange={e => giderGuncelle(i, ak.id, e.target.value)}
+                                                                                value={Number(aI.giderler?.[ak.id]) || ''}
+                                                                                onChange={e => giderGuncelle(cI, ak.id, e.target.value)}
                                                                                 style={{ width:'70px', padding:'6px', borderRadius:'0.25rem', border:'1px solid #eee', textAlign:'right' }}
                                                                                 onFocus={window.selectOnFocus}
                                                                             />
                                                                         </td>
-                                                                    ))}
+                                                                    ); })}
                                                                     <td style={{ padding:'8px' }}>
                                                                         <button onClick={() => altKalemSil(ak.id)} style={{ background:'none', border:'none', color:'var(--error)', cursor:'pointer', fontWeight:800 }}>✖</button>
                                                                     </td>

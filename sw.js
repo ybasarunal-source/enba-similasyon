@@ -1,15 +1,10 @@
-const CACHE_NAME = 'enba-sim-v15';
+const CACHE_NAME = 'enba-sim-v16';
 
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/style.css',
   '/data.js',
-  '/app.jsx',
-  '/detailed-plan.jsx',
-  '/landing.jsx',
-  '/router.jsx',
-  '/pnl-module.jsx',
   '/manifest.json'
 ];
 
@@ -52,11 +47,16 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Uygulama dosyaları — Network First (Önce Ağ, başarısız olursa önbellek)
+  // JSX/JS uygulama kaynak dosyaları — asla önbelleğe alma, her zaman ağdan al
+  if (event.request.url.match(/\.(jsx|js)(\?.*)?$/)) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
+  // Diğer uygulama dosyaları — Network First (Önce Ağ, başarısız olursa önbellek)
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        // İnternet var ve yanıt başarılı ise önbelleği tazele
         if (response && response.ok) {
           const clone = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
@@ -64,7 +64,6 @@ self.addEventListener('fetch', (event) => {
         return response;
       })
       .catch(() => {
-        // İnternet bağlantısı yoksa (offline) önbellekteki veriyi göster
         return caches.match(event.request);
       })
   );

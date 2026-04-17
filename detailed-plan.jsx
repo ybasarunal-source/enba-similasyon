@@ -37,6 +37,8 @@ function DetayliPlanWizard({ initialData, onSave, onCancel, varsayilanAyarlar })
     const [yeniYatirimMaliyet, setYeniYatirimMaliyet] = React.useState('');
     const [yeniYatirimGeriOdeme, setYeniYatirimGeriOdeme] = React.useState(60);
     const [yeniYatirimErteleme, setYeniYatirimErteleme] = React.useState(0);
+    const [yeniYatirimGucTuketimi, setYeniYatirimGucTuketimi] = React.useState('');
+    const [yeniYatirimKapasite, setYeniYatirimKapasite] = React.useState('');
 
     const [altGiderKalemleri, setAltGiderKalemleri] = React.useState(initialData?.altGiderKalemleri || []);
     const [yeniAltAdlar, setYeniAltAdlar] = React.useState({});
@@ -63,7 +65,17 @@ function DetayliPlanWizard({ initialData, onSave, onCancel, varsayilanAyarlar })
     const [yeniMusteri, setYeniMusteri] = React.useState('');
 
     const defaultAylar = () => Array.from({ length: 12 }, (_, i) => ({ ay: i, tedarikler: {}, musteriler: {}, giderler: {}, personeller: {} }));
-    const [ayVerileri, setAyVerileri] = React.useState(initialData?.ayVerileri || defaultAylar);
+    const [ayVerileri, setAyVerileri] = React.useState(() => {
+        const raw = initialData?.ayVerileri;
+        if (!raw || !raw.length) return defaultAylar();
+        if (initialData?.dataVersion >= 2) return raw;
+        // Eski format (pozisyonel) → takvim ayı index'ine migrate et
+        const startAy = initialData?.baslangicAyi || 0;
+        if (startAy === 0) return raw;
+        const migrated = defaultAylar();
+        raw.forEach((a, i) => { migrated[(startAy + i) % 12] = a; });
+        return migrated;
+    });
     
     // Ensure existing ayVerileri has personeller object
     React.useEffect(() => {
@@ -104,6 +116,7 @@ function DetayliPlanWizard({ initialData, onSave, onCancel, varsayilanAyarlar })
     const initialPersonelState = { unvan: '', isAyiklama: false, ekMaas: '', ekSgk: '', ekYemek: '' };
     const [yeniPersonel, setYeniPersonel] = React.useState(initialPersonelState);
 
+
     const ayGuncelle = (ayIdx, alan, deger) => { setAyVerileri(prev => prev.map((a, i) => i === ayIdx ? { ...a, [alan]: Number(deger) } : a)); };
     const tedarikGuncelle = (ayIdx, tedId, alan, deger) => {
         setAyVerileri(prev => prev.map((a, i) => {
@@ -112,13 +125,15 @@ function DetayliPlanWizard({ initialData, onSave, onCancel, varsayilanAyarlar })
             yt[tedId] = { ...yt[tedId], [alan]: Number(deger) }; return { ...a, tedarikler: yt };
         }));
     };
-    // Belirtilen aydan sonraki tüm aylara o tedarikçinin mevcut verisini kopyalar
-    const tedarikSonrakiAylara = (ayIdx, tedId) => {
+    // Belirtilen takvim ayından sonraki plan aylarına kopyalar
+    const tedarikSonrakiAylara = (calIdx, tedId) => {
         setAyVerileri(prev => {
-            const kaynak = prev[ayIdx]?.tedarikler?.[tedId];
+            const kaynak = prev[calIdx]?.tedarikler?.[tedId];
             if (!kaynak) return prev;
-            return prev.map((a, i) => {
-                if (i <= ayIdx) return a;
+            const srcPos = ((calIdx - baslangicAyi) + 12) % 12;
+            return prev.map((a, c) => {
+                const cPos = ((c - baslangicAyi) + 12) % 12;
+                if (cPos <= srcPos) return a;
                 const yt = { ...a.tedarikler };
                 yt[tedId] = { ...kaynak };
                 return { ...a, tedarikler: yt };
@@ -134,13 +149,15 @@ function DetayliPlanWizard({ initialData, onSave, onCancel, varsayilanAyarlar })
             ym[musId] = { ...ym[musId], [alan]: Number(deger) }; return { ...a, musteriler: ym };
         }));
     };
-    // Belirtilen aydan sonraki tüm aylara o müşterinin mevcut verisini kopyalar
-    const musteriSonrakiAylara = (ayIdx, musId) => {
+    // Belirtilen takvim ayından sonraki plan aylarına kopyalar
+    const musteriSonrakiAylara = (calIdx, musId) => {
         setAyVerileri(prev => {
-            const kaynak = prev[ayIdx]?.musteriler?.[musId];
+            const kaynak = prev[calIdx]?.musteriler?.[musId];
             if (!kaynak) return prev;
-            return prev.map((a, i) => {
-                if (i <= ayIdx) return a;
+            const srcPos = ((calIdx - baslangicAyi) + 12) % 12;
+            return prev.map((a, c) => {
+                const cPos = ((c - baslangicAyi) + 12) % 12;
+                if (cPos <= srcPos) return a;
                 const ym = { ...a.musteriler };
                 ym[musId] = { ...kaynak };
                 return { ...a, musteriler: ym };
@@ -252,12 +269,13 @@ function DetayliPlanWizard({ initialData, onSave, onCancel, varsayilanAyarlar })
     };
 
     const aylikKuruluKapasite = aylikKapasiteToplam();
-    const hesaplanmisAyVerileri = ayVerileri.map(a => {
+    const hesaplanmisAyVerileri = Array.from({length: 12}, (_, i) => {
+        const a = ayVerileri[(baslangicAyi + i) % 12] || { tedarikler: {}, musteriler: {}, giderler: {}, personeller: {} };
         let ayTon = 0;
         tedarikciler.forEach(t => { ayTon += (a.tedarikler?.[t.id]?.miktar || 0); });
-        
+
         let dinamikGiderler = { ...a.giderler };
-        
+
         // Dinamik Çuval
         if (opGider.cuvalKapasite > 0 && opGider.cuvalFiyat > 0 && ayTon > 0) {
             dinamikGiderler['315'] = Math.round((ayTon / opGider.cuvalKapasite) * opGider.cuvalFiyat);
@@ -484,7 +502,7 @@ function DetayliPlanWizard({ initialData, onSave, onCancel, varsayilanAyarlar })
     const arka = (v) => v >= 0 ? '#f0fce6' : 'var(--error-container)';
 
     const adimCiz = (no, title, icon) => (
-        <div onClick={() => setAdim(no)} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'8px', cursor:'pointer', opacity: adim === no ? 1 : 0.5, flex:1, position:'relative', padding: '10px' }}>
+        <div onClick={() => adimGec(no)} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'8px', cursor:'pointer', opacity: adim === no ? 1 : 0.5, flex:1, position:'relative', padding: '10px' }}>
             <div style={{ width:'40px', height:'40px', borderRadius:'50%', background: adim === no ? 'var(--enba-orange)' : 'var(--surface-container-high)', color: adim === no ? '#fff' : 'var(--on-surface-variant)', display:'flex', justifyContent:'center', alignItems:'center', fontSize:'18px', fontWeight:700, transition:'all 0.3s' }}>{icon}</div>
             <div className="step-label" style={{ fontSize:'12px', fontWeight:600, color: adim === no ? 'var(--enba-orange-dark)' : 'var(--on-surface-variant)', textAlign:'center', transition:'all 0.3s' }}>{title}</div>
         </div>
@@ -530,13 +548,14 @@ function DetayliPlanWizard({ initialData, onSave, onCancel, varsayilanAyarlar })
         });
     };
     const uygulaTopluTedarik = () => {
-        setAyVerileri(prev => prev.map((a, i) => {
+        setAyVerileri(prev => prev.map((a, calIdx) => {
+            const planPos = ((calIdx - baslangicAyi) + 12) % 12;
             const yt = { ...a.tedarikler };
             Object.keys(topluTedarikler).forEach(tId => {
                 const tData = topluTedarikler[tId];
                 const baslangicAy = tData.baslangicAy || 0;
-                if (i < baslangicAy) return;
-                const ayData = tData[i];
+                if (planPos < baslangicAy) return;
+                const ayData = tData[planPos];
                 if (!ayData && !tData.urun) return;
                 const mevcut = yt[tId] || { miktar: 0, fiyat: 0, nakliye: 0, urun: '' };
                 yt[tId] = {
@@ -588,8 +607,9 @@ function DetayliPlanWizard({ initialData, onSave, onCancel, varsayilanAyarlar })
 
     const [topluFire, setTopluFire] = React.useState({ aktif: false, yuzde: '', baslangicAy: 0 });
     const uygulaTopluFire = () => {
-        setAyVerileri(prev => prev.map((a, i) => {
-            if (i < topluFire.baslangicAy) return a;
+        setAyVerileri(prev => prev.map((a, calIdx) => {
+            const planPos = ((calIdx - baslangicAyi) + 12) % 12;
+            if (planPos < topluFire.baslangicAy) return a;
             const next = { ...a };
             if (topluFire.aktif !== undefined) next.fireAktif = topluFire.aktif;
             if (topluFire.yuzde !== '') next.fireYuzde = Number(topluFire.yuzde);
@@ -623,13 +643,14 @@ function DetayliPlanWizard({ initialData, onSave, onCancel, varsayilanAyarlar })
         });
     };
     const uygulaTopluMusteri = () => {
-        setAyVerileri(prev => prev.map((a, i) => {
+        setAyVerileri(prev => prev.map((a, calIdx) => {
+            const planPos = ((calIdx - baslangicAyi) + 12) % 12;
             const ym = { ...a.musteriler };
             Object.keys(topluMusteriler).forEach(mId => {
                 const mData = topluMusteriler[mId];
                 const baslangicAy = mData.baslangicAy || 0;
-                if (i < baslangicAy) return;
-                const ayData = mData[i];
+                if (planPos < baslangicAy) return;
+                const ayData = mData[planPos];
                 if (!ayData && !mData.urun) return;
                 const mevcut = ym[mId] || { miktar: 0, fiyat: 0, nakliye: 0, urun: '' };
                 ym[mId] = {
@@ -647,10 +668,30 @@ function DetayliPlanWizard({ initialData, onSave, onCancel, varsayilanAyarlar })
     const gecerliGiderler = window.SABLON_GIDERLER?.filter(g => !HARIC_KODLAR.has(g.kodu)) || [];
 
     const [saveToast, setSaveToast] = React.useState(false);
+    const degisiklikVar = React.useRef(false);
+    const mountTamamlandi = React.useRef(false);
+    const [adimOnayBekle, setAdimOnayBekle] = React.useState(null);
+
+    React.useEffect(() => {
+        if (!mountTamamlandi.current) { mountTamamlandi.current = true; return; }
+        degisiklikVar.current = true;
+    }, [yatirimlar, tedarikciler, musteriler, ayVerileri, altGiderKalemleri,
+        personelListesi, seciliMakinalar, vardiyaSayisi, vardiyaSaatleri,
+        aylikCalismaGunu, elektrikBirimFiyat, opGider, asgariNet, asgariSgk,
+        gunlukYemek, planAdi, baslangicYili, baslangicAyi]);
+
+    const adimGec = (hedef) => {
+        if (degisiklikVar.current) {
+            setAdimOnayBekle(hedef);
+        } else {
+            setAdim(hedef);
+        }
+    };
 
     const handleSave = () => {
         onSave({
             id: initialData?.id || "d_ipk_" + Date.now(),
+            dataVersion: 2,
             baslik: planAdi, baslangicYili, baslangicAyi, aylikAmortisman, yatirimlar, aylikAmortismanlar,
             tedarikciler, musteriler, ayVerileri, altGiderKalemleri,
             seciliMakinalar, vardiyaSayisi, vardiyaSaatleri, aylikCalismaGunu, elektrikBirimFiyat,
@@ -660,9 +701,12 @@ function DetayliPlanWizard({ initialData, onSave, onCancel, varsayilanAyarlar })
             yilOzet, projeksiyon, aylikSonuclar, hesaplanmisAyVerileri,
             paraBirimi: planParaBirimi, olcumBirimi: planOlcumBirimi
         });
+        degisiklikVar.current = false;
         setSaveToast(true);
         setTimeout(() => setSaveToast(false), 3000);
     };
+
+    window.setAdim = adimGec;
 
     return (
         <div style={{ minHeight:'100dvh', background:'var(--surface)', fontFamily:"'Inter', sans-serif", paddingBottom:'40px' }}>
@@ -726,7 +770,9 @@ function DetayliPlanWizard({ initialData, onSave, onCancel, varsayilanAyarlar })
                         yeniYatirimMaliyet={yeniYatirimMaliyet} setYeniYatirimMaliyet={setYeniYatirimMaliyet}
                         yeniYatirimGeriOdeme={yeniYatirimGeriOdeme} setYeniYatirimGeriOdeme={setYeniYatirimGeriOdeme}
                         yeniYatirimErteleme={yeniYatirimErteleme} setYeniYatirimErteleme={setYeniYatirimErteleme}
-                        fmt={fmt} setAdim={setAdim}
+                        yeniYatirimGucTuketimi={yeniYatirimGucTuketimi} setYeniYatirimGucTuketimi={setYeniYatirimGucTuketimi}
+                        yeniYatirimKapasite={yeniYatirimKapasite} setYeniYatirimKapasite={setYeniYatirimKapasite}
+                        fmt={fmt} setAdim={adimGec}
                     />
                 )}
 
@@ -744,7 +790,7 @@ function DetayliPlanWizard({ initialData, onSave, onCancel, varsayilanAyarlar })
                         ayVerileri={ayVerileri} acikAylar={acikAylar} setAcikAylar={setAcikAylar}
                         tedarikGuncelle={tedarikGuncelle} tedarikSonrakiAylara={tedarikSonrakiAylara}
                         planOlcumBirimi={planOlcumBirimi}
-                        fmt={fmt} AYLAR={AYLAR} setAdim={setAdim}
+                        fmt={fmt} AYLAR={AYLAR} setAdim={adimGec}
                     />
                 )}
 
@@ -764,12 +810,12 @@ function DetayliPlanWizard({ initialData, onSave, onCancel, varsayilanAyarlar })
                         fireGuncelle={fireGuncelle} musteriSonrakiAylara={musteriSonrakiAylara}
                         musteriAyiTemizle={musteriAyiTemizle} planOlcumBirimi={planOlcumBirimi}
                         aylikSonuclar={aylikSonuclar} aylikAmortismanlar={aylikAmortismanlar}
-                        setAdim={setAdim}
+                        setAdim={adimGec}
                     />
                 )}
 
                 {adim === 3 && (
-                    <DetStep3_Operations 
+                    <DetStep3_Operations
                         globalMakinalar={globalMakinalar} vardiyaSayisi={vardiyaSayisi} setVardiyaSayisi={setVardiyaSayisi}
                         vardiyaSaatleri={vardiyaSaatleri} setVardiyaSaatleri={setVardiyaSaatleri}
                         aylikCalismaGunu={aylikCalismaGunu} setAylikCalismaGunu={setAylikCalismaGunu}
@@ -777,12 +823,12 @@ function DetayliPlanWizard({ initialData, onSave, onCancel, varsayilanAyarlar })
                         opGider={opGider} setOpGider={setOpGider}
                         seciliMakinalar={seciliMakinalar} setSeciliMakinalar={setSeciliMakinalar}
                         aylikKapasiteToplam={aylikKapasiteToplam} aylikSonuclar={aylikSonuclar}
-                        AYLAR={AYLAR} baslangicAyi={baslangicAyi} fmt={fmt} setAdim={setAdim}
+                        AYLAR={AYLAR} baslangicAyi={baslangicAyi} fmt={fmt} setAdim={adimGec}
                     />
                 )}
 
                 {adim === 4 && (
-                    <DetStep4_Personnel 
+                    <DetStep4_Personnel
                         asgariNet={asgariNet} setAsgariNet={setAsgariNet}
                         asgariSgk={asgariSgk} setAsgariSgk={setAsgariSgk}
                         gunlukYemek={gunlukYemek} setGunlukYemek={setGunlukYemek}
@@ -793,19 +839,19 @@ function DetayliPlanWizard({ initialData, onSave, onCancel, varsayilanAyarlar })
                         ayVerileri={ayVerileri} acikAylar={acikAylar} setAcikAylar={setAcikAylar} vardiyaSayisi={vardiyaSayisi}
                         aylikPersonelGuncelle={aylikPersonelGuncelle} AYLAR={AYLAR}
                         baslangicAyi={baslangicAyi} personelGiderleriniUygula={personelGiderleriniUygula}
-                        setAdim={setAdim}
+                        setAdim={adimGec}
                     />
                 )}
 
                 {adim === 5 && (
-                    <DetStep5_Expenses 
+                    <DetStep5_Expenses
                         gecerliGiderler={gecerliGiderler} topluGiderler={topluGiderler}
                         guncelleTopluGider={guncelleTopluGider} uygulaTümAylaraGider={uygulaTümAylaraGider}
                         ayVerileri={ayVerileri} AYLAR={AYLAR} baslangicAyi={baslangicAyi}
                         ACILIR_KODLAR={ACILIR_KODLAR} altGiderKalemleri={altGiderKalemleri}
                         yeniAltAdlar={yeniAltAdlar} setYeniAltAdlar={setYeniAltAdlar}
                         altKalemEkle={altKalemEkle} altKalemSil={altKalemSil}
-                        giderGuncelle={giderGuncelle} setAdim={setAdim}
+                        giderGuncelle={giderGuncelle} setAdim={adimGec}
                     />
                 )}
 
@@ -823,10 +869,60 @@ function DetayliPlanWizard({ initialData, onSave, onCancel, varsayilanAyarlar })
                         setSabitMaliyet={setSabitMaliyet} degiskenMaliyet={degiskenMaliyet}
                         setDegiskenMaliyet={setDegiskenMaliyet} projeksiyon={projeksiyon}
                         excelExport={excelExport} detayliPdfExport={detayliPdfExport}
-                        setAdim={setAdim}
+                        setAdim={adimGec}
                     />
                 )}
             </div>
+
+            {/* Kaydedilmemiş Değişiklik Onay Modalı */}
+            {adimOnayBekle !== null && (
+                <div style={{
+                    position:'fixed', inset:0, background:'rgba(0,0,0,0.5)',
+                    display:'flex', alignItems:'center', justifyContent:'center', zIndex:9999
+                }}>
+                    <div style={{
+                        background:'var(--surface)', borderRadius:'1.5rem', padding:'32px',
+                        maxWidth:'420px', width:'90%', boxShadow:'0 20px 60px rgba(0,0,0,0.3)',
+                        fontFamily:"'Inter', sans-serif"
+                    }}>
+                        <div style={{ fontSize:'36px', textAlign:'center', marginBottom:'12px' }}>💾</div>
+                        <h3 style={{ margin:'0 0 8px', fontWeight:800, fontSize:'17px', textAlign:'center', color:'var(--enba-dark)' }}>
+                            Kaydedilmemiş değişiklikler var
+                        </h3>
+                        <p style={{ margin:'0 0 24px', fontSize:'14px', color:'var(--on-surface-variant)', textAlign:'center', lineHeight:1.5 }}>
+                            Bu adımdaki değişiklikler kayıt edilmedi. Devam etmeden önce kaydetmek ister misiniz?
+                        </p>
+                        <div style={{ display:'flex', flexDirection:'column', gap:'10px' }}>
+                            <button
+                                onClick={() => {
+                                    handleSave();
+                                    setAdim(adimOnayBekle);
+                                    setAdimOnayBekle(null);
+                                }}
+                                style={{ background:'var(--enba-orange)', color:'#fff', border:'none', padding:'13px', borderRadius:'1rem', fontWeight:800, fontSize:'14px', cursor:'pointer' }}
+                            >
+                                Kaydet ve Devam Et
+                            </button>
+                            <button
+                                onClick={() => {
+                                    degisiklikVar.current = false;
+                                    setAdim(adimOnayBekle);
+                                    setAdimOnayBekle(null);
+                                }}
+                                style={{ background:'var(--surface-container-high)', color:'var(--on-surface)', border:'none', padding:'13px', borderRadius:'1rem', fontWeight:600, fontSize:'14px', cursor:'pointer' }}
+                            >
+                                Kaydetmeden Devam Et
+                            </button>
+                            <button
+                                onClick={() => setAdimOnayBekle(null)}
+                                style={{ background:'none', color:'var(--on-surface-variant)', border:'1px solid var(--surface-container-highest)', padding:'11px', borderRadius:'1rem', fontWeight:600, fontSize:'14px', cursor:'pointer' }}
+                            >
+                                İptal
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
