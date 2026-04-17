@@ -148,6 +148,14 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
                                     const monthCells = (alan) => ayBasliklari.map((_, i) => {
                                         const disabled = i < baslangicAy;
                                         const isStart = i === baslangicAy;
+                                        const topluVal = (tData[i] || {})[alan];
+                                        const fallbackRaw = ayVerileri[i]?.tedarikler?.[t.id]?.[alan];
+                                        let displayVal = '';
+                                        if (topluVal !== undefined && topluVal !== '') {
+                                            displayVal = topluVal;
+                                        } else if (fallbackRaw !== undefined && fallbackRaw !== '') {
+                                            displayVal = alan === 'miktar' ? (tonToDisplay(fallbackRaw) || '') : fallbackRaw;
+                                        }
                                         return (
                                             <td key={i} style={{
                                                 padding:'5px 4px',
@@ -156,7 +164,7 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
                                                 borderLeft: isStart ? '2px solid rgba(227,82,5,0.5)' : undefined,
                                             }}>
                                                 {numInput(
-                                                    (tData[i] || {})[alan] || '',
+                                                    displayVal,
                                                     e => guncelleTopluTedarik(t.id, i, alan, e.target.value),
                                                     disabled
                                                 )}
@@ -178,7 +186,7 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
                                                     <input
                                                         type="text"
                                                         placeholder="Ürün adı..."
-                                                        value={tData.urun || ''}
+                                                        value={tData.urun || ayVerileri[0]?.tedarikler?.[t.id]?.urun || ''}
                                                         onChange={e => guncelleTopluTedarikUrun(t.id, e.target.value)}
                                                         onFocus={window.selectOnFocus}
                                                         style={{ padding:'4px 8px', width:'100%', borderRadius:'0.375rem', border:'1px solid rgba(255,255,255,0.18)', background:'rgba(255,255,255,0.06)', color:'#fff', fontSize:'12px', marginBottom:'8px' }}
