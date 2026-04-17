@@ -87,7 +87,7 @@ function DetayliPlanWizard({ initialData, onSave, onCancel, varsayilanAyarlar })
     const [acikAylar, setAcikAylar] = React.useState({});
 
     // Makine ve Operasyon State
-    const [globalMakinalar] = React.useState(() => JSON.parse(localStorage.getItem('enba_makinalar') || '[]'));
+    const [globalMakinalar] = React.useState(() => JSON.parse(localStorage.getItem('enba_makinalar_v2') || '[]'));
     const [seciliMakinalar, setSeciliMakinalar] = React.useState(initialData?.seciliMakinalar || []);
     
     // Vardiya ve Çalışma Süresi Stated
