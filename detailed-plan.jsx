@@ -406,7 +406,7 @@ function DetayliPlanWizard({ initialData, onSave, onCancel, varsayilanAyarlar })
     const detayliPdfExport = () => {
         const AYLAR_TR = ['Oca','\u015eub','Mar','Nis','May','Haz','Tem','A\u011fu','Eyl','Eki','Kas','Ara'];
         const ayBas = Array.from({length:12}, (_,i) => AYLAR_TR[(baslangicAyi + i) % 12]);
-        const fmtN = v => Number(v||0).toLocaleString('tr-TR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+        const fmtN = v => Number(v||0).toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 1 });
 
         const th = (t,a='right') => `<th style="padding:7px 5px;text-align:${a};background:#1a3a5c;color:#fff;font-size:9.5px;font-weight:700;white-space:nowrap;border:1px solid #2d5080">${t}</th>`;
         const secHdr = (t,bg,c) => `<tr><td colspan="14" style="padding:7px 10px;background:${bg};color:${c};font-weight:800;font-size:9.5px;letter-spacing:0.8px;border:1px solid #333">${t}</td></tr>`;
@@ -479,7 +479,7 @@ function DetayliPlanWizard({ initialData, onSave, onCancel, varsayilanAyarlar })
     };
 
 
-    const fmt = window.fmt || ((v) => Number(v || 0).toLocaleString('tr-TR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }));
+    const fmt = window.fmt || ((v) => Number(v || 0).toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 1 }));
     const renk = (v) => v >= 0 ? 'var(--enba-orange-dark)' : 'var(--error)';
     const arka = (v) => v >= 0 ? '#f0fce6' : 'var(--error-container)';
 
@@ -1014,7 +1014,7 @@ function DetayliPlanModulu({ navigate, bekleyenPlanlar, setBekleyenPlanlar, akti
 
     const birlestirmePdfExport = () => {
         const AYLAR_TR = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
-        const fmtN = v => Number(v||0).toLocaleString('tr-TR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+        const fmtN = v => Number(v||0).toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 1 });
         const getOpPdf = (p, i) => (birlestirmeYil * 12 + birlestirmeAy + i) - ((p.baslangicYili || birlestirmeYil) * 12 + p.baslangicAyi);
         const getAs = (p, i) => { const op=getOpPdf(p,i); return (op>=0&&op<12)?p.aylikSonuclar[op]:null; };
         const getAmor = (p, i) => { const op=getOpPdf(p,i); if(op<0||op>=12)return 0; return p.aylikAmortismanlar?.[op]??p.aylikAmortisman??0; };
@@ -1046,7 +1046,7 @@ function DetayliPlanModulu({ navigate, bekleyenPlanlar, setBekleyenPlanlar, akti
         let tbody = '';
         const secHdr = (t,bg,c) => `<tr><td colspan="${1+13*N}" style="padding:5px 8px;background:${bg};color:${c};font-weight:800;font-size:8.5px;border:1px solid #333">${t}</td></tr>`;
         const kfPdf = (num, den) => den > 0 ? Math.round(num / den) : null;
-        const tdKf = (v, pos) => `<td style="padding:4px 4px;font-size:8px;text-align:right;color:${v==null?'#bbb':pos?'#1a7f4b':'#c0392b'};background:#f0f4ff;font-weight:${v==null?400:600};border:1px solid #e0e0e0;white-space:nowrap">${v!=null?Number(v).toLocaleString('tr-TR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }):'—'}</td>`;
+        const tdKf = (v, pos) => `<td style="padding:4px 4px;font-size:8px;text-align:right;color:${v==null?'#bbb':pos?'#1a7f4b':'#c0392b'};background:#f0f4ff;font-weight:${v==null?400:600};border:1px solid #e0e0e0;white-space:nowrap">${v!=null?Number(v).toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 1 }):'—'}</td>`;
         const buildKfRow = (label, getVal, getTotal, bold=false) => {
             let r = `<td style="padding:4px 6px;font-size:8px;background:#e8eeff;font-weight:${bold?700:500};border:1px solid #e0e0e0;white-space:nowrap">${label}</td>`;
             for(let i=0;i<12;i++) aktifPlanlar.forEach(p=>{ const v=getVal(p,i); r+=tdKf(v,v==null||v>=0); });
@@ -1108,7 +1108,7 @@ function DetayliPlanModulu({ navigate, bekleyenPlanlar, setBekleyenPlanlar, akti
         return <DetayliPlanWizard initialData={duzenlenenPlan} onSave={planGuncelle} onCancel={() => setAktifSayfa('dashboard')} varsayilanAyarlar={varsayilanAyarlar} />;
     }
 
-    const fmt = window.fmt || ((v) => Number(v || 0).toLocaleString('tr-TR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }));
+    const fmt = window.fmt || ((v) => Number(v || 0).toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 1 }));
 
     return (
         <React.Fragment>
@@ -1359,12 +1359,12 @@ function DetayliPlanModulu({ navigate, bekleyenPlanlar, setBekleyenPlanlar, akti
                                                                 {Array.from({length:12}, (_, i) =>
                                                                     aktifPlanlar.map((p, pi) => {
                                                                         const r = row.get(p, i);
-                                                                        return <td key={`${i}-${pi}`} style={{color: r ? (r.color || '#A0AEC0') : '#333', borderLeft: pi===0 ? '1px solid rgba(255,255,255,0.08)' : 'none', fontSize:'11px', fontWeight: r?.bold ? 700 : 'normal'}}>{r && r.val != null ? r.val.toLocaleString('tr-TR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : '-'}</td>;
+                                                                        return <td key={`${i}-${pi}`} style={{color: r ? (r.color || '#A0AEC0') : '#333', borderLeft: pi===0 ? '1px solid rgba(255,255,255,0.08)' : 'none', fontSize:'11px', fontWeight: r?.bold ? 700 : 'normal'}}>{r && r.val != null ? r.val.toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 1 }) : '-'}</td>;
                                                                     })
                                                                 )}
                                                                 {aktifPlanlar.map((p, pi) => {
                                                                     const t = row.total(p);
-                                                                    return <td key={pi} className="total-col" style={{color: t.color || '#A0AEC0', borderLeft: pi===0 ? '2px solid rgba(255,255,255,0.15)' : 'none', fontSize:'11px', fontWeight: t.bold ? 700 : 'normal'}}>{t.val != null ? t.val.toLocaleString('tr-TR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : '-'}</td>;
+                                                                    return <td key={pi} className="total-col" style={{color: t.color || '#A0AEC0', borderLeft: pi===0 ? '2px solid rgba(255,255,255,0.15)' : 'none', fontSize:'11px', fontWeight: t.bold ? 700 : 'normal'}}>{t.val != null ? t.val.toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 1 }) : '-'}</td>;
                                                                 })}
                                                             </tr>
                                                         ))}

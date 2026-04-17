@@ -380,7 +380,7 @@ function NakitAkisModulu({ aktifPlanlar = [] }) {
         }}>{label}</button>
     );
 
-    const fmt = window.fmt || (v => Number(v||0).toLocaleString('tr-TR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }));
+    const fmt = window.fmt || (v => Number(v||0).toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 1 }));
     const fmtS = (v) => `${v>=0?'+':''}${fmt(v)}`;
 
     // ── Boş durum ────────────────────────────────────────────

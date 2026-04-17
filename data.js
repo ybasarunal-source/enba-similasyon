@@ -1,4 +1,4 @@
-window.fmt = (val) => Number(val || 0).toLocaleString('tr-TR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+window.fmt = (val) => Number(val || 0).toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 1 });
 
 window.GIDER_GRUPLARI = [
     { id: "G1", ad: "Üretim ve Hammadde Giderleri" },

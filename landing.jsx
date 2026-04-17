@@ -105,7 +105,7 @@ function LandingPage({ navigate, user, t }) {
         loadStats();
     }, []);
 
-    const fmt = (n) => (n || 0).toLocaleString('tr-TR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+    const fmt = (n) => (n || 0).toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 1 });
 
     // SVG Donut Chart for Stock
     const StockChart = () => {
