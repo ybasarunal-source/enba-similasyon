@@ -54,6 +54,8 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
         />
     );
 
+    const [topluAcik, setTopluAcik] = React.useState(true);
+
     return (
         <div>
             {/* Genel Ayarlar */}
@@ -97,12 +99,18 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
 
                 {/* ── Toplu Doldurma: Yatay 12 Ay Tablosu ── */}
                 <div style={{ padding:'20px', background: DARK_BG, color:'#fff', borderRadius:'1rem', marginBottom:'24px' }}>
-                    <h3 style={{ fontSize:'14px', margin:'0 0 4px', fontFamily:"'Manrope', sans-serif", fontWeight:700 }}>
-                        ⚡ Toplu Veri Girişi
-                    </h3>
-                    <p style={{ fontSize:'12px', color:'rgba(255,255,255,0.45)', margin:'0 0 16px' }}>
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: topluAcik ? '4px' : '0' }}>
+                        <h3 style={{ fontSize:'14px', margin:0, fontFamily:"'Manrope', sans-serif", fontWeight:700 }}>
+                            ⚡ Toplu Veri Girişi
+                        </h3>
+                        <button onClick={() => setTopluAcik(p => !p)} style={{ background:'rgba(255,255,255,0.1)', color:'#fff', border:'1px solid rgba(255,255,255,0.15)', padding:'5px 14px', borderRadius:'0.5rem', cursor:'pointer', fontSize:'12px', fontWeight:600 }}>
+                            {topluAcik ? '▲ Gizle' : '▼ Göster'}
+                        </button>
+                    </div>
+                    {topluAcik && <p style={{ fontSize:'12px', color:'rgba(255,255,255,0.45)', margin:'4px 0 16px' }}>
                         Başlangıç ayına girilen değer takip eden tüm aylara otomatik uygulanır. İstediğiniz ayı manuel düzenleyebilirsiniz.
-                    </p>
+                    </p>}
+                    {topluAcik && <React.Fragment>
 
                     <div style={{ overflowX:'auto', borderRadius:'0.5rem' }}>
                         <table style={{ borderCollapse:'collapse', tableLayout:'fixed', minWidth: (COL1 + COL2 + 12 * 78) + 'px' }}>
@@ -238,6 +246,7 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
                             ✅ Aylık Tabloya Uygula
                         </button>
                     </div>
+                </React.Fragment>}
                 </div>
 
                 {/* ── Aylık Detay Tablosu ── */}
