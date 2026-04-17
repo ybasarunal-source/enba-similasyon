@@ -46,10 +46,10 @@ window.DetStep5_Expenses = function DetStep5_Expenses({
             <div style={{ overflowX: 'auto' }}>
                 <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'12px', minWidth: '1000px' }}>
                     <thead>
-                        <tr style={{ background:'var(--surface-container-low)', color:'var(--on-surface)' }}>
-                            <th style={{ padding:'12px', textAlign:'left', position:'sticky', left:0, background:'var(--surface-container-low)', zIndex:10 }}>Kod / Gider Adı</th>
+                        <tr style={{ background:'var(--primary-container)' }}>
+                            <th style={{ padding:'12px', textAlign:'left', position:'sticky', left:0, background:'var(--primary-container)', zIndex:10, color:'#fff' }}>Kod / Gider Adı</th>
                             {ayVerileri.map((_, idx) => (
-                                <th key={idx} style={{ padding:'12px', textAlign:'center', minWidth:'100px' }}>{AYLAR[(baslangicAyi+idx)%12]}</th>
+                                <th key={idx} style={{ padding:'12px', textAlign:'center', minWidth:'100px', color:'#fff' }}>{AYLAR[(baslangicAyi+idx)%12]}</th>
                             ))}
                         </tr>
                     </thead>

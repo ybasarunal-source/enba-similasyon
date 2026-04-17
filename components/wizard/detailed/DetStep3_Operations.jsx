@@ -125,10 +125,10 @@ window.DetStep3_Operations = function DetStep3_Operations({
                     <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'13px' }}>
                         <thead>
                             <tr style={{ background:'var(--primary-container)' }}>
-                                <th style={{ padding:'10px', textAlign:'left' }}>{wt('month_col')}</th>
-                                <th style={{ padding:'10px', textAlign:'right' }}>{wt('s3_installed_cap')}</th>
-                                <th style={{ padding:'10px', textAlign:'right' }}>{wt('s3_purchase_target')}</th>
-                                <th style={{ padding:'10px', textAlign:'right' }}>{wt('s3_status')}</th>
+                                <th style={{ padding:'10px', textAlign:'left', color:'#fff' }}>{wt('month_col')}</th>
+                                <th style={{ padding:'10px', textAlign:'right', color:'#fff' }}>{wt('s3_installed_cap')}</th>
+                                <th style={{ padding:'10px', textAlign:'right', color:'#fff' }}>{wt('s3_purchase_target')}</th>
+                                <th style={{ padding:'10px', textAlign:'right', color:'#fff' }}>{wt('s3_status')}</th>
                             </tr>
                         </thead>
                         <tbody>

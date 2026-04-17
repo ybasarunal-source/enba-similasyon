@@ -87,15 +87,15 @@ window.DetStep6_Investment = function DetStep6_Investment({
             <div style={{ overflowX: 'auto' }}>
                 <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'13px' }}>
                     <thead>
-                        <tr style={{ background:'var(--surface-container-low)' }}>
-                            <th style={{ padding:'12px', textAlign:'left' }}>{wt('s6_name_col')}</th>
-                            <th style={{ padding:'12px', textAlign:'left' }}>{wt('s6_type_col')}</th>
-                            <th style={{ padding:'12px', textAlign:'right' }}>{wt('s6_total_cost')}</th>
-                            <th style={{ padding:'12px', textAlign:'right' }}>{wt('s6_payback')}</th>
-                            <th style={{ padding:'12px', textAlign:'right' }}>{wt('s6_monthly_dep')}</th>
-                            <th style={{ padding:'12px', textAlign:'right' }}>{wt('s6_power_kw')}</th>
-                            <th style={{ padding:'12px', textAlign:'right' }}>{wt('s6_hourly_capacity')}</th>
-                            <th style={{ padding:'12px', textAlign:'center' }}>{wt('s6_actions')}</th>
+                        <tr style={{ background:'var(--primary-container)' }}>
+                            <th style={{ padding:'12px', textAlign:'left', color:'#fff' }}>{wt('s6_name_col')}</th>
+                            <th style={{ padding:'12px', textAlign:'left', color:'#fff' }}>{wt('s6_type_col')}</th>
+                            <th style={{ padding:'12px', textAlign:'right', color:'#fff' }}>{wt('s6_total_cost')}</th>
+                            <th style={{ padding:'12px', textAlign:'right', color:'#fff' }}>{wt('s6_payback')}</th>
+                            <th style={{ padding:'12px', textAlign:'right', color:'#fff' }}>{wt('s6_monthly_dep')}</th>
+                            <th style={{ padding:'12px', textAlign:'right', color:'#fff' }}>{wt('s6_power_kw')}</th>
+                            <th style={{ padding:'12px', textAlign:'right', color:'#fff' }}>{wt('s6_hourly_capacity')}</th>
+                            <th style={{ padding:'12px', textAlign:'center', color:'#fff' }}>{wt('s6_actions')}</th>
                         </tr>
                     </thead>
                     <tbody>

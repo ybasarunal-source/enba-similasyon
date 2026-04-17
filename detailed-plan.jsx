@@ -1211,37 +1211,60 @@ function DetayliPlanModulu({ navigate, bekleyenPlanlar, setBekleyenPlanlar, akti
             <div className="page-container">
                 <div className="container">
                     <div className={`sidebar${sidebarAcik ? '' : ' sidebar-hidden'}`}>
-                        <button className="sidebar-toggle" onClick={() => setSidebarAcik(!sidebarAcik)} title='Paneli Gizle/Aç'>{sidebarAcik ? '◀' : '▶'}</button>
-                        <div className="sidebar-content">
-                            <button className="btn btn-primary" onClick={yeniPlanBaslat}>+ DETAYLI MODEL TASARLA</button>
-                            <button className="btn btn-secondary" style={{marginBottom: '15px', backgroundColor: '#34495E'}} onClick={() => navigate('landing')}>⚡  ANA SAYFAYA DÖN</button>
+                        <button className="sidebar-toggle" style={{background: 'var(--surface-container-high)', color: 'var(--enba-dark)'}} onClick={() => setSidebarAcik(!sidebarAcik)} title='Paneli Gizle/Aç'>
+                            <i className={`ph ${sidebarAcik ? 'ph-caret-left' : 'ph-caret-right'}`} style={{fontSize:'16px'}}></i>
+                        </button>
+                        <div className="sidebar-content" style={{paddingTop: '20px'}}>
+                            <div style={{display:'flex', flexDirection:'column', gap:'10px', marginBottom:'30px'}}>
+                                <button className="btn btn-primary" style={{width:'100%', padding:'12px'}} onClick={yeniPlanBaslat}>
+                                    <i className="ph ph-plus-circle" style={{fontSize:'18px'}}></i> DETAYLI MODEL TASARLA
+                                </button>
+                                <button className="btn btn-secondary" style={{width:'100%'}} onClick={() => navigate('landing')}>
+                                    <i className="ph ph-house" style={{fontSize:'18px', color:'var(--enba-dark)'}}></i> ANA SAYFAYA DÖN
+                                </button>
+                            </div>
                             
-                            <h2 style={{ textTransform: 'lowercase' }}>⚡  BİRLEŞTİRME LİSTESİ</h2>
-                            <p style={{ fontSize: '12px', color: '#607d8b' }}>Aşağıdaki detaylı planları karşılaştırmak ve birleştirmek için tesise sürükleyin.</p>
+                            <div className="enba-section-title" style={{marginBottom:'10px', color: 'var(--enba-orange)'}}>
+                                <i className="ph ph-stack" style={{fontSize:'18px'}}></i> BİRLEŞTİRME LİSTESİ
+                            </div>
+                            <p style={{ fontSize: '12px', color: '#888', marginBottom:'20px', fontWeight:500 }}>Detaylı planları karşılaştırmak ve birleştirmek için tesise sürükleyin.</p>
                             
-                            {detayliBekleyen.map(plan => (
-                                <div key={plan.id} className="card" draggable onDragStart={(e) => suruklemeBasladi(e, plan.id)}>
-                                    <div className="card-title">{plan.baslik}</div>
-                                    <div className="card-info">Satış: {fmt(plan.yilOzet?.toplamSatisTon || 0)} Ton/Yıl</div>
-                                    <div style={{fontSize:'12px', display:'flex', justifyContent:'space-between', borderTop:'1px solid rgba(255,255,255,0.1)', marginTop:'5px', paddingTop:'5px'}}>
-                                        <span>Net Kâr (Yıl 1):</span> <strong style={{color: (plan.yilOzet?.net || 0) >= 0 ? '#82A12E' : '#ef5350'}}>{fmt(plan.yilOzet?.net || 0)} ₺</strong>
+                            <div style={{flex:1, overflowY:'auto', paddingRight:'5px'}}>
+                                {detayliBekleyen.map(plan => (
+                                    <div key={plan.id} className="sidebar-card" draggable onDragStart={(e) => suruklemeBasladi(e, plan.id)}>
+                                        <div style={{fontWeight:800, fontSize:'14px', color:'var(--enba-dark)', marginBottom:'4px'}}>{plan.baslik}</div>
+                                        <div style={{fontSize:'11px', color:'#666', marginBottom:'10px'}}>Satış: {fmt(plan.yilOzet?.toplamSatisTon || 0)} Ton/Yıl</div>
+
+                                        <div style={{fontSize:'12px', display:'flex', justifyContent:'space-between', alignItems:'center', background:'var(--surface-container-low)', padding:'6px 10px', borderRadius:'8px', marginBottom:'12px'}}>
+                                            <span style={{fontWeight:600, color:'#888', fontSize:'10px', textTransform:'uppercase'}}>Net Kâr (Yıl 1)</span>
+                                            <strong style={{color: (plan.yilOzet?.net || 0) >= 0 ? '#16A34A' : '#DC2626', fontSize:'13px'}}>{fmt(plan.yilOzet?.net || 0)} ₺</strong>
+                                        </div>
+
+                                        <div style={{ display:'flex', gap:'6px' }}>
+                                            <button className="btn btn-secondary" style={{flex:1, fontSize:'10px', padding:'6px 0'}} 
+                                                onClick={(e) => { e.stopPropagation(); IpkDuzenle(plan); }}>
+                                                <i className="ph ph-pencil-simple"></i>
+                                            </button>
+                                            <button className="btn btn-primary" style={{flex:3, fontSize:'10px', padding:'6px 0'}} 
+                                                onClick={(e) => { e.stopPropagation(); fabrikayaBrakildi({ preventDefault: () => {}, dataTransfer: { getData: () => plan.id } }); }}>
+                                                <i className="ph ph-play-circle"></i> AKTİF ET
+                                            </button>
+                                            <button className="btn btn-danger btn-icon" 
+                                                style={{width:'28px', height:'28px'}}
+                                                title="Bu Planı Tamamen Sil"
+                                                onClick={(e) => { e.stopPropagation(); e.preventDefault(); IpkSil(plan.id); }}>
+                                                <i className="ph ph-trash" style={{fontSize:'14px'}}></i>
+                                            </button>
+                                        </div>
                                     </div>
-                                    <div style={{ display:'flex', gap:'5px', marginTop:'10px' }}>
-                                        <button className="btn btn-warning" style={{flex:1, fontSize:'11px', padding:'8px 5px'}} 
-                                            onClick={(e) => { e.stopPropagation(); IpkDuzenle(plan); }}>DÜZENLE</button>
-                                        <button className="btn btn-success" style={{flex:1, fontSize:'11px', padding:'8px 5px'}} 
-                                            onClick={(e) => { e.stopPropagation(); fabrikayaBrakildi({ preventDefault: () => {}, dataTransfer: { getData: () => plan.id } }); }}>AKTİF ET</button>
-                                        <button className="btn btn-danger" 
-                                            style={{padding:'10px 14px', fontSize:'14px', fontWeight:'800', border:'2px solid rgba(255,255,255,0.2)', borderRadius:'8px', cursor:'pointer'}} 
-                                            title="Bu Planı Tamamen Sil"
-                                            onClick={(e) => { e.stopPropagation(); e.preventDefault(); IpkSil(plan.id); }}>X</button>
-                                    </div>
-                                </div>
-                            ))}
-                            {detayliBekleyen.length === 0 && <p style={{color: '#999', fontSize: '14px', textTransform: 'lowercase'}}>henüz detaylı plan oluşturulmadı.</p>}
+                                ))}
+                                {detayliBekleyen.length === 0 && <div style={{textAlign:'center', padding:'30px 10px', color: '#bbb', fontSize: '13px', fontStyle:'italic'}}>Henüz detaylı plan oluşturulmadı.</div>}
+                            </div>
                             
-                            <div className="reset-btn-container">
-                                <button className="btn btn-reset" onClick={verileriSifirla}>⚡ ️ tüm detaylı planları sil</button>
+                            <div style={{marginTop:'auto', paddingTop:'20px', borderTop:'1px solid #eee'}}>
+                                <button className="btn btn-danger" style={{width:'100%', padding:'12px', fontSize:'11px', opacity:0.8}} onClick={verileriSifirla}>
+                                    <i className="ph ph-warning-octagon"></i> TÜM PLANLARI SİL
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -1251,9 +1274,11 @@ function DetayliPlanModulu({ navigate, bekleyenPlanlar, setBekleyenPlanlar, akti
                         <div className="factory-subheader">DETAYLI PLANLAMA - KONSOLİDE TESİS GÖRÜNÜMÜ</div>
                         
                         <div className="dashboard" id="exportable-report">
-                            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '15px', marginBottom: '15px', flexWrap:'wrap', gap:'10px'}}>
-                                <h3 style={{ margin: 0, borderBottom: 'none', paddingBottom: 0 }}>⚡  DETAYLI TKKÖ BİRLEŞTİRME</h3>
-                                <div style={{display: 'flex', gap: '8px', background: 'rgba(255,255,255,0.05)', padding: '6px', borderRadius: '8px', overflowX:'auto'}}>
+                            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--surface-container-high)', paddingBottom: '15px', marginBottom: '15px', flexWrap:'wrap', gap:'10px'}}>
+                                <h3 className="enba-section-title" style={{ margin: 0 }}>
+                                    <i className="ph ph-stack" style={{fontSize:'20px'}}></i> DETAYLI TKKÖ BİRLEŞTİRME
+                                </h3>
+                                <div style={{display: 'flex', gap: '8px', background: 'var(--surface-container-high)', padding: '6px', borderRadius: '8px', overflowX:'auto'}}>
                                     <button onClick={()=>setGorunum('aylik')} style={{padding:'6px 14px', borderRadius:'6px', border:'none', cursor:'pointer', fontWeight:gorunum==='aylik'?700:500, background: gorunum==='aylik'?'var(--enba-dark)':'transparent', color: gorunum==='aylik'?'#fff':'var(--on-surface-variant)', transition:'0.2s', whiteSpace:'nowrap'}}>Aylık (Ortalama)</button>
                                     <button onClick={()=>setGorunum('yillik')} style={{padding:'6px 14px', borderRadius:'6px', border:'none', cursor:'pointer', fontWeight:gorunum==='yillik'?700:500, background: gorunum==='yillik'?'var(--enba-dark)':'transparent', color: gorunum==='yillik'?'#fff':'var(--on-surface-variant)', transition:'0.2s', whiteSpace:'nowrap'}}>1 Yıllık (Baz)</button>
                                     <button onClick={()=>setGorunum('yillikOrtalama')} style={{padding:'6px 14px', borderRadius:'6px', border:'none', cursor:'pointer', fontWeight:gorunum==='yillikOrtalama'?700:500, background: gorunum==='yillikOrtalama'?'var(--enba-dark)':'transparent', color: gorunum==='yillikOrtalama'?'#fff':'var(--on-surface-variant)', transition:'0.2s', whiteSpace:'nowrap'}}>5 Yıllık Ortalama</button>
@@ -1262,28 +1287,26 @@ function DetayliPlanModulu({ navigate, bekleyenPlanlar, setBekleyenPlanlar, akti
                             </div>
 
                             {aktifPlanlar.length === 0 ? (
-                                <div style={{textAlign: 'center', padding: '40px 20px', color: 'rgba(255,255,255,0.5)', fontSize: '15px'}}>
+                                <div style={{textAlign: 'center', padding: '40px 20px', color: 'var(--on-surface-variant)', fontSize: '15px', opacity:0.6}}>
                                     Tesiste henüz aktif detaylı plan yok. Sol menüden sürükleyerek ekleyin.
                                 </div>
                             ) : (
                                 <div style={{ overflowX: 'auto', marginTop: '10px' }}>
                                     {gorunum === 'ayay' ? (
                                         <>
-                                        <div style={{display:'flex', alignItems:'center', gap:'8px', marginBottom:'10px', padding:'6px 10px', background:'rgba(255,255,255,0.03)', borderRadius:'8px', flexWrap:'wrap', justifyContent:'space-between'}}>
+                                        <div style={{display:'flex', alignItems:'center', gap:'8px', marginBottom:'10px', padding:'10px', background:'var(--surface-container-high)', borderRadius:'8px', flexWrap:'wrap', justifyContent:'space-between', border:'1px solid var(--surface-container-highest)'}}>
                                             <div style={{display:'flex', alignItems:'center', gap:'8px', flexWrap:'wrap'}}>
-                                                <span style={{fontSize:'12px', fontWeight:600, color:'var(--on-surface-variant)'}}>İş Başlangıcı:</span>
-                                                <select value={birlestirmeAy} onChange={e=>setBirlestirmeAy(Number(e.target.value))} style={{padding:'5px 8px', borderRadius:'6px', border:'1px solid rgba(255,255,255,0.15)', background:'var(--surface-container)', color:'var(--on-surface)', fontSize:'12px'}}>
+                                                <span style={{fontSize:'12px', fontWeight:700, color:'var(--on-surface)'}}>İş Başlangıcı:</span>
+                                                <select value={birlestirmeAy} onChange={e=>setBirlestirmeAy(Number(e.target.value))} style={{padding:'5px 8px', borderRadius:'6px', border:'1px solid var(--surface-container-highest)', background:'var(--surface-container-lowest)', color:'var(--on-surface)', fontSize:'12px', fontWeight:600}}>
                                                     {AYLAR.map((ay, idx) => <option key={idx} value={idx}>{ay}</option>)}
                                                 </select>
-                                                <input type="number" value={birlestirmeYil} onChange={e=>setBirlestirmeYil(Number(e.target.value))} min="2020" max="2050" style={{width:'72px', padding:'5px 8px', borderRadius:'6px', border:'1px solid rgba(255,255,255,0.15)', background:'var(--surface-container)', color:'var(--on-surface)', fontSize:'12px'}} onFocus={window.selectOnFocus} />
+                                                <input type="number" value={birlestirmeYil} onChange={e=>setBirlestirmeYil(Number(e.target.value))} min="2020" max="2050" style={{width:'72px', padding:'5px 8px', borderRadius:'6px', border:'1px solid var(--surface-container-highest)', background:'var(--surface-container-lowest)', color:'var(--on-surface)', fontSize:'12px', fontWeight:600}} onFocus={window.selectOnFocus} />
                                             </div>
                                             <div style={{display:'flex', gap:'6px'}}>
-                                                <button onClick={birlestirmeExcelExport} style={{display:'flex', alignItems:'center', gap:'5px', background:'#1a7f4b', color:'#fff', border:'none', padding:'6px 14px', borderRadius:'2rem', cursor:'pointer', fontWeight:600, fontSize:'12px', whiteSpace:'nowrap'}}
-                                                    onMouseEnter={e=>e.currentTarget.style.background='#15603a'} onMouseLeave={e=>e.currentTarget.style.background='#1a7f4b'}>
+                                                <button onClick={birlestirmeExcelExport} style={{display:'flex', alignItems:'center', gap:'5px', background:'#15803d', color:'#fff', border:'none', padding:'6px 14px', borderRadius:'2rem', cursor:'pointer', fontWeight:700, fontSize:'12px', whiteSpace:'nowrap', boxShadow:'0 2px 8px rgba(21,128,61,0.25)'}}>
                                                     ⚡  Excel
                                                 </button>
-                                                <button onClick={birlestirmePdfExport} style={{display:'flex', alignItems:'center', gap:'5px', background:'#c0392b', color:'#fff', border:'none', padding:'6px 14px', borderRadius:'2rem', cursor:'pointer', fontWeight:600, fontSize:'12px', whiteSpace:'nowrap'}}
-                                                    onMouseEnter={e=>e.currentTarget.style.background='#922b21'} onMouseLeave={e=>e.currentTarget.style.background='#c0392b'}>
+                                                <button onClick={birlestirmePdfExport} style={{display:'flex', alignItems:'center', gap:'5px', background:'#b91c1c', color:'#fff', border:'none', padding:'6px 14px', borderRadius:'2rem', cursor:'pointer', fontWeight:700, fontSize:'12px', whiteSpace:'nowrap', boxShadow:'0 2px 8px rgba(185,28,28,0.25)'}}>
                                                     ⚡  PDF
                                                 </button>
                                             </div>
@@ -1316,23 +1339,23 @@ function DetayliPlanModulu({ navigate, bekleyenPlanlar, setBekleyenPlanlar, akti
                                                 const tumGiderKodlari = Array.from(new Set(
                                                     aktifPlanlar.flatMap(p => (p.hesaplanmisAyVerileri || []).flatMap(a => Object.keys(a.giderler || {}).filter(k => !altIds.has(k))))
                                                 )).sort();
-                                                const planRenkleri = ['#4FC3F7','#81C784','#FFB74D','#F06292','#CE93D8'];
+                                                const planRenkleri = ['#0284C7', '#16A34A', '#EA580C', '#DB2777', '#7C3AED'];
                                                 return (
                                                     <>
                                                     <thead>
                                                         <tr>
-                                                            <th rowSpan={2} style={{verticalAlign:'middle', minWidth:'160px'}}>KALEM</th>
+                                                            <th rowSpan={2} style={{verticalAlign:'middle', minWidth:'160px', color:'var(--enba-dark)', background:'var(--surface-container-high)', fontWeight:800}}>KALEM</th>
                                                             {Array.from({length:12}, (_, i) => {
                                                                 const ay = (birlestirmeAy + i) % 12;
                                                                 const yil = birlestirmeYil + Math.floor((birlestirmeAy + i) / 12);
-                                                                return <th key={i} colSpan={N} style={{textAlign:'center', borderLeft:'1px solid rgba(255,255,255,0.12)'}}>{AYLAR[ay]}<br/><span style={{fontSize:'9px', opacity:0.5, fontWeight:400}}>{yil}</span></th>;
+                                                                return <th key={i} colSpan={N} style={{textAlign:'center', borderLeft:'1px solid var(--surface-container-highest)', color:'var(--enba-dark)', fontWeight:700}}>{AYLAR[ay]}<br/><span style={{fontSize:'9px', opacity:0.6, fontWeight:600}}>{yil}</span></th>;
                                                             })}
-                                                            <th colSpan={N} style={{color:'var(--enba-orange)', borderLeft:'2px solid rgba(255,255,255,0.2)'}}>Yıllık Toplam</th>
+                                                            <th colSpan={N} style={{color:'var(--enba-orange-dark)', borderLeft:'2px solid var(--surface-container-highest)', fontWeight:800}}>Yıllık Toplam</th>
                                                         </tr>
                                                         <tr>
                                                             {Array.from({length:13}, (_, col) =>
                                                                 aktifPlanlar.map((p, pi) => (
-                                                                    <th key={`${col}-${pi}`} style={{fontSize:'10px', fontWeight:600, color: planRenkleri[pi % planRenkleri.length], borderLeft: pi === 0 ? '1px solid rgba(255,255,255,0.12)' : 'none', whiteSpace:'nowrap', maxWidth:'80px', overflow:'hidden', textOverflow:'ellipsis', padding:'4px 6px'}} title={p.baslik}>
+                                                                    <th key={`${col}-${pi}`} style={{fontSize:'10px', fontWeight:700, color: planRenkleri[pi % planRenkleri.length], borderLeft: pi === 0 ? '1px solid var(--surface-container-highest)' : 'none', whiteSpace:'nowrap', maxWidth:'80px', overflow:'hidden', textOverflow:'ellipsis', padding:'4px 6px'}} title={p.baslik}>
                                                                         {p.baslik.length > 10 ? p.baslik.slice(0,9)+'…' : p.baslik}
                                                                     </th>
                                                                 ))
@@ -1495,14 +1518,14 @@ function DetayliPlanModulu({ navigate, bekleyenPlanlar, setBekleyenPlanlar, akti
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <tr><td colSpan={aktifPlanlar.length + 2} className="row-header" style={{color: 'var(--enba-orange)'}}>⚡  GELİRLER</td></tr>
+                                                <tr><td colSpan={aktifPlanlar.length + 2} className="row-header" style={{color: 'var(--enba-orange-dark)'}}><i className="ph ph-trend-up" style={{marginRight:'8px'}}></i> GELİRLER</td></tr>
                                                 <tr>
                                                     <td>Toplam Satış Geliri</td>
                                                     {aktifPlanlar.map(p => <td key={p.id}>{fmt(scaleData(p).gelir)}</td>)}
                                                     <td className="total-col" style={{color: 'var(--enba-orange-dark)', fontSize:'14px'}}>{fmt(toplamTesis.gelir)} ₺</td>
                                                 </tr>
 
-                                                <tr><td colSpan={aktifPlanlar.length + 2} className="row-header" style={{color: '#e74c3c'}}>⚡  OPEX (GİDERLER)</td></tr>
+                                                <tr><td colSpan={aktifPlanlar.length + 2} className="row-header" style={{color: '#e74c3c'}}><i className="ph ph-trend-down" style={{marginRight:'8px'}}></i> OPEX (GİDERLER)</td></tr>
                                                 {gorunum !== 'yillikOrtalama' && (
                                                     <>
                                                         <tr style={{backgroundColor: 'rgba(0,0,0,0.15)'}}>
@@ -1565,8 +1588,8 @@ function DetayliPlanModulu({ navigate, bekleyenPlanlar, setBekleyenPlanlar, akti
                                 return (
                                 <div key={plan.id} className="active-card" onClick={() => IpkDuzenle(plan)} style={{cursor: 'pointer'}}>
                                     <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                                        <span style={{fontWeight: 'bold', color: 'var(--enba-dark)', textTransform: 'uppercase', fontSize: '14px'}}>{plan.baslik}</span>
-                                        <span style={{fontSize: '14px'}}>✏️</span>
+                                        <span style={{fontWeight: '800', color: 'var(--enba-dark)', textTransform: 'uppercase', fontSize: '13px', letterSpacing:'0.5px'}}>{plan.baslik}</span>
+                                        <i className="ph ph-pencil-simple" style={{fontSize: '16px', color: 'var(--enba-orange)'}}></i>
                                     </div>
                                     <div style={{fontSize: '11px', color: 'var(--on-surface-variant)', marginBottom: '5px', fontWeight:600}}>Gösterilen Satış: {fmt(s.satisTon)} T</div>
                                     
@@ -1581,9 +1604,11 @@ function DetayliPlanModulu({ navigate, bekleyenPlanlar, setBekleyenPlanlar, akti
                                         <span style={{fontWeight: '600', color: 'var(--enba-dark)'}}>Net Kâr:</span> <strong style={{color: s.net >= 0 ? 'var(--enba-orange-dark)' : 'var(--btn-red-dark)'}}>{fmt(s.net)} ₺</strong>
                                     </div>
 
-                                    <button className="remove-btn" 
-                                        style={{padding:'12px 20px', fontSize:'12px', fontWeight:'800', background:'var(--error)', color:'#fff', marginTop:'15px'}}
-                                        onClick={(e) => { e.stopPropagation(); e.preventDefault(); kartiCikar(plan.id); }}>Geri Al / Durdur</button>
+                                    <button className="btn btn-danger" 
+                                        style={{width:'100%', padding:'10px', fontSize:'11px', marginTop:'15px'}}
+                                        onClick={(e) => { e.stopPropagation(); e.preventDefault(); kartiCikar(plan.id); }}>
+                                        <i className="ph ph-stop-circle"></i> GERİ AL / DURDUR
+                                    </button>
                                 </div>
                             )})}
                         </div>

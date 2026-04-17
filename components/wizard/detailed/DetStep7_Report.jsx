@@ -166,28 +166,28 @@ window.DetStep7_Report = function DetStep7_Report({
                             })()}
 
                             {/* ÖZET SATIRLAR */}
-                            <tr style={{ background:'linear-gradient(90deg,#1a2035,#1f2840)' }}><td colSpan={14} style={{ padding:'10px 14px', color:'#a0c4ff', fontWeight:800, fontSize:'11px', textTransform:'uppercase', letterSpacing:'1.5px', position:'sticky', left:0, background:'linear-gradient(90deg,#1a2035,#1f2840)' }}>▸ ÖZET / KÂR-ZARAR</td></tr>
-                            <tr style={{ background:'#fcecea' }}>
-                                <td style={{ padding:'12px 14px', fontWeight:700, color:'var(--error)', borderBottom:'1px solid var(--surface-container)', position:'sticky', left:0, background:'#fcecea', zIndex:1, fontSize:'13px' }}>TOPLAM OPEX</td>
+                            <tr style={{ background:'var(--enba-dark)' }}><td colSpan={14} style={{ padding:'10px 14px', color:'#fff', fontWeight:800, fontSize:'11px', textTransform:'uppercase', letterSpacing:'1.5px', position:'sticky', left:0, background:'var(--enba-dark)', zIndex:10 }}>▸ ÖZET / KÂR-ZARAR</td></tr>
+                            <tr style={{ background:'rgba(185,28,28,0.08)' }}>
+                                <td style={{ padding:'12px 14px', fontWeight:700, color:'var(--error)', borderBottom:'1px solid var(--surface-container)', position:'sticky', left:0, background:'#FEF2F2', zIndex:1, fontSize:'13px' }}>TOPLAM OPEX</td>
                                 {aylikSonuclar.map((s,i) => (<td key={i} style={{ padding:'12px 8px', textAlign:'right', borderBottom:'1px solid var(--surface-container)', color:'var(--error)', fontWeight:700, fontFamily:'monospace' }}>{fmt(s.opex)}</td>))}
                                 <td style={{ padding:'12px 14px', textAlign:'right', fontWeight:800, borderBottom:'1px solid var(--surface-container)', borderLeft:'2px solid var(--surface-container)', color:'var(--error)', fontFamily:'monospace', fontSize:'13px' }}>{fmt(yilOzet.opex)}</td>
                             </tr>
-                            <tr style={{ background: yilOzet.ebitda >= 0 ? '#e6f7ed' : '#fcecea' }}>
-                                <td style={{ padding:'13px 14px', fontWeight:800, color: yilOzet.ebitda >= 0 ? 'var(--enba-orange-dark)' : 'var(--error)', borderBottom:'2px solid var(--surface-container)', position:'sticky', left:0, background: yilOzet.ebitda >= 0 ? '#e6f7ed' : '#fcecea', zIndex:1, fontSize:'13px' }}>FAVÖK (EBITDA)</td>
+                            <tr style={{ background: yilOzet.ebitda >= 0 ? '#F0FDF4' : '#FEF2F2' }}>
+                                <td style={{ padding:'13px 14px', fontWeight:800, color: yilOzet.ebitda >= 0 ? 'var(--enba-orange-dark)' : 'var(--error)', borderBottom:'2px solid var(--surface-container)', position:'sticky', left:0, background: yilOzet.ebitda >= 0 ? '#F0FDF4' : '#FEF2F2', zIndex:1, fontSize:'13px' }}>FAVÖK (EBITDA)</td>
                                 {aylikSonuclar.map((s,i) => (<td key={i} style={{ padding:'13px 8px', textAlign:'right', borderBottom:'2px solid var(--surface-container)', color: s.ebitda >= 0 ? 'var(--enba-orange-dark)' : 'var(--error)', fontWeight:700, fontFamily:'monospace' }}>{fmt(s.ebitda)}</td>))}
                                 <td style={{ padding:'13px 14px', textAlign:'right', fontWeight:800, borderBottom:'2px solid var(--surface-container)', borderLeft:'2px solid var(--surface-container)', color: yilOzet.ebitda >= 0 ? 'var(--enba-orange-dark)' : 'var(--error)', fontFamily:'monospace', fontSize:'14px' }}>{fmt(yilOzet.ebitda)}</td>
                             </tr>
-                            <tr style={{ background:'#f5eefa' }}>
-                                <td style={{ padding:'10px 14px', fontWeight:600, color:'var(--on-surface-variant)', borderBottom:'1px solid var(--surface-container)', position:'sticky', left:0, background:'#f5eefa', zIndex:1 }}>
-                                    <span style={{ fontSize:'10px', color:'#fff', fontWeight:700, marginRight:'8px', background:'#8e44ad', padding:'2px 6px', borderRadius:'4px' }}>CAPEX</span>Amortisman
+                            <tr style={{ background:'#F5F3FF' }}>
+                                <td style={{ padding:'10px 14px', fontWeight:600, color:'var(--on-surface-variant)', borderBottom:'1px solid var(--surface-container)', position:'sticky', left:0, background:'#F5F3FF', zIndex:1 }}>
+                                    <span style={{ fontSize:'10px', color:'#fff', fontWeight:700, marginRight:'8px', background:'var(--primary)', padding:'2px 6px', borderRadius:'4px' }}>CAPEX</span>Amortisman
                                 </td>
-                                {aylikAmortismanlar.map((a,i) => (<td key={i} style={{ padding:'10px 8px', textAlign:'right', borderBottom:'1px solid var(--surface-container)', color:'#8e44ad', fontFamily:'monospace' }}>{fmt(Math.round(a))}</td>))}
-                                <td style={{ padding:'10px 14px', textAlign:'right', fontWeight:700, borderBottom:'1px solid var(--surface-container)', borderLeft:'2px solid var(--surface-container)', color:'#8e44ad', fontFamily:'monospace' }}>{fmt(Math.round(yillikAmortismanToplam))}</td>
+                                {aylikAmortismanlar.map((a,i) => (<td key={i} style={{ padding:'10px 8px', textAlign:'right', borderBottom:'1px solid var(--surface-container)', color:'var(--primary)', fontFamily:'monospace' }}>{fmt(Math.round(a))}</td>))}
+                                <td style={{ padding:'10px 14px', textAlign:'right', fontWeight:700, borderBottom:'1px solid var(--surface-container)', borderLeft:'2px solid var(--surface-container)', color:'var(--primary)', fontFamily:'monospace' }}>{fmt(Math.round(yillikAmortismanToplam))}</td>
                             </tr>
-                            <tr style={{ background: yilOzet.net >= 0 ? '#d2f0df' : '#f9d9d6' }}>
-                                <td style={{ padding:'16px 14px', fontWeight:800, color: yilOzet.net >= 0 ? 'var(--enba-orange-dark)' : 'var(--error)', position:'sticky', left:0, background: yilOzet.net >= 0 ? '#d2f0df' : '#f9d9d6', zIndex:1, fontSize:'14px' }}>⚡  NET KÂR / ZARAR</td>
-                                {aylikSonuclar.map((s,i) => { const netAy = s.ebitda - aylikAmortismanlar[i]; return (<td key={i} style={{ padding:'16px 8px', textAlign:'right', color: netAy >= 0 ? 'var(--enba-orange-dark)' : 'var(--error)', fontWeight:800, fontFamily:'monospace', fontSize:'13px' }}>{fmt(netAy)}</td>); })}
-                                <td style={{ padding:'16px 14px', textAlign:'right', fontWeight:900, borderLeft:'2px solid var(--surface-container)', color: yilOzet.net >= 0 ? 'var(--enba-orange-dark)' : 'var(--error)', fontFamily:'monospace', fontSize:'16px' }}>{fmt(yilOzet.net)}</td>
+                            <tr style={{ background: yilOzet.net >= 0 ? '#10B981' : 'var(--error)' }}>
+                                <td style={{ padding:'16px 14px', fontWeight:800, color: '#fff', position:'sticky', left:0, background: yilOzet.net >= 0 ? '#059669' : '#DC2626', zIndex:1, fontSize:'14px' }}>⚡  NET KÂR / ZARAR</td>
+                                {aylikSonuclar.map((s,i) => { const netAy = s.ebitda - aylikAmortismanlar[i]; return (<td key={i} style={{ padding:'16px 8px', textAlign:'right', color: '#fff', fontWeight:800, fontFamily:'monospace', fontSize:'13px', borderRight:'1px solid rgba(255,255,255,0.1)' }}>{fmt(netAy)}</td>); })}
+                                <td style={{ padding:'16px 14px', textAlign:'right', fontWeight:900, borderLeft:'4px double rgba(255,255,255,0.4)', color: '#fff', fontFamily:'monospace', fontSize:'16px' }}>{fmt(yilOzet.net)}</td>
                             </tr>
                         </tbody>
                     </table>
@@ -215,9 +215,9 @@ window.DetStep7_Report = function DetStep7_Report({
                 <div style={{ overflowX:'auto' }}>
                     <table style={{ width:'100%', borderCollapse:'collapse', minWidth:'700px', fontSize:'14px' }}>
                         <thead>
-                            <tr style={{ background:'linear-gradient(135deg, var(--primary-container), var(--primary))' }}>
+                            <tr style={{ background:'var(--primary-container)' }}>
                                 {['Yıl','Satış Tonajı','Gelir','OPEX','EBITDA','Amortisman','Net Kâr'].map(h => (
-                                    <th key={h} style={{ padding:'14px 16px', color:'rgba(255,255,255,0.7)', fontWeight:600, fontSize:'11px', textTransform:'uppercase', textAlign: h === 'Yıl' ? 'left' : 'right' }}>{h}</th>
+                                    <th key={h} style={{ padding:'14px 16px', color:'#fff', fontWeight:700, fontSize:'11px', textTransform:'uppercase', textAlign: h === 'Yıl' ? 'left' : 'right' }}>{h}</th>
                                 ))}
                             </tr>
                         </thead>

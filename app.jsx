@@ -703,8 +703,8 @@ function App({ globalAyarlar }) {
         const isCapacityOk = capacityMonthly >= (Number(v.aylikTon) || 0);
 
         return (
-            <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(5px)' }}>
-                <div style={{ backgroundColor: '#fff', width: '90%', maxWidth: '700px', borderRadius: '20px', padding: '40px', boxShadow: '0 20px 50px rgba(0,0,0,0.3)', position: 'relative', overflowY: 'auto', maxHeight: '90vh' }}>
+            <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(8px)' }}>
+                <div className="enba-card" style={{ width: '90%', maxWidth: '700px', padding: '40px', position: 'relative', overflowY: 'auto', maxHeight: '90vh' }}>
                     
                     {/* Progress Bar */}
                     <div style={{ display: 'flex', gap: '5px', marginBottom: '30px' }}>
@@ -716,14 +716,18 @@ function App({ globalAyarlar }) {
                     {sihirbazAdim === 0 && (
                         <div>
                             <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-                                <div style={{ fontSize: '40px', marginBottom: '12px' }}>🚀</div>
+                                <div style={{ fontSize: '40px', marginBottom: '12px', color: 'var(--enba-orange)' }}>
+                                    <i className="ph-duotone ph-rocket-launch"></i>
+                                </div>
                                 <h2 style={{ fontSize: '24px', fontWeight: 800, color: 'var(--enba-dark)', margin: '0 0 8px' }}>Yeni Bir İş Planı Başlatalım</h2>
                                 <p style={{ color: '#666', margin: 0 }}>Bu planın para birimini ve ölçüm birimini seçin. İstediğiniz zaman değiştirebilirsiniz.</p>
                             </div>
 
                             {/* Para Birimi */}
                             <div style={{ marginBottom: '20px' }}>
-                                <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--enba-dark)', textTransform: 'uppercase', letterSpacing: '1px', display: 'block', marginBottom: '10px' }}>💱 Para Birimi</label>
+                                <label className="enba-section-title">
+                                    <i className="ph ph-currency-circle-dollar"></i> Para Birimi
+                                </label>
                                 <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                                     {[{ kod:'TRY', sembol:'₺', ad:'Türk Lirası' }, { kod:'USD', sembol:'$', ad:'Dolar' }, { kod:'EUR', sembol:'€', ad:'Euro' }, { kod:'GBP', sembol:'£', ad:'Sterlin' }].map(pb => (
                                         <div key={pb.kod} onClick={() => update('paraBirimi', pb.kod)}
@@ -741,15 +745,19 @@ function App({ globalAyarlar }) {
 
                             {/* Ölçüm Birimi */}
                             <div style={{ marginBottom: '28px' }}>
-                                <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--enba-dark)', textTransform: 'uppercase', letterSpacing: '1px', display: 'block', marginBottom: '10px' }}>📏 Ağırlık Birimi</label>
+                                <label className="enba-section-title">
+                                    <i className="ph ph-scales"></i> Ağırlık Birimi
+                                </label>
                                 <div style={{ display: 'flex', gap: '10px' }}>
-                                    {[{ kod:'ton', ad:'Ton', aciklama:'Metrik ton (1.000 kg)', icon:'🏗️' }, { kod:'kg', ad:'Kilogram', aciklama:'Kilogram (kg)', icon:'⚖️' }].map(ob => (
+                                    {[{ kod:'ton', ad:'Ton', aciklama:'Metrik ton (1.000 kg)', icon:'ph-factory' }, { kod:'kg', ad:'Kilogram', aciklama:'Kilogram (kg)', icon:'ph-scales' }].map(ob => (
                                         <div key={ob.kod} onClick={() => update('olcumBirimi', ob.kod)}
                                             style={{ flex: 1, padding: '16px', borderRadius: '12px', cursor: 'pointer',
                                                 border: `2px solid ${v.olcumBirimi === ob.kod ? 'var(--enba-orange)' : '#e0e0e0'}`,
                                                 background: v.olcumBirimi === ob.kod ? 'rgba(227,82,5,0.06)' : '#fafafa',
                                                 transition: 'all 0.2s' }}>
-                                            <div style={{ fontSize: '22px', marginBottom: '6px' }}>{ob.icon}</div>
+                                            <div style={{ fontSize: '24px', marginBottom: '6px', color: v.olcumBirimi === ob.kod ? 'var(--enba-orange)' : '#555' }}>
+                                                <i className={`ph ${ob.icon}`}></i>
+                                            </div>
                                             <div style={{ fontWeight: 700, fontSize: '15px', color: v.olcumBirimi === ob.kod ? 'var(--enba-orange)' : 'var(--enba-dark)' }}>{ob.ad}</div>
                                             <div style={{ fontSize: '11px', color: '#999', marginTop: '2px' }}>{ob.aciklama}</div>
                                         </div>
@@ -758,7 +766,9 @@ function App({ globalAyarlar }) {
                             </div>
 
                             <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-                                <button className="btn btn-warning" style={{ padding: '15px 30px', fontSize: '16px', borderRadius: '12px' }} onClick={next}>✨ Adım Adım Başla</button>
+                                <button className="btn btn-primary" style={{ padding: '15px 30px', fontSize: '16px' }} onClick={next}>
+                                    <i className="ph ph-magic-wand"></i> Adım Adım Başla
+                                </button>
                                 <button className="btn btn-outline" style={{ padding: '15px 30px', fontSize: '16px', borderRadius: '12px', border: '1px solid #ddd' }} onClick={klasikIpkBaslat}>Hızlı Boş Form</button>
                             </div>
                         </div>
@@ -791,21 +801,27 @@ function App({ globalAyarlar }) {
                                 <label style={{ display: 'flex', alignItems: 'center', gap: '15px', padding: '20px', border: '1px solid #eee', borderRadius: '15px', cursor: 'pointer', backgroundColor: v.model.uretim ? 'rgba(227,82,5,0.05)' : '#fff' }}>
                                     <input type="checkbox" checked={v.model.uretim} onChange={e => update('model', { ...v.model, uretim: e.target.checked })} style={{ width: '20px', height: '20px' }} />
                                     <div>
-                                        <div style={{ fontWeight: 800 }}>⚙️ Üretim & Geri Dönüşüm</div>
+                                        <div style={{ fontWeight: 800, display:'flex', alignItems:'center', gap:'8px' }}>
+                                            <i className="ph ph-gear" style={{color:'var(--enba-orange)'}}></i> Üretim & Geri Dönüşüm
+                                        </div>
                                         <div style={{ fontSize: '12px', color: '#888' }}>Atığı hammaddeye veya ürüne dönüştürme</div>
                                     </div>
                                 </label>
                                 <label style={{ display: 'flex', alignItems: 'center', gap: '15px', padding: '20px', border: '1px solid #eee', borderRadius: '15px', cursor: 'pointer', backgroundColor: v.model.alSat ? 'rgba(227,82,5,0.05)' : '#fff' }}>
                                     <input type="checkbox" checked={v.model.alSat} onChange={e => update('model', { ...v.model, alSat: e.target.checked })} style={{ width: '20px', height: '20px' }} />
                                     <div>
-                                        <div style={{ fontWeight: 800 }}>📦 Al-Sat (Ticaret)</div>
+                                        <div style={{ fontWeight: 800, display:'flex', alignItems:'center', gap:'8px' }}>
+                                            <i className="ph ph-package" style={{color:'var(--enba-orange)'}}></i> Al-Sat (Ticaret)
+                                        </div>
                                         <div style={{ fontSize: '12px', color: '#888' }}>Hammadde veya ürün ticareti</div>
                                     </div>
                                 </label>
                                 <label style={{ display: 'flex', alignItems: 'center', gap: '15px', padding: '20px', border: '1px solid #eee', borderRadius: '15px', cursor: 'pointer', backgroundColor: v.model.komisyon ? 'rgba(227,82,5,0.05)' : '#fff' }}>
                                     <input type="checkbox" checked={v.model.komisyon} onChange={e => update('model', { ...v.model, komisyon: e.target.checked })} style={{ width: '20px', height: '20px' }} />
                                     <div>
-                                        <div style={{ fontWeight: 800 }}>💰 Komisyon</div>
+                                        <div style={{ fontWeight: 800, display:'flex', alignItems:'center', gap:'8px' }}>
+                                            <i className="ph ph-hand-coins" style={{color:'var(--enba-orange)'}}></i> Komisyon
+                                        </div>
                                         <div style={{ fontSize: '12px', color: '#888' }}>İş bağlama veya aracılık hizmetleri</div>
                                     </div>
                                 </label>
@@ -1097,8 +1113,8 @@ function App({ globalAyarlar }) {
                             .map(plan => (
                             <div key={plan.id} className="active-card" onClick={() => IpkDuzenle(plan)} style={{cursor: 'pointer'}}>
                                 <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                                    <span style={{fontWeight: 'bold', color: 'var(--enba-dark)', textTransform: 'uppercase', fontSize: '14px'}}>{plan.baslik}</span>
-                                    <span style={{fontSize: '14px'}}>✏️</span>
+                                    <span style={{fontWeight: '800', color: 'var(--enba-dark)', textTransform: 'uppercase', fontSize: '13px', letterSpacing: '0.5px'}}>{plan.baslik}</span>
+                                    <i className="ph ph-pencil-simple" style={{fontSize: '16px', color: 'var(--enba-orange)'}}></i>
                                 </div>
                                 <div style={{fontSize: '11px', color: '#7F8C8D', marginBottom: '5px'}}>Giriş: {window.fmt(plan.parametreler?.aylikTon)} T | Çıkış: {window.fmt(plan.kutleDengesi?.toplamSatisTon)} T</div>
                                 
@@ -1113,9 +1129,11 @@ function App({ globalAyarlar }) {
                                     <span style={{fontWeight: '600', color: 'var(--enba-dark)'}}>Net Kâr:</span> <strong style={{color: plan.netKar >= 0 ? 'var(--enba-orange-dark)' : 'var(--btn-red-dark)'}}>{window.fmt(plan.netKar)} ₺</strong>
                                 </div>
 
-                                <button className="remove-btn" 
-                                    style={{padding:'12px 20px', fontSize:'12px', fontWeight:'800', background:'var(--error)', color:'#fff', marginTop:'15px'}}
-                                    onClick={(e) => { e.stopPropagation(); e.preventDefault(); kartiCikar(plan.id); }}>Geri Al / Durdur</button>
+                                <button className="btn btn-danger" 
+                                    style={{width:'100%', padding:'10px', fontSize:'11px', marginTop:'15px'}}
+                                    onClick={(e) => { e.stopPropagation(); e.preventDefault(); kartiCikar(plan.id); }}>
+                                    <i className="ph ph-stop-circle"></i> GERİ AL / DURDUR
+                                </button>
                             </div>
                         ))}
                     </div>
@@ -1124,16 +1142,16 @@ function App({ globalAyarlar }) {
 
                 <nav className="mobile-bottom-nav">
                     <button className="mobile-nav-btn" onClick={() => { setMobileSidebarAcik(false); }}>
-                        <span className="nav-icon">📊</span>
+                        <i className="ph ph-chart-pie" style={{fontSize:'20px'}}></i>
                         ÖZET
                     </button>
                     <button className="mobile-nav-btn" style={{position:'relative'}} onClick={() => setMobileSidebarAcik(a => !a)}>
-                        <span className="nav-icon">📋</span>
+                        <i className="ph ph-list-bullets" style={{fontSize:'20px'}}></i>
                         İPK LİSTESİ
                         {bekleyenPlanlar.length > 0 && <span className="mobile-nav-badge">{bekleyenPlanlar.length}</span>}
                     </button>
                     <button className="mobile-nav-btn" onClick={yeniIpkBaslat}>
-                        <span className="nav-icon">🚀</span>
+                        <i className="ph ph-plus-circle" style={{fontSize:'20px'}}></i>
                         YENİ İPK
                     </button>
                 </nav>
@@ -1145,10 +1163,13 @@ function App({ globalAyarlar }) {
         <React.Fragment>
         <div className="page-container">
         <div className="page-header">
-            <h2 style={{ margin: 0, color: 'var(--enba-dark)', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '-0.5px' }}>{duzenlenenPlanId ? '✏️ İPK DÜZENLE' : '⚡  YENİ İPK TASARLA'}</h2>
+            <h2 style={{ margin: 0, color: 'var(--enba-dark)', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '-0.5px' }}>
+                <i className="ph ph-rocket" style={{marginRight:'10px', color:'var(--enba-orange)'}}></i>
+                {duzenlenenPlanId ? 'İPK DÜZENLE' : 'YENİ İPK TASARLA'}
+            </h2>
             <div className="btn-group">
                 <button className="btn btn-secondary" onClick={() => setAktifSayfa('anaSayfa')}>Vazgeç</button>
-                <button className="btn btn-success" onClick={planKaydet}>⚡  İPK KAYDET</button>
+                <button className="btn btn-primary" onClick={planKaydet}>İPK KAYDET</button>
             </div>
         </div>
 

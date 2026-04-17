@@ -77,25 +77,25 @@ window.DetStep4_Personnel = function DetStep4_Personnel({
 
             {/* Toplu Kadro Girisi */}
             {personelListesi.length > 0 && (
-                <div style={{ padding:'20px', background:'var(--enba-dark)', color:'#fff', borderRadius:'1rem', marginBottom:'24px' }}>
-                    <h3 style={{ fontSize:'14px', margin:'0 0 16px' }}>{wt('s4_bulk_title')}</h3>
+                <div style={{ padding:'20px', background:'var(--surface-container-low)', color:'var(--on-surface)', borderRadius:'1rem', marginBottom:'24px', border:'1px solid var(--surface-container-high)' }}>
+                    <h3 style={{ fontSize:'14px', margin:'0 0 16px', fontWeight:700, color:'var(--enba-dark)' }}>{wt('s4_bulk_title')}</h3>
                     <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(200px, 1fr))', gap:'16px' }}>
                         {personelListesi.map(p => (
-                            <div key={p.id} style={{ background:'rgba(255,255,255,0.05)', padding:'12px', borderRadius:'0.75rem', border:'1px solid rgba(255,255,255,0.1)' }}>
-                                <div style={{ fontWeight:700, fontSize:'12px', marginBottom:'8px', color:'#F59E0B' }}>{p.unvan}</div>
+                            <div key={p.id} style={{ background:'var(--surface-container-lowest)', padding:'12px', borderRadius:'0.75rem', border:'1px solid var(--surface-container-high)' }}>
+                                <div style={{ fontWeight:700, fontSize:'12px', marginBottom:'8px', color:'var(--enba-orange-dark)' }}>{p.unvan}</div>
                                 <div style={{ display:'flex', gap:'8px' }}>
                                     {Array.from({length: vardiyaSayisi}).map((_, vIdx) => {
                                         const vNo = vIdx + 1;
                                         const pKey = `${p.id}_v${vNo}`;
                                         return (
                                             <div key={vNo} style={{flex:1}}>
-                                                <label style={{fontSize:'9px', display:'block', marginBottom:'2px'}}>V{vNo}</label>
+                                                <label style={{fontSize:'9px', display:'block', marginBottom:'2px', fontWeight:600, color:'var(--on-surface-variant)'}}>V{vNo}</label>
                                                 <input
                                                     type="number"
                                                     placeholder={wt('s4_person_placeholder')}
                                                     value={topluPersonelDegerleri[pKey] || ''}
                                                     onChange={e => guncelleTopluPersonel(pKey, e.target.value)}
-                                                    style={{ width:'100%', padding:'6px', borderRadius:'4px', border:'1px solid rgba(255,255,255,0.2)', background:'rgba(0,0,0,0.2)', color:'#fff', textAlign:'center' }}
+                                                    style={{ width:'100%', padding:'6px', borderRadius:'4px', border:'1px solid var(--surface-container-high)', background:'var(--surface-container-low)', color:'var(--on-surface)', textAlign:'center', fontWeight:600 }}
                                                     onFocus={window.selectOnFocus}
                                                 />
                                             </div>
@@ -106,7 +106,7 @@ window.DetStep4_Personnel = function DetStep4_Personnel({
                         ))}
                     </div>
                     <div style={{ display:'flex', justifyContent:'flex-end', marginTop:'20px' }}>
-                        <button onClick={uygulaTopluPersonel} style={{ background:'var(--enba-orange)', color:'#fff', border:'none', padding:'10px 24px', borderRadius:'2rem', cursor:'pointer', fontWeight:800 }}>{wt('s4_apply_all')}</button>
+                        <button onClick={uygulaTopluPersonel} style={{ background:'var(--enba-orange-dark)', color:'#fff', border:'none', padding:'10px 24px', borderRadius:'2rem', cursor:'pointer', fontWeight:800, boxShadow:'0 4px 12px rgba(194,70,4,0.25)' }}>{wt('s4_apply_all')}</button>
                     </div>
                 </div>
             )}
@@ -115,9 +115,9 @@ window.DetStep4_Personnel = function DetStep4_Personnel({
             <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'13px' }}>
                 <thead>
                     <tr style={{ background:'var(--primary-container)' }}>
-                        <th style={{ padding:'12px', textAlign:'left' }}>{wt('month_col')}</th>
-                        <th style={{ padding:'12px', textAlign:'right' }}>{wt('s4_total_staff')}</th>
-                        <th style={{ padding:'12px', textAlign:'right' }}>{wt('s4_detail')}</th>
+                        <th style={{ padding:'12px', textAlign:'left', color:'#fff' }}>{wt('month_col')}</th>
+                        <th style={{ padding:'12px', textAlign:'right', color:'#fff' }}>{wt('s4_total_staff')}</th>
+                        <th style={{ padding:'12px', textAlign:'right', color:'#fff' }}>{wt('s4_detail')}</th>
                     </tr>
                 </thead>
                 <tbody>

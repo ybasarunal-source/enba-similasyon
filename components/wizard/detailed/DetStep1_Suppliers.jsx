@@ -50,11 +50,12 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
                 width: '66px',
                 textAlign: 'right',
                 borderRadius: '0.375rem',
-                border: '1px solid rgba(255,255,255,0.18)',
-                background: disabled ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.08)',
-                color: disabled ? 'rgba(255,255,255,0.45)' : '#fff',
+                border: '1px solid var(--surface-container-high)',
+                background: disabled ? 'var(--surface-container-low)' : 'var(--surface-container-lowest)',
+                color: disabled ? 'var(--on-surface-variant)' : 'var(--on-surface)',
                 fontSize: '12px',
                 cursor: disabled ? 'not-allowed' : 'auto',
+                opacity: disabled ? 0.6 : 1
             }}
         />
     );
@@ -103,16 +104,16 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
                 </div>
 
                 {/* ── Toplu Doldurma: Yatay 12 Ay Tablosu ── */}
-                <div style={{ padding:'20px', background: DARK_BG, color:'#fff', borderRadius:'1rem', marginBottom:'24px' }}>
+                <div style={{ padding:'20px', background: 'var(--surface-container-low)', color:'var(--on-surface)', borderRadius:'1rem', marginBottom:'24px', border:'1px solid var(--surface-container-high)' }}>
                     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: topluAcik ? '4px' : '0' }}>
-                        <h3 style={{ fontSize:'14px', margin:0, fontFamily:"'Manrope', sans-serif", fontWeight:700 }}>
+                        <h3 style={{ fontSize:'14px', margin:0, fontFamily:"'Manrope', sans-serif", fontWeight:700, color:'var(--enba-dark)' }}>
                             {wt('bulk_title')}
                         </h3>
-                        <button onClick={() => setTopluAcik(p => !p)} style={{ background:'rgba(255,255,255,0.1)', color:'#fff', border:'1px solid rgba(255,255,255,0.15)', padding:'5px 14px', borderRadius:'0.5rem', cursor:'pointer', fontSize:'12px', fontWeight:600 }}>
+                        <button onClick={() => setTopluAcik(p => !p)} style={{ background:'var(--surface-container-lowest)', color:'var(--on-surface)', border:'1px solid var(--surface-container-high)', padding:'5px 14px', borderRadius:'0.5rem', cursor:'pointer', fontSize:'12px', fontWeight:600 }}>
                             {topluAcik ? wt('hide') : wt('show')}
                         </button>
                     </div>
-                    {topluAcik && <p style={{ fontSize:'12px', color:'rgba(255,255,255,0.7)', margin:'4px 0 16px' }}>{wt('bulk_desc')}</p>}
+                    {topluAcik && <p style={{ fontSize:'12px', color:'var(--on-surface-variant)', margin:'4px 0 16px', fontWeight:500 }}>{wt('bulk_desc')}</p>}
                     {topluAcik && <React.Fragment>
 
                     <div style={{ overflowX:'auto', borderRadius:'0.5rem' }}>
@@ -123,15 +124,15 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
                                 {ayBasliklari.map((_, i) => <col key={i} style={{ width:'78px' }} />)}
                             </colgroup>
                             <thead>
-                                <tr style={{ background:'rgba(0,0,0,0.35)' }}>
-                                    <th style={stickyCell(0, 'rgba(15,25,35,0.98)', { padding:'10px 12px', textAlign:'left', fontSize:'12px', fontWeight:700, color:'rgba(255,255,255,0.9)' })}>
+                                <tr style={{ background:'var(--primary-container)' }}>
+                                    <th style={stickyCell(0, 'var(--primary-container)', { padding:'10px 12px', textAlign:'left', fontSize:'12px', fontWeight:700, color:'#fff' })}>
                                         {wt('s1_supplier_col')}
                                     </th>
-                                    <th style={stickyCell(COL1, 'rgba(15,25,35,0.98)', { padding:'10px 8px', textAlign:'left', fontSize:'11px', fontWeight:600, color:'rgba(255,255,255,0.7)' })}>
+                                    <th style={stickyCell(COL1, 'var(--primary-container)', { padding:'10px 8px', textAlign:'left', fontSize:'11px', fontWeight:600, color:'rgba(255,255,255,0.9)' })}>
                                         {wt('field_col')}
                                     </th>
                                     {ayBasliklari.map((a, i) => (
-                                        <th key={i} style={{ padding:'10px 4px', textAlign:'center', fontSize:'11px', fontWeight:700, color:'rgba(255,255,255,0.8)', whiteSpace:'nowrap' }}>
+                                        <th key={i} style={{ padding:'10px 4px', textAlign:'center', fontSize:'11px', fontWeight:700, color:'#fff', whiteSpace:'nowrap' }}>
                                             {a.label}
                                         </th>
                                     ))}
@@ -141,16 +142,17 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
                                 {tedarikciler.map((t, tIdx) => {
                                     const tData = topluTedarikler[t.id] || {};
                                     const baslangicAy = tData.baslangicAy || 0;
-                                    const rowBg = tIdx % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.12)';
-                                    const stickyBg = tIdx % 2 === 0 ? 'rgba(19,30,42,0.97)' : 'rgba(14,23,33,0.97)';
+                                    const rowBg = tIdx % 2 === 0 ? 'rgba(0,0,0,0.02)' : 'transparent';
+                                    const stickyBg = tIdx % 2 === 0 ? 'var(--surface-container-low)' : 'var(--surface-container-lowest)';
 
                                     const labelTd = (text) => (
                                         <td style={stickyCell(COL1, stickyBg, {
                                             padding:'7px 8px',
                                             fontSize:'11px',
-                                            color:'rgba(255,255,255,0.85)',
+                                            color:'var(--on-surface-variant)',
                                             fontWeight:600,
                                             whiteSpace:'nowrap',
+                                            borderRight:'1px solid var(--surface-container-high)'
                                         })}>
                                             {text}
                                         </td>
@@ -190,24 +192,24 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
                                                 <td rowSpan={3} style={stickyCell(0, stickyBg, {
                                                     padding:'10px 12px',
                                                     verticalAlign:'middle',
-                                                    borderRight:'1px solid rgba(255,255,255,0.08)',
-                                                    borderBottom:'2px solid rgba(255,255,255,0.1)',
+                                                    borderRight:'1px solid var(--surface-container-high)',
+                                                    borderBottom:'2px solid var(--surface-container-high)',
                                                 })}>
-                                                    <div style={{ fontWeight:700, fontSize:'13px', color:'#fff', marginBottom:'6px' }}>{t.ad}</div>
+                                                    <div style={{ fontWeight:700, fontSize:'13px', color:'var(--enba-dark)', marginBottom:'6px' }}>{t.ad}</div>
                                                     <input
                                                         type="text"
                                                         placeholder="Ürün adı..."
                                                         value={tData.urun || ayVerileri[0]?.tedarikler?.[t.id]?.urun || ''}
                                                         onChange={e => guncelleTopluTedarikUrun(t.id, e.target.value)}
                                                         onFocus={window.selectOnFocus}
-                                                        style={{ padding:'4px 8px', width:'100%', borderRadius:'0.375rem', border:'1px solid rgba(255,255,255,0.18)', background:'rgba(255,255,255,0.06)', color:'#fff', fontSize:'12px', marginBottom:'8px' }}
+                                                        style={{ padding:'4px 8px', width:'100%', borderRadius:'0.375rem', border:'1px solid var(--surface-container-high)', background:'var(--surface-container-lowest)', color:'var(--on-surface)', fontSize:'12px', marginBottom:'8px' }}
                                                     />
                                                     <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
-                                                        <span style={{ fontSize:'10px', color:'rgba(255,255,255,0.7)', fontWeight:600, whiteSpace:'nowrap' }}>{wt('start_month_short')}</span>
+                                                        <span style={{ fontSize:'10px', color:'var(--on-surface-variant)', fontWeight:600, whiteSpace:'nowrap' }}>{wt('start_month_short')}</span>
                                                         <select
                                                             value={baslangicAy}
                                                             onChange={e => guncelleTopluTedarikBaslangicAy(t.id, e.target.value)}
-                                                            style={{ flex:1, padding:'4px 6px', borderRadius:'0.375rem', border:'1px solid rgba(245,158,11,0.35)', background:'rgba(245,158,11,0.08)', color:'#F59E0B', fontSize:'11px', fontWeight:600, cursor:'pointer' }}
+                                                            style={{ flex:1, padding:'4px 6px', borderRadius:'0.375rem', border:'1px solid var(--surface-container-high)', background:'var(--surface-container-lowest)', color:'var(--enba-dark)', fontSize:'11px', fontWeight:600, cursor:'pointer' }}
                                                         >
                                                             {ayBasliklari.map((a, i) => (
                                                                 <option key={i} value={i}>{a.label}</option>
@@ -256,9 +258,9 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
                 <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'13px' }}>
                     <thead>
                         <tr style={{ background:'var(--primary-container)' }}>
-                            <th style={{ padding:'12px', textAlign:'left' }}>{wt('month_col')}</th>
-                            <th style={{ padding:'12px', textAlign:'right' }}>{wt('s1_total_purchase')}</th>
-                            <th style={{ padding:'12px', textAlign:'right' }}>{wt('detail_col')}</th>
+                            <th style={{ padding:'12px', textAlign:'left', color:'#fff' }}>{wt('month_col')}</th>
+                            <th style={{ padding:'12px', textAlign:'right', color:'#fff' }}>{wt('s1_total_purchase')}</th>
+                            <th style={{ padding:'12px', textAlign:'right', color:'#fff' }}>{wt('detail_col')}</th>
                         </tr>
                     </thead>
                     <tbody>

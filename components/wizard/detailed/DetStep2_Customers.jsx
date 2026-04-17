@@ -48,10 +48,11 @@ window.DetStep2_Customers = function DetStep2_Customers({
             style={{
                 padding: '5px 6px', width: '66px', textAlign: 'right',
                 borderRadius: '0.375rem',
-                border: '1px solid rgba(255,255,255,0.18)',
-                background: disabled ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.08)',
-                color: disabled ? 'rgba(255,255,255,0.45)' : '#fff',
+                border: '1px solid var(--surface-container-high)',
+                background: disabled ? 'var(--surface-container-low)' : 'var(--surface-container-lowest)',
+                color: disabled ? 'var(--on-surface-variant)' : 'var(--on-surface)',
                 fontSize: '12px', cursor: disabled ? 'not-allowed' : 'auto',
+                opacity: disabled ? 0.6 : 1
             }}
         />
     );
@@ -75,40 +76,38 @@ window.DetStep2_Customers = function DetStep2_Customers({
     const hasData = yillikAlisTop > 0;
 
     return (
-        <div className="step-content">
-
-            {/* ── Üretim & Maliyet Özeti ── */}
+        <div className="step-co            {/* ── Üretim & Maliyet Özeti ── */}
             {hasData && (
-                <div style={{ background:'linear-gradient(135deg, #0f1e2e, #15222E)', borderRadius:'1.5rem', padding:'24px', boxShadow:'var(--shadow-card)', marginBottom:'24px', border:'1px solid rgba(255,255,255,0.07)' }}>
-                    <h2 style={{ fontFamily:"'Manrope', sans-serif", fontWeight:700, fontSize:'15px', color:'#fff', margin:'0 0 16px', display:'flex', alignItems:'center', gap:'8px' }}>
+                <div style={{ background:'var(--surface-container-low)', borderRadius:'1.5rem', padding:'24px', boxShadow:'var(--shadow-card)', marginBottom:'24px', border:'1px solid var(--surface-container-high)' }}>
+                    <h2 style={{ fontFamily:"'Manrope', sans-serif", fontWeight:700, fontSize:'15px', color:'var(--enba-dark)', margin:'0 0 16px', display:'flex', alignItems:'center', gap:'8px' }}>
                         📊 {wt('s2_monthly_table')}
                     </h2>
-
+ 
                     {/* Yıllık özet kartlar */}
                     <div style={{ display:'flex', gap:'12px', marginBottom:'20px', flexWrap:'wrap' }}>
-                        <div style={{ flex:1, minWidth:'160px', background:'rgba(255,255,255,0.04)', borderRadius:'1rem', padding:'14px 16px', border:'1px solid rgba(255,255,255,0.08)' }}>
-                            <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.45)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.6px', marginBottom:'6px' }}>{wt('s2_annual_available')}</div>
-                            <div style={{ fontSize:'22px', fontWeight:800, color:'#34d399' }}>{fmt(tonToDisplay(toplamSatilabilecek))} <span style={{ fontSize:'13px', fontWeight:500 }}>{birimEtiketi}</span></div>
+                        <div style={{ flex:1, minWidth:'160px', background:'var(--surface-container-lowest)', borderRadius:'1rem', padding:'14px 16px', border:'1px solid var(--surface-container-high)' }}>
+                            <div style={{ fontSize:'11px', color:'var(--on-surface-variant)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.6px', marginBottom:'6px' }}>{wt('s2_annual_available')}</div>
+                            <div style={{ fontSize:'22px', fontWeight:800, color:'var(--info)' }}>{fmt(tonToDisplay(toplamSatilabilecek))} <span style={{ fontSize:'13px', fontWeight:500 }}>{birimEtiketi}</span></div>
                         </div>
-                        <div style={{ flex:1, minWidth:'160px', background:'rgba(255,255,255,0.04)', borderRadius:'1rem', padding:'14px 16px', border:'1px solid rgba(255,255,255,0.08)' }}>
-                            <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.45)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.6px', marginBottom:'6px' }}>{wt('s2_avg_cost')}</div>
-                            <div style={{ fontSize:'22px', fontWeight:800, color:'#fbbf24' }}>{fmt(fiyatToDisplay(yillikTonBasi))} <span style={{ fontSize:'13px', fontWeight:500 }}>{fiyatBirimi}</span></div>
+                        <div style={{ flex:1, minWidth:'160px', background:'var(--surface-container-lowest)', borderRadius:'1rem', padding:'14px 16px', border:'1px solid var(--surface-container-high)' }}>
+                            <div style={{ fontSize:'11px', color:'var(--on-surface-variant)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.6px', marginBottom:'6px' }}>{wt('s2_avg_cost')}</div>
+                            <div style={{ fontSize:'22px', fontWeight:800, color:'var(--enba-orange-dark)' }}>{fmt(fiyatToDisplay(yillikTonBasi))} <span style={{ fontSize:'13px', fontWeight:500 }}>{fiyatBirimi}</span></div>
                         </div>
-                        <div style={{ flex:1, minWidth:'160px', background:'rgba(255,255,255,0.04)', borderRadius:'1rem', padding:'14px 16px', border:'1px solid rgba(255,255,255,0.08)' }}>
-                            <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.45)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.6px', marginBottom:'6px' }}>{wt('s2_annual_purchase')}</div>
-                            <div style={{ fontSize:'22px', fontWeight:800, color:'#60a5fa' }}>{fmt(tonToDisplay(yillikAlisTop))} <span style={{ fontSize:'13px', fontWeight:500 }}>{birimEtiketi}</span></div>
+                        <div style={{ flex:1, minWidth:'160px', background:'var(--surface-container-lowest)', borderRadius:'1rem', padding:'14px 16px', border:'1px solid var(--surface-container-high)' }}>
+                            <div style={{ fontSize:'11px', color:'var(--on-surface-variant)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.6px', marginBottom:'6px' }}>{wt('s2_annual_purchase')}</div>
+                            <div style={{ fontSize:'22px', fontWeight:800, color:'var(--enba-dark)' }}>{fmt(tonToDisplay(yillikAlisTop))} <span style={{ fontSize:'13px', fontWeight:500 }}>{birimEtiketi}</span></div>
                         </div>
-                    </div>
+                    </div>                   </div>
 
                     {/* Aylık tablo */}
                     <div style={{ overflowX:'auto' }}>
                         <table style={{ borderCollapse:'collapse', width:'100%', fontSize:'12px' }}>
                             <thead>
-                                <tr style={{ background:'rgba(0,0,0,0.3)' }}>
-                                    <th style={{ padding:'8px 12px', textAlign:'left', color:'rgba(255,255,255,0.6)', fontWeight:600 }}>{wt('month_col')}</th>
-                                    <th style={{ padding:'8px 10px', textAlign:'right', color:'rgba(255,255,255,0.6)', fontWeight:600, whiteSpace:'nowrap' }}>{wt('s2_purchase_col')} ({birimEtiketi})</th>
-                                    <th style={{ padding:'8px 10px', textAlign:'right', color:'#34d399', fontWeight:700, whiteSpace:'nowrap' }}>{wt('s2_available')} ({birimEtiketi})</th>
-                                    <th style={{ padding:'8px 10px', textAlign:'right', color:'#fbbf24', fontWeight:700, whiteSpace:'nowrap' }}>{wt('s2_cost_per_ton')} ({fiyatBirimi})</th>
+                                <tr style={{ background:'var(--primary-container)' }}>
+                                    <th style={{ padding:'8px 12px', textAlign:'left', color:'#fff', fontWeight:600 }}>{wt('month_col')}</th>
+                                    <th style={{ padding:'8px 10px', textAlign:'right', color:'#fff', fontWeight:600, whiteSpace:'nowrap' }}>{wt('s2_purchase_col')} ({birimEtiketi})</th>
+                                    <th style={{ padding:'8px 10px', textAlign:'right', color:'#fff', fontWeight:700, whiteSpace:'nowrap' }}>{wt('s2_available')} ({birimEtiketi})</th>
+                                    <th style={{ padding:'8px 10px', textAlign:'right', color:'#fff', fontWeight:700, whiteSpace:'nowrap' }}>{wt('s2_cost_per_ton')} ({fiyatBirimi})</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -116,12 +115,14 @@ window.DetStep2_Customers = function DetStep2_Customers({
                                     const gercekAyIdx = (baslangicAyi + i) % 12;
                                     const yil = baslangicYili + Math.floor((baslangicAyi + i) / 12);
                                     return (
-                                        <tr key={i} style={{ borderBottom:'1px solid rgba(255,255,255,0.05)', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)' }}>
-                                            <td style={{ padding:'7px 12px', color:'rgba(255,255,255,0.7)', fontWeight:500 }}>{AYLAR[gercekAyIdx]} {yil}</td>
-                                            <td style={{ padding:'7px 10px', textAlign:'right', color:'rgba(255,255,255,0.6)' }}>{fmt(tonToDisplay(o.alisTon))}</td>
-                                            <td style={{ padding:'7px 10px', textAlign:'right', color:'#34d399', fontWeight:700 }}>{fmt(tonToDisplay(o.satilabilecekTon))}</td>
-                                            <td style={{ padding:'7px 10px', textAlign:'right', color:'#fbbf24', fontWeight:700 }}>{fmt(fiyatToDisplay(o.tonBasiMaliyet))}</td>
+                                    return (
+                                        <tr key={i} style={{ borderBottom:'1px solid var(--surface-container-high)', background: i % 2 === 0 ? 'transparent' : 'rgba(0,0,0,0.02)' }}>
+                                            <td style={{ padding:'7px 12px', color:'var(--on-surface)', fontWeight:500 }}>{AYLAR[gercekAyIdx]} {yil}</td>
+                                            <td style={{ padding:'7px 10px', textAlign:'right', color:'var(--on-surface-variant)' }}>{fmt(tonToDisplay(o.alisTon))}</td>
+                                            <td style={{ padding:'7px 10px', textAlign:'right', color:'var(--info)', fontWeight:700 }}>{fmt(tonToDisplay(o.satilabilecekTon))}</td>
+                                            <td style={{ padding:'7px 10px', textAlign:'right', color:'var(--enba-orange-dark)', fontWeight:700 }}>{fmt(fiyatToDisplay(o.tonBasiMaliyet))}</td>
                                         </tr>
+                                    );
                                     );
                                 })}
                             </tbody>
@@ -148,21 +149,21 @@ window.DetStep2_Customers = function DetStep2_Customers({
             </div>
 
             {/* ── Toplu Veri Girişi ── */}
-            <div style={{ padding:'20px', background: DARK_BG, color:'#fff', borderRadius:'1rem', marginBottom:'24px' }}>
+            <div style={{ padding:'20px', background: 'var(--surface-container-low)', color:'var(--on-surface)', borderRadius:'1rem', marginBottom:'24px', border:'1px solid var(--surface-container-high)' }}>
                 {/* Header row: title + fire */}
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'16px', gap:'16px', flexWrap:'wrap' }}>
                     <div>
-                        <h3 style={{ fontSize:'14px', margin:'0 0 4px', fontFamily:"'Manrope', sans-serif", fontWeight:700 }}>{wt('bulk_title')}</h3>
-                        <p style={{ fontSize:'12px', color:'rgba(255,255,255,0.7)', margin:0 }}>{wt('bulk_desc')}</p>
+                        <h3 style={{ fontSize:'14px', margin:'0 0 4px', fontFamily:"'Manrope', sans-serif", fontWeight:700, color:'var(--enba-dark)' }}>{wt('bulk_title')}</h3>
+                        <p style={{ fontSize:'12px', color:'var(--on-surface-variant)', margin:0 }}>{wt('bulk_desc')}</p>
                     </div>
-                    <div style={{ background:'rgba(255,255,255,0.04)', padding:'10px 14px', borderRadius:'0.75rem', border:'1px solid rgba(245,158,11,0.2)', flexShrink:0 }}>
-                        <span style={{ fontWeight:700, fontSize:'12px', color:'#F59E0B', display:'block', marginBottom:'8px' }}>⚡ Fire (Toplu)</span>
+                    <div style={{ background:'var(--surface-container-lowest)', padding:'10px 14px', borderRadius:'0.75rem', border:'1px solid var(--surface-container-high)', flexShrink:0 }}>
+                        <span style={{ fontWeight:700, fontSize:'12px', color:'var(--enba-orange-dark)', display:'block', marginBottom:'8px' }}>⚡ Fire (Toplu)</span>
                         <div style={{ display:'flex', gap:'8px', alignItems:'center' }}>
-                            <label style={{ display:'flex', alignItems:'center', gap:'5px', fontSize:'12px', cursor:'pointer' }}>
+                            <label style={{ display:'flex', alignItems:'center', gap:'5px', fontSize:'12px', cursor:'pointer', fontWeight:600 }}>
                                 <input type="checkbox" checked={topluFire.aktif} onChange={e => setTopluFire(p => ({ ...p, aktif: e.target.checked }))} /> Uygula
                             </label>
-                            <input type="number" placeholder="%" value={topluFire.yuzde} onChange={e => setTopluFire(p => ({ ...p, yuzde: e.target.value }))} style={{ width:'52px', padding:'5px', borderRadius:'0.375rem', border:'1px solid rgba(255,255,255,0.2)', background:'rgba(255,255,255,0.07)', color:'#fff', textAlign:'center', fontSize:'12px' }} onFocus={window.selectOnFocus} />
-                            <button onClick={uygulaTopluFire} style={{ background:'#F59E0B', color:'#fff', border:'none', padding:'5px 10px', borderRadius:'0.375rem', cursor:'pointer', fontWeight:700, fontSize:'11px' }}>Uygula</button>
+                            <input type="number" placeholder="%" value={topluFire.yuzde} onChange={e => setTopluFire(p => ({ ...p, yuzde: e.target.value }))} style={{ width:'52px', padding:'5px', borderRadius:'0.375rem', border:'1px solid var(--surface-container-high)', background:'var(--surface-container-lowest)', color:'var(--on-surface)', textAlign:'center', fontSize:'12px' }} onFocus={window.selectOnFocus} />
+                            <button onClick={uygulaTopluFire} style={{ background:'var(--enba-orange-dark)', color:'#fff', border:'none', padding:'5px 10px', borderRadius:'0.375rem', cursor:'pointer', fontWeight:700, fontSize:'11px' }}>Uygula</button>
                         </div>
                     </div>
                 </div>
@@ -175,11 +176,11 @@ window.DetStep2_Customers = function DetStep2_Customers({
                             {ayBasliklari.map((_, i) => <col key={i} style={{ width:'78px' }} />)}
                         </colgroup>
                         <thead>
-                            <tr style={{ background:'rgba(0,0,0,0.35)' }}>
-                                <th style={stickyCell(0, 'rgba(15,25,35,0.98)', { padding:'10px 12px', textAlign:'left', fontSize:'12px', fontWeight:700, color:'rgba(255,255,255,0.9)' })}>{wt('s2_customer_col')}</th>
-                                <th style={stickyCell(COL1, 'rgba(15,25,35,0.98)', { padding:'10px 8px', textAlign:'left', fontSize:'11px', fontWeight:600, color:'rgba(255,255,255,0.7)' })}>{wt('field_col')}</th>
+                            <tr style={{ background:'var(--primary-container)' }}>
+                                <th style={stickyCell(0, 'var(--primary-container)', { padding:'10px 12px', textAlign:'left', fontSize:'12px', fontWeight:700, color:'#fff' })}>{wt('s2_customer_col')}</th>
+                                <th style={stickyCell(COL1, 'var(--primary-container)', { padding:'10px 8px', textAlign:'left', fontSize:'11px', fontWeight:600, color:'rgba(255,255,255,0.9)' })}>{wt('field_col')}</th>
                                 {ayBasliklari.map((a, i) => (
-                                    <th key={i} style={{ padding:'10px 4px', textAlign:'center', fontSize:'11px', fontWeight:700, color:'rgba(255,255,255,0.8)', whiteSpace:'nowrap' }}>{a.label}</th>
+                                    <th key={i} style={{ padding:'10px 4px', textAlign:'center', fontSize:'11px', fontWeight:700, color:'#fff', whiteSpace:'nowrap' }}>{a.label}</th>
                                 ))}
                             </tr>
                         </thead>
@@ -187,11 +188,11 @@ window.DetStep2_Customers = function DetStep2_Customers({
                             {musteriler.map((m, mIdx) => {
                                 const mData = topluMusteriler[m.id] || {};
                                 const baslangicAy = mData.baslangicAy || 0;
-                                const rowBg = mIdx % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.12)';
-                                const stickyBg = mIdx % 2 === 0 ? 'rgba(19,30,42,0.97)' : 'rgba(14,23,33,0.97)';
+                                const rowBg = mIdx % 2 === 0 ? 'rgba(0,0,0,0.02)' : 'transparent';
+                                const stickyBg = mIdx % 2 === 0 ? 'var(--surface-container-low)' : 'var(--surface-container-lowest)';
 
                                 const labelTd = (text) => (
-                                    <td style={stickyCell(COL1, stickyBg, { padding:'7px 8px', fontSize:'11px', color:'rgba(255,255,255,0.85)', fontWeight:600, whiteSpace:'nowrap' })}>
+                                    <td style={stickyCell(COL1, stickyBg, { padding:'7px 8px', fontSize:'11px', color:'var(--on-surface-variant)', fontWeight:600, whiteSpace:'nowrap', borderRight:'1px solid var(--surface-container-high)' })}>
                                         {text}
                                     </td>
                                 );
@@ -213,12 +214,12 @@ window.DetStep2_Customers = function DetStep2_Customers({
                                 return (
                                     <React.Fragment key={m.id}>
                                         <tr style={{ background: rowBg }}>
-                                            <td rowSpan={3} style={stickyCell(0, stickyBg, { padding:'10px 12px', verticalAlign:'middle', borderRight:'1px solid rgba(255,255,255,0.08)', borderBottom:'2px solid rgba(255,255,255,0.1)' })}>
-                                                <div style={{ fontWeight:700, fontSize:'13px', color:'#fff', marginBottom:'6px' }}>{m.ad}</div>
-                                                <input type="text" placeholder="Ürün adı..." value={mData.urun || ''} onChange={e => guncelleTopluMusteriUrun(m.id, e.target.value)} onFocus={window.selectOnFocus} style={{ padding:'4px 8px', width:'100%', borderRadius:'0.375rem', border:'1px solid rgba(255,255,255,0.18)', background:'rgba(255,255,255,0.06)', color:'#fff', fontSize:'12px', marginBottom:'8px' }} />
+                                            <td rowSpan={3} style={stickyCell(0, stickyBg, { padding:'10px 12px', verticalAlign:'middle', borderRight:'1px solid var(--surface-container-high)', borderBottom:'2px solid var(--surface-container-high)' })}>
+                                                <div style={{ fontWeight:700, fontSize:'13px', color:'var(--enba-dark)', marginBottom:'6px' }}>{m.ad}</div>
+                                                <input type="text" placeholder="Ürün adı..." value={mData.urun || ''} onChange={e => guncelleTopluMusteriUrun(m.id, e.target.value)} onFocus={window.selectOnFocus} style={{ padding:'4px 8px', width:'100%', borderRadius:'0.375rem', border:'1px solid var(--surface-container-high)', background:'var(--surface-container-lowest)', color:'var(--on-surface)', fontSize:'12px', marginBottom:'8px' }} />
                                                 <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
-                                                    <span style={{ fontSize:'10px', color:'rgba(255,255,255,0.7)', fontWeight:600, whiteSpace:'nowrap' }}>{wt('start_month_short')}</span>
-                                                    <select value={baslangicAy} onChange={e => guncelleTopluMusteriBaslangicAy(m.id, e.target.value)} style={{ flex:1, padding:'4px 6px', borderRadius:'0.375rem', border:'1px solid rgba(245,158,11,0.35)', background:'rgba(245,158,11,0.08)', color:'#F59E0B', fontSize:'11px', fontWeight:600, cursor:'pointer' }}>
+                                                    <span style={{ fontSize:'10px', color:'var(--on-surface-variant)', fontWeight:600, whiteSpace:'nowrap' }}>{wt('start_month_short')}</span>
+                                                    <select value={baslangicAy} onChange={e => guncelleTopluMusteriBaslangicAy(m.id, e.target.value)} style={{ flex:1, padding:'4px 6px', borderRadius:'0.375rem', border:'1px solid var(--surface-container-high)', background:'var(--surface-container-lowest)', color:'var(--enba-dark)', fontSize:'11px', fontWeight:600, cursor:'pointer' }}>
                                                         {ayBasliklari.map((a, i) => <option key={i} value={i}>{a.label}</option>)}
                                                     </select>
                                                 </div>
@@ -230,7 +231,7 @@ window.DetStep2_Customers = function DetStep2_Customers({
                                             {labelTd(`${wt('s1_price')} (${fiyatBirimi})`)}
                                             {monthCells('fiyat')}
                                         </tr>
-                                        <tr style={{ background: rowBg, borderBottom:'2px solid rgba(255,255,255,0.1)' }}>
+                                        <tr style={{ background: rowBg, borderBottom:'1px solid var(--surface-container-high)' }}>
                                             {labelTd(`${wt('s1_freight')} (${fiyatBirimi})`)}
                                             {monthCells('nakliye')}
                                         </tr>
@@ -252,10 +253,10 @@ window.DetStep2_Customers = function DetStep2_Customers({
             <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'13px' }}>
                 <thead>
                     <tr style={{ background:'var(--primary-container)' }}>
-                        <th style={{ padding:'12px', textAlign:'left' }}>{wt('month_col')}</th>
-                        <th style={{ padding:'12px', textAlign:'right' }}>{wt('s2_total_sales')} ({birimEtiketi})</th>
-                        <th style={{ padding:'12px', textAlign:'right' }}>{wt('s2_fire')}</th>
-                        <th style={{ padding:'12px', textAlign:'right' }}>{wt('detail_col')}</th>
+                        <th style={{ padding:'12px', textAlign:'left', color:'#fff' }}>{wt('month_col')}</th>
+                        <th style={{ padding:'12px', textAlign:'right', color:'#fff' }}>{wt('s2_total_sales')} ({birimEtiketi})</th>
+                        <th style={{ padding:'12px', textAlign:'right', color:'#fff' }}>{wt('s2_fire')}</th>
+                        <th style={{ padding:'12px', textAlign:'right', color:'#fff' }}>{wt('detail_col')}</th>
                     </tr>
                 </thead>
                 <tbody>
