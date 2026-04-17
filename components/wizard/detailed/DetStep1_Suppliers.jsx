@@ -153,8 +153,8 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
                                         let displayVal = '';
                                         if (topluVal !== undefined && topluVal !== '') {
                                             displayVal = topluVal;
-                                        } else if (fallbackRaw !== undefined && fallbackRaw !== '') {
-                                            displayVal = alan === 'miktar' ? (tonToDisplay(fallbackRaw) || '') : fallbackRaw;
+                                        } else if (fallbackRaw !== undefined && fallbackRaw !== '' && Number(fallbackRaw) !== 0) {
+                                            displayVal = alan === 'miktar' ? tonToDisplay(fallbackRaw) : fallbackRaw;
                                         }
                                         return (
                                             <td key={i} style={{
