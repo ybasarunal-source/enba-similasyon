@@ -25,7 +25,7 @@ window.DetStep5_Expenses = function DetStep5_Expenses({
                         if (ACILIR_KODLAR.includes(g.kodu)) return null;
                         return (
                             <div key={g.kodu} title={isDynamic ? "Bu alan otomatik hesaplanır, toplu doldurulamaz." : ""} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', background: isDynamic ? 'var(--surface-container)' : 'var(--surface-container-lowest)', padding:'8px 12px', borderRadius:'0.5rem', border:'1px solid var(--surface-container-highest)' }}>
-                                <label style={{ fontSize:'11px', fontWeight:600, color: isDynamic ? '#999' : 'var(--on-surface-variant)', textOverflow:'ellipsis', overflow:'hidden', whiteSpace:'nowrap', flex:1 }}>
+                                <label style={{ fontSize:'11px', fontWeight:600, color: isDynamic ? 'var(--on-surface-variant)' : 'var(--on-surface)', textOverflow:'ellipsis', overflow:'hidden', whiteSpace:'nowrap', flex:1, opacity: isDynamic ? 0.6 : 1 }}>
                                     {g.kodu} - {g.adi}
                                 </label>
                                 <input
@@ -75,7 +75,7 @@ window.DetStep5_Expenses = function DetStep5_Expenses({
                                                         style={{ width:'80px', padding:'6px', borderRadius:'0.25rem', border:'1px solid var(--surface-container-highest)', textAlign:'right' }}
                                                         onFocus={window.selectOnFocus}
                                                     />
-                                                ) : <span style={{color:'#999', fontSize:'10px'}}>As. Tabloya Bakınız</span>}
+                                                ) : <span style={{color:'var(--on-surface-variant)', fontSize:'10px', opacity:0.7}}>{wt('s5_see_below')}</span>}
                                             </td>
                                         ); })}
                                     </tr>

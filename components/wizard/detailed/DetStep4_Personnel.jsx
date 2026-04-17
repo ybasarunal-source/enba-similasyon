@@ -138,7 +138,7 @@ window.DetStep4_Personnel = function DetStep4_Personnel({
                                 <tr style={{ background:'var(--surface)', cursor:'pointer', borderBottom:'1px solid var(--surface-container)' }} onClick={() => setAcikAylar(p => ({ ...p, [i]: !p[i] }))}>
                                     <td style={{ padding:'14px', fontWeight:600 }}>{isOpen ? '▼' : '▶'} {AYLAR[gercekAyIdx]}</td>
                                     <td style={{ padding:'14px', textAlign:'right', fontWeight:700 }}>{toplamKisi} {wt('s4_person_unit')}</td>
-                                    <td style={{ padding:'14px', textAlign:'right', color:'var(--enba-orange)' }}>{wt('s4_expand')}</td>
+                                    <td style={{ padding:'14px', textAlign:'right', color:'var(--enba-orange-dark)' }}>{wt('s4_expand')}</td>
                                 </tr>
                                 {isOpen && (
                                     <tr>

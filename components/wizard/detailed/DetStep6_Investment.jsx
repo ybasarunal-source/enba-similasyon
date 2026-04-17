@@ -106,8 +106,8 @@ window.DetStep6_Investment = function DetStep6_Investment({
                                 <td style={{ padding:'12px', textAlign:'right', fontWeight:700 }}>{fmt(y.maliyet)} ₺</td>
                                 <td style={{ padding:'12px', textAlign:'right' }}>{y.geriOdeme} {wt('s6_depreciation')} {y.erteleme > 0 && <span style={{fontSize:'10px', color:'var(--error)'}}>(+{y.erteleme} {wt('s6_delay')})</span>}</td>
                                 <td style={{ padding:'12px', textAlign:'right', color:'var(--error)', fontWeight:700 }}>{fmt(y.maliyet / y.geriOdeme)} ₺/{wt('month_col')}</td>
-                                <td style={{ padding:'12px', textAlign:'right' }}>{y.tur === 'makina' && y.gucTuketimi > 0 ? <span style={{fontWeight:700, color:'var(--enba-orange)'}}>{y.gucTuketimi} kW</span> : <span style={{color:'#ccc'}}>—</span>}</td>
-                                <td style={{ padding:'12px', textAlign:'right' }}>{y.tur === 'makina' && y.saatlikKapasite > 0 ? <span style={{fontWeight:700}}>{y.saatlikKapasite} {wt('s6_capacity_unit')}</span> : <span style={{color:'#ccc'}}>—</span>}</td>
+                                <td style={{ padding:'12px', textAlign:'right' }}>{y.tur === 'makina' && y.gucTuketimi > 0 ? <span style={{fontWeight:700, color:'var(--enba-orange-dark)'}}>{y.gucTuketimi} kW</span> : <span style={{color:'var(--on-surface-variant)', opacity:0.3}}>—</span>}</td>
+                                <td style={{ padding:'12px', textAlign:'right' }}>{y.tur === 'makina' && y.saatlikKapasite > 0 ? <span style={{fontWeight:700}}>{y.saatlikKapasite} {wt('s6_capacity_unit')}</span> : <span style={{color:'var(--on-surface-variant)', opacity:0.3}}>—</span>}</td>
                                 <td style={{ padding:'12px', textAlign:'center' }}>
                                     <button onClick={() => yatirimSil(y.id)} style={{ background:'none', border:'none', color:'var(--error)', cursor:'pointer', fontWeight:800 }}>SİL</button>
                                 </td>
@@ -122,7 +122,7 @@ window.DetStep6_Investment = function DetStep6_Investment({
                         )}
                         {yatirimlar.length === 0 && (
                             <tr>
-                                <td colSpan="8" style={{ padding:'24px', textAlign:'center', color:'#999' }}>{wt('s6_empty')}</td>
+                                <td colSpan="8" style={{ padding:'24px', textAlign:'center', color:'var(--on-surface-variant)', opacity:0.6 }}>{wt('s6_empty')}</td>
                             </tr>
                         )}
                     </tbody>

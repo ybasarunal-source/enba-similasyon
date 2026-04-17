@@ -52,7 +52,7 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
                 borderRadius: '0.375rem',
                 border: '1px solid rgba(255,255,255,0.18)',
                 background: disabled ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.08)',
-                color: disabled ? 'rgba(255,255,255,0.2)' : '#fff',
+                color: disabled ? 'rgba(255,255,255,0.45)' : '#fff',
                 fontSize: '12px',
                 cursor: disabled ? 'not-allowed' : 'auto',
             }}
@@ -112,7 +112,7 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
                             {topluAcik ? wt('hide') : wt('show')}
                         </button>
                     </div>
-                    {topluAcik && <p style={{ fontSize:'12px', color:'rgba(255,255,255,0.45)', margin:'4px 0 16px' }}>{wt('bulk_desc')}</p>}
+                    {topluAcik && <p style={{ fontSize:'12px', color:'rgba(255,255,255,0.7)', margin:'4px 0 16px' }}>{wt('bulk_desc')}</p>}
                     {topluAcik && <React.Fragment>
 
                     <div style={{ overflowX:'auto', borderRadius:'0.5rem' }}>
@@ -124,10 +124,10 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
                             </colgroup>
                             <thead>
                                 <tr style={{ background:'rgba(0,0,0,0.35)' }}>
-                                    <th style={stickyCell(0, 'rgba(15,25,35,0.98)', { padding:'10px 12px', textAlign:'left', fontSize:'12px', fontWeight:700, color:'rgba(255,255,255,0.85)' })}>
+                                    <th style={stickyCell(0, 'rgba(15,25,35,0.98)', { padding:'10px 12px', textAlign:'left', fontSize:'12px', fontWeight:700, color:'rgba(255,255,255,0.9)' })}>
                                         {wt('s1_supplier_col')}
                                     </th>
-                                    <th style={stickyCell(COL1, 'rgba(15,25,35,0.98)', { padding:'10px 8px', textAlign:'left', fontSize:'11px', fontWeight:600, color:'rgba(255,255,255,0.55)' })}>
+                                    <th style={stickyCell(COL1, 'rgba(15,25,35,0.98)', { padding:'10px 8px', textAlign:'left', fontSize:'11px', fontWeight:600, color:'rgba(255,255,255,0.7)' })}>
                                         {wt('field_col')}
                                     </th>
                                     {ayBasliklari.map((a, i) => (
@@ -148,7 +148,7 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
                                         <td style={stickyCell(COL1, stickyBg, {
                                             padding:'7px 8px',
                                             fontSize:'11px',
-                                            color:'rgba(255,255,255,0.5)',
+                                            color:'rgba(255,255,255,0.85)',
                                             fontWeight:600,
                                             whiteSpace:'nowrap',
                                         })}>
@@ -203,7 +203,7 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
                                                         style={{ padding:'4px 8px', width:'100%', borderRadius:'0.375rem', border:'1px solid rgba(255,255,255,0.18)', background:'rgba(255,255,255,0.06)', color:'#fff', fontSize:'12px', marginBottom:'8px' }}
                                                     />
                                                     <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
-                                                        <span style={{ fontSize:'10px', color:'rgba(255,255,255,0.4)', fontWeight:600, whiteSpace:'nowrap' }}>{wt('start_month_short')}</span>
+                                                        <span style={{ fontSize:'10px', color:'rgba(255,255,255,0.7)', fontWeight:600, whiteSpace:'nowrap' }}>{wt('start_month_short')}</span>
                                                         <select
                                                             value={baslangicAy}
                                                             onChange={e => guncelleTopluTedarikBaslangicAy(t.id, e.target.value)}
@@ -273,7 +273,7 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
                                     <tr style={{ background:'var(--surface)', cursor:'pointer', borderBottom:'1px solid var(--surface-container)' }} onClick={() => setAcikAylar(p => ({ ...p, [i]: !p[i] }))}>
                                         <td style={{ padding:'14px', fontWeight:600 }}>{isOpen ? '▼' : '▶'} {AYLAR[gercekAyIdx]}</td>
                                         <td style={{ padding:'14px', textAlign:'right', fontWeight:700 }}>{fmt(ayMiktar)} {birimEtiketi}</td>
-                                        <td style={{ padding:'14px', textAlign:'right', color:'var(--enba-orange)' }}>{wt('expand')}</td>
+                                        <td style={{ padding:'14px', textAlign:'right', color:'var(--enba-orange-dark)' }}>{wt('expand')}</td>
                                     </tr>
                                     {isOpen && (
                                         <tr>

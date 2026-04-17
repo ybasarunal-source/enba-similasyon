@@ -50,7 +50,7 @@ window.DetStep2_Customers = function DetStep2_Customers({
                 borderRadius: '0.375rem',
                 border: '1px solid rgba(255,255,255,0.18)',
                 background: disabled ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.08)',
-                color: disabled ? 'rgba(255,255,255,0.2)' : '#fff',
+                color: disabled ? 'rgba(255,255,255,0.45)' : '#fff',
                 fontSize: '12px', cursor: disabled ? 'not-allowed' : 'auto',
             }}
         />
@@ -153,7 +153,7 @@ window.DetStep2_Customers = function DetStep2_Customers({
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'16px', gap:'16px', flexWrap:'wrap' }}>
                     <div>
                         <h3 style={{ fontSize:'14px', margin:'0 0 4px', fontFamily:"'Manrope', sans-serif", fontWeight:700 }}>{wt('bulk_title')}</h3>
-                        <p style={{ fontSize:'12px', color:'rgba(255,255,255,0.45)', margin:0 }}>{wt('bulk_desc')}</p>
+                        <p style={{ fontSize:'12px', color:'rgba(255,255,255,0.7)', margin:0 }}>{wt('bulk_desc')}</p>
                     </div>
                     <div style={{ background:'rgba(255,255,255,0.04)', padding:'10px 14px', borderRadius:'0.75rem', border:'1px solid rgba(245,158,11,0.2)', flexShrink:0 }}>
                         <span style={{ fontWeight:700, fontSize:'12px', color:'#F59E0B', display:'block', marginBottom:'8px' }}>⚡ Fire (Toplu)</span>
@@ -176,8 +176,8 @@ window.DetStep2_Customers = function DetStep2_Customers({
                         </colgroup>
                         <thead>
                             <tr style={{ background:'rgba(0,0,0,0.35)' }}>
-                                <th style={stickyCell(0, 'rgba(15,25,35,0.98)', { padding:'10px 12px', textAlign:'left', fontSize:'12px', fontWeight:700, color:'rgba(255,255,255,0.85)' })}>{wt('s2_customer_col')}</th>
-                                <th style={stickyCell(COL1, 'rgba(15,25,35,0.98)', { padding:'10px 8px', textAlign:'left', fontSize:'11px', fontWeight:600, color:'rgba(255,255,255,0.55)' })}>{wt('field_col')}</th>
+                                <th style={stickyCell(0, 'rgba(15,25,35,0.98)', { padding:'10px 12px', textAlign:'left', fontSize:'12px', fontWeight:700, color:'rgba(255,255,255,0.9)' })}>{wt('s2_customer_col')}</th>
+                                <th style={stickyCell(COL1, 'rgba(15,25,35,0.98)', { padding:'10px 8px', textAlign:'left', fontSize:'11px', fontWeight:600, color:'rgba(255,255,255,0.7)' })}>{wt('field_col')}</th>
                                 {ayBasliklari.map((a, i) => (
                                     <th key={i} style={{ padding:'10px 4px', textAlign:'center', fontSize:'11px', fontWeight:700, color:'rgba(255,255,255,0.8)', whiteSpace:'nowrap' }}>{a.label}</th>
                                 ))}
@@ -191,7 +191,7 @@ window.DetStep2_Customers = function DetStep2_Customers({
                                 const stickyBg = mIdx % 2 === 0 ? 'rgba(19,30,42,0.97)' : 'rgba(14,23,33,0.97)';
 
                                 const labelTd = (text) => (
-                                    <td style={stickyCell(COL1, stickyBg, { padding:'7px 8px', fontSize:'11px', color:'rgba(255,255,255,0.5)', fontWeight:600, whiteSpace:'nowrap' })}>
+                                    <td style={stickyCell(COL1, stickyBg, { padding:'7px 8px', fontSize:'11px', color:'rgba(255,255,255,0.85)', fontWeight:600, whiteSpace:'nowrap' })}>
                                         {text}
                                     </td>
                                 );
@@ -217,7 +217,7 @@ window.DetStep2_Customers = function DetStep2_Customers({
                                                 <div style={{ fontWeight:700, fontSize:'13px', color:'#fff', marginBottom:'6px' }}>{m.ad}</div>
                                                 <input type="text" placeholder="Ürün adı..." value={mData.urun || ''} onChange={e => guncelleTopluMusteriUrun(m.id, e.target.value)} onFocus={window.selectOnFocus} style={{ padding:'4px 8px', width:'100%', borderRadius:'0.375rem', border:'1px solid rgba(255,255,255,0.18)', background:'rgba(255,255,255,0.06)', color:'#fff', fontSize:'12px', marginBottom:'8px' }} />
                                                 <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
-                                                    <span style={{ fontSize:'10px', color:'rgba(255,255,255,0.4)', fontWeight:600, whiteSpace:'nowrap' }}>{wt('start_month_short')}</span>
+                                                    <span style={{ fontSize:'10px', color:'rgba(255,255,255,0.7)', fontWeight:600, whiteSpace:'nowrap' }}>{wt('start_month_short')}</span>
                                                     <select value={baslangicAy} onChange={e => guncelleTopluMusteriBaslangicAy(m.id, e.target.value)} style={{ flex:1, padding:'4px 6px', borderRadius:'0.375rem', border:'1px solid rgba(245,158,11,0.35)', background:'rgba(245,158,11,0.08)', color:'#F59E0B', fontSize:'11px', fontWeight:600, cursor:'pointer' }}>
                                                         {ayBasliklari.map((a, i) => <option key={i} value={i}>{a.label}</option>)}
                                                     </select>
@@ -272,7 +272,7 @@ window.DetStep2_Customers = function DetStep2_Customers({
                                     <td style={{ padding:'14px', fontWeight:600 }}>{isOpen ? '▼' : '▶'} {AYLAR[gercekAyIdx]}</td>
                                     <td style={{ padding:'14px', textAlign:'right', fontWeight:700 }}>{fmt(toplamSatis)} {birimEtiketi}</td>
                                     <td style={{ padding:'14px', textAlign:'right', color: a.fireAktif ? 'var(--error)' : 'var(--on-surface-variant)' }}>{a.fireAktif ? `%${a.fireYuzde} ${wt('s2_fire')}` : wt('s2_no_fire')}</td>
-                                    <td style={{ padding:'14px', textAlign:'right', color:'var(--enba-orange)' }}>{wt('expand')}</td>
+                                    <td style={{ padding:'14px', textAlign:'right', color:'var(--enba-orange-dark)' }}>{wt('expand')}</td>
                                 </tr>
                                 {isOpen && (
                                     <tr>

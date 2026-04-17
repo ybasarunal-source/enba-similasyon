@@ -501,9 +501,8 @@ function DetayliPlanWizard({ initialData, onSave, onCancel, varsayilanAyarlar })
     const renk = (v) => v >= 0 ? 'var(--enba-orange-dark)' : 'var(--error)';
     const arka = (v) => v >= 0 ? '#f0fce6' : 'var(--error-container)';
 
-    const adimCiz = (no, title, icon) => (
         <div onClick={() => adimGec(no)} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'8px', cursor:'pointer', opacity: adim === no ? 1 : 0.5, flex:1, position:'relative', padding: '10px' }}>
-            <div style={{ width:'40px', height:'40px', borderRadius:'50%', background: adim === no ? 'var(--enba-orange)' : 'var(--surface-container-high)', color: adim === no ? '#fff' : 'var(--on-surface-variant)', display:'flex', justifyContent:'center', alignItems:'center', fontSize:'18px', fontWeight:700, transition:'all 0.3s' }}>{icon}</div>
+            <div style={{ width:'40px', height:'40px', borderRadius:'50%', background: adim === no ? 'var(--enba-orange-dark)' : 'var(--surface-container-high)', color: adim === no ? '#fff' : 'var(--on-surface-variant)', display:'flex', justifyContent:'center', alignItems:'center', fontSize:'18px', fontWeight:700, transition:'all 0.3s' }}>{icon}</div>
             <div className="step-label" style={{ fontSize:'12px', fontWeight:600, color: adim === no ? 'var(--enba-orange-dark)' : 'var(--on-surface-variant)', textAlign:'center', transition:'all 0.3s' }}>{title}</div>
         </div>
     );
@@ -1499,7 +1498,7 @@ function DetayliPlanModulu({ navigate, bekleyenPlanlar, setBekleyenPlanlar, akti
                                                 <tr>
                                                     <td>Toplam Satış Geliri</td>
                                                     {aktifPlanlar.map(p => <td key={p.id}>{fmt(scaleData(p).gelir)}</td>)}
-                                                    <td className="total-col" style={{color: 'var(--enba-orange)', fontSize:'14px'}}>{fmt(toplamTesis.gelir)} ₺</td>
+                                                    <td className="total-col" style={{color: 'var(--enba-orange-dark)', fontSize:'14px'}}>{fmt(toplamTesis.gelir)} ₺</td>
                                                 </tr>
 
                                                 <tr><td colSpan={aktifPlanlar.length + 2} className="row-header" style={{color: '#e74c3c'}}>⚡  OPEX (GİDERLER)</td></tr>
@@ -1548,8 +1547,8 @@ function DetayliPlanModulu({ navigate, bekleyenPlanlar, setBekleyenPlanlar, akti
 
                                                 <tr style={{ background: 'rgba(243, 156, 18, 0.1)' }}>
                                                     <td style={{ padding: '18px 10px', fontWeight: 'bold', fontSize: '16px' }}>NET DURUM (KÂR / ZARAR)</td>
-                                                    {aktifPlanlar.map(p => <td key={p.id} style={{ padding: '18px 10px', fontWeight: 'bold', fontSize: '16px', color: scaleData(p).net >= 0 ? 'var(--enba-orange)' : '#E74C3C' }}>{fmt(scaleData(p).net)}</td>)}
-                                                    <td className="total-col" style={{ padding: '18px 10px', fontWeight: 'bold', fontSize: '20px', color: toplamTesis.net >= 0 ? 'var(--enba-orange)' : '#E74C3C' }}>{fmt(toplamTesis.net)} ₺</td>
+                                                    {aktifPlanlar.map(p => <td key={p.id} style={{ padding: '18px 10px', fontWeight: 'bold', fontSize: '16px', color: scaleData(p).net >= 0 ? 'var(--enba-orange-dark)' : '#E74C3C' }}>{fmt(scaleData(p).net)}</td>)}
+                                                    <td className="total-col" style={{ padding: '18px 10px', fontWeight: 'bold', fontSize: '20px', color: toplamTesis.net >= 0 ? 'var(--enba-orange-dark)' : '#E74C3C' }}>{fmt(toplamTesis.net)} ₺</td>
                                                 </tr>
                                             </tbody>
                                         </table>
@@ -1568,7 +1567,7 @@ function DetayliPlanModulu({ navigate, bekleyenPlanlar, setBekleyenPlanlar, akti
                                         <span style={{fontWeight: 'bold', color: 'var(--enba-dark)', textTransform: 'uppercase', fontSize: '14px'}}>{plan.baslik}</span>
                                         <span style={{fontSize: '14px'}}>✏️</span>
                                     </div>
-                                    <div style={{fontSize: '11px', color: '#7F8C8D', marginBottom: '5px'}}>Gösterilen Satış: {fmt(s.satisTon)} T</div>
+                                    <div style={{fontSize: '11px', color: 'var(--on-surface-variant)', marginBottom: '5px', fontWeight:600}}>Gösterilen Satış: {fmt(s.satisTon)} T</div>
                                     
                                     <div style={{fontSize:'12px', color:'#34495E', borderTop:'1px dashed var(--border-grey)', paddingTop:'8px', paddingBottom:'8px'}}>
                                         <div style={{display:'flex', justifyContent:'space-between', marginBottom:'4px'}}><span>Gelir:</span> <span style={{color:'var(--enba-orange-dark)', fontWeight: '600'}}>+ {fmt(s.gelir)} ₺</span></div>

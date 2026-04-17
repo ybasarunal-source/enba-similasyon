@@ -227,7 +227,7 @@ window.DetStep7_Report = function DetStep7_Report({
                                 return (
                                     <tr key={p.yil} style={{ background: bg }}>
                                         <td style={{ padding:'16px', fontFamily:"'Manrope', sans-serif", fontWeight:800, fontSize:'18px', color:'var(--enba-dark)' }}>
-                                            {p.yil} {i === 0 && <span style={{ fontSize:'10px', fontWeight:600, background:'var(--enba-orange)', color:'#fff', padding:'2px 8px', borderRadius:'2rem', marginLeft:'8px' }}>BAZ</span>}
+                                            {p.yil} {i === 0 && <span style={{ fontSize:'10px', fontWeight:600, background:'var(--enba-orange-dark)', color:'#fff', padding:'2px 8px', borderRadius:'2rem', marginLeft:'8px' }}>BAZ</span>}
                                         </td>
                                         <td style={{ padding:'16px', textAlign:'right', color:'var(--on-surface-variant)' }}>{fmt(p.satisTon)} T</td>
                                         <td style={{ padding:'16px', textAlign:'right', color:'var(--enba-orange-dark)', fontWeight:600 }}>{fmt(p.gelir)} ₺</td>
