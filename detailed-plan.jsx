@@ -598,22 +598,47 @@ function DetayliPlanWizard({ initialData, onSave, onCancel, varsayilanAyarlar })
     };
 
     const [topluMusteriler, setTopluMusteriler] = React.useState({});
-    const guncelleTopluMusteri = (mId, field, val) => {
-        setTopluMusteriler(p => ({
-            ...p, [mId]: { ...(p[mId] || { urun:'', miktar:'', fiyat:'', nakliye:'' }), [field]: val }
-        }));
+    const guncelleTopluMusteriUrun = (mId, val) => {
+        setTopluMusteriler(p => ({ ...p, [mId]: { ...(p[mId] || {}), urun: val } }));
+    };
+    const guncelleTopluMusteriBaslangicAy = (mId, val) => {
+        setTopluMusteriler(p => ({ ...p, [mId]: { ...(p[mId] || {}), baslangicAy: Number(val) } }));
+    };
+    // Editing the start month auto-propagates that field to all following months
+    const guncelleTopluMusteri = (mId, ayIdx, alan, val) => {
+        setTopluMusteriler(prev => {
+            const entry = prev[mId] || {};
+            const baslangicAy = entry.baslangicAy || 0;
+            const newEntry = { ...entry };
+            if (ayIdx === baslangicAy) {
+                for (let m = baslangicAy; m < 12; m++) {
+                    const ayData = newEntry[m] || { miktar: '', fiyat: '', nakliye: '' };
+                    newEntry[m] = { ...ayData, [alan]: val };
+                }
+            } else {
+                const ayData = newEntry[ayIdx] || { miktar: '', fiyat: '', nakliye: '' };
+                newEntry[ayIdx] = { ...ayData, [alan]: val };
+            }
+            return { ...prev, [mId]: newEntry };
+        });
     };
     const uygulaTopluMusteri = () => {
         setAyVerileri(prev => prev.map((a, i) => {
             const ym = { ...a.musteriler };
             Object.keys(topluMusteriler).forEach(mId => {
-                const md = topluMusteriler[mId];
-                if (i < (md.baslangicAy || 0)) return;
-                if (!ym[mId]) ym[mId] = { miktar: 0, fiyat: 0, nakliye: 0, urun: '' };
-                if (md.urun !== undefined && md.urun !== '') ym[mId].urun = md.urun;
-                if (md.miktar !== undefined && md.miktar !== '') ym[mId].miktar = Number(md.miktar);
-                if (md.fiyat !== undefined && md.fiyat !== '') ym[mId].fiyat = Number(md.fiyat);
-                if (md.nakliye !== undefined && md.nakliye !== '') ym[mId].nakliye = Number(md.nakliye);
+                const mData = topluMusteriler[mId];
+                const baslangicAy = mData.baslangicAy || 0;
+                if (i < baslangicAy) return;
+                const ayData = mData[i];
+                if (!ayData && !mData.urun) return;
+                const mevcut = ym[mId] || { miktar: 0, fiyat: 0, nakliye: 0, urun: '' };
+                ym[mId] = {
+                    ...mevcut,
+                    ...(mData.urun !== undefined && mData.urun !== '' ? { urun: mData.urun } : {}),
+                    ...(ayData && ayData.miktar  !== undefined && ayData.miktar  !== '' ? { miktar:  planOlcumBirimi === 'kg' ? Number(ayData.miktar) / 1000 : Number(ayData.miktar)  } : {}),
+                    ...(ayData && ayData.fiyat   !== undefined && ayData.fiyat   !== '' ? { fiyat:   Number(ayData.fiyat)   } : {}),
+                    ...(ayData && ayData.nakliye !== undefined && ayData.nakliye !== '' ? { nakliye: Number(ayData.nakliye) } : {}),
+                };
             });
             return { ...a, musteriler: ym };
         }));
@@ -716,6 +741,8 @@ function DetayliPlanWizard({ initialData, onSave, onCancel, varsayilanAyarlar })
                         musteriler={musteriler} setMusteriler={setMusteriler}
                         yeniMusteri={yeniMusteri} setYeniMusteri={setYeniMusteri}
                         topluMusteriler={topluMusteriler} guncelleTopluMusteri={guncelleTopluMusteri}
+                        guncelleTopluMusteriUrun={guncelleTopluMusteriUrun}
+                        guncelleTopluMusteriBaslangicAy={guncelleTopluMusteriBaslangicAy}
                         uygulaTopluMusteri={uygulaTopluMusteri} ayVerileri={ayVerileri}
                         acikAylar={acikAylar} setAcikAylar={setAcikAylar}
                         musteriGuncelle={musteriGuncelle} fmt={fmt} AYLAR={AYLAR}
@@ -723,7 +750,7 @@ function DetayliPlanWizard({ initialData, onSave, onCancel, varsayilanAyarlar })
                         topluFire={topluFire} setTopluFire={setTopluFire}
                         uygulaTopluFire={uygulaTopluFire} hesaplanmisAyVerileri={hesaplanmisAyVerileri}
                         fireGuncelle={fireGuncelle} musteriSonrakiAylara={musteriSonrakiAylara}
-                        musteriAyiTemizle={musteriAyiTemizle} setAdim={setAdim}
+                        musteriAyiTemizle={musteriAyiTemizle} planOlcumBirimi={planOlcumBirimi} setAdim={setAdim}
                     />
                 )}
 
