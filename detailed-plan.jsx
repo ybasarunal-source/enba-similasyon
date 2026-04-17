@@ -505,24 +505,31 @@ function DetayliPlanWizard({ initialData, onSave, onCancel, varsayilanAyarlar })
     };
 
     const [topluTedarikler, setTopluTedarikler] = React.useState({});
-    const guncelleTopluTedarik = (tId, field, val) => {
-        setTopluTedarikler(p => ({
-            ...p, [tId]: { ...(p[tId] || { urun:'', miktar:'', fiyat:'', nakliye:'' }), [field]: val }
-        }));
+    // guncelleTopluTedarik: tId=supplier id, ayIdx=0-11, alan='miktar'|'fiyat'|'nakliye', val
+    const guncelleTopluTedarik = (tId, ayIdx, alan, val) => {
+        setTopluTedarikler(p => {
+            const entry = p[tId] || {};
+            const ayData = entry[ayIdx] || { miktar: '', fiyat: '', nakliye: '' };
+            return { ...p, [tId]: { ...entry, [ayIdx]: { ...ayData, [alan]: val } } };
+        });
+    };
+    const guncelleTopluTedarikUrun = (tId, val) => {
+        setTopluTedarikler(p => ({ ...p, [tId]: { ...(p[tId] || {}), urun: val } }));
     };
     const uygulaTopluTedarik = () => {
         setAyVerileri(prev => prev.map((a, i) => {
             const yt = { ...a.tedarikler };
             Object.keys(topluTedarikler).forEach(tId => {
-                const td = topluTedarikler[tId];
-                if (i < (td.baslangicAy || 0)) return;
+                const tData = topluTedarikler[tId];
+                const ayData = tData[i];
+                if (!ayData && !tData.urun) return;
                 const mevcut = yt[tId] || { miktar: 0, fiyat: 0, nakliye: 0, urun: '' };
                 yt[tId] = {
                     ...mevcut,
-                    ...(td.urun   !== undefined && td.urun   !== '' ? { urun:   td.urun }            : {}),
-                    ...(td.miktar !== undefined && td.miktar !== '' ? { miktar: Number(td.miktar) }  : {}),
-                    ...(td.fiyat  !== undefined && td.fiyat  !== '' ? { fiyat:  Number(td.fiyat) }   : {}),
-                    ...(td.nakliye !== undefined && td.nakliye !== '' ? { nakliye: Number(td.nakliye) } : {}),
+                    ...(tData.urun !== undefined && tData.urun !== '' ? { urun: tData.urun } : {}),
+                    ...(ayData && ayData.miktar !== undefined && ayData.miktar !== '' ? { miktar: Number(ayData.miktar) } : {}),
+                    ...(ayData && ayData.fiyat  !== undefined && ayData.fiyat  !== '' ? { fiyat:  Number(ayData.fiyat)  } : {}),
+                    ...(ayData && ayData.nakliye !== undefined && ayData.nakliye !== '' ? { nakliye: Number(ayData.nakliye) } : {}),
                 };
             });
             return { ...a, tedarikler: yt };
@@ -679,6 +686,7 @@ function DetayliPlanWizard({ initialData, onSave, onCancel, varsayilanAyarlar })
                         tedarikciler={tedarikciler} setTedarikciler={setTedarikciler}
                         yeniTedarikci={yeniTedarikci} setYeniTedarikci={setYeniTedarikci}
                         topluTedarikler={topluTedarikler} guncelleTopluTedarik={guncelleTopluTedarik}
+                        guncelleTopluTedarikUrun={guncelleTopluTedarikUrun}
                         uygulaTopluTedarik={uygulaTopluTedarik} tumTedarikVerileriniTemizle={tumTedarikVerileriniTemizle}
                         ayVerileri={ayVerileri} acikAylar={acikAylar} setAcikAylar={setAcikAylar}
                         tedarikGuncelle={tedarikGuncelle} tedarikSonrakiAylara={tedarikSonrakiAylara}
