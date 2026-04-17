@@ -10,7 +10,7 @@ window.DetStep4_Personnel = function DetStep4_Personnel({
     yeniPersonel, setYeniPersonel,
     personelEkle, topluPersonelDegerleri,
     guncelleTopluPersonel, uygulaTopluPersonel,
-    ayVerileri, vardiyaSayisi,
+    ayVerileri, acikAylar, setAcikAylar, vardiyaSayisi,
     aylikPersonelGuncelle, AYLAR,
     baslangicAyi, personelGiderleriniUygula,
     setAdim

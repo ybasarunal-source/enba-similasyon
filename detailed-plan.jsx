@@ -790,7 +790,7 @@ function DetayliPlanWizard({ initialData, onSave, onCancel, varsayilanAyarlar })
                         yeniPersonel={yeniPersonel} setYeniPersonel={setYeniPersonel}
                         personelEkle={personelEkle} topluPersonelDegerleri={topluPersonelDegerleri}
                         guncelleTopluPersonel={guncelleTopluPersonel} uygulaTopluPersonel={uygulaTopluPersonel}
-                        ayVerileri={ayVerileri} vardiyaSayisi={vardiyaSayisi}
+                        ayVerileri={ayVerileri} acikAylar={acikAylar} setAcikAylar={setAcikAylar} vardiyaSayisi={vardiyaSayisi}
                         aylikPersonelGuncelle={aylikPersonelGuncelle} AYLAR={AYLAR}
                         baslangicAyi={baslangicAyi} personelGiderleriniUygula={personelGiderleriniUygula}
                         setAdim={setAdim}
