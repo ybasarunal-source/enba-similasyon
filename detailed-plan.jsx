@@ -505,30 +505,45 @@ function DetayliPlanWizard({ initialData, onSave, onCancel, varsayilanAyarlar })
     };
 
     const [topluTedarikler, setTopluTedarikler] = React.useState({});
-    // guncelleTopluTedarik: tId=supplier id, ayIdx=0-11, alan='miktar'|'fiyat'|'nakliye', val
-    const guncelleTopluTedarik = (tId, ayIdx, alan, val) => {
-        setTopluTedarikler(p => {
-            const entry = p[tId] || {};
-            const ayData = entry[ayIdx] || { miktar: '', fiyat: '', nakliye: '' };
-            return { ...p, [tId]: { ...entry, [ayIdx]: { ...ayData, [alan]: val } } };
-        });
-    };
     const guncelleTopluTedarikUrun = (tId, val) => {
         setTopluTedarikler(p => ({ ...p, [tId]: { ...(p[tId] || {}), urun: val } }));
+    };
+    const guncelleTopluTedarikBaslangicAy = (tId, val) => {
+        setTopluTedarikler(p => ({ ...p, [tId]: { ...(p[tId] || {}), baslangicAy: Number(val) } }));
+    };
+    // Editing the start month auto-propagates that field value to all following months
+    const guncelleTopluTedarik = (tId, ayIdx, alan, val) => {
+        setTopluTedarikler(prev => {
+            const entry = prev[tId] || {};
+            const baslangicAy = entry.baslangicAy || 0;
+            const newEntry = { ...entry };
+            if (ayIdx === baslangicAy) {
+                for (let m = baslangicAy; m < 12; m++) {
+                    const ayData = newEntry[m] || { miktar: '', fiyat: '', nakliye: '' };
+                    newEntry[m] = { ...ayData, [alan]: val };
+                }
+            } else {
+                const ayData = newEntry[ayIdx] || { miktar: '', fiyat: '', nakliye: '' };
+                newEntry[ayIdx] = { ...ayData, [alan]: val };
+            }
+            return { ...prev, [tId]: newEntry };
+        });
     };
     const uygulaTopluTedarik = () => {
         setAyVerileri(prev => prev.map((a, i) => {
             const yt = { ...a.tedarikler };
             Object.keys(topluTedarikler).forEach(tId => {
                 const tData = topluTedarikler[tId];
+                const baslangicAy = tData.baslangicAy || 0;
+                if (i < baslangicAy) return;
                 const ayData = tData[i];
                 if (!ayData && !tData.urun) return;
                 const mevcut = yt[tId] || { miktar: 0, fiyat: 0, nakliye: 0, urun: '' };
                 yt[tId] = {
                     ...mevcut,
                     ...(tData.urun !== undefined && tData.urun !== '' ? { urun: tData.urun } : {}),
-                    ...(ayData && ayData.miktar !== undefined && ayData.miktar !== '' ? { miktar: Number(ayData.miktar) } : {}),
-                    ...(ayData && ayData.fiyat  !== undefined && ayData.fiyat  !== '' ? { fiyat:  Number(ayData.fiyat)  } : {}),
+                    ...(ayData && ayData.miktar  !== undefined && ayData.miktar  !== '' ? { miktar:  Number(ayData.miktar)  } : {}),
+                    ...(ayData && ayData.fiyat   !== undefined && ayData.fiyat   !== '' ? { fiyat:   Number(ayData.fiyat)   } : {}),
                     ...(ayData && ayData.nakliye !== undefined && ayData.nakliye !== '' ? { nakliye: Number(ayData.nakliye) } : {}),
                 };
             });
@@ -687,6 +702,7 @@ function DetayliPlanWizard({ initialData, onSave, onCancel, varsayilanAyarlar })
                         yeniTedarikci={yeniTedarikci} setYeniTedarikci={setYeniTedarikci}
                         topluTedarikler={topluTedarikler} guncelleTopluTedarik={guncelleTopluTedarik}
                         guncelleTopluTedarikUrun={guncelleTopluTedarikUrun}
+                        guncelleTopluTedarikBaslangicAy={guncelleTopluTedarikBaslangicAy}
                         uygulaTopluTedarik={uygulaTopluTedarik} tumTedarikVerileriniTemizle={tumTedarikVerileriniTemizle}
                         ayVerileri={ayVerileri} acikAylar={acikAylar} setAcikAylar={setAcikAylar}
                         tedarikGuncelle={tedarikGuncelle} tedarikSonrakiAylara={tedarikSonrakiAylara}

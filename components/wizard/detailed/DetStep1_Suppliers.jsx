@@ -8,7 +8,8 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
     baslangicAyi, setBaslangicAyi,
     tedarikciler, setTedarikciler,
     yeniTedarikci, setYeniTedarikci,
-    topluTedarikler, guncelleTopluTedarik, guncelleTopluTedarikUrun, uygulaTopluTedarik, tumTedarikVerileriniTemizle,
+    topluTedarikler, guncelleTopluTedarik, guncelleTopluTedarikUrun,
+    guncelleTopluTedarikBaslangicAy, uygulaTopluTedarik, tumTedarikVerileriniTemizle,
     ayVerileri, acikAylar, setAcikAylar, tedarikGuncelle, tedarikSonrakiAylara, fmt, AYLAR, setAdim
 }) {
     // 12-month column headers starting from plan start date
@@ -18,39 +19,35 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
         return { ayIdx, yil, label: AYLAR[ayIdx].slice(0, 3) + ' \'' + String(yil).slice(2) };
     });
 
-    const COL1 = 170; // supplier name column width px
-    const COL2 = 95;  // field label column width px
+    const COL1 = 175; // supplier name + controls column
+    const COL2 = 90;  // field label column
 
     const stickyCell = (left, bg, extra) => ({
-        position: 'sticky',
-        left: left + 'px',
-        background: bg,
-        zIndex: 2,
-        ...extra,
+        position: 'sticky', left: left + 'px', background: bg, zIndex: 2, ...extra,
     });
 
-    const numInput = (value, onChange) => (
+    const DARK_BG = '#15222E';
+
+    const numInput = (value, onChange, disabled) => (
         <input
             type="number"
             value={value}
             onChange={onChange}
             onFocus={window.selectOnFocus}
+            disabled={disabled}
             style={{
                 padding: '5px 6px',
                 width: '66px',
                 textAlign: 'right',
                 borderRadius: '0.375rem',
                 border: '1px solid rgba(255,255,255,0.18)',
-                background: 'rgba(255,255,255,0.07)',
-                color: '#fff',
+                background: disabled ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.08)',
+                color: disabled ? 'rgba(255,255,255,0.2)' : '#fff',
                 fontSize: '12px',
+                cursor: disabled ? 'not-allowed' : 'auto',
             }}
         />
     );
-
-    const DARK_BG = '#15222E';
-    const ROW_EVEN = 'rgba(255,255,255,0.03)';
-    const ROW_ODD  = 'rgba(0,0,0,0.12)';
 
     return (
         <div>
@@ -95,9 +92,12 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
 
                 {/* ── Toplu Doldurma: Yatay 12 Ay Tablosu ── */}
                 <div style={{ padding:'20px', background: DARK_BG, color:'#fff', borderRadius:'1rem', marginBottom:'24px' }}>
-                    <h3 style={{ fontSize:'14px', margin:'0 0 16px', fontFamily:"'Manrope', sans-serif", fontWeight:700 }}>
-                        ⚡ Tek Seferde Tüm Aylara Veri Gir (Toplu Doldurma)
+                    <h3 style={{ fontSize:'14px', margin:'0 0 4px', fontFamily:"'Manrope', sans-serif", fontWeight:700 }}>
+                        ⚡ Toplu Veri Girişi
                     </h3>
+                    <p style={{ fontSize:'12px', color:'rgba(255,255,255,0.45)', margin:'0 0 16px' }}>
+                        Başlangıç ayına girilen değer takip eden tüm aylara otomatik uygulanır. İstediğiniz ayı manuel düzenleyebilirsiniz.
+                    </p>
 
                     <div style={{ overflowX:'auto', borderRadius:'0.5rem' }}>
                         <table style={{ borderCollapse:'collapse', tableLayout:'fixed', minWidth: (COL1 + COL2 + 12 * 78) + 'px' }}>
@@ -108,10 +108,14 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
                             </colgroup>
                             <thead>
                                 <tr style={{ background:'rgba(0,0,0,0.35)' }}>
-                                    <th style={stickyCell(0, 'rgba(15,25,35,0.98)', { padding:'10px 12px', textAlign:'left', fontSize:'12px', fontWeight:700, color:'rgba(255,255,255,0.9)' })}>Tedarikçi</th>
-                                    <th style={stickyCell(COL1, 'rgba(15,25,35,0.98)', { padding:'10px 8px', textAlign:'left', fontSize:'11px', fontWeight:600, color:'rgba(255,255,255,0.6)' })}>Alan</th>
+                                    <th style={stickyCell(0, 'rgba(15,25,35,0.98)', { padding:'10px 12px', textAlign:'left', fontSize:'12px', fontWeight:700, color:'rgba(255,255,255,0.85)' })}>
+                                        Tedarikçi
+                                    </th>
+                                    <th style={stickyCell(COL1, 'rgba(15,25,35,0.98)', { padding:'10px 8px', textAlign:'left', fontSize:'11px', fontWeight:600, color:'rgba(255,255,255,0.55)' })}>
+                                        Alan
+                                    </th>
                                     {ayBasliklari.map((a, i) => (
-                                        <th key={i} style={{ padding:'10px 4px', textAlign:'center', fontSize:'11px', fontWeight:700, color:'rgba(255,255,255,0.85)', whiteSpace:'nowrap' }}>
+                                        <th key={i} style={{ padding:'10px 4px', textAlign:'center', fontSize:'11px', fontWeight:700, color:'rgba(255,255,255,0.8)', whiteSpace:'nowrap' }}>
                                             {a.label}
                                         </th>
                                     ))}
@@ -120,70 +124,85 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
                             <tbody>
                                 {tedarikciler.map((t, tIdx) => {
                                     const tData = topluTedarikler[t.id] || {};
-                                    const rowBg = tIdx % 2 === 0 ? ROW_EVEN : ROW_ODD;
-                                    const stickyBg = tIdx % 2 === 0 ? 'rgba(21,34,46,0.97)' : 'rgba(15,26,36,0.97)';
-                                    const labelStyle = {
-                                        padding:'8px 8px',
-                                        fontSize:'11px',
-                                        color:'rgba(255,255,255,0.55)',
-                                        fontWeight:600,
-                                        whiteSpace:'nowrap',
-                                    };
-                                    const cellStyle = { padding:'5px 4px', textAlign:'center' };
+                                    const baslangicAy = tData.baslangicAy || 0;
+                                    const rowBg = tIdx % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.12)';
+                                    const stickyBg = tIdx % 2 === 0 ? 'rgba(19,30,42,0.97)' : 'rgba(14,23,33,0.97)';
+
+                                    const labelTd = (text) => (
+                                        <td style={stickyCell(COL1, stickyBg, {
+                                            padding:'7px 8px',
+                                            fontSize:'11px',
+                                            color:'rgba(255,255,255,0.5)',
+                                            fontWeight:600,
+                                            whiteSpace:'nowrap',
+                                        })}>
+                                            {text}
+                                        </td>
+                                    );
+
+                                    const monthCells = (alan) => ayBasliklari.map((_, i) => {
+                                        const disabled = i < baslangicAy;
+                                        const isStart = i === baslangicAy;
+                                        return (
+                                            <td key={i} style={{
+                                                padding:'5px 4px',
+                                                textAlign:'center',
+                                                background: isStart ? 'rgba(227,82,5,0.08)' : undefined,
+                                                borderLeft: isStart ? '2px solid rgba(227,82,5,0.5)' : undefined,
+                                            }}>
+                                                {numInput(
+                                                    (tData[i] || {})[alan] || '',
+                                                    e => guncelleTopluTedarik(t.id, i, alan, e.target.value),
+                                                    disabled
+                                                )}
+                                            </td>
+                                        );
+                                    });
 
                                     return (
                                         <React.Fragment key={t.id}>
-                                            {/* Row 1: supplier name (rowSpan=3) + Miktar */}
+                                            {/* Row 1: supplier info (rowSpan=3) + Miktar */}
                                             <tr style={{ background: rowBg }}>
                                                 <td rowSpan={3} style={stickyCell(0, stickyBg, {
                                                     padding:'10px 12px',
                                                     verticalAlign:'middle',
                                                     borderRight:'1px solid rgba(255,255,255,0.08)',
-                                                    borderBottom:'2px solid rgba(255,255,255,0.12)',
+                                                    borderBottom:'2px solid rgba(255,255,255,0.1)',
                                                 })}>
-                                                    <div style={{ fontWeight:700, fontSize:'13px', marginBottom:'8px', color:'#fff' }}>{t.ad}</div>
+                                                    <div style={{ fontWeight:700, fontSize:'13px', color:'#fff', marginBottom:'6px' }}>{t.ad}</div>
                                                     <input
                                                         type="text"
                                                         placeholder="Ürün adı..."
                                                         value={tData.urun || ''}
                                                         onChange={e => guncelleTopluTedarikUrun(t.id, e.target.value)}
                                                         onFocus={window.selectOnFocus}
-                                                        style={{ padding:'5px 8px', width:'100%', borderRadius:'0.375rem', border:'1px solid rgba(255,255,255,0.2)', background:'rgba(255,255,255,0.07)', color:'#fff', fontSize:'12px' }}
+                                                        style={{ padding:'4px 8px', width:'100%', borderRadius:'0.375rem', border:'1px solid rgba(255,255,255,0.18)', background:'rgba(255,255,255,0.06)', color:'#fff', fontSize:'12px', marginBottom:'8px' }}
                                                     />
+                                                    <div style={{ display:'flex', alignItems:'center', gap:'6px' }}>
+                                                        <span style={{ fontSize:'10px', color:'rgba(255,255,255,0.4)', fontWeight:600, whiteSpace:'nowrap' }}>Başl. Ay:</span>
+                                                        <select
+                                                            value={baslangicAy}
+                                                            onChange={e => guncelleTopluTedarikBaslangicAy(t.id, e.target.value)}
+                                                            style={{ flex:1, padding:'4px 6px', borderRadius:'0.375rem', border:'1px solid rgba(245,158,11,0.35)', background:'rgba(245,158,11,0.08)', color:'#F59E0B', fontSize:'11px', fontWeight:600, cursor:'pointer' }}
+                                                        >
+                                                            {ayBasliklari.map((a, i) => (
+                                                                <option key={i} value={i}>{a.label}</option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
                                                 </td>
-                                                <td style={stickyCell(COL1, stickyBg, labelStyle)}>Miktar (T)</td>
-                                                {ayBasliklari.map((_, i) => (
-                                                    <td key={i} style={cellStyle}>
-                                                        {numInput(
-                                                            (tData[i] || {}).miktar || '',
-                                                            e => guncelleTopluTedarik(t.id, i, 'miktar', e.target.value)
-                                                        )}
-                                                    </td>
-                                                ))}
+                                                {labelTd('Miktar (T)')}
+                                                {monthCells('miktar')}
                                             </tr>
                                             {/* Row 2: Alış Fiyatı */}
                                             <tr style={{ background: rowBg }}>
-                                                <td style={stickyCell(COL1, stickyBg, labelStyle)}>Alış Fiy. (₺)</td>
-                                                {ayBasliklari.map((_, i) => (
-                                                    <td key={i} style={cellStyle}>
-                                                        {numInput(
-                                                            (tData[i] || {}).fiyat || '',
-                                                            e => guncelleTopluTedarik(t.id, i, 'fiyat', e.target.value)
-                                                        )}
-                                                    </td>
-                                                ))}
+                                                {labelTd('Alış Fiy. (₺)')}
+                                                {monthCells('fiyat')}
                                             </tr>
                                             {/* Row 3: Nakliye */}
                                             <tr style={{ background: rowBg, borderBottom:'2px solid rgba(255,255,255,0.1)' }}>
-                                                <td style={stickyCell(COL1, stickyBg, { ...labelStyle, borderBottom:'2px solid rgba(255,255,255,0.1)' })}>Nakliye (₺)</td>
-                                                {ayBasliklari.map((_, i) => (
-                                                    <td key={i} style={{ ...cellStyle, borderBottom:'2px solid rgba(255,255,255,0.1)' }}>
-                                                        {numInput(
-                                                            (tData[i] || {}).nakliye || '',
-                                                            e => guncelleTopluTedarik(t.id, i, 'nakliye', e.target.value)
-                                                        )}
-                                                    </td>
-                                                ))}
+                                                {labelTd('Nakliye (₺)')}
+                                                {monthCells('nakliye')}
                                             </tr>
                                         </React.Fragment>
                                     );
@@ -195,7 +214,7 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
                     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:'16px', gap:'12px', flexWrap:'wrap' }}>
                         <button
                             onClick={tumTedarikVerileriniTemizle}
-                            style={{ background:'rgba(220,53,69,0.15)', color:'#ff6b7a', border:'1px solid rgba(220,53,69,0.3)', padding:'8px 16px', borderRadius:'0.5rem', cursor:'pointer', fontWeight:600, fontSize:'12px' }}
+                            style={{ background:'rgba(220,53,69,0.12)', color:'#ff6b7a', border:'1px solid rgba(220,53,69,0.25)', padding:'8px 16px', borderRadius:'0.5rem', cursor:'pointer', fontWeight:600, fontSize:'12px' }}
                         >
                             🗑 Aylık Tabloyu Temizle
                         </button>
