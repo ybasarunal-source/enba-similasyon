@@ -182,6 +182,8 @@ window.LANG_DATA = {
             tasks: "Görevler",
             payments: "Ödemeler",
             licenses: "Lisanslar",
+            no_tasks: "Aktif görev bulunmamaktadır.",
+            no_payments: "Yaklaşan ödeme bulunmamaktadır.",
             no_alerts: "Uyarı bulunmuyor."
         },
         assets: {
@@ -601,6 +603,8 @@ window.LANG_DATA = {
             tasks: "Tasks",
             payments: "Payments",
             licenses: "Licenses",
+            no_tasks: "No pending tasks.",
+            no_payments: "No upcoming payments.",
             no_alerts: "No alerts found."
         },
         assets: {
@@ -1020,6 +1024,8 @@ window.LANG_DATA = {
             tasks: "Aufgaben",
             payments: "Zahlungen",
             licenses: "Lizenzen",
+            no_tasks: "Keine anstehenden Aufgaben.",
+            no_payments: "Keine anstehenden Zahlungen.",
             no_alerts: "Keine Warnungen gefunden."
         },
         assets: {
