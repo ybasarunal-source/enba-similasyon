@@ -18,6 +18,10 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
     // Convert stored-tons to display value and back
     const tonToDisplay = (tons) => planOlcumBirimi === 'kg' ? (Number(tons) || 0) * 1000 : (Number(tons) || 0);
     const displayToTon = (val) => planOlcumBirimi === 'kg' ? Number(val) / 1000 : Number(val);
+    // Convert stored TL/ton price to display TL/kg and back
+    const fiyatToDisplay = (f) => planOlcumBirimi === 'kg' ? (Number(f) || 0) / 1000 : (Number(f) || 0);
+    const displayToFiyat = (v) => planOlcumBirimi === 'kg' ? Number(v) * 1000 : Number(v);
+    const fiyatBirimi = planOlcumBirimi === 'kg' ? '₺/kg' : '₺/T';
     // 12-month column headers starting from plan start date
     const ayBasliklari = Array.from({ length: 12 }, (_, i) => {
         const ayIdx = (baslangicAyi + i) % 12;
@@ -161,7 +165,7 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
                                         if (topluVal !== undefined && topluVal !== '') {
                                             displayVal = topluVal;
                                         } else if (fallbackRaw !== undefined && fallbackRaw !== '' && Number(fallbackRaw) !== 0) {
-                                            displayVal = alan === 'miktar' ? tonToDisplay(fallbackRaw) : fallbackRaw;
+                                            displayVal = alan === 'miktar' ? tonToDisplay(fallbackRaw) : (alan === 'fiyat' || alan === 'nakliye') ? fiyatToDisplay(fallbackRaw) : fallbackRaw;
                                         }
                                         return (
                                             <td key={i} style={{
@@ -280,8 +284,8 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
                                                             <th style={{ padding:'8px 12px', textAlign:'left', fontSize:'12px', color:'var(--enba-dark)' }}>{wt('s1_supplier_col')}</th>
                                                             <th style={{ padding:'8px 12px', textAlign:'left', fontSize:'12px', color:'var(--enba-dark)' }}>{wt('s1_product_col')}</th>
                                                             <th style={{ padding:'8px 12px', textAlign:'right', fontSize:'12px', color:'var(--enba-dark)' }}>{wt('s1_quantity')} ({birimEtiketi})</th>
-                                                            <th style={{ padding:'8px 12px', textAlign:'right', fontSize:'12px', color:'var(--enba-dark)' }}>{wt('s1_price')} (₺)</th>
-                                                            <th style={{ padding:'8px 12px', textAlign:'right', fontSize:'12px', color:'var(--enba-dark)' }}>{wt('s1_freight')} (₺)</th>
+                                                            <th style={{ padding:'8px 12px', textAlign:'right', fontSize:'12px', color:'var(--enba-dark)' }}>{wt('s1_price')} ({fiyatBirimi})</th>
+                                                            <th style={{ padding:'8px 12px', textAlign:'right', fontSize:'12px', color:'var(--enba-dark)' }}>{wt('s1_freight')} ({fiyatBirimi})</th>
                                                             <th style={{ padding:'8px 12px', textAlign:'center', fontSize:'12px', color:'var(--enba-dark)' }}>{wt('operation_col')}</th>
                                                         </tr>
                                                     </thead>
@@ -298,10 +302,10 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
                                                                         <input type="number" value={td.miktar !== '' && td.miktar !== undefined ? tonToDisplay(td.miktar) : ''} onChange={e => tedarikGuncelle(gercekAyIdx, t.id, 'miktar', displayToTon(e.target.value))} style={{ width:'80px', padding:'6px', textAlign:'right', borderRadius:'0.25rem', border:'1px solid #ccc' }} onFocus={window.selectOnFocus} />
                                                                     </td>
                                                                     <td style={{ padding:'8px 12px', textAlign:'right' }}>
-                                                                        <input type="number" value={td.fiyat} onChange={e => tedarikGuncelle(gercekAyIdx, t.id, 'fiyat', e.target.value)} style={{ width:'80px', padding:'6px', textAlign:'right', borderRadius:'0.25rem', border:'1px solid #ccc' }} onFocus={window.selectOnFocus} />
+                                                                        <input type="number" value={td.fiyat !== '' && td.fiyat !== undefined ? fiyatToDisplay(td.fiyat) : ''} onChange={e => tedarikGuncelle(gercekAyIdx, t.id, 'fiyat', displayToFiyat(e.target.value))} style={{ width:'80px', padding:'6px', textAlign:'right', borderRadius:'0.25rem', border:'1px solid #ccc' }} onFocus={window.selectOnFocus} />
                                                                     </td>
                                                                     <td style={{ padding:'8px 12px', textAlign:'right' }}>
-                                                                        <input type="number" value={td.nakliye} onChange={e => tedarikGuncelle(gercekAyIdx, t.id, 'nakliye', e.target.value)} style={{ width:'80px', padding:'6px', textAlign:'right', borderRadius:'0.25rem', border:'1px solid #ccc' }} onFocus={window.selectOnFocus} />
+                                                                        <input type="number" value={td.nakliye !== '' && td.nakliye !== undefined ? fiyatToDisplay(td.nakliye) : ''} onChange={e => tedarikGuncelle(gercekAyIdx, t.id, 'nakliye', displayToFiyat(e.target.value))} style={{ width:'80px', padding:'6px', textAlign:'right', borderRadius:'0.25rem', border:'1px solid #ccc' }} onFocus={window.selectOnFocus} />
                                                                     </td>
                                                                     <td style={{ padding:'8px 12px', textAlign:'center' }}>
                                                                         <button onClick={() => tedarikSonrakiAylara(gercekAyIdx, t.id)} style={{ fontSize:'10px', background:'var(--enba-dark)', color:'#fff', border:'none', padding:'4px 8px', borderRadius:'4px', cursor:'pointer' }}>{wt('copy_forward')}</button>

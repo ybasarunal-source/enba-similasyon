@@ -562,8 +562,8 @@ function DetayliPlanWizard({ initialData, onSave, onCancel, varsayilanAyarlar })
                     ...mevcut,
                     ...(tData.urun !== undefined && tData.urun !== '' ? { urun: tData.urun } : {}),
                     ...(ayData && ayData.miktar  !== undefined && ayData.miktar  !== '' ? { miktar:  planOlcumBirimi === 'kg' ? Number(ayData.miktar) / 1000 : Number(ayData.miktar)  } : {}),
-                    ...(ayData && ayData.fiyat   !== undefined && ayData.fiyat   !== '' ? { fiyat:   Number(ayData.fiyat)   } : {}),
-                    ...(ayData && ayData.nakliye !== undefined && ayData.nakliye !== '' ? { nakliye: Number(ayData.nakliye) } : {}),
+                    ...(ayData && ayData.fiyat   !== undefined && ayData.fiyat   !== '' ? { fiyat:   planOlcumBirimi === 'kg' ? Number(ayData.fiyat)   * 1000 : Number(ayData.fiyat)   } : {}),
+                    ...(ayData && ayData.nakliye !== undefined && ayData.nakliye !== '' ? { nakliye: planOlcumBirimi === 'kg' ? Number(ayData.nakliye) * 1000 : Number(ayData.nakliye) } : {}),
                 };
             });
             return { ...a, tedarikler: yt };
@@ -657,8 +657,8 @@ function DetayliPlanWizard({ initialData, onSave, onCancel, varsayilanAyarlar })
                     ...mevcut,
                     ...(mData.urun !== undefined && mData.urun !== '' ? { urun: mData.urun } : {}),
                     ...(ayData && ayData.miktar  !== undefined && ayData.miktar  !== '' ? { miktar:  planOlcumBirimi === 'kg' ? Number(ayData.miktar) / 1000 : Number(ayData.miktar)  } : {}),
-                    ...(ayData && ayData.fiyat   !== undefined && ayData.fiyat   !== '' ? { fiyat:   Number(ayData.fiyat)   } : {}),
-                    ...(ayData && ayData.nakliye !== undefined && ayData.nakliye !== '' ? { nakliye: Number(ayData.nakliye) } : {}),
+                    ...(ayData && ayData.fiyat   !== undefined && ayData.fiyat   !== '' ? { fiyat:   planOlcumBirimi === 'kg' ? Number(ayData.fiyat)   * 1000 : Number(ayData.fiyat)   } : {}),
+                    ...(ayData && ayData.nakliye !== undefined && ayData.nakliye !== '' ? { nakliye: planOlcumBirimi === 'kg' ? Number(ayData.nakliye) * 1000 : Number(ayData.nakliye) } : {}),
                 };
             });
             return { ...a, musteriler: ym };

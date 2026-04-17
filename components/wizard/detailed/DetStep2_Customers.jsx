@@ -20,6 +20,9 @@ window.DetStep2_Customers = function DetStep2_Customers({
     const birimEtiketi = planOlcumBirimi === 'kg' ? 'kg' : 'T';
     const tonToDisplay = (tons) => planOlcumBirimi === 'kg' ? (Number(tons) || 0) * 1000 : (Number(tons) || 0);
     const displayToTon = (val) => planOlcumBirimi === 'kg' ? Number(val) / 1000 : Number(val);
+    const fiyatToDisplay = (f) => planOlcumBirimi === 'kg' ? (Number(f) || 0) / 1000 : (Number(f) || 0);
+    const displayToFiyat = (v) => planOlcumBirimi === 'kg' ? Number(v) * 1000 : Number(v);
+    const fiyatBirimi = planOlcumBirimi === 'kg' ? '₺/kg' : '₺/T';
 
     const ayBasliklari = Array.from({ length: 12 }, (_, i) => {
         const ayIdx = (baslangicAyi + i) % 12;
@@ -89,7 +92,7 @@ window.DetStep2_Customers = function DetStep2_Customers({
                         </div>
                         <div style={{ flex:1, minWidth:'160px', background:'rgba(255,255,255,0.04)', borderRadius:'1rem', padding:'14px 16px', border:'1px solid rgba(255,255,255,0.08)' }}>
                             <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.45)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.6px', marginBottom:'6px' }}>{wt('s2_avg_cost')}</div>
-                            <div style={{ fontSize:'22px', fontWeight:800, color:'#fbbf24' }}>{fmt(yillikTonBasi)} <span style={{ fontSize:'13px', fontWeight:500 }}>₺/T</span></div>
+                            <div style={{ fontSize:'22px', fontWeight:800, color:'#fbbf24' }}>{fmt(fiyatToDisplay(yillikTonBasi))} <span style={{ fontSize:'13px', fontWeight:500 }}>{fiyatBirimi}</span></div>
                         </div>
                         <div style={{ flex:1, minWidth:'160px', background:'rgba(255,255,255,0.04)', borderRadius:'1rem', padding:'14px 16px', border:'1px solid rgba(255,255,255,0.08)' }}>
                             <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.45)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.6px', marginBottom:'6px' }}>{wt('s2_annual_purchase')}</div>
@@ -105,7 +108,7 @@ window.DetStep2_Customers = function DetStep2_Customers({
                                     <th style={{ padding:'8px 12px', textAlign:'left', color:'rgba(255,255,255,0.6)', fontWeight:600 }}>{wt('month_col')}</th>
                                     <th style={{ padding:'8px 10px', textAlign:'right', color:'rgba(255,255,255,0.6)', fontWeight:600, whiteSpace:'nowrap' }}>{wt('s2_purchase_col')} ({birimEtiketi})</th>
                                     <th style={{ padding:'8px 10px', textAlign:'right', color:'#34d399', fontWeight:700, whiteSpace:'nowrap' }}>{wt('s2_available')} ({birimEtiketi})</th>
-                                    <th style={{ padding:'8px 10px', textAlign:'right', color:'#fbbf24', fontWeight:700, whiteSpace:'nowrap' }}>{wt('s2_cost_per_ton')} (₺/T)</th>
+                                    <th style={{ padding:'8px 10px', textAlign:'right', color:'#fbbf24', fontWeight:700, whiteSpace:'nowrap' }}>{wt('s2_cost_per_ton')} ({fiyatBirimi})</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -117,7 +120,7 @@ window.DetStep2_Customers = function DetStep2_Customers({
                                             <td style={{ padding:'7px 12px', color:'rgba(255,255,255,0.7)', fontWeight:500 }}>{AYLAR[gercekAyIdx]} {yil}</td>
                                             <td style={{ padding:'7px 10px', textAlign:'right', color:'rgba(255,255,255,0.6)' }}>{fmt(tonToDisplay(o.alisTon))}</td>
                                             <td style={{ padding:'7px 10px', textAlign:'right', color:'#34d399', fontWeight:700 }}>{fmt(tonToDisplay(o.satilabilecekTon))}</td>
-                                            <td style={{ padding:'7px 10px', textAlign:'right', color:'#fbbf24', fontWeight:700 }}>{fmt(o.tonBasiMaliyet)}</td>
+                                            <td style={{ padding:'7px 10px', textAlign:'right', color:'#fbbf24', fontWeight:700 }}>{fmt(fiyatToDisplay(o.tonBasiMaliyet))}</td>
                                         </tr>
                                     );
                                 })}
@@ -224,11 +227,11 @@ window.DetStep2_Customers = function DetStep2_Customers({
                                             {monthCells('miktar')}
                                         </tr>
                                         <tr style={{ background: rowBg }}>
-                                            {labelTd(`${wt('s1_price')} (₺)`)}
+                                            {labelTd(`${wt('s1_price')} (${fiyatBirimi})`)}
                                             {monthCells('fiyat')}
                                         </tr>
                                         <tr style={{ background: rowBg, borderBottom:'2px solid rgba(255,255,255,0.1)' }}>
-                                            {labelTd(`${wt('s1_freight')} (₺)`)}
+                                            {labelTd(`${wt('s1_freight')} (${fiyatBirimi})`)}
                                             {monthCells('nakliye')}
                                         </tr>
                                     </React.Fragment>
@@ -294,8 +297,8 @@ window.DetStep2_Customers = function DetStep2_Customers({
                                                         <th style={{ padding:'8px 12px', textAlign:'left', fontSize:'12px', color:'var(--enba-dark)' }}>{wt('s2_customer_col')}</th>
                                                         <th style={{ padding:'8px 12px', textAlign:'left', fontSize:'12px', color:'var(--enba-dark)' }}>{wt('s1_product_col')}</th>
                                                         <th style={{ padding:'8px 12px', textAlign:'right', fontSize:'12px', color:'var(--enba-dark)' }}>{wt('s2_total_sales')} ({birimEtiketi})</th>
-                                                        <th style={{ padding:'8px 12px', textAlign:'right', fontSize:'12px', color:'var(--enba-dark)' }}>{wt('s1_price')} (₺)</th>
-                                                        <th style={{ padding:'8px 12px', textAlign:'right', fontSize:'12px', color:'var(--enba-dark)' }}>{wt('s1_freight')} (₺)</th>
+                                                        <th style={{ padding:'8px 12px', textAlign:'right', fontSize:'12px', color:'var(--enba-dark)' }}>{wt('s1_price')} ({fiyatBirimi})</th>
+                                                        <th style={{ padding:'8px 12px', textAlign:'right', fontSize:'12px', color:'var(--enba-dark)' }}>{wt('s1_freight')} ({fiyatBirimi})</th>
                                                         <th style={{ padding:'8px 12px', textAlign:'center', fontSize:'12px', color:'var(--enba-dark)' }}>{wt('operation_col')}</th>
                                                     </tr>
                                                 </thead>
@@ -312,10 +315,10 @@ window.DetStep2_Customers = function DetStep2_Customers({
                                                                     <input type="number" value={md.miktar !== '' && md.miktar !== undefined ? tonToDisplay(md.miktar) : ''} onChange={e => musteriGuncelle(gercekAyIdx, m.id, 'miktar', displayToTon(e.target.value))} style={{ width:'80px', padding:'6px', textAlign:'right', borderRadius:'0.25rem', border:'1px solid #ccc' }} onFocus={window.selectOnFocus} />
                                                                 </td>
                                                                 <td style={{ padding:'8px 12px', textAlign:'right' }}>
-                                                                    <input type="number" value={md.fiyat} onChange={e => musteriGuncelle(gercekAyIdx, m.id, 'fiyat', e.target.value)} style={{ width:'80px', padding:'6px', textAlign:'right', borderRadius:'0.25rem', border:'1px solid #ccc' }} onFocus={window.selectOnFocus} />
+                                                                    <input type="number" value={md.fiyat !== '' && md.fiyat !== undefined ? fiyatToDisplay(md.fiyat) : ''} onChange={e => musteriGuncelle(gercekAyIdx, m.id, 'fiyat', displayToFiyat(e.target.value))} style={{ width:'80px', padding:'6px', textAlign:'right', borderRadius:'0.25rem', border:'1px solid #ccc' }} onFocus={window.selectOnFocus} />
                                                                 </td>
                                                                 <td style={{ padding:'8px 12px', textAlign:'right' }}>
-                                                                    <input type="number" value={md.nakliye} onChange={e => musteriGuncelle(gercekAyIdx, m.id, 'nakliye', e.target.value)} style={{ width:'80px', padding:'6px', textAlign:'right', borderRadius:'0.25rem', border:'1px solid #ccc' }} onFocus={window.selectOnFocus} />
+                                                                    <input type="number" value={md.nakliye !== '' && md.nakliye !== undefined ? fiyatToDisplay(md.nakliye) : ''} onChange={e => musteriGuncelle(gercekAyIdx, m.id, 'nakliye', displayToFiyat(e.target.value))} style={{ width:'80px', padding:'6px', textAlign:'right', borderRadius:'0.25rem', border:'1px solid #ccc' }} onFocus={window.selectOnFocus} />
                                                                 </td>
                                                                 <td style={{ padding:'8px 12px', textAlign:'center' }}>
                                                                     <button onClick={() => musteriSonrakiAylara(gercekAyIdx, m.id)} style={{ fontSize:'10px', background:'var(--enba-dark)', color:'#fff', border:'none', padding:'4px 8px', borderRadius:'4px', cursor:'pointer' }}>{wt('copy_forward')}</button>
