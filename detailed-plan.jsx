@@ -501,6 +501,7 @@ function DetayliPlanWizard({ initialData, onSave, onCancel, varsayilanAyarlar })
     const renk = (v) => v >= 0 ? 'var(--enba-orange-dark)' : 'var(--error)';
     const arka = (v) => v >= 0 ? '#f0fce6' : 'var(--error-container)';
 
+    const adimCiz = (no, title, icon) => (
         <div onClick={() => adimGec(no)} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:'8px', cursor:'pointer', opacity: adim === no ? 1 : 0.5, flex:1, position:'relative', padding: '10px' }}>
             <div style={{ width:'40px', height:'40px', borderRadius:'50%', background: adim === no ? 'var(--enba-orange-dark)' : 'var(--surface-container-high)', color: adim === no ? '#fff' : 'var(--on-surface-variant)', display:'flex', justifyContent:'center', alignItems:'center', fontSize:'18px', fontWeight:700, transition:'all 0.3s' }}>{icon}</div>
             <div className="step-label" style={{ fontSize:'12px', fontWeight:600, color: adim === no ? 'var(--enba-orange-dark)' : 'var(--on-surface-variant)', textAlign:'center', transition:'all 0.3s' }}>{title}</div>
