@@ -142,7 +142,7 @@ window.DetStep5_Expenses = function DetStep5_Expenses({
 
             <div style={{ display:'flex', justifyContent:'space-between', marginTop:'20px' }}>
                 <button onClick={()=>setAdim(4)} style={{ padding:'12px 24px', background:'var(--surface-container-high)', border:'none', borderRadius:'2rem', fontWeight:700, cursor:'pointer' }}>← Geri</button>
-                <button onClick={()=>setAdim(6)} style={{ padding:'12px 24px', background:'var(--enba-orange)', color:'#fff', border:'none', borderRadius:'2rem', fontWeight:700, cursor:'pointer' }}>Sonraki: Yatırımlar (CAPEX) →</button>
+                <button onClick={()=>setAdim(6)} style={{ padding:'12px 24px', background:'var(--enba-orange)', color:'#fff', border:'none', borderRadius:'2rem', fontWeight:700, cursor:'pointer' }}>Sonraki: Müşteri Satış Planı →</button>
             </div>
         </div>
     );

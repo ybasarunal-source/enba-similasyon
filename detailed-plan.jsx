@@ -709,17 +709,29 @@ function DetayliPlanWizard({ initialData, onSave, onCancel, varsayilanAyarlar })
 
             <div style={{ maxWidth:'1200px', margin:'0 auto', padding:'16px 24px' }}>
                 <div className="step-indicators">
-                    {adimCiz(1, '1: Tedarik', '⚡ ')}
-                    {adimCiz(2, '2: Müşteri', '⚡ ')}
+                    {adimCiz(1, '1: Yatırım', '⚡ ')}
+                    {adimCiz(2, '2: Tedarik', '⚡ ')}
                     {adimCiz(3, '3: Operasyon', '⚙️')}
                     {adimCiz(4, '4: Personel', '⚡ ')}
                     {adimCiz(5, '5: Giderler', '⚡ ')}
-                    {adimCiz(6, '6: Yatırım', '⚡ ')}
+                    {adimCiz(6, '6: Müşteri', '⚡ ')}
                     {adimCiz(7, '7: Sonuç', '⚡ ')}
                 </div>
 
                 {adim === 1 && (
-                    <DetStep1_Suppliers 
+                    <DetStep6_Investment
+                        yatirimlar={yatirimlar} setYatirimlar={setYatirimlar}
+                        yeniYatirimAd={yeniYatirimAd} setYeniYatirimAd={setYeniYatirimAd}
+                        yeniYatirimTur={yeniYatirimTur} setYeniYatirimTur={setYeniYatirimTur}
+                        yeniYatirimMaliyet={yeniYatirimMaliyet} setYeniYatirimMaliyet={setYeniYatirimMaliyet}
+                        yeniYatirimGeriOdeme={yeniYatirimGeriOdeme} setYeniYatirimGeriOdeme={setYeniYatirimGeriOdeme}
+                        yeniYatirimErteleme={yeniYatirimErteleme} setYeniYatirimErteleme={setYeniYatirimErteleme}
+                        fmt={fmt} setAdim={setAdim}
+                    />
+                )}
+
+                {adim === 2 && (
+                    <DetStep1_Suppliers
                         planAdi={planAdi} setPlanAdi={setPlanAdi}
                         baslangicYili={baslangicYili} setBaslangicYili={setBaslangicYili}
                         baslangicAyi={baslangicAyi} setBaslangicAyi={setBaslangicAyi}
@@ -736,8 +748,8 @@ function DetayliPlanWizard({ initialData, onSave, onCancel, varsayilanAyarlar })
                     />
                 )}
 
-                {adim === 2 && (
-                    <DetStep2_Customers 
+                {adim === 6 && (
+                    <DetStep2_Customers
                         musteriler={musteriler} setMusteriler={setMusteriler}
                         yeniMusteri={yeniMusteri} setYeniMusteri={setYeniMusteri}
                         topluMusteriler={topluMusteriler} guncelleTopluMusteri={guncelleTopluMusteri}
@@ -750,7 +762,9 @@ function DetayliPlanWizard({ initialData, onSave, onCancel, varsayilanAyarlar })
                         topluFire={topluFire} setTopluFire={setTopluFire}
                         uygulaTopluFire={uygulaTopluFire} hesaplanmisAyVerileri={hesaplanmisAyVerileri}
                         fireGuncelle={fireGuncelle} musteriSonrakiAylara={musteriSonrakiAylara}
-                        musteriAyiTemizle={musteriAyiTemizle} planOlcumBirimi={planOlcumBirimi} setAdim={setAdim}
+                        musteriAyiTemizle={musteriAyiTemizle} planOlcumBirimi={planOlcumBirimi}
+                        aylikSonuclar={aylikSonuclar} aylikAmortismanlar={aylikAmortismanlar}
+                        setAdim={setAdim}
                     />
                 )}
 
@@ -795,17 +809,6 @@ function DetayliPlanWizard({ initialData, onSave, onCancel, varsayilanAyarlar })
                     />
                 )}
 
-                {adim === 6 && (
-                    <DetStep6_Investment 
-                        yatirimlar={yatirimlar} setYatirimlar={setYatirimlar}
-                        yeniYatirimAd={yeniYatirimAd} setYeniYatirimAd={setYeniYatirimAd}
-                        yeniYatirimTur={yeniYatirimTur} setYeniYatirimTur={setYeniYatirimTur}
-                        yeniYatirimMaliyet={yeniYatirimMaliyet} setYeniYatirimMaliyet={setYeniYatirimMaliyet}
-                        yeniYatirimGeriOdeme={yeniYatirimGeriOdeme} setYeniYatirimGeriOdeme={setYeniYatirimGeriOdeme}
-                        yeniYatirimErteleme={yeniYatirimErteleme} setYeniYatirimErteleme={setYeniYatirimErteleme}
-                        fmt={fmt} setAdim={setAdim}
-                    />
-                )}
 
                 {adim === 7 && (
                     <DetStep7_Report 

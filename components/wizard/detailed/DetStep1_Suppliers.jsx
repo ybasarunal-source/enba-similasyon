@@ -304,8 +304,9 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
                 </table>
             </div>
 
-            <div style={{ display:'flex', justifyContent:'flex-end', marginTop:'20px' }}>
-                <button onClick={() => setAdim(2)} style={{ padding:'12px 24px', background:'var(--enba-orange)', color:'#fff', border:'none', borderRadius:'2rem', fontWeight:700, cursor:'pointer' }}>Sonraki: Müşteri (Satış) Planı →</button>
+            <div style={{ display:'flex', justifyContent:'space-between', marginTop:'20px' }}>
+                <button onClick={() => setAdim(1)} style={{ padding:'12px 24px', background:'var(--surface-container-high)', color:'var(--on-surface-variant)', border:'none', borderRadius:'2rem', fontWeight:600, cursor:'pointer' }}>← Geri: Yatırım</button>
+                <button onClick={() => setAdim(3)} style={{ padding:'12px 24px', background:'var(--enba-orange)', color:'#fff', border:'none', borderRadius:'2rem', fontWeight:700, cursor:'pointer' }}>Sonraki: Operasyon & Makinalar →</button>
             </div>
         </div>
     );

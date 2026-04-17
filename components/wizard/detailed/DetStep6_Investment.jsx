@@ -103,9 +103,8 @@ window.DetStep6_Investment = function DetStep6_Investment({
                 </table>
             </div>
 
-            <div style={{ display:'flex', justifyContent:'space-between', marginTop:'20px' }}>
-                <button onClick={()=>setAdim(5)} style={{ padding:'12px 24px', background:'var(--surface-container-high)', border:'none', borderRadius:'2rem', fontWeight:700, cursor:'pointer' }}>← Geri</button>
-                <button onClick={()=>setAdim(7)} style={{ padding:'12px 24px', background:'var(--enba-orange)', color:'#fff', border:'none', borderRadius:'2rem', fontWeight:700, cursor:'pointer' }}>Görünüm: Finansal Rapor (Sonuç) →</button>
+            <div style={{ display:'flex', justifyContent:'flex-end', marginTop:'20px' }}>
+                <button onClick={()=>setAdim(2)} style={{ padding:'12px 24px', background:'var(--enba-orange)', color:'#fff', border:'none', borderRadius:'2rem', fontWeight:700, cursor:'pointer' }}>Sonraki: Tedarik Planı →</button>
             </div>
         </div>
     );

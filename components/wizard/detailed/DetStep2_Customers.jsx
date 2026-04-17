@@ -12,7 +12,9 @@ window.DetStep2_Customers = function DetStep2_Customers({
     baslangicAyi, baslangicYili,
     topluFire, setTopluFire, uygulaTopluFire,
     hesaplanmisAyVerileri, fireGuncelle, musteriSonrakiAylara,
-    musteriAyiTemizle, planOlcumBirimi, setAdim
+    musteriAyiTemizle, planOlcumBirimi,
+    aylikSonuclar, aylikAmortismanlar,
+    setAdim
 }) {
     const birimEtiketi = planOlcumBirimi === 'kg' ? 'kg' : 'T';
     const tonToDisplay = (tons) => planOlcumBirimi === 'kg' ? (Number(tons) || 0) * 1000 : (Number(tons) || 0);
@@ -50,8 +52,82 @@ window.DetStep2_Customers = function DetStep2_Customers({
         />
     );
 
+    // Per-month: available tonnage + cost per ton (uses data from earlier steps)
+    const ayOzet = (aylikSonuclar || []).map((s, i) => {
+        const ayData = hesaplanmisAyVerileri?.[i] || {};
+        const fireOran = ayData.fireAktif ? (Number(ayData.fireYuzde) || 0) / 100 : 0;
+        const satilabilecekTon = s.alisTon * (1 - fireOran);
+        const amort = (aylikAmortismanlar || [])[i] || 0;
+        const uretimMaliyeti = s.alisGideri + s.alisNakliye + s.digerOpex + amort;
+        const tonBasiMaliyet = s.alisTon > 0 ? uretimMaliyeti / s.alisTon : 0;
+        return { satilabilecekTon, tonBasiMaliyet, alisTon: s.alisTon };
+    });
+
+    const toplamSatilabilecek = ayOzet.reduce((t, a) => t + a.satilabilecekTon, 0);
+    const yillikAlisTop = ayOzet.reduce((t, a) => t + a.alisTon, 0);
+    const yillikMaliyetTop = (aylikSonuclar || []).reduce((t, s, i) => t + s.alisGideri + s.alisNakliye + s.digerOpex + ((aylikAmortismanlar || [])[i] || 0), 0);
+    const yillikTonBasi = yillikAlisTop > 0 ? yillikMaliyetTop / yillikAlisTop : 0;
+
+    const hasData = yillikAlisTop > 0;
+
     return (
         <div className="step-content">
+
+            {/* ── Üretim & Maliyet Özeti ── */}
+            {hasData && (
+                <div style={{ background:'linear-gradient(135deg, #0f1e2e, #15222E)', borderRadius:'1.5rem', padding:'24px', boxShadow:'var(--shadow-card)', marginBottom:'24px', border:'1px solid rgba(255,255,255,0.07)' }}>
+                    <h2 style={{ fontFamily:"'Manrope', sans-serif", fontWeight:700, fontSize:'15px', color:'#fff', margin:'0 0 16px', display:'flex', alignItems:'center', gap:'8px' }}>
+                        📊 Üretim & Maliyet Özeti
+                        <span style={{ fontSize:'11px', fontWeight:400, color:'rgba(255,255,255,0.4)' }}>(Tedarik, Operasyon, Personel ve Giderler adımlarından hesaplanır)</span>
+                    </h2>
+
+                    {/* Yıllık özet kartlar */}
+                    <div style={{ display:'flex', gap:'12px', marginBottom:'20px', flexWrap:'wrap' }}>
+                        <div style={{ flex:1, minWidth:'160px', background:'rgba(255,255,255,0.04)', borderRadius:'1rem', padding:'14px 16px', border:'1px solid rgba(255,255,255,0.08)' }}>
+                            <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.45)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.6px', marginBottom:'6px' }}>Yıllık Satılabilecek</div>
+                            <div style={{ fontSize:'22px', fontWeight:800, color:'#34d399' }}>{fmt(tonToDisplay(toplamSatilabilecek))} <span style={{ fontSize:'13px', fontWeight:500 }}>{birimEtiketi}</span></div>
+                        </div>
+                        <div style={{ flex:1, minWidth:'160px', background:'rgba(255,255,255,0.04)', borderRadius:'1rem', padding:'14px 16px', border:'1px solid rgba(255,255,255,0.08)' }}>
+                            <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.45)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.6px', marginBottom:'6px' }}>Ort. Ton Başı Maliyet</div>
+                            <div style={{ fontSize:'22px', fontWeight:800, color:'#fbbf24' }}>{fmt(yillikTonBasi)} <span style={{ fontSize:'13px', fontWeight:500 }}>₺/{birimEtiketi === 'kg' ? 'T' : 'T'}</span></div>
+                            <div style={{ fontSize:'10px', color:'rgba(255,255,255,0.3)', marginTop:'3px' }}>Alış + Operasyon + Amortisman</div>
+                        </div>
+                        <div style={{ flex:1, minWidth:'160px', background:'rgba(255,255,255,0.04)', borderRadius:'1rem', padding:'14px 16px', border:'1px solid rgba(255,255,255,0.08)' }}>
+                            <div style={{ fontSize:'11px', color:'rgba(255,255,255,0.45)', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.6px', marginBottom:'6px' }}>Yıllık Alış Tonajı</div>
+                            <div style={{ fontSize:'22px', fontWeight:800, color:'#60a5fa' }}>{fmt(tonToDisplay(yillikAlisTop))} <span style={{ fontSize:'13px', fontWeight:500 }}>{birimEtiketi}</span></div>
+                        </div>
+                    </div>
+
+                    {/* Aylık tablo */}
+                    <div style={{ overflowX:'auto' }}>
+                        <table style={{ borderCollapse:'collapse', width:'100%', fontSize:'12px' }}>
+                            <thead>
+                                <tr style={{ background:'rgba(0,0,0,0.3)' }}>
+                                    <th style={{ padding:'8px 12px', textAlign:'left', color:'rgba(255,255,255,0.6)', fontWeight:600 }}>Ay</th>
+                                    <th style={{ padding:'8px 10px', textAlign:'right', color:'rgba(255,255,255,0.6)', fontWeight:600, whiteSpace:'nowrap' }}>Alış ({birimEtiketi})</th>
+                                    <th style={{ padding:'8px 10px', textAlign:'right', color:'#34d399', fontWeight:700, whiteSpace:'nowrap' }}>Satılabilecek ({birimEtiketi})</th>
+                                    <th style={{ padding:'8px 10px', textAlign:'right', color:'#fbbf24', fontWeight:700, whiteSpace:'nowrap' }}>Ton Başı Maliyet (₺/T)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {ayOzet.map((o, i) => {
+                                    const gercekAyIdx = (baslangicAyi + i) % 12;
+                                    const yil = baslangicYili + Math.floor((baslangicAyi + i) / 12);
+                                    return (
+                                        <tr key={i} style={{ borderBottom:'1px solid rgba(255,255,255,0.05)', background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)' }}>
+                                            <td style={{ padding:'7px 12px', color:'rgba(255,255,255,0.7)', fontWeight:500 }}>{AYLAR[gercekAyIdx]} {yil}</td>
+                                            <td style={{ padding:'7px 10px', textAlign:'right', color:'rgba(255,255,255,0.6)' }}>{fmt(tonToDisplay(o.alisTon))}</td>
+                                            <td style={{ padding:'7px 10px', textAlign:'right', color:'#34d399', fontWeight:700 }}>{fmt(tonToDisplay(o.satilabilecekTon))}</td>
+                                            <td style={{ padding:'7px 10px', textAlign:'right', color:'#fbbf24', fontWeight:700 }}>{fmt(o.tonBasiMaliyet)}</td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+
             {/* Müşteri Listesi */}
             <div style={{ background:'var(--surface-container-lowest)', borderRadius:'1.5rem', padding:'28px', boxShadow:'var(--shadow-card)', marginBottom:'24px' }}>
                 <h2 style={{ fontFamily:"'Manrope', sans-serif", fontWeight:700, fontSize:'16px', color:'var(--enba-dark)', margin:'0 0 20px' }}>2. Müşteri (Satış) Yönetimi</h2>
@@ -259,8 +335,8 @@ window.DetStep2_Customers = function DetStep2_Customers({
             </table>
 
             <div style={{ display:'flex', justifyContent:'space-between', marginTop:'24px' }}>
-                <button onClick={() => setAdim(1)} style={{ padding:'12px 24px', background:'var(--surface-container-high)', color:'var(--on-surface-variant)', border:'none', borderRadius:'2rem', fontWeight:600, cursor:'pointer' }}>← Geri: Tedarik</button>
-                <button onClick={() => setAdim(3)} style={{ padding:'12px 24px', background:'var(--enba-orange)', color:'#fff', border:'none', borderRadius:'2rem', fontWeight:700, cursor:'pointer' }}>Sonraki: Operasyon & Makinalar →</button>
+                <button onClick={() => setAdim(5)} style={{ padding:'12px 24px', background:'var(--surface-container-high)', color:'var(--on-surface-variant)', border:'none', borderRadius:'2rem', fontWeight:600, cursor:'pointer' }}>← Geri: Tesis Giderleri</button>
+                <button onClick={() => setAdim(7)} style={{ padding:'12px 24px', background:'var(--enba-orange)', color:'#fff', border:'none', borderRadius:'2rem', fontWeight:700, cursor:'pointer' }}>Görünüm: Finansal Rapor →</button>
             </div>
         </div>
     );
