@@ -227,7 +227,7 @@ const UretimPlanlamaModulu = () => {
       fontFamily: "'Inter', sans-serif",
       fontWeight: 600,
       fontSize: "0.82rem",
-      background: renk === "navy" ? "var(--enba-dark)" : renk === "green" ? "var(--enba-orange)" : renk === "red" ? "#e53935" : "#e0e0e0",
+      background: renk === "navy" ? "var(--enba-dark)" : renk === "green" ? "var(--enba-orange)" : renk === "red" ? "var(--error)" : "var(--surface-container-highest)",
       color: renk === "gray" ? "var(--on-surface)" : "#fff",
     }),
     input: {
@@ -281,7 +281,7 @@ const UretimPlanlamaModulu = () => {
   // ── Progress bar ──────────────────────────────────────────────
   const ProgressBar = ({ oran, renk }) => {
     const pct = Math.min(100, Math.max(0, oran || 0));
-    const bg = renk || (pct >= 95 ? "#2e7d32" : pct >= 80 ? "#f57c00" : "#c62828");
+    const bg = renk || (pct >= 95 ? "var(--success)" : pct >= 80 ? "var(--warning)" : "var(--error)");
     return (
       <div style={{ background: "var(--surface-container-highest)", borderRadius: "1rem", height: 8, overflow: "hidden" }}>
         <div style={{ width: pct + "%", background: bg, height: "100%", borderRadius: "1rem", transition: "width 0.4s" }} />
@@ -292,17 +292,17 @@ const UretimPlanlamaModulu = () => {
   // ── Durum badge ───────────────────────────────────────────────
   const DurumBadge = ({ durum }) => {
     const renkler = {
-      "Hedefte":      { bg: "rgba(46,125,50,0.15)",    text: "#1b5e20" },
-      "Yakın":        { bg: "rgba(230,81,0,0.14)",     text: "#bf360c" },
-      "Hedef Altı":   { bg: "rgba(198,40,40,0.14)",    text: "#b71c1c" },
-      "Veri Yok":     { bg: "rgba(97,97,97,0.14)",     text: "#424242" },
-      "Tatil":        { bg: "rgba(230,81,0,0.14)",     text: "#bf360c" },
-      "Bakım":        { bg: "rgba(57,73,171,0.14)",    text: "#283593" },
-      "Planlandı":    { bg: "rgba(21,101,192,0.14)",   text: "#0d47a1" },
-      "Çalışma Dışı": { bg: "rgba(97,97,97,0.12)",    text: "#616161" },
-      "Bugün":        { bg: "rgba(21,34,46,0.12)",     text: "var(--enba-dark)" },
+      "Hedefte":      { bg: "var(--success-container)",    text: "var(--success)" },
+      "Yakın":        { bg: "var(--warning-container)",    text: "var(--warning)" },
+      "Hedef Altı":   { bg: "var(--error-container)",      text: "var(--error)" },
+      "Veri Yok":     { bg: "var(--surface-container-high)", text: "var(--on-surface-variant)" },
+      "Tatil":        { bg: "var(--warning-container)",    text: "var(--warning)" },
+      "Bakım":        { bg: "var(--surface-container-high)", text: "var(--enba-dark)" },
+      "Planlandı":    { bg: "var(--surface-container-high)", text: "var(--on-surface-variant)" },
+      "Çalışma Dışı": { bg: "var(--surface-container-highest)", text: "var(--on-surface-variant)" },
+      "Bugün":        { bg: "var(--warning-container)",    text: "var(--enba-dark)" },
     };
-    const r = renkler[durum] || { bg: "rgba(97,97,97,0.12)", text: "#424242" };
+    const r = renkler[durum] || { bg: "var(--surface-container-high)", text: "var(--on-surface-variant)" };
     return (
       <span style={{
         padding: "0.2rem 0.6rem", borderRadius: "1rem", fontSize: "0.72rem", fontWeight: 700,
@@ -316,9 +316,11 @@ const UretimPlanlamaModulu = () => {
   // ── "Plan seç" uyarısı ────────────────────────────────────────
   const PlanSecUyarisi = () => (
     <div style={{ ...S.kart, textAlign: "center", padding: "3rem", color: "var(--on-surface-variant)" }}>
-      <div style={{ fontSize: "2.5rem", marginBottom: "0.75rem" }}>⚡ </div>
-      <div style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 700, fontSize: "1.1rem", marginBottom: "0.5rem" }}>Önce bir plan seçin</div>
-      <div style={{ fontSize: "0.85rem" }}>Planlar sekmesinden bir planı seçerek bu sekmeyi görüntüleyebilirsiniz.</div>
+      <div style={{ fontSize: "3rem", marginBottom: "1rem", color: "var(--enba-orange)" }}>
+        <i className="ph ph-selection-plus"></i>
+      </div>
+      <div style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 800, fontSize: "1.2rem", marginBottom: "0.5rem", color: 'var(--enba-dark)' }}>Önce bir plan seçin</div>
+      <div style={{ fontSize: "0.9rem" }}>Planlar sekmesinden bir planı seçerek bu sekmeyi görüntüleyebilirsiniz.</div>
     </div>
   );
 
@@ -536,12 +538,12 @@ const UretimPlanlamaModulu = () => {
           <KPIKart baslik="Toplam Çalışma Günü" deger={calismaDays.length} alt="planlanmış" />
           <KPIKart baslik="Günlük Hedef Çıkan" deger={gunlukHedef.toFixed(1) + " ton"} alt="çalışma günü başına" />
           <KPIKart baslik="Günlük Hedef Giren" deger={gunlukGiren.toFixed(1) + " ton"} alt={`%${p.verimOrani} verim ile`} />
-          <KPIKart baslik="Tatil / Bakım Günü" deger={tatilSayisi} alt="özel gün" renk="#ef6c00" />
+          <KPIKart baslik="Tatil / Bakım Günü" deger={tatilSayisi} alt="özel gün" renk="var(--enba-orange)" />
         </div>
 
         {/* Ozel gun inline form */}
         {ozelGunForm && (
-          <div style={{ ...S.kart, borderLeft: "4px solid #ef6c00", padding: "1rem 1.25rem" }}>
+          <div style={{ ...S.kart, borderLeft: "4px solid var(--enba-orange)", padding: "1rem 1.25rem" }}>
             <b style={{ fontFamily: "'Manrope', sans-serif", fontSize: "0.9rem" }}>{ozelGunForm} tarihine özel gün ekle</b>
             <div style={{ display: "flex", gap: "0.75rem", marginTop: "0.6rem", flexWrap: "wrap", alignItems: "flex-end" }}>
               <div>
@@ -662,12 +664,12 @@ const UretimPlanlamaModulu = () => {
           <KPIKart baslik="Toplam Gerçekleşen Çıkan" deger={toplamGercCikan.toFixed(1) + " ton"} renk={toplamGercCikan >= p.hedefCikanTon ? "var(--enba-orange)" : undefined} />
           <KPIKart baslik="Hedef Gerçekleşme" deger={"%" + hedefOrani.toFixed(1)} renk={hedefOrani >= 95 ? "#1b5e20" : hedefOrani >= 80 ? "#bf360c" : "#b71c1c"} />
           <KPIKart baslik="Ortalama Günlük Verim" deger={"%" + ortalamaVerim.toFixed(1)} alt={`hedef: %${p.verimOrani}`} />
-          <KPIKart baslik="Veri Eksik Gün" deger={veriEksikSayisi} alt="geçmiş çalışma günü" renk={veriEksikSayisi > 0 ? "#c62828" : "#2e7d32"} />
+          <KPIKart baslik="Veri Eksik Gün" deger={veriEksikSayisi} alt="geçmiş çalışma günü" renk={veriEksikSayisi > 0 ? "var(--error)" : "var(--success)"} />
         </div>
 
         {/* Missing data alert */}
         {veriEksikSayisi > 0 && (
-          <div style={{ background: "#fff3e0", border: "1px solid #ef6c00", borderRadius: "0.75rem", padding: "0.75rem 1rem", fontSize: "0.85rem", color: "#e65100", fontWeight: 600 }}>
+          <div style={{ background: "#fff3e0", border: "1px solid var(--enba-orange)", borderRadius: "0.75rem", padding: "0.75rem 1rem", fontSize: "0.85rem", color: "#e65100", fontWeight: 600 }}>
             ⚠ {veriEksikSayisi} geçmiş çalışma günü için üretim verisi girilmemiş. Üretim Takip Modülü'nden veri ekleyebilirsiniz.
           </div>
         )}
@@ -688,7 +690,7 @@ const UretimPlanlamaModulu = () => {
                       <rect x={x} y={chartH - hedefH} width={barW} height={hedefH} fill="#90a4ae" rx={3} />
                       {/* Gerçekleşen bar */}
                       <rect x={x + barW + 2} y={chartH - gercH} width={barW} height={gercH}
-                        fill={h.gercCikan >= h.hedef * 0.95 ? "#43a047" : h.gercCikan >= h.hedef * 0.80 ? "#fb8c00" : "#e53935"} rx={3} />
+                        fill={h.gercCikan >= h.hedef * 0.95 ? "var(--success)" : h.gercCikan >= h.hedef * 0.80 ? "var(--warning)" : "#e53935"} rx={3} />
                       {/* Label */}
                       <text x={x + barW + 1} y={chartH + 15} textAnchor="middle" fontSize={9} fill="var(--on-surface-variant)" fontFamily="Inter, sans-serif">{h.label}</text>
                     </g>
@@ -697,7 +699,7 @@ const UretimPlanlamaModulu = () => {
                 {/* Legend */}
                 <rect x={30} y={chartH + 28} width={10} height={10} fill="#90a4ae" rx={2} />
                 <text x={44} y={chartH + 37} fontSize={9} fill="var(--on-surface-variant)" fontFamily="Inter, sans-serif">Hedef</text>
-                <rect x={90} y={chartH + 28} width={10} height={10} fill="#43a047" rx={2} />
+                <rect x={90} y={chartH + 28} width={10} height={10} fill="var(--success)" rx={2} />
                 <text x={104} y={chartH + 37} fontSize={9} fill="var(--on-surface-variant)" fontFamily="Inter, sans-serif">Gerçekleşen</text>
               </svg>
             </div>
@@ -757,15 +759,20 @@ const UretimPlanlamaModulu = () => {
   return (
     <div style={{ fontFamily: "'Inter', sans-serif", padding: "1.5rem", maxWidth: 1200, margin: "0 auto" }}>
       {/* Header */}
-      <div style={{ marginBottom: "1.5rem" }}>
-        <h1 style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 800, fontSize: "1.6rem", color: "var(--enba-dark)", margin: 0 }}>
-          Üretim Planlama
-        </h1>
-        {seciliPlan && (
-          <div style={{ fontSize: "0.82rem", color: "var(--on-surface-variant)", marginTop: "0.3rem" }}>
-            Seçili plan: <b>{seciliPlan.baslik}</b>
-          </div>
-        )}
+      <div style={{ marginBottom: "2rem", display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div style={{ width: '48px', height: '48px', background: 'var(--surface-container-low)', borderRadius: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', color: 'var(--enba-orange)' }}>
+           <i className="ph-fill ph-chart-polar"></i>
+        </div>
+        <div>
+          <h1 style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 800, fontSize: "1.6rem", color: "var(--enba-dark)", margin: 0 }}>
+            Üretim Planlama
+          </h1>
+          {seciliPlan && (
+            <div style={{ fontSize: "0.82rem", color: "var(--on-surface-variant)", marginTop: "0.3rem" }}>
+              Seçili plan: <b>{seciliPlan.baslik}</b>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Tabs */}

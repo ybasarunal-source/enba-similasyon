@@ -138,7 +138,7 @@ function ProfileModule({ user, onUpdate }) {
     };
 
     return (
-        <div style={{ padding: '48px', maxWidth: '900px', margin: '0 auto', background: 'var(--surface)', minHeight: '100vh', animation: 'fadeIn 0.5s ease' }}>
+        <div style={{ padding: '48px', maxWidth: '900px', margin: '0 auto', background: 'var(--surface-container-low)', minHeight: '100vh', animation: 'fadeIn 0.5s ease' }}>
             
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
@@ -146,7 +146,7 @@ function ProfileModule({ user, onUpdate }) {
                     <h1 style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 800, fontSize: '28px', color: 'var(--enba-dark)', margin: 0 }}>Profilim</h1>
                     <p style={{ color: 'var(--on-surface-variant)', fontSize: '14px', marginTop: '4px' }}>Kişisel bilgilerinizi ve profil fotoğrafınızı yönetin.</p>
                 </div>
-                <div style={{ background: 'var(--enba-orange-light)', color: 'var(--enba-orange-dark)', padding: '6px 14px', borderRadius: '2rem', fontSize: '11px', fontWeight: 800 }}>KİŞİSEL HESAP</div>
+                <div style={{ background: 'var(--warning-container)', color: 'var(--enba-orange)', padding: '6px 14px', borderRadius: '2rem', fontSize: '11px', fontWeight: 800 }}>KİŞİSEL HESAP</div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '40px' }}>
@@ -154,8 +154,8 @@ function ProfileModule({ user, onUpdate }) {
                 {/* Sol Taraf: Avatar */}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
                     <div style={{ 
-                        width: '200px', height: '200px', borderRadius: '2rem', background: '#fff', 
-                        border: '4px solid #fff', boxShadow: '0 20px 48px rgba(0,0,0,0.1)',
+                        width: '200px', height: '200px', borderRadius: '2rem', background: 'var(--surface-container-lowest)', 
+                        border: '4px solid var(--surface-container-lowest)', boxShadow: 'var(--shadow-lg)',
                         overflow: 'hidden', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center'
                     }}>
                         {formData.avatar ? (
@@ -168,7 +168,7 @@ function ProfileModule({ user, onUpdate }) {
                         {isAnalyzing && (
                             <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.7)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
                                 <div style={{ width: '24px', height: '24px', border: '3px solid var(--enba-orange)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-                                <div style={{ fontSize: '11px', fontWeight: 800, color: 'var(--enba-orange-dark)' }}>ANALİZ EDİLİYOR...</div>
+                                <div style={{ fontSize: '11px', fontWeight: 800, color: 'var(--enba-orange)' }}>ANALİZ EDİLİYOR...</div>
                             </div>
                         )}
                         <label style={{ 
@@ -176,39 +176,39 @@ function ProfileModule({ user, onUpdate }) {
                             color: '#fff', textAlign: 'center', padding: '10px', fontSize: '12px', cursor: 'pointer',
                             backdropFilter: 'blur(4px)', display: isAnalyzing ? 'none' : 'block'
                         }}>
-                            ⚡  Fotoğraf Yükle
+                            <i className="ph ph-upload-simple" style={{ marginRight: '6px' }}></i> Fotoğraf Yükle
                             <input type="file" hidden accept="image/*" onChange={handleFileChange} />
                         </label>
                     </div>
                 </div>
 
                 {/* Sağ Taraf: Form */}
-                <div style={{ background: '#fff', padding: '32px', borderRadius: '2rem', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+                <div style={{ background: 'var(--surface-container-lowest)', padding: '32px', borderRadius: '2rem', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--surface-container-high)' }}>
                     <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                             <div className="form-group">
-                                <label className="form-label" style={{ fontSize: '12px', fontWeight: 700 }}>AD SOYAD</label>
+                                <label className="form-label" style={{ fontSize: '12px', fontWeight: 800 }}>AD SOYAD</label>
                                 <input className="form-control" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required onFocus={window.selectOnFocus} />
                             </div>
                             <div className="form-group">
-                                <label className="form-label" style={{ fontSize: '12px', fontWeight: 700 }}>E-POSTA</label>
+                                <label className="form-label" style={{ fontSize: '12px', fontWeight: 800 }}>E-POSTA</label>
                                 <input className="form-control" type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} onFocus={window.selectOnFocus} />
                             </div>
                         </div>
                         <div className="form-group">
-                            <label className="form-label" style={{ fontSize: '12px', fontWeight: 700 }}>TELEFON NO</label>
+                            <label className="form-label" style={{ fontSize: '12px', fontWeight: 800 }}>TELEFON NO</label>
                             <input className="form-control" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} placeholder="+90 5XX XXX XX XX" onFocus={window.selectOnFocus} />
                         </div>
                         <div className="form-group">
-                            <label className="form-label" style={{ fontSize: '12px', fontWeight: 700 }}>KISA BİYOGRAFİ</label>
+                            <label className="form-label" style={{ fontSize: '12px', fontWeight: 800 }}>KISA BİYOGRAFİ</label>
                             <textarea className="form-control" rows="3" value={formData.bio} onChange={e => setFormData({...formData, bio: e.target.value})} placeholder="Kendinizden bahsedin..." style={{ borderRadius: '1rem' }} onFocus={window.selectOnFocus} />
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
                             <button type="submit" disabled={status.loading} className="btn btn-primary" style={{ padding: '12px 32px', borderRadius: '2rem', fontWeight: 800 }}>{status.loading ? 'Güncelleniyor...' : 'Değişiklikleri Kaydet'}</button>
                         </div>
                         {status.success && (
-                            <div style={{ padding: '12px', background: 'var(--enba-orange-light)', color: 'var(--enba-orange-dark)', borderRadius: '1rem', textAlign: 'center', fontSize: '13px', fontWeight: 700, animation: 'fadeInUp 0.3s ease' }}>
-                                ✅ Profil bilgileriniz başarıyla güncellendi!
+                            <div style={{ padding: '12px', background: 'var(--success-container)', color: 'var(--success)', borderRadius: '1rem', textAlign: 'center', fontSize: '13px', fontWeight: 800, animation: 'fadeInUp 0.3s ease', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', border: '1px solid var(--success)' }}>
+                                <i className="ph ph-check-circle"></i> Profil bilgileriniz başarıyla güncellendi!
                             </div>
                         )}
                     </form>

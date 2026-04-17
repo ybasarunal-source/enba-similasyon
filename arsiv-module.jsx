@@ -319,10 +319,11 @@ function ArsivModulu({ user }) {
                 </div>
                 <button
                     onClick={() => dosyaInputRef.current?.click()}
-                    style={{ ...btnGreen, fontSize: '14px', padding: '11px 24px', display: 'flex', alignItems: 'center', gap: '8px' }}
+                    className="btn btn-primary"
+                    style={{ fontSize: '14px', padding: '11px 24px', display: 'flex', alignItems: 'center', gap: '8px' }}
                     disabled={yukleniyor}
                 >
-                    {yukleniyor ? <><i className="ph ph-spinner"></i> Yükleniyor…</> : <><i className="ph ph-upload-simple"></i> Dosya Yükle</>}
+                    {yukleniyor ? <><i className="ph ph-spinner ph-spin"></i> Yükleniyor…</> : <><i className="ph ph-upload-simple"></i> Dosya Yükle</>}
                 </button>
                 <input ref={dosyaInputRef} type="file" multiple style={{ display: 'none' }} onChange={handleFileInput} />
             </div>
@@ -359,8 +360,8 @@ function ArsivModulu({ user }) {
                         <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--on-surface-variant)', textTransform: 'uppercase', letterSpacing: '0.5px', flexShrink: 0 }}>Etiketler:</span>
                         {etiketFiltre && (
                             <button onClick={() => setEtiketFiltre(null)} style={{
-                                padding: '4px 12px', borderRadius: '1rem', border: 'none',
-                                background: '#ffebee', color: '#c62828', fontWeight: 700, fontSize: '12px', cursor: 'pointer',
+                                padding: '4px 12px', borderRadius: '1rem', border: '1px solid var(--error)',
+                                background: 'var(--error-container)', color: 'var(--error)', fontWeight: 800, fontSize: '12px', cursor: 'pointer',
                             }}>✕ Filtreyi kaldır</button>
                         )}
                         {tumEtiketler.map(([etiket, sayi]) => (
@@ -389,15 +390,17 @@ function ArsivModulu({ user }) {
                     style={{
                         border: `2px dashed ${dragOver ? 'var(--enba-orange)' : 'var(--surface-container-highest)'}`,
                         borderRadius: '1.2rem', padding: '48px', textAlign: 'center',
-                        background: dragOver ? 'rgba(39,174,96,0.05)' : 'var(--surface-container-lowest)',
+                        background: dragOver ? 'var(--warning-container)' : 'var(--surface-container-lowest)',
                         cursor: 'pointer', marginBottom: '24px', transition: 'all 0.2s',
                     }}
                 >
-                    <div style={{ fontSize: '40px', marginBottom: '12px' }}>⚡ </div>
-                    <div style={{ fontWeight: 700, color: 'var(--enba-dark)', marginBottom: '6px', fontFamily: "'Manrope', sans-serif" }}>
+                    <div style={{ fontSize: '40px', marginBottom: '12px', color: 'var(--enba-orange)' }}>
+                        <i className="ph ph-cloud-arrow-up"></i>
+                    </div>
+                    <div style={{ fontWeight: 800, color: 'var(--enba-dark)', marginBottom: '6px', fontFamily: "'Manrope', sans-serif", fontSize: '18px' }}>
                         {dragOver ? 'Bırakın, yüklensin' : 'Dosyaları buraya sürükleyin'}
                     </div>
-                    <div style={{ color: 'var(--on-surface-variant)', fontSize: '13px' }}>
+                    <div style={{ color: 'var(--on-surface-variant)', fontSize: '14px' }}>
                         veya tıklayarak seçin — PDF, Word, Excel, görsel ve daha fazlası
                     </div>
                 </div>
@@ -417,13 +420,15 @@ function ArsivModulu({ user }) {
                     onDrop={handleDrop}
                     style={{
                         position: 'fixed', inset: 0, zIndex: 500,
-                        background: 'rgba(39,174,96,0.12)', border: '3px dashed var(--enba-orange)',
+                        background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(10px)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}
                 >
-                    <div style={{ background: '#fff', padding: '32px 48px', borderRadius: '1.5rem', textAlign: 'center', boxShadow: '0 8px 40px rgba(0,0,0,0.15)' }}>
-                        <div style={{ fontSize: '48px' }}>⚡ </div>
-                        <div style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 800, fontSize: '20px', color: 'var(--enba-dark)', marginTop: '12px' }}>Bırakın, yüklensin</div>
+                    <div style={{ ...kart, padding: '40px 60px', textAlign: 'center', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--enba-orange)' }}>
+                        <div style={{ fontSize: '56px', color: 'var(--enba-orange)', marginBottom: '16px' }}>
+                            <i className="ph ph-lightning"></i>
+                        </div>
+                        <div style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 800, fontSize: '24px', color: 'var(--enba-dark)' }}>Bırakın, yüklensin</div>
                     </div>
                 </div>
             )}
@@ -501,22 +506,20 @@ function ArsivModulu({ user }) {
                                         </div>
 
                                         {/* Aksiyon butonları */}
-                                        <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
-                                            <button onClick={() => onizlemeAc(d.id)} title="Önizle / Seç"
-                                                style={{ background: secili ? 'var(--enba-orange)' : 'var(--surface-container-high)', border: 'none', borderRadius: '0.6rem', padding: '7px 12px', cursor: 'pointer', fontSize: '14px', color: secili ? '#fff' : 'inherit' }}>
-                                                {secili ? '✓' : '⚡ ️'}
+                                        <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                                            <button onClick={() => onizlemeAc(d)} title="Önizle / Seç"
+                                                className={`btn-icon ${secili ? 'active' : ''}`}
+                                                style={{ background: secili ? 'var(--enba-orange)' : 'var(--surface-container-high)', color: secili ? '#fff' : 'inherit' }}>
+                                                <i className={secili ? "ph ph-check" : "ph ph-eye"}></i>
                                             </button>
-                                            <button onClick={() => duzenlemeAc(d)} title="Düzenle"
-                                                style={{ background: 'var(--surface-container-high)', border: 'none', borderRadius: '0.6rem', padding: '7px 12px', cursor: 'pointer', fontSize: '14px' }}>
-                                                ✏️
+                                            <button onClick={() => duzenlemeAc(d)} title="Düzenle" className="btn-icon">
+                                                <i className="ph ph-pencil-line"></i>
                                             </button>
-                                            <button onClick={() => dosyaIndir(d)} title="İndir"
-                                                style={{ background: 'var(--surface-container-high)', border: 'none', borderRadius: '0.6rem', padding: '7px 12px', cursor: 'pointer', fontSize: '14px' }}>
-                                                ⬇️
+                                            <button onClick={() => dosyaIndir(d)} title="İndir" className="btn-icon">
+                                                <i className="ph ph-download-simple"></i>
                                             </button>
-                                            <button onClick={() => dosyaSil(d.id)} title="Sil"
-                                                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', padding: '7px 8px', color: '#c62828' }}>
-                                                ⚡ ️
+                                            <button onClick={() => dosyaSil(d.id)} title="Sil" className="btn-icon" style={{ color: 'var(--error)' }}>
+                                                <i className="ph ph-trash"></i>
                                             </button>
                                         </div>
                                     </div>
@@ -580,9 +583,11 @@ function ArsivModulu({ user }) {
                                                 <textarea style={{ ...inp, resize: 'vertical', minHeight: '60px' }} value={duzenleForm.notlar}
                                                     onChange={e => setDuzenleForm(p => ({ ...p, notlar: e.target.value }))} rows={2} onFocus={window.selectOnFocus} />
                                             </div>
-                                            <div style={{ display: 'flex', gap: '8px' }}>
-                                                <button onClick={duzenleKaydet} style={btnNavy}>⚡  Kaydet</button>
-                                                <button onClick={() => setDuzenleId(null)} style={btnGray}>İptal</button>
+                                            <div style={{ display: 'flex', gap: '12px', marginTop: '4px' }}>
+                                                <button onClick={duzenleKaydet} className="btn btn-primary" style={{ padding: '8px 20px', fontSize: '13px' }}>
+                                                    <i className="ph ph-check-circle"></i> Kaydet
+                                                </button>
+                                                <button onClick={() => setDuzenleId(null)} className="btn btn-secondary" style={{ padding: '8px 20px', fontSize: '13px' }}>İptal</button>
                                             </div>
                                         </div>
                                     )}
@@ -662,8 +667,8 @@ function ArsivModulu({ user }) {
                         </div>
 
                         {/* İndir butonu */}
-                        <button onClick={() => dosyaIndir(seciliDosya)} style={{ ...btnNavy, width: '100%', textAlign: 'center' }}>
-                            ⬇️ İndir — {seciliDosya.ad}
+                        <button onClick={() => dosyaIndir(seciliDosya)} className="btn btn-primary" style={{ width: '100%', textAlign: 'center', justifyContent: 'center', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <i className="ph ph-download-simple"></i>İndir — {seciliDosya.ad}
                         </button>
                     </div>
                 )}

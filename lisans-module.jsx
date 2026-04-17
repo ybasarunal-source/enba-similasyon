@@ -100,15 +100,15 @@ function LisansRuhsatModulu() {
     const categories = ["Ruhsat", "Lisans", "Sertifika", "Sigorta", "Sözleşme", "Diğer"];
 
     const calculateStatus = (yenilemeDate, isSuresiz) => {
-        if (isSuresiz) return { label: "Süresiz Aktif", color: "#27ae60", icon: "⚡ ?" };
-        if (!yenilemeDate) return { label: "Bilinmiyor", color: "#95a5a6", icon: "⚪" };
+        if (isSuresiz) return { label: "Süresiz Aktif", color: "var(--success)", icon: "ph ph-infinity" };
+        if (!yenilemeDate) return { label: "Bilinmiyor", color: "var(--on-surface-variant)", icon: "ph ph-question" };
         const today = new Date();
         const renewal = new Date(yenilemeDate);
         const diffDays = Math.ceil((renewal - today) / (1000 * 60 * 60 * 24));
 
-        if (diffDays < 0) return { label: "Süresi Dolmuş", color: "#e74c3c", icon: "⚡ " };
-        if (diffDays <= 30) return { label: "Yaklaşıyor", color: "#f39c12", icon: "⚡ " };
-        return { label: "Aktif", color: "#27ae60", icon: "⚡ " };
+        if (diffDays < 0) return { label: "Süresi Dolmuş", color: "var(--error)", icon: "ph ph-warning-circle" };
+        if (diffDays <= 30) return { label: "Yaklaşıyor", color: "var(--enba-orange)", icon: "ph ph-clock-countdown" };
+        return { label: "Aktif", color: "var(--success)", icon: "ph ph-check-circle" };
     };
 
     const handleFileChange = (e) => {
@@ -268,39 +268,41 @@ function LisansRuhsatModulu() {
             {/* Header Area */}
             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px'}}>
                 <div>
-                    <h1 style={{fontFamily: "'Manrope', sans-serif", fontSize: '28px', color: 'var(--enba-dark)', margin: '0 0 4px 0'}}>⚡  Ruhsat & Lisans Takibi</h1>
-                    <p style={{color: '#7F8C8D', margin: 0, fontSize: '14px'}}>
+                    <h1 style={{fontFamily: "'Manrope', sans-serif", fontSize: '28px', color: 'var(--enba-dark)', margin: '0 0 8px 0', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '12px'}}>
+                        <i className="ph-fill ph-certificate" style={{ color: 'var(--enba-orange)' }}></i> Ruhsat & Lisans Takibi
+                    </h1>
+                    <p style={{color: 'var(--on-surface-variant)', margin: 0, fontSize: '15px'}}>
                         {migrationStatus ? migrationStatus : "Resmi belgeler, sertifikalar ve yenileme tarihlerini arşiv entegrasyonu ile takip edin."}
                     </p>
                 </div>
-                <button onClick={() => setIsFormOpen(true)} style={{
-                    padding: '12px 24px', background: 'var(--enba-orange)', color: '#fff', border: 'none', borderRadius: '12px', 
-                    fontWeight: 700, fontSize: '15px', cursor: 'pointer', boxShadow: '0 4px 15px rgba(39, 174, 96, 0.3)', transition: '0.2s'
+                <button onClick={() => setIsFormOpen(true)} className="btn btn-primary" style={{
+                    padding: '12px 24px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px',
+                    boxShadow: 'var(--shadow-md)'
                 }}>
                     <i className="ph ph-file-plus"></i> Yeni Belge Ekle
                 </button>
             </div>
 
             {/* Stats Dashboard */}
-            <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '32px'}}>
-                <div style={statCardStyle}>
-                    <i className="ph ph-files" style={{fontSize: '28px', color: 'var(--enba-dark)', marginBottom: '8px'}}></i>
+            <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '32px' }}>
+                <div className="enba-card" style={{ padding: '24px' }}>
+                    <i className="ph ph-files" style={{fontSize: '32px', color: 'var(--enba-orange)', marginBottom: '12px'}}></i>
                     <div style={statValueStyle}>{stats.total}</div>
                     <div style={statLabelStyle}>Toplam Belge</div>
                 </div>
-                <div style={statCardStyle}>
-                    <i className="ph ph-coins" style={{fontSize: '28px', color: 'var(--enba-dark)', marginBottom: '8px'}}></i>
+                <div className="enba-card" style={{ padding: '24px' }}>
+                    <i className="ph ph-coins" style={{fontSize: '32px', color: 'var(--enba-dark)', marginBottom: '12px'}}></i>
                     <div style={statValueStyle}>{stats.totalCost.toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 1 })} ₺</div>
                     <div style={statLabelStyle}>Toplam Gider</div>
                 </div>
-                <div style={{...statCardStyle, background: stats.expiringCount > 0 ? '#FEF9E7' : '#fff'}}>
-                    <i className="ph ph-warning-circle" style={{fontSize: '28px', color: '#f39c12', marginBottom: '8px'}}></i>
-                    <div style={{...statValueStyle, color: '#f39c12'}}>{stats.expiringCount}</div>
+                <div className="enba-card" style={{ padding: '24px', background: stats.expiringCount > 0 ? 'var(--warning-container)' : 'var(--surface-container-lowest)', border: stats.expiringCount > 0 ? '1px solid var(--enba-orange)' : '1px solid var(--surface-container-highest)' }}>
+                    <i className="ph ph-warning-circle" style={{fontSize: '32px', color: 'var(--enba-orange)', marginBottom: '12px'}}></i>
+                    <div style={{...statValueStyle, color: 'var(--enba-orange)'}}>{stats.expiringCount}</div>
                     <div style={statLabelStyle}>Yaklaşan Yenileme</div>
                 </div>
-                <div style={{...statCardStyle, background: stats.expiredCount > 0 ? '#FDEDEC' : '#fff'}}>
-                    <i className="ph ph-x-circle" style={{fontSize: '28px', color: '#e74c3c', marginBottom: '8px'}}></i>
-                    <div style={{...statValueStyle, color: '#e74c3c'}}>{stats.expiredCount}</div>
+                <div className="enba-card" style={{ padding: '24px', background: stats.expiredCount > 0 ? 'var(--error-container)' : 'var(--surface-container-lowest)', border: stats.expiredCount > 0 ? '1px solid var(--error)' : '1px solid var(--surface-container-highest)' }}>
+                    <i className="ph ph-x-circle" style={{fontSize: '32px', color: 'var(--error)', marginBottom: '12px'}}></i>
+                    <div style={{...statValueStyle, color: 'var(--error)'}}>{stats.expiredCount}</div>
                     <div style={statLabelStyle}>Süresi Dolanlar</div>
                 </div>
             </div>
@@ -309,21 +311,21 @@ function LisansRuhsatModulu() {
             <div style={{display: 'flex', gap: '24px', flexWrap: 'wrap'}}>
                 
                 {/* List Table */}
-                <div style={{flex: '1 1 700px', background: '#fff', borderRadius: '16px', border: '1px solid #eee', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', overflow: 'hidden'}}>
-                    <div style={{padding: '20px 24px', borderBottom: '1px solid #f5f5f5', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                <div style={{flex: '1 1 700px', background: '#fff', borderRadius: '16px', border: '1px solid var(--surface-container-highest)', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', overflow: 'hidden'}}>
+                    <div style={{padding: '20px 24px', borderBottom: '1px solid var(--surface-container-high)', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
                         <h3 style={{margin: 0, fontSize: '16px', color: 'var(--enba-dark)'}}>Belge Listesi</h3>
                     </div>
                     
                     {kayitlar.length === 0 ? (
-                        <div style={{padding: '60px', textAlign: 'center', color: '#BDC3C7'}}>
-                            <div style={{fontSize: '48px', marginBottom: '16px'}}>⚡ </div>
-                            <div>Henüz bir belge eklenmemiş. "Yeni Belge Ekle" butonu ile başlayın.</div>
+                        <div style={{padding: '60px', textAlign: 'center', color: 'var(--on-surface-variant)'}}>
+                            <div style={{fontSize: '64px', marginBottom: '24px', color: 'var(--surface-container-highest)'}}><i className="ph ph-file-dashed"></i></div>
+                            <div style={{ fontSize: '16px' }}>Henüz bir belge eklenmemiş. "Yeni Belge Ekle" butonu ile başlayın.</div>
                         </div>
                     ) : (
                         <div style={{overflowX: 'auto'}}>
                             <table style={{width: '100%', borderCollapse: 'collapse', textAlign: 'left'}}>
                                 <thead>
-                                    <tr style={{background: '#F8F9F9', color: '#7F8C8D', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.8px'}}>
+                                    <tr style={{background: 'var(--surface-container-low)', color: 'var(--on-surface-variant)', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.8px'}}>
                                         <th style={{padding: '16px 24px'}}>BELGE ADI / KURUM</th>
                                         <th style={{padding: '16px 12px'}}>DURUM</th>
                                         <th style={{padding: '16px 12px'}}>YENİLEME</th>
@@ -335,17 +337,18 @@ function LisansRuhsatModulu() {
                                     {kayitlar.map(k => {
                                         const status = calculateStatus(k.yenilemeTarihi, k.isSuresiz);
                                         return (
-                                            <tr key={k.id} style={{borderBottom: '1px solid #f5f5f5', transition: '0.1s'}} className="hover-row">
+                                            <tr key={k.id} style={{borderBottom: '1px solid var(--surface-container-high)', transition: '0.1s'}} className="hover-row">
                                                 <td style={{padding: '16px 24px'}}>
                                                     <div style={{fontWeight: 700, color: 'var(--enba-dark)', fontSize: '14px'}}>{k.ad}</div>
-                                                    <div style={{fontSize: '12px', color: '#95A5A6'}}>{k.kurum} • {k.kategori}</div>
+                                                    <div style={{fontSize: '12px', color: 'var(--on-surface-variant)'}}>{k.kurum} • {k.kategori}</div>
                                                 </td>
                                                 <td style={{padding: '16px 12px'}}>
                                                     <span style={{
-                                                        padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 700,
-                                                        background: status.color + '15', color: status.color, border: `1px solid ${status.color}30`
+                                                        padding: '6px 14px', borderRadius: '20px', fontSize: '11px', fontWeight: 800,
+                                                        background: status.color + '15', color: status.color, border: `1px solid ${status.color}30`,
+                                                        display: 'inline-flex', alignItems: 'center', gap: '6px'
                                                     }}>
-                                                        {status.icon} {status.label}
+                                                        <i className={status.icon}></i> {status.label}
                                                     </span>
                                                 </td>
                                                 <td style={{padding: '16px 12px'}}>
@@ -359,10 +362,10 @@ function LisansRuhsatModulu() {
                                                 <td style={{padding: '16px 24px', textAlign: 'right'}}>
                                                     <div style={{display: 'flex', gap: '8px', justifyContent: 'flex-end'}}>
                                                         {k.fileId && (
-                                                            <button onClick={() => acOnizleme(k)} title="Dosya Önizle" style={actionBtnStyle}>⚡ ️</button>
+                                                            <button onClick={() => acOnizleme(k)} className="btn-icon" title="Dosya Önizle"><i className="ph ph-eye"></i></button>
                                                         )}
-                                                        <button onClick={() => duzenle(k)} title="Düzenle" style={actionBtnStyle}>✏️</button>
-                                                        <button onClick={() => sil(k.id)} title="Sil" style={{...actionBtnStyle, color: '#e74c3c'}}>⚡ ️</button>
+                                                        <button onClick={() => duzenle(k)} className="btn-icon" title="Düzenle"><i className="ph ph-pencil-simple"></i></button>
+                                                        <button onClick={() => sil(k.id)} className="btn-icon" style={{ background: 'var(--enba-danger)', color: '#fff' }} title="Sil"><i className="ph ph-trash"></i></button>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -422,32 +425,33 @@ function LisansRuhsatModulu() {
                                 </div>
                             </div>
 
-                            <div style={{padding: '16px', background: '#F8F9F9', borderRadius: '12px', border: '1px dashed #D5DBDB'}}>
+                            <div style={{padding: '16px', background: 'var(--surface-container-low)', borderRadius: '12px', border: '1px dashed var(--surface-container-highest)'}}>
                                 <label style={labelStyle}>DOSYA ÖRNEĞİ (ARŞİV'E KAYDEDİLİR)</label>
                                 <div style={{display: 'flex', alignItems: 'center', gap: '12px', marginTop: '8px'}}>
-                                    <button type="button" onClick={() => fileInputRef.current?.click()} style={{
-                                        padding: '8px 16px', background: '#fff', border: '1px solid #D5DBDB', borderRadius: '8px', 
-                                        fontWeight: 600, fontSize: '13px', cursor: 'pointer'
+                                    <button type="button" onClick={() => fileInputRef.current?.click()} className="btn btn-secondary" style={{
+                                        padding: '8px 16px', borderRadius: '8px', 
+                                        fontWeight: 800, fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px'
                                     }}>
-                                        ⚡  Dosya Seç
+                                        <i className="ph ph-upload-simple"></i> Dosya Seç
                                     </button>
-                                    <span style={{fontSize: '12px', color: '#7F8C8D'}}>
+                                    <span style={{fontSize: '12px', color: 'var(--on-surface-variant)'}}>
                                         {selectedFile ? selectedFile.name : (attachedFileId ? "Mevcut dosya korunuyor" : "Dosya seçilmedi")}
                                     </span>
-                                    <input type="file" ref={fileInputRef} onChange={handleFileChange} style={{display: 'none'}} />
                                 </div>
                             </div>
 
                             <div style={{display: 'flex', gap: '12px', marginTop: '10px'}}>
-                                <button type="submit" style={{
-                                    flex: 1, padding: '14px', background: 'var(--enba-dark)', color: '#fff', border: 'none', 
-                                    borderRadius: '12px', fontWeight: 700, fontSize: '16px', cursor: 'pointer', transition: '0.2s'
+                                <button type="submit" className="btn btn-primary" style={{
+                                    flex: 1, padding: '14px', borderRadius: '12px', fontWeight: 800, fontSize: '16px'
                                 }}>
                                     {editingId ? "Değişiklikleri Kaydet" : "Belgeyi Kaydet"}
                                 </button>
-                                <button type="button" onClick={resetForm} style={{
-                                    padding: '14px 24px', background: '#f5f5f5', color: '#7f8c8d', border: 'none', 
-                                    borderRadius: '12px', fontWeight: 700, fontSize: '16px', cursor: 'pointer'
+                                <button type="button" onClick={resetForm} className="btn btn-secondary" style={{
+                                    padding: '14px 24px', borderRadius: '12px', fontWeight: 800, fontSize: '16px'
+                                }}>
+                                    İptal
+                                </button>
+                            </div>orderRadius: '12px', fontWeight: 700, fontSize: '16px', cursor: 'pointer'
                                 }}>
                                     İptal
                                 </button>
@@ -461,7 +465,7 @@ function LisansRuhsatModulu() {
             {previewUrl && (
                 <div style={modalOverlayStyle} onClick={() => setPreviewUrl(null)}>
                     <div style={{...modalContentStyle, maxWidth: '900px', height: '85vh', padding: '0', overflow: 'hidden'}} onClick={e => e.stopPropagation()}>
-                        <div style={{padding: '16px 24px', borderBottom: '1px solid #f5f5f5', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                        <div style={{padding: '16px 24px', borderBottom: '1px solid var(--surface-container-high)', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
                             <h3 style={{margin: 0, fontSize: '16px', color: 'var(--enba-dark)'}}>{previewData?.ad} - Belge Önizleme</h3>
                             <button onClick={() => setPreviewUrl(null)} style={{background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', color: '#95a5a6'}}>×</button>
                         </div>
@@ -485,7 +489,7 @@ function LisansRuhsatModulu() {
 // ── Styles ──────────────────────────────────────────────────
 
 const statCardStyle = {
-    background: '#fff', padding: '24px', borderRadius: '16px', border: '1px solid #eee',
+    background: '#fff', padding: '24px', borderRadius: '16px', border: '1px solid var(--surface-container-highest)',
     display: 'flex', flexDirection: 'column', transition: 'transform 0.2s',
     boxShadow: '0 4px 12px rgba(0,0,0,0.02)'
 };
@@ -495,22 +499,22 @@ const statValueStyle = {
 };
 
 const statLabelStyle = {
-    fontSize: '12px', fontWeight: 600, color: '#95A5A6', textTransform: 'uppercase', letterSpacing: '0.5px'
+    fontSize: '12px', fontWeight: 600, color: 'var(--on-surface-variant)', textTransform: 'uppercase', letterSpacing: '0.5px'
 };
 
 const labelStyle = {
-    display: 'block', fontSize: '11px', fontWeight: 800, color: '#95A5A6', marginBottom: '6px', letterSpacing: '0.5px'
+    display: 'block', fontSize: '11px', fontWeight: 800, color: 'var(--on-surface-variant)', marginBottom: '6px', letterSpacing: '0.5px'
 };
 
 const inputStyle = {
-    width: '100%', padding: '12px 14px', borderRadius: '10px', border: '1px solid #D5DBDB',
+    width: '100%', padding: '12px 14px', borderRadius: '10px', border: '1px solid var(--surface-container-highest)',
     outline: 'none', fontSize: '14px', fontFamily: 'inherit', boxSizing: 'border-box'
 };
 
 const actionBtnStyle = {
-    background: '#F8F9F9', border: 'none', borderRadius: '8px', width: '34px', height: '34px',
+    background: 'var(--surface-container-low)', border: 'none', borderRadius: '8px', width: '34px', height: '34px',
     display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '14px',
-    transition: '0.2s', border: '1px solid #eee'
+    transition: '0.2s', border: '1px solid var(--surface-container-highest)'
 };
 
 const modalOverlayStyle = {

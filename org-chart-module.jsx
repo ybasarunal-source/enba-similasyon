@@ -132,9 +132,13 @@ function OrgChartModule() {
             </div>
 
             {/* User Sidebar */}
-            <div style={{ background: '#fff', borderRadius: '2rem', padding: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', height: 'fit-content', position: 'sticky', top: '40px' }}>
-                <h3 style={{ fontFamily: "'Manrope', sans-serif", fontSize: '18px', fontWeight: 800, margin: '0 0 16px' }}>Tüm Personel</h3>
-                <p style={{ fontSize: '12px', color: '#666', marginBottom: '24px' }}>Kullanıcıları şema üzerindeki rollere sürükleyerek atama yapabilirsiniz.</p>
+            <div className="enba-card" style={{ padding: '24px', height: 'fit-content', position: 'sticky', top: '40px' }}>
+                <h3 style={{ fontFamily: "'Manrope', sans-serif", fontSize: '18px', fontWeight: 800, margin: '0 0 16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <i className="ph ph-users"></i> Tüm Personel
+                </h3>
+                <p style={{ fontSize: '12px', color: 'var(--on-surface-variant)', marginBottom: '24px' }}>
+                    Kullanıcıları şema üzerindeki rollere sürükleyerek atama yapabilirsiniz.
+                </p>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     {users.map(u => (
@@ -143,12 +147,13 @@ function OrgChartModule() {
                             draggable
                             onDragStart={(e) => handleDragStart(e, u)}
                             style={{ 
-                                padding: '12px', border: '1px solid #eee', borderRadius: '1rem', 
+                                padding: '12px', border: '1px solid var(--surface-container-high)', borderRadius: '1rem', 
                                 display: 'flex', alignItems: 'center', gap: '12px', cursor: 'grab',
-                                transition: 'all 0.2s'
+                                transition: 'all 0.2s',
+                                background: 'var(--surface-container-lowest)'
                             }}
                             onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--enba-orange)'}
-                            onMouseLeave={e => e.currentTarget.style.borderColor = '#eee'}
+                            onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--surface-container-high)'}
                         >
                             <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--surface-container-high)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 800 }}>
                                 {u.avatar ? <img src={u.avatar} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} /> : u.name[0]}
@@ -162,7 +167,9 @@ function OrgChartModule() {
                 </div>
 
                 <div style={{ marginTop: '32px', padding: '16px', borderRadius: '1rem', background: 'var(--enba-dark)', color: '#fff' }}>
-                    <div style={{ fontSize: '11px', fontWeight: 700, opacity: 0.7, marginBottom: '4px' }}>BİLGİ</div>
+                    <div style={{ fontSize: '11px', fontWeight: 700, opacity: 0.7, marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <i className="ph ph-info"></i> BİLGİ
+                    </div>
                     <div style={{ fontSize: '12px', lineHeight: '1.5' }}>
                         Hiyerarşide yapılan değişiklikler kullanıcının yetkilerini anında günceller.
                     </div>

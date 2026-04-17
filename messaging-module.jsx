@@ -71,7 +71,7 @@ function MessagingModule({ user }) {
     };
 
     const attachFile = (fileObj) => {
-        sendMessage(`⚡ ? Dosya paylaştı: ${fileObj.ad}`, {
+        sendMessage(`📑 Dosya paylaştı: ${fileObj.ad}`, {
             id: fileObj.id,
             ad: fileObj.ad,
             kategori: fileObj.kategori
@@ -106,24 +106,26 @@ function MessagingModule({ user }) {
                             style={{ 
                                 width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', 
                                 border: 'none', borderRadius: '0.75rem', cursor: 'pointer', textAlign: 'left',
-                                background: activePeerId === 'announcements' ? 'rgba(243,156,18,0.1)' : 'transparent',
-                                color: activePeerId === 'announcements' ? 'var(--enba-orange-dark)' : 'var(--on-surface)'
+                                background: activePeerId === 'announcements' ? 'var(--warning-container)' : 'transparent',
+                                color: activePeerId === 'announcements' ? 'var(--enba-orange)' : 'var(--on-surface)',
+                                transition: 'all 0.2s'
                             }}
                         >
-                            <span style={{ fontSize: '18px' }}>⚡ </span>
-                            <div style={{ fontWeight: activePeerId === 'announcements' ? 700 : 500 }}>Genel Duyurular</div>
+                            <i className="ph ph-megaphone" style={{ fontSize: '18px' }}></i>
+                            <div style={{ fontWeight: activePeerId === 'announcements' ? 800 : 600 }}>Genel Duyurular</div>
                         </button>
                         <button 
                             onClick={() => { setActivePeerId('general'); setActiveTab('group'); }}
                             style={{ 
                                 width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', 
                                 border: 'none', borderRadius: '0.75rem', cursor: 'pointer', textAlign: 'left',
-                                background: activePeerId === 'general' ? 'rgba(243,156,18,0.1)' : 'transparent',
-                                color: activePeerId === 'general' ? 'var(--enba-orange-dark)' : 'var(--on-surface)'
+                                background: activePeerId === 'general' ? 'var(--warning-container)' : 'transparent',
+                                color: activePeerId === 'general' ? 'var(--enba-orange)' : 'var(--on-surface)',
+                                transition: 'all 0.2s'
                             }}
                         >
-                            <span style={{ fontSize: '18px' }}>⚡ </span>
-                            <div style={{ fontWeight: activePeerId === 'general' ? 700 : 500 }}>Genel Sohbet</div>
+                            <i className="ph ph-chat-circle" style={{ fontSize: '18px' }}></i>
+                            <div style={{ fontWeight: activePeerId === 'general' ? 800 : 600 }}>Genel Sohbet</div>
                         </button>
                     </div>
 
@@ -136,10 +138,11 @@ function MessagingModule({ user }) {
                                 onClick={() => { setActivePeerId(u.id); setActiveTab('dm'); }}
                                 style={{ 
                                     width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px', 
-                                    border: 'none', borderRadius: '0.75rem', cursor: 'pointer', textAlign: 'left',
-                                    background: activePeerId === u.id ? 'rgba(39,174,96,0.1)' : 'transparent',
+                                    border: 'none', borderRadius: '1rem', cursor: 'pointer', textAlign: 'left',
+                                    background: activePeerId === u.id ? 'var(--warning-container)' : 'transparent',
                                     color: activePeerId === u.id ? 'var(--enba-orange)' : 'var(--on-surface)',
-                                    marginBottom: '2px'
+                                    marginBottom: '2px',
+                                    transition: 'all 0.2s'
                                 }}
                             >
                                 <div style={{ 
@@ -166,8 +169,8 @@ function MessagingModule({ user }) {
                     padding: '16px 24px', background: '#fff', borderBottom: '1px solid var(--surface-container-high)',
                     display: 'flex', alignItems: 'center', gap: '16px'
                 }}>
-                    <div style={{ fontSize: '20px' }}>
-                        {activePeerId === 'announcements' ? '⚡ ' : activePeerId === 'general' ? '⚡ ' : '⚡ '}
+                    <div style={{ fontSize: '24px', color: 'var(--enba-orange)' }}>
+                        <i className={activePeerId === 'announcements' ? 'ph ph-megaphone' : 'ph ph-chat-centered-text'}></i>
                     </div>
                     <div>
                         <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800 }}>
@@ -192,7 +195,7 @@ function MessagingModule({ user }) {
                                 {!isMe && activeTab === 'group' && (
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px', marginLeft: '4px' }}>
                                         <div style={{ 
-                                            width: '18px', height: '18px', borderRadius: '50%', background: '#ddd', overflow: 'hidden',
+                                            width: '18px', height: '18px', borderRadius: '50%', background: 'var(--surface-container-high)', overflow: 'hidden',
                                             display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '8px', fontWeight: 800
                                         }}>
                                             {(() => {
@@ -216,7 +219,7 @@ function MessagingModule({ user }) {
                                             display: 'flex', alignItems: 'center', gap: '10px', padding: '8px', 
                                             background: 'rgba(255,255,255,0.1)', borderRadius: '0.5rem', cursor: 'pointer' 
                                         }} onClick={() => alert('Dosya Görüntüleniyor: ' + m.file.ad)}>
-                                            <span style={{ fontSize: '20px' }}>⚡ </span>
+                                            <i className="ph ph-file" style={{ fontSize: '24px' }}></i>
                                             <div>
                                                 <div style={{ fontSize: '13px', fontWeight: 700 }}>{m.file.ad}</div>
                                                 <div style={{ fontSize: '10px', opacity: 0.8 }}>{m.file.kategori}</div>
@@ -234,8 +237,8 @@ function MessagingModule({ user }) {
 
                 {/* Input Area */}
                 {activePeerId === 'announcements' && !isSystemUser ? (
-                    <div style={{ padding: '20px', background: '#eee', textAlign: 'center', fontSize: '13px', color: '#666' }}>
-                        Bu kanala sadece yöneticiler mesaj gönderebilir.
+                    <div style={{ padding: '20px', background: 'var(--surface-container-low)', textAlign: 'center', fontSize: '13px', color: 'var(--on-surface-variant)', fontWeight: 600 }}>
+                        <i className="ph ph-lock" style={{ marginRight: '8px' }}></i> Bu kanala sadece yöneticiler mesaj gönderebilir.
                     </div>
                 ) : (
                     <div style={{ padding: '20px', background: '#fff', borderTop: '1px solid var(--surface-container-high)' }}>
@@ -246,10 +249,10 @@ function MessagingModule({ user }) {
                             <button 
                                 type="button" 
                                 onClick={() => setShowFilePicker(true)}
-                                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', opacity: 0.6 }}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '22px', opacity: 0.6, color: 'var(--enba-dark)' }}
                                 title="Dosya Ekle"
                             >
-                                ⚡ ?
+                                <i className="ph ph-paperclip"></i>
                             </button>
                             <input 
                                 className="form-control"
@@ -258,8 +261,8 @@ function MessagingModule({ user }) {
                                 onChange={(e) => setInputText(e.target.value)}
                                 style={{ borderRadius: '1.5rem', paddingLeft: '20px' }}
                             />
-                            <button type="submit" className="btn btn-primary" style={{ borderRadius: '50%', width: '44px', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                ⚡ 
+                            <button type="submit" className="btn btn-primary" style={{ borderRadius: '50%', width: '44px', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 0 }}>
+                                <i className="ph-fill ph-paper-plane-right" style={{ fontSize: '20px' }}></i>
                             </button>
                         </form>
                     </div>
@@ -275,15 +278,15 @@ function MessagingModule({ user }) {
                             <button onClick={() => setShowFilePicker(false)} style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer' }}>×</button>
                         </div>
                         <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            {archiveFiles.length === 0 ? <p style={{ textAlign: 'center', color: '#666' }}>Arşivde dosya bulunmuyor.</p> : archiveFiles.map(f => (
+                            {archiveFiles.length === 0 ? <p style={{ textAlign: 'center', color: 'var(--on-surface-variant)' }}>Arşivde dosya bulunmuyor.</p> : archiveFiles.map(f => (
                                 <div key={f.id} onClick={() => attachFile(f)} style={{ 
-                                    padding: '12px 16px', borderRadius: '1rem', border: '1px solid #eee', cursor: 'pointer',
+                                    padding: '12px 16px', borderRadius: '1rem', border: '1px solid var(--surface-container-high)', cursor: 'pointer',
                                     display: 'flex', alignItems: 'center', gap: '12px', transition: 'all 0.2s'
-                                }} onMouseOver={e=>e.currentTarget.style.background='#f0f0f0'} onMouseOut={e=>e.currentTarget.style.background='none'}>
-                                    <span style={{ fontSize: '24px' }}>⚡ </span>
+                                }} onMouseOver={e=>e.currentTarget.style.background='var(--surface-container-low)'} onMouseOut={e=>e.currentTarget.style.background='none'}>
+                                    <i className="ph ph-file-text" style={{ fontSize: '24px', color: 'var(--enba-orange)' }}></i>
                                     <div style={{ flex: 1 }}>
                                         <div style={{ fontWeight: 700, fontSize: '14px' }}>{f.ad}</div>
-                                        <div style={{ fontSize: '11px', color: '#666' }}>{f.kategori} • {f.tarih}</div>
+                                        <div style={{ fontSize: '11px', color: 'var(--on-surface-variant)' }}>{f.kategori} • {f.tarih}</div>
                                     </div>
                                     <button className="btn btn-primary" style={{ fontSize: '11px', padding: '6px 12px' }}>Seç</button>
                                 </div>

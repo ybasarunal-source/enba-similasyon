@@ -25,11 +25,11 @@ function ProductionLineModule() {
 
     // --- Industrial Theme Palette ---
     const THEME = {
-        primary: '#2C3E50',     // Deep Industrial Blue
-        secondary: '#7F8C8D',   // Steel Gray
-        accent: '#3498DB',      // Tech Blue
-        danger: '#E74C3C',      // Bottleneck Red
-        surface: '#ECF0F1'      // Metallic Light Gray
+        primary: 'var(--enba-dark)',     // Deep Industrial Blue
+        secondary: 'var(--on-surface-variant)',   // Steel Gray
+        accent: 'var(--enba-orange)',      // Tech Blue
+        danger: 'var(--error)',      // Bottleneck Red
+        surface: 'var(--surface-container-low)'      // Metallic Light Gray
     };
 
     // --- Hierarchical Size Engine ---
@@ -65,16 +65,16 @@ function ProductionLineModule() {
         const n = (name || '').toLowerCase();
         const c = (category || '').toLowerCase();
         
-        if (n.includes('kırma') || n.includes('shredder')) return '⚡';
-        if (n.includes('yıkama') || n.includes('wash')) return '⚡ ';
-        if (n.includes('ekstrüder') || n.includes('extruder') || n.includes('eritm')) return '⚡ ';
-        if (n.includes('bant') || n.includes('conveyor') || c.includes('konveyör')) return '⚡';
-        if (n.includes('silo')) return '⚡ ';
-        if (n.includes('paket') || n.includes('press')) return '⚡ ';
-        if (n.includes('ayrıştırma') || n.includes('sort')) return '⚡ ';
-        if (n.includes('değirmen')) return '⚡ ';
+        if (n.includes('kırma') || n.includes('shredder')) return <i className="ph ph-lightning"></i>;
+        if (n.includes('yıkama') || n.includes('wash')) return <i className="ph ph-drop"></i>;
+        if (n.includes('ekstrüder') || n.includes('extruder') || n.includes('eritm')) return <i className="ph ph-fire"></i>;
+        if (n.includes('bant') || n.includes('conveyor') || c.includes('konveyör')) return <i className="ph ph-arrows-left-right"></i>;
+        if (n.includes('silo')) return <i className="ph ph-cylinder"></i>;
+        if (n.includes('paket') || n.includes('press')) return <i className="ph ph-package"></i>;
+        if (n.includes('ayrıştırma') || n.includes('sort')) return <i className="ph ph-funnel"></i>;
+        if (n.includes('değirmen')) return <i className="ph ph-spinner"></i>;
         
-        return '⚙️'; // Default
+        return <i className="ph ph-gear"></i>; // Default
     };
 
     // --- Actions ---
@@ -133,11 +133,11 @@ function ProductionLineModule() {
                 minWidth: tier.width,
                 maxWidth: tier.width,
                 padding: tier.id === 'small' ? '16px' : '24px',
-                background: 'rgba(255, 255, 255, 0.85)',
+                background: 'var(--surface-container-lowest)',
                 backdropFilter: 'blur(10px)',
                 borderRadius: '1.25rem',
-                border: isBottleneck ? `2px solid ${THEME.danger}` : '1px solid rgba(0,0,0,0.08)',
-                boxShadow: isBottleneck ? `0 0 30px ${THEME.danger}44` : '0 15px 35px rgba(0,0,0,0.05)',
+                border: isBottleneck ? `2px solid var(--error)` : '1px solid var(--surface-container-highest)',
+                boxShadow: isBottleneck ? `0 0 30px var(--error)44` : 'var(--shadow-md)',
                 textAlign: 'center',
                 zIndex: isBottleneck ? 20 : 10,
                 transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -183,10 +183,10 @@ function ProductionLineModule() {
                     </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: '6px', marginTop: 'auto' }}>
-                    <button onClick={() => moveMachine(index, -1)} style={{ width: '28px', height: '28px', border: 'none', background: '#f0f2f5', borderRadius: '0.5rem', cursor: 'pointer' }}>◀</button>
-                    <button onClick={() => removeMachineFromLine(machine.instanceId)} style={{ height: '28px', padding: '0 10px', border: 'none', background: '#fee2e2', color: '#ef4444', borderRadius: '0.5rem', fontWeight: 700, fontSize: '10px', cursor: 'pointer' }}>SIL</button>
-                    <button onClick={() => moveMachine(index, 1)} style={{ width: '28px', height: '28px', border: 'none', background: '#f0f2f5', borderRadius: '0.5rem', cursor: 'pointer' }}>▶</button>
+                <div style={{ display: 'flex', gap: '8px', marginTop: 'auto' }}>
+                    <button onClick={() => moveMachine(index, -1)} className="btn-icon" style={{ width: '32px', height: '32px' }}><i className="ph ph-caret-left"></i></button>
+                    <button onClick={() => removeMachineFromLine(machine.instanceId)} className="btn-icon" style={{ height: '32px', padding: '0 12px', color: 'var(--error)', fontSize: '11px' }}>SİL</button>
+                    <button onClick={() => moveMachine(index, 1)} className="btn-icon" style={{ width: '32px', height: '32px' }}><i className="ph ph-caret-right"></i></button>
                 </div>
             </div>
         );
@@ -207,16 +207,17 @@ function ProductionLineModule() {
                 </div>
                 
                 {!activeLineId ? (
-                    <div style={{ display: 'flex', border: '1px solid rgba(0,0,0,0.1)', padding: '6px', borderRadius: '1rem', background: '#fff' }}>
+                    <div style={{ display: 'flex', border: '1px solid var(--surface-container-high)', padding: '6px', borderRadius: '1rem', background: '#fff' }}>
                         <input 
-                            style={{ border: 'none', padding: '10px 16px', outline: 'none', width: '220px', fontFamily: "'Inter', sans-serif" }}
+                            style={{ border: 'none', padding: '10px 16px', outline: 'none', width: '220px', fontFamily: "'Inter', sans-serif", fontSize: '14px' }}
                             placeholder="Örn: Yıkama Hattı A"
                             value={lineName}
                             onChange={e => setLineName(e.target.value)}
                         />
                         <button 
                             onClick={handleAddLine}
-                            style={{ background: THEME.primary, color: '#fff', border: 'none', borderRadius: '0.75rem', padding: '10px 24px', fontWeight: 800, cursor: 'pointer' }}
+                            className="btn btn-primary"
+                            style={{ padding: '10px 24px' }}
                         >
                             YENİ HAT OLUŞTUR
                         </button>
@@ -231,12 +232,14 @@ function ProductionLineModule() {
             {!activeLineId ? (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '24px' }}>
                     {lines.map(line => (
-                        <div key={line.id} onClick={() => setActiveLineId(line.id)} style={{ padding: '32px', background: '#fff', borderRadius: '2rem', border: '1px solid rgba(0,0,0,0.06)', boxShadow: '0 10px 30px rgba(0,0,0,0.03)', cursor: 'pointer', transition: 'all 0.3s' }} onMouseOver={e => { e.currentTarget.style.borderColor = THEME.accent; e.currentTarget.style.transform = 'translateY(-5px)'; }} onMouseOut={e => { e.currentTarget.style.borderColor = 'rgba(0,0,0,0.06)'; e.currentTarget.style.transform = 'translateY(0)'; }}>
+                        <div key={line.id} onClick={() => setActiveLineId(line.id)} style={{ padding: '32px', background: 'var(--surface-container-lowest)', borderRadius: '2rem', border: '1px solid var(--surface-container-high)', boxShadow: 'var(--shadow-sm)', cursor: 'pointer', transition: 'all 0.3s' }} onMouseOver={e => { e.currentTarget.style.borderColor = 'var(--enba-orange)'; e.currentTarget.style.transform = 'translateY(-5px)'; }} onMouseOut={e => { e.currentTarget.style.borderColor = 'var(--surface-container-high)'; e.currentTarget.style.transform = 'translateY(0)'; }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
-                                <div style={{ width: '48px', height: '48px', background: THEME.surface, borderRadius: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' }}>⚡</div>
+                                <div style={{ width: '48px', height: '48px', background: 'var(--surface-container-low)', borderRadius: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', color: 'var(--enba-orange)' }}>
+                                    <i className="ph-fill ph-factory"></i>
+                                </div>
                                 <div style={{ textAlign: 'right' }}>
-                                    <div style={{ fontSize: '10px', fontWeight: 800, color: THEME.secondary }}>MAKİNE SAYISI</div>
-                                    <div style={{ fontSize: '20px', fontWeight: 800, color: THEME.primary }}>{line.machines ? line.machines.length : 0} Adet</div>
+                                    <div style={{ fontSize: '10px', fontWeight: 800, color: 'var(--on-surface-variant)' }}>MAKİNE SAYISI</div>
+                                    <div style={{ fontSize: '20px', fontWeight: 800, color: 'var(--enba-dark)' }}>{line.machines ? line.machines.length : 0} Adet</div>
                                 </div>
                             </div>
                             <h3 style={{ fontSize: '20px', fontWeight: 800, color: THEME.primary, margin: '0 0 4px' }}>{line.name}</h3>
@@ -276,9 +279,9 @@ function ProductionLineModule() {
                     <div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '32px' }}>
                             {[
-                                { label: 'HAT GÜCÜ', val: analytics.power + ' kW', color: THEME.primary, icon: '⚡' },
-                                { label: 'HAT KAPASİTESİ', val: analytics.speed + ' t/h', color: THEME.accent, icon: '⚡ ' },
-                                { label: 'DARBOĞAZ', val: analytics.bottleneck ? analytics.bottleneck.adi : 'YOK', color: THEME.danger, icon: '⚡ ' },
+                                { label: 'HAT GÜCÜ', val: analytics.power + ' kW', color: THEME.primary, icon: <i className="ph-fill ph-lightning"></i> },
+                                { label: 'HAT KAPASİTESİ', val: analytics.speed + ' t/h', color: THEME.accent, icon: <i className="ph-fill ph-waves"></i> },
+                                { label: 'DARBOĞAZ', val: analytics.bottleneck ? analytics.bottleneck.adi : 'YOK', color: THEME.danger, icon: <i className="ph-fill ph-warning-octagon"></i> },
                             ].map(stat => (
                                 <div key={stat.label} style={{ background: '#fff', padding: '24px', borderRadius: '1.5rem', boxShadow: '0 15px 40px rgba(0,0,0,0.04)', border: '1px solid rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', gap: '20px' }}>
                                     <div style={{ fontSize: '28px', opacity: 0.8 }}>{stat.icon}</div>
@@ -292,15 +295,15 @@ function ProductionLineModule() {
 
                         {/* Interactive Blueprint Canvas */}
                         <div style={{ 
-                            background: '#F8FAFB', 
+                            background: 'var(--surface-container-low)', 
                             borderRadius: '2.5rem', 
                             minHeight: '520px', 
-                            border: '2px dashed rgba(0,0,0,0.05)', 
+                            border: '2px dashed var(--surface-container-highest)', 
                             position: 'relative', 
                             overflow: 'auto', 
                             display: 'flex', 
                             padding: '40px',
-                            backgroundImage: `radial-gradient(circle at 1px 1px, #DDE4E9 1px, transparent 0)`,
+                            backgroundImage: `radial-gradient(circle at 1px 1px, var(--surface-container-highest) 1px, transparent 0)`,
                             backgroundSize: '30px 30px'
                         }}>
                             <div style={{
@@ -314,9 +317,11 @@ function ProductionLineModule() {
                             }}>
                             {!activeLine || !activeLine.machines || activeLine.machines.length === 0 ? (
                                 <div style={{ width: '100%', textAlign: 'center', opacity: 0.3 }}>
-                                    <div style={{ fontSize: '64px', marginBottom: '20px' }}>⚡</div>
-                                    <div style={{ fontWeight: 800, fontSize: '20px' }}>TASARIM ALANI BOŞ</div>
-                                    <div style={{ fontWeight: 600, fontSize: '14px' }}>Makineleri soldan sürükleyin veya tıklayarak hatta ekleyin.</div>
+                                    <div style={{ fontSize: '64px', marginBottom: '20px', color: 'var(--enba-orange)' }}>
+                                        <i className="ph ph-blueprint"></i>
+                                    </div>
+                                    <div style={{ fontWeight: 800, fontSize: '20px', color: 'var(--enba-dark)' }}>TASARIM ALANI BOŞ</div>
+                                    <div style={{ fontWeight: 600, fontSize: '14px', color: 'var(--on-surface-variant)' }}>Makineleri soldan sürükleyin veya tıklayarak hatta ekleyin.</div>
                                 </div>
                             ) : (
                                 <>
@@ -349,8 +354,10 @@ function ProductionLineModule() {
                         </div>
                         
                         <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                             <div style={{ color: THEME.secondary, fontSize: '12px', fontWeight: 600 }}>Tüm değişiklikler otomatik olarak kaydedilir.</div>
-                             <button onClick={() => { if(window.confirm('Bu hattı silmeye emin misiniz?')) { setLines(lines.filter(l => l.id !== activeLineId)); setActiveLineId(null); } }} style={{ background: 'none', border: 'none', color: THEME.danger, fontSize: '13px', fontWeight: 900, cursor: 'pointer', padding: '10px' }}>Hattı Kalıcı Olarak Sil ⚡</button>
+                             <div style={{ color: 'var(--on-surface-variant)', fontSize: '13px', fontWeight: 600 }}>Tüm değişiklikler otomatik olarak kaydedilir.</div>
+                             <button onClick={() => { if(window.confirm('Bu hattı silmeye emin misiniz?')) { setLines(lines.filter(l => l.id !== activeLineId)); setActiveLineId(null); } }} className="btn btn-secondary" style={{ color: 'var(--error)', fontSize: '13px', fontWeight: 800, border: 'none', background: 'none' }}>
+                                <i className="ph ph-trash" style={{ marginRight: '6px' }}></i> Hattı Kalıcı Olarak Sil
+                             </button>
                         </div>
                     </div>
                 </div>

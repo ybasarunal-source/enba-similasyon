@@ -80,8 +80,8 @@ function YetkiYonetimi() {
             
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
                 <div>
-                    <h1 style={{ fontFamily: "'Manrope', sans-serif", fontSize: '28px', color: 'var(--enba-dark)', margin: '0 0 8px' }}>
-                        ⚡  Yetki ve Kullanıcı Yönetimi
+                    <h1 style={{ fontFamily: "'Manrope', sans-serif", fontSize: '28px', color: 'var(--enba-dark)', margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <i className="ph-fill ph-shield-check" style={{ color: 'var(--enba-orange)' }}></i> Yetki ve Kullanıcı Yönetimi
                     </h1>
                     <p style={{ margin: 0, color: 'var(--on-surface-variant)', fontSize: '14px' }}>
                         Sistem kullanıcılarını ekleyin ve modül bazlı erişim yetkilerini düzenleyin.
@@ -96,13 +96,7 @@ function YetkiYonetimi() {
                 </button>
             </div>
 
-            <div style={{ 
-                background: 'var(--surface-container-lowest)', 
-                borderRadius: '1.5rem', 
-                border: '1px solid var(--surface-container-highest)',
-                overflow: 'hidden',
-                boxShadow: 'var(--shadow-sm)'
-            }}>
+            <div className="enba-card" style={{ padding: 0, overflow: 'hidden' }}>
                 <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                         <thead>
@@ -127,7 +121,7 @@ function YetkiYonetimi() {
                                             <select 
                                                 value={u.role}
                                                 onChange={(e) => handleChangeRole(u.id, e.target.value)}
-                                                style={{ padding: '6px 10px', borderRadius: '0.5rem', border: '1px solid #ddd', fontSize: '13px' }}
+                                                style={{ padding: '6px 10px', borderRadius: '0.5rem', border: '1px solid var(--surface-container-highest)', fontSize: '13px' }}
                                             >
                                                 {ROLLER.map(r => <option key={r} value={r}>{r.toUpperCase()}</option>)}
                                             </select>
@@ -135,7 +129,9 @@ function YetkiYonetimi() {
                                     </td>
                                     <td style={{ padding: '20px 24px' }}>
                                         {u.role === window.USER_ROLES.ADMIN || u.role === window.USER_ROLES.GENEL_MUDUR ? (
-                                            <div style={{ fontSize: '12px', color: 'var(--enba-orange)', fontWeight: 700 }}>✨ Tüm modüllere tam erişim</div>
+                                            <div style={{ fontSize: '12px', color: 'var(--enba-orange)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                <i className="ph ph-sparkle"></i> Tüm modüllere tam erişim
+                                            </div>
                                         ) : (
                                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                                                 {MODULLER.map(mod => {
@@ -144,8 +140,8 @@ function YetkiYonetimi() {
                                                         <label key={mod.id} style={{ 
                                                             display: 'flex', alignItems: 'center', gap: '6px', 
                                                             padding: '4px 10px', borderRadius: '2rem', 
-                                                            background: isChecked ? 'rgba(39,174,96,0.1)' : 'var(--surface-container-low)',
-                                                            border: isChecked ? '1px solid var(--enba-orange)' : '1px solid transparent',
+                                                            background: isChecked ? 'var(--success-container)' : 'var(--surface-container-low)',
+                                                            border: isChecked ? '1px solid var(--success)' : '1px solid transparent',
                                                             cursor: 'pointer', transition: 'all 0.2s'
                                                         }}>
                                                             <input 
@@ -153,7 +149,7 @@ function YetkiYonetimi() {
                                                                 checked={isChecked}
                                                                 onChange={() => handleToggleModule(u.id, mod.id)}
                                                             />
-                                                            <span style={{ fontSize: '11px', color: isChecked ? 'var(--enba-orange-dark)' : 'var(--on-surface-variant)', fontWeight: isChecked ? 700 : 500 }}>
+                                                            <span style={{ fontSize: '11px', color: isChecked ? 'var(--success)' : 'var(--on-surface-variant)', fontWeight: isChecked ? 700 : 500 }}>
                                                                 {mod.label}
                                                             </span>
                                                         </label>
@@ -166,10 +162,11 @@ function YetkiYonetimi() {
                                         {u.id !== 'u1' && (
                                             <button 
                                                 onClick={() => handleDeleteUser(u.id)}
-                                                style={{ background: 'none', border: 'none', color: '#e74c3c', cursor: 'pointer', fontSize: '18px' }}
-                                                title="Sauronu Sil"
+                                                className="btn-icon"
+                                                style={{ color: 'var(--error)', fontSize: '18px' }}
+                                                title="Sil"
                                             >
-                                                ⚡ ️
+                                                <i className="ph ph-trash"></i>
                                             </button>
                                         )}
                                     </td>
@@ -182,9 +179,9 @@ function YetkiYonetimi() {
 
             {/* ADD USER MODAL */}
             {showAddModal && (
-                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(5px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-                    <div style={{ background: '#fff', borderRadius: '2rem', width: '100%', maxWidth: '450px', padding: '40px', boxShadow: '0 20px 50px rgba(0,0,0,0.3)' }}>
-                        <h2 style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 800, margin: '0 0 24px' }}>Yeni Kullanıcı Oluştur</h2>
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+                    <div style={{ background: 'var(--surface)', borderRadius: '1.5rem', width: '100%', maxWidth: '450px', padding: '32px', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--surface-container-high)' }}>
+                        <h2 style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 800, margin: '0 0 24px', color: 'var(--enba-dark)' }}>Yeni Kullanıcı Oluştur</h2>
                         <form onSubmit={handleAddUser} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                             <div>
                                 <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px', color: 'var(--on-surface-variant)' }}>AD SOYAD</label>

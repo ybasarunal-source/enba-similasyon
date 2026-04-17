@@ -83,25 +83,30 @@ window.AyarlarModulu = function AyarlarModulu({ globalAyarlar, setGlobalAyarlar 
     ];
 
     const OLCUM_BIRIMLERI = [
-        { kod: 'ton', ad: 'Ton', aciklama: 'Metrik ton (1.000 kg)', icon: '🏗️' },
-        { kod: 'kg',  ad: 'Kilogram', aciklama: 'Kilogram (kg)', icon: '⚖️' },
+        { kod: 'ton', ad: 'Ton', aciklama: 'Metrik ton (1.000 kg)', icon: <i className="ph-fill ph-blueprint"></i> },
+        { kod: 'kg',  ad: 'Kilogram', aciklama: 'Kilogram (kg)', icon: <i className="ph-fill ph-scales"></i> },
     ];
 
     return (
         <div style={{ maxWidth: '860px', margin: '0 auto', padding: '32px 20px' }}>
 
-            <div style={{ marginBottom: '32px' }}>
-                <h1 style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 800, fontSize: '26px', color: 'var(--enba-dark)', margin: 0 }}>
-                    ⚙️ Sistem Ayarları
-                </h1>
-                <p style={{ color: 'var(--on-surface-variant)', fontSize: '14px', margin: '8px 0 0' }}>
-                    Buradaki değerler tüm yeni iş planları için varsayılan olarak kullanılır. Her plan kendi başında değiştirilebilir.
-                </p>
+            <div style={{ marginBottom: '32px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div style={{ width: '48px', height: '48px', background: 'var(--surface-container-low)', borderRadius: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', color: 'var(--enba-orange)' }}>
+                    <i className="ph-fill ph-gear"></i>
+                </div>
+                <div>
+                    <h1 style={{ fontFamily: "'Manrope', sans-serif", fontWeight: 800, fontSize: '26px', color: 'var(--enba-dark)', margin: 0 }}>
+                        Sistem Ayarları
+                    </h1>
+                    <p style={{ color: 'var(--on-surface-variant)', fontSize: '14px', margin: '4px 0 0' }}>
+                        Buradaki değerler tüm yeni iş planları için varsayılan olarak kullanılır. Her plan kendi başında değiştirilebilir.
+                    </p>
+                </div>
             </div>
 
             {/* Para Birimi */}
             <div style={sectionStyle}>
-                <h2 style={sectionTitle}>💱 Temel Para Birimi</h2>
+                <h2 style={sectionTitle}><i className="ph-fill ph-currency-circle-dollar" style={{ marginRight: '10px', color: 'var(--enba-orange)' }}></i> Temel Para Birimi</h2>
                 <label style={labelStyle}>Sistemin varsayılan para birimi</label>
                 <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                     {PARA_BIRIMLERI.map(pb => (
@@ -116,7 +121,7 @@ window.AyarlarModulu = function AyarlarModulu({ globalAyarlar, setGlobalAyarlar 
 
             {/* Ölçüm Birimi */}
             <div style={sectionStyle}>
-                <h2 style={sectionTitle}>📏 Ağırlık / Ölçüm Birimi</h2>
+                <h2 style={sectionTitle}><i className="ph-fill ph-ruler" style={{ marginRight: '10px', color: 'var(--enba-orange)' }}></i> Ağırlık / Ölçüm Birimi</h2>
                 <label style={labelStyle}>Tonaj ve ağırlık hesaplamalarında kullanılacak birim</label>
                 <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                     {OLCUM_BIRIMLERI.map(ob => (
@@ -141,21 +146,18 @@ window.AyarlarModulu = function AyarlarModulu({ globalAyarlar, setGlobalAyarlar 
                 <button
                     onClick={kaydet}
                     disabled={yukleniyor}
+                    className="btn btn-primary"
                     style={{
-                        background: 'var(--enba-orange)',
-                        color: '#fff',
-                        border: 'none',
                         padding: '14px 32px',
                         borderRadius: '2rem',
                         fontWeight: 800,
                         fontSize: '15px',
-                        cursor: yukleniyor ? 'not-allowed' : 'pointer',
-                        opacity: yukleniyor ? 0.7 : 1,
-                        boxShadow: '0 4px 12px rgba(227,82,5,0.3)',
-                        transition: 'all 0.2s',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
                     }}
                 >
-                    {yukleniyor ? 'Kaydediliyor...' : '💾 Ayarları Kaydet'}
+                    {yukleniyor ? 'Kaydediliyor...' : <><i className="ph ph-floppy-disk"></i> Ayarları Kaydet</>}
                 </button>
             </div>
         </div>

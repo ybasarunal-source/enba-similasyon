@@ -333,54 +333,53 @@ function MakinaKatalog() {
 
 
     const turRengi = {
-        'Bakım':          '#2196F3',
-        'Onarım':         '#FF9800',
-        'Tadilat':        '#9C27B0',
-        'Revizyon':       '#009688',
-        'Yedek Parça':    '#F44336',
+        'Bakım':          '#1565C0',
+        'Onarım':         'var(--enba-orange)',
+        'Tadilat':        '#7B1FA2',
+        'Revizyon':       '#2E7D32',
+        'Yedek Parça':    'var(--error)',
         'Nakliye Ücreti': '#795548',
         'Kurulum':        '#00897B',
         'Diğer':          '#607D8B'
     };
 
     const turIkon = {
-        'Bakım':          '⚡ ',
-        'Onarım':         '⚡ ️',
-        'Tadilat':        '⚡ ️',
-        'Revizyon':       '⚡ ',
-        'Yedek Parça':    '⚙️',
-        'Nakliye Ücreti': '⚡ ',
-        'Kurulum':        '⚡ ',
-        'Diğer':          '⚡ '
+        'Bakım':          'ph ph-wrench',
+        'Onarım':         'ph ph-hammer',
+        'Tadilat':        'ph ph-paint-brush',
+        'Revizyon':       'ph ph-arrows-clockwise',
+        'Yedek Parça':    'ph ph-gear',
+        'Nakliye Ücreti': 'ph ph-truck',
+        'Kurulum':        'ph ph-plug',
+        'Diğer':          'ph ph-dots-three-circle'
     };
 
     // ── Sekme butonu ──────────────────────────────────────────
-    const SekmeBtn = ({ id, label }) => (
+    const SekmeBtn = ({ id, label, icon }) => (
         <button
             onClick={() => setSekme(id)}
+            className={`btn ${sekme === id ? 'btn-primary' : 'btn-secondary'}`}
             style={{
                 padding: '10px 22px',
                 borderRadius: '2rem',
-                border: 'none',
-                background: sekme === id ? 'var(--enba-dark)' : 'var(--surface-container-high)',
-                color:      sekme === id ? '#fff' : 'var(--on-surface-variant)',
-                fontWeight: 700,
-                fontSize:   '14px',
-                cursor:     'pointer',
-                transition: 'all 0.18s'
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
             }}
-        >{label}</button>
+        >
+            <i className={icon}></i> {label}
+        </button>
     );
 
     return (
         <div style={{ padding: '32px 40px', maxWidth: '1100px', margin: '0 auto', fontFamily: "'Inter', sans-serif" }}>
 
             {/* ── Başlık ─────────────────────────────────────── */}
-            <div style={{ marginBottom: '28px' }}>
-                <h1 style={{ fontFamily: "'Manrope', sans-serif", fontSize: '26px', color: 'var(--enba-dark)', margin: '0 0 6px' }}>
-                    ⚙️ {window.t('assets.title')}
+            <div style={{ marginBottom: '32px' }}>
+                <h1 style={{ fontFamily: "'Manrope', sans-serif", fontSize: '28px', color: 'var(--enba-dark)', margin: '0 0 8px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <i className="ph-fill ph-factory" style={{ color: 'var(--enba-orange)' }}></i> {window.t('assets.title')}
                 </h1>
-                <p style={{ margin: 0, color: 'var(--on-surface-variant)', fontSize: '14px' }}>
+                <p style={{ margin: 0, color: 'var(--on-surface-variant)', fontSize: '15px' }}>
                     {window.t('assets.desc')}
                 </p>
             </div>
@@ -391,7 +390,7 @@ function MakinaKatalog() {
                     { baslik: window.t('assets.total_invest'),        deger: toplamYatirim,         renk: 'var(--enba-dark)',      alt: `${makinalar.length} ${window.t('assets.machineries')} + ${demirbaslar.length} ${window.t('assets.fixtures')}` },
                     { baslik: window.t('assets.machinery_invest'),    deger: toplamMakinaYatirim,   renk: '#1976D2',               alt: `${makinalar.length} ${window.t('assets.machineries')}` },
                     { baslik: window.t('assets.fixture_invest'),  deger: toplamDemirbasYatirim, renk: '#7B1FA2',               alt: `${demirbaslar.length} ${window.t('assets.fixtures')}` },
-                    { baslik: window.t('assets.total_maintenance'),     deger: toplamBakim,           renk: '#D32F2F',               alt: window.t('common.all_time') || 'All Time' },
+                    { baslik: window.t('assets.total_maintenance'),     deger: toplamBakim,           renk: 'var(--enba-dark)',               alt: window.t('common.all_time') || 'All Time' },
                     { baslik: window.t('assets.yearly_maintenance'),     deger: buYilBakim,            renk: '#F57C00',               alt: new Date().getFullYear() + ' yılı' },
                 ].map((k, i) => (
                     <div key={i} style={{ ...cardStyle, borderTop: `3px solid ${k.renk}` }}>
@@ -405,10 +404,10 @@ function MakinaKatalog() {
             </div>
 
             {/* ── Sekmeler ───────────────────────────────────── */}
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', flexWrap: 'wrap' }}>
-                <SekmeBtn id="makinalar"  label={`⚙️ ${window.t('assets.machineries')} (${makinalar.length})`} />
-                <SekmeBtn id="demirbaslar" label={`⚡ ️ ${window.t('assets.fixtures')} (${demirbaslar.length})`} />
-                <SekmeBtn id="bakim"       label={`⚡  ${window.t('assets.expenses')} (${bakimKayitlari.length})`} />
+            <div style={{ display: 'flex', gap: '12px', marginBottom: '32px', flexWrap: 'wrap' }}>
+                <SekmeBtn id="makinalar"  icon="ph ph-gear" label={`${window.t('assets.machineries')} (${makinalar.length})`} />
+                <SekmeBtn id="demirbaslar" icon="ph ph-office-chair" label={`${window.t('assets.fixtures')} (${demirbaslar.length})`} />
+                <SekmeBtn id="bakim"       icon="ph ph-wrench" label={`${window.t('assets.expenses')} (${bakimKayitlari.length})`} />
             </div>
 
             {/* ══════════════════════════════════════════════════
@@ -416,28 +415,32 @@ function MakinaKatalog() {
             ══════════════════════════════════════════════════ */}
             {sekme === 'makinalar' && (
                 <div>
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginBottom: '16px' }}>
-                        <button onClick={orbekDosyaIndir} style={{ ...btnSecondary, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            ⚡  {window.t('assets.download_template')}
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginBottom: '24px' }}>
+                        <button onClick={orbekDosyaIndir} className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <i className="ph ph-file-arrow-down"></i> {window.t('assets.download_template')}
                         </button>
-                        <button onClick={() => { setTopluFormAcik(true); setTopluOnizleme([]); setTopluHata(''); }} style={{ ...btnPrimary, background: '#1976D2', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            ⚡  {window.t('assets.bulk_excel')}
+                        <button onClick={() => { setTopluFormAcik(true); setTopluOnizleme([]); setTopluHata(''); }} className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <i className="ph ph-file-xls"></i> {window.t('assets.bulk_excel')}
                         </button>
-                        <button onClick={() => mFormAc()} style={{ ...btnPrimary, background: 'var(--enba-orange)' }}>+ {window.t('assets.new_machinery')}</button>
+                        <button onClick={() => mFormAc()} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <i className="ph ph-plus-circle"></i> {window.t('assets.new_machinery')}
+                        </button>
                     </div>
 
                     {/* ── Toplu Excel Yükleme Modalı ── */}
                     {topluFormAcik && (
-                        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-                            <div style={{ background: 'var(--surface-container-lowest)', borderRadius: '1.4rem', padding: '32px', width: '100%', maxWidth: '820px', maxHeight: '85vh', overflowY: 'auto', boxShadow: '0 8px 40px rgba(0,0,0,0.22)' }}>
+                        <div style={{ position: 'fixed', inset: 0, background: 'rgba(21,34,46,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', backdropFilter: 'blur(5px)' }}>
+                            <div className="enba-card" style={{ padding: '32px', width: '100%', maxWidth: '820px', maxHeight: '85vh', overflowY: 'auto', boxShadow: '0 20px 50px rgba(0,0,0,0.3)' }}>
 
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                                    <h2 style={{ margin: 0, fontFamily: "'Manrope', sans-serif", color: 'var(--enba-dark)', fontSize: '20px' }}>⚡  {window.t('assets.bulk_upload_title')}</h2>
-                                    <button onClick={() => setTopluFormAcik(false)} style={{ background: 'none', border: 'none', fontSize: '22px', cursor: 'pointer', color: 'var(--on-surface-variant)' }}>✕</button>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                                    <h2 style={{ margin: 0, fontFamily: "'Manrope', sans-serif", color: 'var(--enba-dark)', fontSize: '20px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <i className="ph ph-file-arrow-up"></i> {window.t('assets.bulk_upload_title')}
+                                    </h2>
+                                    <button onClick={() => setTopluFormAcik(false)} className="btn-icon" style={{ fontSize: '22px' }}><i className="ph ph-x"></i></button>
                                 </div>
 
                                 {/* Beklenen format bilgisi */}
-                                <div style={{ background: 'rgba(25,118,210,0.07)', border: '1px solid rgba(25,118,210,0.2)', borderRadius: '0.75rem', padding: '14px 18px', marginBottom: '20px', fontSize: '13px', color: 'var(--on-surface-variant)' }}>
+                                <div style={{ background: 'rgba(25,118,210,0.07)', border: '1px solid rgba(25,118,210,0.2)', borderRadius: '0.75rem', padding: '14px 18px', marginBottom: '24px', fontSize: '13px', color: 'var(--on-surface-variant)' }}>
                                     <strong style={{ color: '#1565C0' }}>{window.t('assets.excel_order')}</strong><br/>
                                     <span style={{ fontFamily: 'monospace', fontSize: '12px' }}>
                                         A: {window.t('assets.name')} &nbsp;|&nbsp; B: {window.t('assets.brand')} &nbsp;|&nbsp; C: {window.t('assets.power')} (kW) &nbsp;|&nbsp; D: {window.t('assets.category')} &nbsp;|&nbsp; E: {window.t('assets.date')} &nbsp;|&nbsp; F: {window.t('assets.price')} (₺)
@@ -448,25 +451,26 @@ function MakinaKatalog() {
                                 <input ref={topluDosyaRef} type="file" accept=".xlsx,.xls" onChange={topluDosyaSecildi} style={{ display: 'none' }} />
                                 <button
                                     onClick={() => topluDosyaRef.current && topluDosyaRef.current.click()}
-                                    style={{ ...btnPrimary, background: '#1976D2', width: '100%', marginBottom: '16px', fontSize: '15px', padding: '14px' }}
+                                    className="btn btn-primary"
+                                    style={{ width: '100%', marginBottom: '24px', fontSize: '15px', padding: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
                                 >
-                                    ⚡  {window.t('assets.select_excel_file')}
+                                    <i className="ph ph-file-xls"></i> {window.t('assets.select_excel_file')}
                                 </button>
 
                                 {/* Hata */}
                                 {topluHata && (
-                                    <div style={{ background: '#FFEBEE', border: '1px solid #FFCDD2', borderRadius: '0.75rem', padding: '12px 16px', color: '#C62828', marginBottom: '16px', fontSize: '13px' }}>
-                                        ⚠️ {topluHata}
+                                    <div style={{ background: 'var(--error-container)', border: '1px solid var(--surface-container-high)', borderRadius: '0.75rem', padding: '12px 16px', color: 'var(--error)', marginBottom: '24px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <i className="ph ph-warning"></i> {topluHata}
                                     </div>
                                 )}
 
                                 {/* Önizleme Tablosu */}
                                 {topluOnizleme.length > 0 && (
                                     <div>
-                                        <div style={{ fontWeight: 700, color: 'var(--enba-dark)', marginBottom: '10px', fontSize: '14px' }}>
-                                            ✅ {topluOnizleme.length} {window.t('assets.machineries').toLowerCase()} {window.t('common.ready') || 'ready'}
+                                        <div style={{ fontWeight: 800, color: 'var(--enba-dark)', marginBottom: '12px', fontSize: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <i className="ph ph-check-circle" style={{ color: 'var(--enba-success)' }}></i> {topluOnizleme.length} {window.t('assets.machineries').toLowerCase()} {window.t('common.ready') || 'hazır'}
                                         </div>
-                                        <div style={{ overflowX: 'auto', marginBottom: '20px', borderRadius: '0.75rem', border: '1px solid var(--surface-container-highest)' }}>
+                                        <div style={{ overflowX: 'auto', marginBottom: '24px', borderRadius: '0.75rem', border: '1px solid var(--surface-container-highest)' }}>
                                             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                                                 <thead>
                                                     <tr style={{ background: 'var(--surface-container-low)' }}>
@@ -493,10 +497,10 @@ function MakinaKatalog() {
                                             </table>
                                         </div>
 
-                                        <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                                            <button onClick={() => { setTopluOnizleme([]); setTopluHata(''); }} style={btnSecondary}>{window.t('assets.clear')}</button>
-                                            <button onClick={topluKaydet} style={{ ...btnPrimary, background: 'var(--enba-orange)', fontSize: '15px', padding: '12px 28px' }}>
-                                                ✅ {topluOnizleme.length} {window.t('assets.save_machineries')}
+                                        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                                            <button onClick={() => { setTopluOnizleme([]); setTopluHata(''); }} className="btn btn-secondary">{window.t('assets.clear')}</button>
+                                            <button onClick={topluKaydet} className="btn btn-primary" style={{ fontSize: '15px', padding: '12px 32px' }}>
+                                                {window.t('assets.save_machineries')}
                                             </button>
                                         </div>
                                     </div>
@@ -594,7 +598,7 @@ function MakinaKatalog() {
                                                     const toplam = bakimKayitlari.filter(b => b.varlikId === m.id).reduce((t, b) => t + (b.maliyet || 0), 0);
                                                     const adet   = bakimKayitlari.filter(b => b.varlikId === m.id).length;
                                                     return toplam > 0
-                                                        ? <span title={`${adet} kayıt`} style={{ fontWeight: 700, color: '#C62828' }}>{window.fmt(toplam)} ₺</span>
+                                                        ? <span title={`${adet} kayıt`} style={{ fontWeight: 700, color: 'var(--error)' }}>{window.fmt(toplam)} ₺</span>
                                                         : <span style={{ color: 'var(--on-surface-variant)' }}>—</span>;
                                                 })()}
                                             </td>
@@ -603,10 +607,12 @@ function MakinaKatalog() {
                                                     <button
                                                         onClick={() => { setSekme('bakim'); bFormAc(null, m.id); }}
                                                         title={window.t('assets.expense_add')}
-                                                        style={{ background: 'rgba(211,47,47,0.1)', border: '1px solid rgba(211,47,47,0.25)', borderRadius: '0.5rem', cursor: 'pointer', fontSize: '13px', padding: '4px 8px', color: '#C62828', fontWeight: 600, whiteSpace: 'nowrap' }}
-                                                    >⚡  {window.t('assets.expense_short') || 'Exp.'}</button>
+                                                        style={{ background: 'rgba(192, 57, 43, 0.1)', border: '1px solid rgba(192, 57, 43, 0.25)', borderRadius: '0.5rem', cursor: 'pointer', fontSize: '12px', padding: '4px 10px', color: 'var(--enba-danger)', fontWeight: 700, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '6px' }}
+                                                    >
+                                                        <i className="ph ph-lightning"></i> {window.t('assets.expense_short') || 'Exp.'}
+                                                    </button>
                                                     <button onClick={() => mFormAc(m)} title={window.t('common.edit')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}><i className="ph ph-pencil-simple" style={{ fontSize: '16px', color: 'var(--on-surface-variant)' }}></i></button>
-                                                    <button onClick={() => mSil(m.id)} title={window.t('common.delete')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}><i className="ph ph-trash" style={{ fontSize: '16px', color: '#e53935' }}></i></button>
+                                                    <button onClick={() => mSil(m.id)} title={window.t('common.delete')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}><i className="ph ph-trash" style={{ fontSize: '16px', color: 'var(--error)' }}></i></button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -616,7 +622,7 @@ function MakinaKatalog() {
                                     <tr style={{ background: 'var(--surface-container-low)', fontWeight: 700 }}>
                                         <td colSpan={7} style={{ padding: '10px 8px', color: 'var(--on-surface-variant)', fontSize: '12px' }}>{window.t('common.total').toUpperCase()}</td>
                                         <td style={{ padding: '10px 8px', color: 'var(--enba-dark)', fontSize: '13px' }}>{window.fmt(toplamMakinaYatirim)} ₺</td>
-                                        <td style={{ padding: '10px 8px', color: '#C62828', fontSize: '13px' }}>{window.fmt(toplamBakim)} ₺</td>
+                                        <td style={{ padding: '10px 8px', color: 'var(--error)', fontSize: '13px' }}>{window.fmt(toplamBakim)} ₺</td>
                                         <td></td>
                                     </tr>
                                 </tfoot>
@@ -694,7 +700,7 @@ function MakinaKatalog() {
                                             <td style={{ padding: '12px 14px' }}>
                                                 <div style={{ display: 'flex', gap: '6px' }}>
                                                     <button onClick={() => dFormAc(d)} title={window.t('common.edit')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}><i className="ph ph-pencil-simple" style={{ fontSize: '16px', color: 'var(--on-surface-variant)' }}></i></button>
-                                                    <button onClick={() => dSil(d.id)} title={window.t('common.delete')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}><i className="ph ph-trash" style={{ fontSize: '16px', color: '#e53935' }}></i></button>
+                                                    <button onClick={() => dSil(d.id)} title={window.t('common.delete')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}><i className="ph ph-trash" style={{ fontSize: '16px', color: 'var(--error)' }}></i></button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -725,7 +731,7 @@ function MakinaKatalog() {
                     <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
                         <button
                             onClick={() => bFormAc()}
-                            style={{ ...btnPrimary, background: '#D32F2F' }}
+                            style={{ ...btnPrimary, background: 'var(--enba-dark)' }}
                             disabled={tumVarliklar.length === 0}
                             title={tumVarliklar.length === 0 ? window.t('assets.error_no_assets') : ''}
                         >
@@ -778,7 +784,7 @@ function MakinaKatalog() {
                             </div>
                             <div style={{ display: 'flex', gap: '10px', flexShrink: 0 }}>
                                 <button onClick={() => setBFormAcik(false)} style={btnSecondary}>{window.t('common.cancel')}</button>
-                                <button onClick={bKaydet} style={{ ...btnPrimary, background: '#D32F2F' }}>{bDuzenlenen ? window.t('common.update') : window.t('common.save')}</button>
+                                <button onClick={bKaydet} style={{ ...btnPrimary, background: 'var(--enba-dark)' }}>{bDuzenlenen ? window.t('common.update') : window.t('common.save')}</button>
                             </div>
                         </div>
                     )}
@@ -808,18 +814,18 @@ function MakinaKatalog() {
                                                 {b.varlikTuru || '—'}
                                             </td>
                                             <td style={{ padding: '12px 14px', fontSize: '13px' }}>
-                                                <span style={{ background: 'rgba(211,47,47,0.08)', color: '#C62828', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 600 }}>{b.tur || '—'}</span>
+                                                <span style={{ background: 'rgba(211,47,47,0.08)', color: 'var(--error)', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 600 }}>{b.tur || '—'}</span>
                                             </td>
                                             <td style={{ padding: '12px 14px', color: 'var(--on-surface-variant)', fontSize: '13px', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                                 {b.aciklama || '—'}
                                             </td>
-                                            <td style={{ padding: '12px 14px', fontWeight: 700, color: '#C62828', fontSize: '13px', whiteSpace: 'nowrap' }}>
+                                            <td style={{ padding: '12px 14px', fontWeight: 700, color: 'var(--error)', fontSize: '13px', whiteSpace: 'nowrap' }}>
                                                 {window.fmt(b.maliyet)} ₺
                                             </td>
                                             <td style={{ padding: '12px 14px' }}>
                                                 <div style={{ display: 'flex', gap: '6px' }}>
                                                     <button onClick={() => bFormAc(b)} title="Düzenle" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}><i className="ph ph-pencil-simple" style={{ fontSize: '16px', color: 'var(--on-surface-variant)' }}></i></button>
-                                                    <button onClick={() => bSil(b.id)} title="Sil" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}><i className="ph ph-trash" style={{ fontSize: '16px', color: '#e53935' }}></i></button>
+                                                    <button onClick={() => bSil(b.id)} title="Sil" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}><i className="ph ph-trash" style={{ fontSize: '16px', color: 'var(--error)' }}></i></button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -828,7 +834,7 @@ function MakinaKatalog() {
                                 <tfoot>
                                     <tr style={{ background: 'var(--surface-container-low)', fontWeight: 700 }}>
                                         <td colSpan={5} style={{ padding: '12px 14px', color: 'var(--on-surface-variant)', fontSize: '13px' }}>TOPLAM</td>
-                                        <td style={{ padding: '12px 14px', color: '#C62828', fontSize: '15px' }}>{window.fmt(toplamBakim)} ₺</td>
+                                        <td style={{ padding: '12px 14px', color: 'var(--error)', fontSize: '15px' }}>{window.fmt(toplamBakim)} ₺</td>
                                         <td></td>
                                     </tr>
                                 </tfoot>

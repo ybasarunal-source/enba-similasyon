@@ -32,12 +32,12 @@ window.GorevModulu = function({ navigate }) {
     });
 
     const categories = [
-        { id: 'genel', label: 'Genel', color: '#94a3b8' },
+        { id: 'genel', label: 'Genel', color: 'var(--on-surface-variant)' },
         { id: 'isPlanlama', label: 'İş Planlama', color: 'var(--enba-orange)' },
         { id: 'uretimTakip', label: 'Üretim', color: '#8e44ad' },
         { id: 'lojistikTakip', label: 'Lojistik', color: '#e67e22' },
-        { id: 'lisansTakip', label: 'Lisans/Belge', color: '#e53e3e' },
-        { id: 'stok', label: 'Stok', color: '#3498db' }
+        { id: 'lisansTakip', label: 'Lisans/Belge', color: 'var(--enba-danger)' },
+        { id: 'stok', label: 'Stok', color: 'var(--info)' }
     ];
 
     React.useEffect(() => {
@@ -83,12 +83,12 @@ window.GorevModulu = function({ navigate }) {
     const KanbanColumn = ({ title, status, icon, color }) => {
         const filteredTasks = tasks.filter(t => t.status === status);
         return (
-            <div style={{ flex: 1, minWidth: '300px', background: '#f1f5f9', borderRadius: '1.25rem', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ flex: 1, minWidth: '300px', background: 'var(--surface-container-low)', borderRadius: '1.5rem', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', border: '1px solid var(--surface-container-high)', boxShadow: 'var(--shadow-sm)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <i className={`ph ${icon}`} style={{ fontSize: '20px', color }}></i>
                         <h3 style={{ margin: 0, fontFamily: "'Manrope', sans-serif", fontSize: '16px', fontWeight: 800, color: 'var(--enba-dark)' }}>{title}</h3>
-                        <span style={{ background: '#cbd5e1', color: '#475569', fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '10px' }}>{filteredTasks.length}</span>
+                        <span style={{ background: 'var(--surface-container-highest)', color: 'var(--enba-dark)', fontSize: '11px', fontWeight: 800, padding: '2px 10px', borderRadius: '12px' }}>{filteredTasks.length}</span>
                     </div>
                 </div>
 
@@ -99,29 +99,35 @@ window.GorevModulu = function({ navigate }) {
 
                     return (
                         <div key={task.id} style={{ 
-                            background: '#fff', 
-                            padding: '16px', 
-                            borderRadius: '1rem', 
-                            boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', 
-                            border: overdue ? '2px solid #ef4444' : '1px solid #e2e8f0',
+                            background: '#ffffff', 
+                            padding: '18px', 
+                            borderRadius: '1.25rem', 
+                            boxShadow: 'var(--shadow-sm)', 
+                            border: overdue ? '2px solid var(--enba-danger)' : '1px solid var(--surface-container-high)',
                             position: 'relative',
-                            animation: overdue ? 'blink-red 2s infinite' : 'none'
+                            transition: 'all 0.2s',
+                            cursor: 'grab'
                         }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
                                 <span style={{ 
                                     fontSize: '10px', 
                                     fontWeight: 800, 
-                                    padding: '2px 8px', 
-                                    borderRadius: '4px', 
-                                    background: task.priority === 'high' ? '#fee2e2' : task.priority === 'medium' ? '#fef3c7' : '#f0f9ff',
-                                    color: task.priority === 'high' ? '#ef4444' : task.priority === 'medium' ? '#d97706' : '#0ea5e9',
-                                    textTransform: 'uppercase'
+                                    padding: '2px 10px', 
+                                    borderRadius: '1rem', 
+                                    background: task.priority === 'high' ? 'var(--error-container)' : task.priority === 'medium' ? 'var(--secondary-container)' : '#f0f9ff',
+                                    color: task.priority === 'high' ? 'var(--enba-danger)' : task.priority === 'medium' ? 'var(--enba-orange)' : 'var(--info)',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.5px'
                                 }}>
                                     {task.priority === 'high' ? 'Yüksek' : task.priority === 'medium' ? 'Orta' : 'Düşük'}
                                 </span>
-                                <div style={{ display: 'flex', gap: '4px' }}>
-                                    <button onClick={() => { setEditingTask(task); setFormData(task); setShowTaskForm(true); }} style={{ padding: '4px', border: 'none', background: 'none', cursor: 'pointer', fontSize: '12px' }}>✏️</button>
-                                    <button onClick={() => handleDeleteTask(task.id)} style={{ padding: '4px', border: 'none', background: 'none', cursor: 'pointer', fontSize: '12px' }}>🗑️</button>
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    <button className="btn-icon" onClick={() => { setEditingTask(task); setFormData(task); setShowTaskForm(true); }} title="Düzenle">
+                                        <i className="ph ph-pencil-simple"></i>
+                                    </button>
+                                    <button className="btn-icon" style={{ color: 'var(--enba-danger)' }} onClick={() => handleDeleteTask(task.id)} title="Sil">
+                                        <i className="ph ph-trash"></i>
+                                    </button>
                                 </div>
                             </div>
 
@@ -129,13 +135,17 @@ window.GorevModulu = function({ navigate }) {
                             <p style={{ margin: '0 0 12px', fontSize: '12px', color: '#64748b', lineHeight: 1.5 }}>{task.desc}</p>
 
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px' }}>
-                                <span style={{ fontSize: '10px', background: '#f8fafc', color: '#475569', padding: '2px 6px', borderRadius: '4px', border: '1px solid #e2e8f0' }}>📦 {project?.name}</span>
-                                <span style={{ fontSize: '10px', background: cat?.color + '20', color: cat?.color, padding: '2px 6px', borderRadius: '4px', border: `1px solid ${cat?.color}40` }}># {cat?.label}</span>
+                                <span style={{ fontSize: '10px', background: 'var(--surface-container-low)', color: 'var(--on-surface-variant)', padding: '4px 8px', borderRadius: '4px', border: '1px solid var(--surface-container-highest)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <i className="ph ph-package"></i> {project?.name}
+                                </span>
+                                <span style={{ fontSize: '10px', background: cat?.color + '20', color: cat?.color, padding: '4px 8px', borderRadius: '4px', border: `1px solid ${cat?.color}40`, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <i className="ph ph-hash"></i> {cat?.label}
+                                </span>
                             </div>
 
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '12px', borderTop: '1px solid #f1f5f9' }}>
-                                <span style={{ fontSize: '10px', color: overdue ? '#ef4444' : '#94a3b8', fontWeight: overdue ? 700 : 400 }}>
-                                    📅 {task.deadline ? new Date(task.deadline).toLocaleDateString('tr-TR') : 'Süresiz'}
+                                <span style={{ fontSize: '10px', color: overdue ? '#ef4444' : '#94a3b8', fontWeight: overdue ? 800 : 500, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <i className="ph ph-calendar"></i> {task.deadline ? new Date(task.deadline).toLocaleDateString('tr-TR') : 'Süresiz'}
                                 </span>
                                 <div style={{ display: 'flex', gap: '4px' }}>
                                     {status !== 'todo' && <button onClick={() => moveTask(task.id, status === 'done' ? 'doing' : 'todo')} style={{ padding: '4px 8px', fontSize: '10px', borderRadius: '4px', border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer' }}>←</button>}
@@ -162,7 +172,7 @@ window.GorevModulu = function({ navigate }) {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '32px' }}>
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: 'var(--enba-orange)', marginBottom: '8px' }}>
-                        <span style={{ fontSize: '24px' }}>📋</span>
+                        <i className="ph ph-clipboard-text" style={{ fontSize: '24px' }}></i>
                         <span style={{ fontWeight: 800, fontSize: '14px', letterSpacing: '1px' }}>PROJE & GÖREV YÖNETİMİ</span>
                     </div>
                     <h1 style={{ margin: 0, fontFamily: "'Manrope', sans-serif", fontWeight: 800, fontSize: '32px', color: 'var(--enba-dark)' }}>İş Takip Merkezi</h1>
@@ -170,13 +180,15 @@ window.GorevModulu = function({ navigate }) {
                 <div style={{ display: 'flex', gap: '12px' }}>
                     <button 
                         onClick={() => setShowProjectForm(true)}
-                        style={{ padding: '12px 24px', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#fff', color: 'var(--enba-dark)', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+                        className="btn btn-secondary"
+                        style={{ padding: '12px 24px', borderRadius: '12px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}
                     >
                         <i className="ph ph-folder-plus"></i> Yeni Proje
                     </button>
                     <button
                         onClick={() => setShowTaskForm(true)}
-                        style={{ padding: '12px 24px', borderRadius: '12px', border: 'none', background: 'var(--enba-dark)', color: '#fff', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+                        className="btn btn-primary"
+                        style={{ padding: '12px 24px', borderRadius: '12px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px' }}
                     >
                         <i className="ph ph-plus-circle"></i> Yeni Görev
                     </button>
@@ -271,9 +283,15 @@ window.GorevModulu = function({ navigate }) {
                             <h4 style={{ margin: '0 0 12px', fontSize: '13px', color: '#94a3b8' }}>Mevcut Projeler</h4>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                 {projects.map(p => (
-                                    <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '14px', padding: '4px 0' }}>
-                                        <span>⚡  {p.name}</span>
-                                        {['p1', 'p2'].indexOf(p.id) === -1 && <button onClick={() => setProjects(projects.filter(pr => pr.id !== p.id))} style={{ border: 'none', background: 'none', cursor: 'pointer' }}>❌</button>}
+                                    <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '14px', padding: '8px 0', borderBottom: '1px solid var(--surface-container-high)' }}>
+                                        <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <i className="ph ph-folder" style={{ color: 'var(--enba-orange)' }}></i> {p.name}
+                                        </span>
+                                        {['p1', 'p2'].indexOf(p.id) === -1 && (
+                                            <button className="btn-icon" style={{ color: 'var(--enba-danger)' }} onClick={() => setProjects(projects.filter(pr => pr.id !== p.id))}>
+                                                <i className="ph ph-x"></i>
+                                            </button>
+                                        )}
                                     </div>
                                 ))}
                             </div>

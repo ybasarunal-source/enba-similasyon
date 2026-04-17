@@ -94,12 +94,12 @@ function HrModule() {
     };
 
     const tabBtnStyle = (active) => ({
-        padding: '10px 20px',
+        padding: '10px 24px',
         borderRadius: '2rem',
         border: 'none',
         background: active ? 'var(--enba-dark)' : 'var(--surface-container-high)',
         color: active ? '#fff' : 'var(--on-surface-variant)',
-        fontWeight: 700,
+        fontWeight: 800,
         fontSize: '14px',
         cursor: 'pointer',
         transition: 'all 0.2s',
@@ -132,37 +132,57 @@ function HrModule() {
             {/* Header */}
             <div style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                    <h1 style={{ fontFamily: "'Manrope', sans-serif", fontSize: '28px', color: 'var(--enba-dark)', margin: '0 0 4px' }}>
-                        ⚡  {window.t('modules.hr')}
+                    <h1 style={{ fontFamily: "'Manrope', sans-serif", fontSize: '28px', color: 'var(--enba-dark)', margin: '0 0 8px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <i className="ph-fill ph-identification-card" style={{ color: 'var(--enba-orange)' }}></i> {window.t('modules.hr')}
                     </h1>
-                    <p style={{ margin: 0, color: 'var(--on-surface-variant)', fontSize: '14px' }}>
+                    <p style={{ margin: 0, color: 'var(--on-surface-variant)', fontSize: '15px' }}>
                         Personel yönetimi, puantaj, ödemeler ve finansal takip merkezi.
                     </p>
                 </div>
                 <button 
                     onClick={() => { setEditingItem(null); setShowModal('person'); }}
+                    className="btn btn-primary"
                     style={{ 
-                        padding: '12px 24px', background: 'var(--enba-orange)', color: '#fff', 
-                        border: 'none', borderRadius: '0.75rem', fontWeight: 700, cursor: 'pointer',
-                        display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 12px rgba(39,174,96,0.3)'
+                        padding: '12px 24px', borderRadius: '0.75rem', 
+                        display: 'flex', alignItems: 'center', gap: '8px', boxShadow: 'var(--shadow-md)'
                     }}
                 >
-                    <span>+</span> {window.t('hr.add_person')}
+                    <i className="ph ph-user-plus"></i> {window.t('hr.add_person')}
                 </button>
             </div>
 
             {/* Tabs */}
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', overflowX: 'auto', paddingBottom: '8px' }}>
-                <button onClick={() => setActiveTab('personnel')} style={tabBtnStyle(activeTab === 'personnel')}>⚡  {window.t('hr.personnel')}</button>
-                <button onClick={() => setActiveTab('attendance')} style={tabBtnStyle(activeTab === 'attendance')}>⏱️ {window.t('hr.attendance')}</button>
-                <button onClick={() => setActiveTab('payments')} style={tabBtnStyle(activeTab === 'payments')}>⚡  {window.t('hr.payments')}</button>
-                <button onClick={() => setActiveTab('debts')} style={tabBtnStyle(activeTab === 'debts')}>⚡ ️ {window.t('hr.debts')}</button>
+            <div style={{ display: 'flex', gap: '12px', marginBottom: '32px', overflowX: 'auto', paddingBottom: '8px' }}>
+                <button 
+                    onClick={() => setActiveTab('personnel')} 
+                    className={`btn ${activeTab === 'personnel' ? 'btn-primary' : 'btn-secondary'}`}
+                    style={{ borderRadius: '2rem', padding: '10px 24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <i className="ph ph-users"></i> {window.t('hr.personnel')}
+                </button>
+                <button 
+                    onClick={() => setActiveTab('attendance')} 
+                    className={`btn ${activeTab === 'attendance' ? 'btn-primary' : 'btn-secondary'}`}
+                    style={{ borderRadius: '2rem', padding: '10px 24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <i className="ph ph-calendar-check"></i> {window.t('hr.attendance')}
+                </button>
+                <button 
+                    onClick={() => setActiveTab('payments')} 
+                    className={`btn ${activeTab === 'payments' ? 'btn-primary' : 'btn-secondary'}`}
+                    style={{ borderRadius: '2rem', padding: '10px 24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <i className="ph ph-wallet"></i> {window.t('hr.payments')}
+                </button>
+                <button 
+                    onClick={() => setActiveTab('debts')} 
+                    className={`btn ${activeTab === 'debts' ? 'btn-primary' : 'btn-secondary'}`}
+                    style={{ borderRadius: '2rem', padding: '10px 24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <i className="ph ph-hand-coins"></i> {window.t('hr.debts')}
+                </button>
             </div>
 
             {/* Content Area */}
             <div style={cardStyle}>
                 {loading ? (
-                    <div style={{ padding: '40px', textAlign: 'center', color: '#999' }}>Yükleniyor...</div>
+                    <div style={{ padding: '40px', textAlign: 'center', color: 'var(--on-surface-variant)' }}>Yükleniyor...</div>
                 ) : (
                     <>
                         {activeTab === 'personnel' && (
@@ -196,8 +216,8 @@ function HrModule() {
                                     <td style={tableCellStyle}>
                                         <span style={{
                                             padding: '4px 10px', borderRadius: '1rem', fontSize: '11px', fontWeight: 800,
-                                            background: p.sgkStatus === 'Aktif' ? 'rgba(39,174,96,0.1)' : 'rgba(0,0,0,0.05)',
-                                            color: p.sgkStatus === 'Aktif' ? 'var(--enba-orange)' : '#999'
+                                            background: p.sgkStatus === 'Aktif' ? 'var(--success-container)' : 'var(--surface-container-high)',
+                                            color: p.sgkStatus === 'Aktif' ? 'var(--success)' : 'var(--on-surface-variant)'
                                         }}>
                                             {p.sgkStatus}
                                         </span>
@@ -213,44 +233,46 @@ function HrModule() {
                                                 onChange={e => setOvertimeInputs(prev => ({ ...prev, [p.id]: e.target.value }))}
                                                 style={{
                                                     width: '72px', padding: '6px 8px', borderRadius: '0.4rem',
-                                                    border: '1px solid ' + (hasValue ? '#27ae60' : '#ddd'),
+                                                    border: '1px solid ' + (hasValue ? 'var(--success)' : 'var(--surface-container-highest)'),
                                                     fontSize: '13px', outline: 'none',
-                                                    transition: 'border-color 0.2s'
+                                                    transition: 'border-color 0.2s',
+                                                    background: 'var(--surface-container-lowest)',
+                                                    color: 'var(--on-surface)'
                                                 }}
                                                 onFocus={window.selectOnFocus}
                                             />
                                             {hasValue && (
-                                                <button
-                                                    onClick={() => {
-                                                        const now = new Date();
-                                                        saveAttendance({
-                                                            personId: p.id,
-                                                            month: now.getMonth() + 1,
-                                                            year: now.getFullYear(),
-                                                            workHours: 225,
-                                                            overtimeHours: Number(otVal),
-                                                            notes: 'Hızlı mesai girişi'
-                                                        }, false);
-                                                        setOvertimeInputs(prev => ({ ...prev, [p.id]: '' }));
-                                                    }}
-                                                    title="Kaydet"
-                                                    style={{
-                                                        width: '30px', height: '30px', borderRadius: '50%',
-                                                        border: 'none', background: '#27ae60', color: '#fff',
-                                                        cursor: 'pointer', fontSize: '15px', display: 'flex',
-                                                        alignItems: 'center', justifyContent: 'center',
-                                                        boxShadow: '0 2px 6px rgba(39,174,96,0.4)',
-                                                        flexShrink: 0
-                                                    }}
-                                                >
-                                                    ✓
-                                                </button>
+                                                    <button
+                                                        onClick={() => {
+                                                            const now = new Date();
+                                                            saveAttendance({
+                                                                personId: p.id,
+                                                                month: now.getMonth() + 1,
+                                                                year: now.getFullYear(),
+                                                                workHours: 225,
+                                                                overtimeHours: Number(otVal),
+                                                                notes: 'Hızlı mesai girişi'
+                                                            }, false);
+                                                            setOvertimeInputs(prev => ({ ...prev, [p.id]: '' }));
+                                                        }}
+                                                        title="Kaydet"
+                                                        className="btn btn-primary"
+                                                        style={{
+                                                            width: '32px', height: '32px', borderRadius: '50%',
+                                                            padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                            flexShrink: 0
+                                                        }}
+                                                    >
+                                                        <i className="ph ph-check" style={{ fontSize: '18px' }}></i>
+                                                    </button>
                                             )}
                                         </div>
                                     </td>
                                     <td style={{ ...tableCellStyle, textAlign: 'right' }}>
-                                        <button onClick={() => { setEditingItem(p); setShowModal('person'); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', marginRight: '8px' }}>✏️</button>
-                                        <button onClick={() => deletePerson(p.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px' }}>⚡ ️</button>
+                                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                                            <button onClick={() => { setEditingItem(p); setShowModal('person'); }} className="btn-icon" title="Düzenle"><i className="ph ph-pencil-simple"></i></button>
+                                            <button onClick={() => deletePerson(p.id)} className="btn-icon" style={{ background: 'var(--enba-danger)', color: '#fff' }} title="Sil"><i className="ph ph-trash"></i></button>
+                                        </div>
                                     </td>
                                 </tr>
                                 );
@@ -261,8 +283,10 @@ function HrModule() {
 
                 {activeTab === 'attendance' && (
                     <div>
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
-                            <button onClick={() => setShowModal('attendance')} style={{ padding: '8px 16px', borderRadius: '0.5rem', border: '1px solid var(--enba-orange)', color: 'var(--enba-orange)', fontWeight: 700, cursor: 'pointer', background: 'transparent' }}>+ Kayıt Ekle</button>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
+                            <button onClick={() => setShowModal('attendance')} className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <i className="ph ph-plus-circle"></i> Kayıt Ekle
+                            </button>
                         </div>
                         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                             <thead>
@@ -284,7 +308,7 @@ function HrModule() {
                                         <td style={tableCellStyle}>{a.notes || '—'}</td>
                                     </tr>
                                 )) : (
-                                    <tr><td colSpan="5" style={{ padding: '40px', textAlign: 'center', color: '#999' }}>Henüz puantaj kaydı bulunmuyor.</td></tr>
+                                    <tr><td colSpan="5" style={{ padding: '40px', textAlign: 'center', color: 'var(--on-surface-variant)' }}>Henüz puantaj kaydı bulunmuyor.</td></tr>
                                 )}
                             </tbody>
                         </table>
@@ -293,8 +317,10 @@ function HrModule() {
 
                 {activeTab === 'payments' && (
                     <div>
-                         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
-                            <button onClick={() => setShowModal('payment')} style={{ padding: '8px 16px', borderRadius: '0.5rem', border: '1px solid var(--enba-dark)', color: 'var(--enba-dark)', fontWeight: 700, cursor: 'pointer', background: 'transparent' }}>+ Ödeme Girişşi</button>
+                         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
+                            <button onClick={() => setShowModal('payment')} className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <i className="ph ph-plus-circle"></i> Ödeme Girişi
+                            </button>
                         </div>
                         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                             <thead>
@@ -314,15 +340,15 @@ function HrModule() {
                                         <td style={tableCellStyle}>
                                             <span style={{ 
                                                 padding: '4px 10px', borderRadius: '1rem', fontSize: '11px', fontWeight: 800,
-                                                background: p.status === 'Ödendi' ? 'rgba(39,174,96,0.1)' : 'rgba(255,164,0,0.1)',
-                                                color: p.status === 'Ödendi' ? 'var(--enba-orange)' : '#f39c12'
+                                                background: p.status === 'Ödendi' ? 'var(--success-container)' : 'var(--surface-container-high)',
+                                                color: p.status === 'Ödendi' ? 'var(--success)' : 'var(--on-surface-variant)'
                                             }}>
                                                 {p.status}
                                             </span>
                                         </td>
                                     </tr>
                                 )) : (
-                                    <tr><td colSpan="4" style={{ padding: '40px', textAlign: 'center', color: '#999' }}>Henüz ödeme kaydı bulunmuyor.</td></tr>
+                                    <tr><td colSpan="4" style={{ padding: '40px', textAlign: 'center', color: 'var(--on-surface-variant)' }}>Henüz ödeme kaydı bulunmuyor.</td></tr>
                                 )}
                             </tbody>
                         </table>
@@ -331,8 +357,10 @@ function HrModule() {
 
                 {activeTab === 'debts' && (
                     <div>
-                         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
-                            <button onClick={() => setShowModal('debt')} style={{ padding: '8px 16px', borderRadius: '0.5rem', border: '1px solid #e74c3c', color: '#e74c3c', fontWeight: 700, cursor: 'pointer', background: 'transparent' }}>+ Avans/Borç Kaydı</button>
+                         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
+                            <button onClick={() => setShowModal('debt')} className="btn btn-secondary" style={{ color: 'var(--enba-danger)', borderColor: 'var(--enba-danger)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <i className="ph ph-plus-circle"></i> Avans/Borç Kaydı
+                            </button>
                         </div>
                         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                             <thead>
@@ -356,7 +384,7 @@ function HrModule() {
                                         <td style={tableCellStyle}>{d.description || '—'}</td>
                                     </tr>
                                 )) : (
-                                    <tr><td colSpan="5" style={{ padding: '40px', textAlign: 'center', color: '#999' }}>Henüz borç/alacak kaydı bulunmuyor.</td></tr>
+                                    <tr><td colSpan="5" style={{ padding: '40px', textAlign: 'center', color: 'var(--on-surface-variant)' }}>Henüz borç/alacak kaydı bulunmuyor.</td></tr>
                                 )}
                             </tbody>
                         </table>
@@ -417,7 +445,7 @@ function HrModule() {
                                 <input name="startDate" type="date" defaultValue={editingItem?.startDate || new Date().toISOString().split('T')[0]} required style={{ width: '100%', padding: '10px', borderRadius: '0.5rem', border: '1px solid #ddd' }} />
                             </div>
                             <div style={{ display: 'flex', gap: '8px' }}>
-                                <button type="button" onClick={() => setShowModal(null)} style={{ flex: 1, padding: '12px', borderRadius: '0.5rem', border: 'none', background: '#eee', fontWeight: 600, cursor: 'pointer' }}>{window.t('common.cancel')}</button>
+                                <button type="button" onClick={() => setShowModal(null)} style={{ flex: 1, padding: '12px', borderRadius: '0.5rem', border: 'none', background: 'var(--surface-container-high)', fontWeight: 600, cursor: 'pointer' }}>{window.t('common.cancel')}</button>
                                 <button type="submit" style={{ flex: 1, padding: '12px', borderRadius: '0.5rem', border: 'none', background: 'var(--enba-dark)', color: '#fff', fontWeight: 600, cursor: 'pointer' }}>{window.t('common.save')}</button>
                             </div>
                         </form>
@@ -473,7 +501,7 @@ function HrModule() {
                                 <input name="notes" placeholder="Ekstra bilgi..." style={{ width: '100%', padding: '10px', borderRadius: '0.5rem', border: '1px solid #ddd' }} />
                             </div>
                             <div style={{ display: 'flex', gap: '8px' }}>
-                                <button type="button" onClick={() => setShowModal(null)} style={{ flex: 1, padding: '12px', borderRadius: '0.5rem', border: 'none', background: '#eee', fontWeight: 600 }}>Talebi Kapat</button>
+                                <button type="button" onClick={() => setShowModal(null)} style={{ flex: 1, padding: '12px', borderRadius: '0.5rem', border: 'none', background: 'var(--surface-container-high)', fontWeight: 600 }}>Talebi Kapat</button>
                                 <button type="submit" style={{ flex: 1, padding: '12px', borderRadius: '0.5rem', border: 'none', background: 'var(--enba-dark)', color: '#fff', fontWeight: 600 }}>Kaydı Oluştur</button>
                             </div>
                         </form>
@@ -517,7 +545,7 @@ function HrModule() {
                                 </select>
                             </div>
                             <div style={{ display: 'flex', gap: '8px' }}>
-                                <button type="button" onClick={() => setShowModal(null)} style={{ flex: 1, padding: '12px', borderRadius: '0.5rem', border: 'none', background: '#eee', fontWeight: 600 }}>İptal</button>
+                                <button type="button" onClick={() => setShowModal(null)} style={{ flex: 1, padding: '12px', borderRadius: '0.5rem', border: 'none', background: 'var(--surface-container-high)', fontWeight: 600 }}>İptal</button>
                                 <button type="submit" style={{ flex: 1, padding: '12px', borderRadius: '0.5rem', border: 'none', background: 'var(--enba-dark)', color: '#fff', fontWeight: 600 }}>Kaydet</button>
                             </div>
                         </form>
@@ -568,8 +596,8 @@ function HrModule() {
                                 <textarea name="description" style={{ width: '100%', padding: '10px', borderRadius: '0.5rem', border: '1px solid #ddd', minHeight: '60px' }} />
                             </div>
                             <div style={{ display: 'flex', gap: '8px' }}>
-                                <button type="button" onClick={() => setShowModal(null)} style={{ flex: 1, padding: '12px', borderRadius: '0.5rem', border: 'none', background: '#eee', fontWeight: 600 }}>Kapat</button>
-                                <button type="submit" style={{ flex: 1, padding: '12px', borderRadius: '0.5rem', border: 'none', background: '#e74c3c', color: '#fff', fontWeight: 600 }}>Kaydet</button>
+                                <button type="button" onClick={() => setShowModal(null)} style={{ flex: 1, padding: '12px', borderRadius: '0.5rem', border: 'none', background: 'var(--surface-container-high)', fontWeight: 600 }}>Kapat</button>
+                                <button type="submit" style={{ flex: 1, padding: '12px', borderRadius: '0.5rem', border: 'none', background: 'var(--error)', color: '#fff', fontWeight: 600 }}>Kaydet</button>
                             </div>
                         </form>
                     </div>

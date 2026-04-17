@@ -312,37 +312,37 @@ function PnlRaporu() {
             if (!isGrupEnabled) {
                 return kats.map(kat => {
                     const isAmort = kat.includes("Amortisman");
-                    const highlightStyle = isAmort ? {background: 'rgba(243, 156, 18, 0.1)', color: '#d35400', fontWeight: 'bold'} : {};
+                    const highlightStyle = isAmort ? {background: 'rgba(243, 156, 18, 0.1)', color: 'var(--enba-orange)', fontWeight: 'bold'} : {};
                     
                     let rowGenelGlobal = 0;
                     oAylarFull.forEach(ga => modeller.forEach(gm => { rowGenelGlobal += getHucreselTutar(data, kat, ga, gm) }));
 
                     return (
-                        <tr key={kat} style={{borderBottom: '1px solid var(--border-grey)', ...highlightStyle}}>
-                            <td style={{padding: '14px 10px', color: isAmort ? '#d35400' : '#1F3040', fontWeight: isAmort ? '700' : '500'}}>
-                                <span style={{fontSize: '11px', padding: '2px 6px', background: '#f0f0f0', borderRadius: '4px', marginRight: '8px', color: '#7f8c8d'}}>{tipLabel}</span>
-                                {isAmort ? "✨ " + kat : kat}
+                        <tr key={kat} style={{borderBottom: '1px solid var(--surface-container-high)', ...highlightStyle}}>
+                            <td style={{padding: '14px 10px', color: isAmort ? 'var(--enba-orange)' : 'var(--enba-dark)', fontWeight: isAmort ? '800' : '500'}}>
+                                <span style={{fontSize: '11px', padding: '4px 8px', background: 'var(--surface-container-high)', borderRadius: '4px', marginRight: '8px', color: 'var(--on-surface-variant)', fontWeight: 800}}>{tipLabel}</span>
+                                {isAmort ? <><i className="ph ph-sparkle"></i> {kat}</> : kat}
                             </td>
                             {sAylar.map(ay => {
                                 let ayTop = 0;
                                 const modCells = modeller.map(mod => {
                                     const val = getHucreselTutar(data, kat, ay, mod);
                                     ayTop += val;
-                                    return <td key={`${ay}-${mod}`} style={{padding: '14px 10px', textAlign: 'right', color: isAmort ? '#d35400' : '#34495E', borderLeft: mod === modeller[0] ? '2px solid #eee' : '1px solid transparent'}}>{val > 0 ? formatleTutar(val) : '-'}</td>
+                                    return <td key={`${ay}-${mod}`} style={{padding: '14px 10px', textAlign: 'right', color: isAmort ? 'var(--enba-orange)' : '#34495E', borderLeft: mod === modeller[0] ? '2px solid #eee' : '1px solid transparent'}}>{val > 0 ? formatleTutar(val) : '-'}</td>
                                 });
                                 
                                 if (modelDetayAcik) {
                                     return (
                                         <React.Fragment key={`frag-${kat}-${ay}`}>
                                             {modCells}
-                                            <td style={{padding: '14px 10px', textAlign: 'right', borderLeft: '1px solid #ddd', background: '#fafafa', color: isAmort ? '#d35400' : '#2c3e50', fontWeight: 'bold'}}>{ayTop > 0 ? formatleTutar(ayTop) : '-'}</td>
+                                            <td style={{padding: '14px 10px', textAlign: 'right', borderLeft: '1px solid #ddd', background: '#fafafa', color: isAmort ? 'var(--enba-orange)' : '#2c3e50', fontWeight: 'bold'}}>{ayTop > 0 ? formatleTutar(ayTop) : '-'}</td>
                                         </React.Fragment>
                                     );
                                 } else {
-                                    return <td key={`top-${kat}-${ay}`} style={{padding: '14px 10px', textAlign: 'right', borderLeft: '2px solid #eee', background: '#fafafa', color: isAmort ? '#d35400' : '#2c3e50', fontWeight: 'bold'}}>{ayTop > 0 ? formatleTutar(ayTop) : '-'}</td>;
+                                    return <td key={`top-${kat}-${ay}`} style={{padding: '14px 10px', textAlign: 'right', borderLeft: '2px solid #eee', background: '#fafafa', color: isAmort ? 'var(--enba-orange)' : '#2c3e50', fontWeight: 'bold'}}>{ayTop > 0 ? formatleTutar(ayTop) : '-'}</td>;
                                 }
                             })}
-                            {showTotalCol && <td style={{padding: '14px 10px', textAlign: 'right', fontWeight: 'bold', borderLeft: '2px solid #eee', color: colorCss}}>{formatleTutar(rowGenelGlobal)} ₺</td>}
+                            {showTotalCol && <td style={{padding: '14px 10px', textAlign: 'right', fontWeight: '800', borderLeft: '2px solid var(--surface-container-high)', color: colorCss}}>{formatleTutar(rowGenelGlobal)} ₺</td>}
                         </tr>
                     )
                 });
@@ -387,10 +387,12 @@ function PnlRaporu() {
 
                     return (
                         <React.Fragment key={grupAdi}>
-                            <tr style={{background: 'var(--surface-container-low)', cursor: 'pointer'}} onClick={() => toggleGrup(grupAdi)}>
-                                <td style={{padding: '12px 14px', color: 'var(--enba-dark)', fontWeight: 'bold', borderBottom: '1px solid var(--border-grey)'}}>
-                                   <span style={{display: 'inline-block', width: '20px', fontSize: '11px', color: '#7f8c8d'}}>{isOpen ? '▼' : '▶'}</span>
-                                   ⚡  {grupAdi}
+                            <tr style={{background: 'var(--surface-container-low)', cursor: 'pointer', borderBottom: '1px solid var(--surface-container-high)'}} onClick={() => toggleGrup(grupAdi)}>
+                                <td style={{padding: '12px 14px', color: 'var(--enba-dark)', fontWeight: '800'}}>
+                                   <span style={{display: 'inline-block', width: '24px', fontSize: '14px', color: 'var(--on-surface-variant)'}}>
+                                       <i className={`ph ph-caret-${isOpen ? 'down' : 'right'}`}></i>
+                                   </span>
+                                   <i className="ph ph-lightning" style={{ color: 'var(--enba-orange)', marginRight: '6px' }}></i> {grupAdi}
                                 </td>
                                 {sAylar.map(ay => {
                                     let ayTop = 0;
@@ -404,11 +406,11 @@ function PnlRaporu() {
                                          return (
                                             <React.Fragment key={`frag-grp-${ay}`}>
                                                 {modCells}
-                                                <td style={{padding: '12px 10px', textAlign: 'right', borderLeft: '1px solid #ddd', background: '#eaecee', fontWeight: '800', color: 'var(--enba-dark)', borderBottom: '1px solid var(--border-grey)'}}>{formatleTutar(ayTop)}</td>
+                                                <td style={{padding: '12px 10px', textAlign: 'right', borderLeft: '1px solid #ddd', background: 'var(--surface-container-low)', fontWeight: '800', color: 'var(--enba-dark)', borderBottom: '1px solid var(--border-grey)'}}>{formatleTutar(ayTop)}</td>
                                             </React.Fragment>
                                          )
                                     } else {
-                                         return <td key={`top-grp-${ay}`} style={{padding: '12px 10px', textAlign: 'right', borderLeft: '2px solid #ddd', background: '#eaecee', fontWeight: '800', color: 'var(--enba-dark)', borderBottom: '1px solid var(--border-grey)'}}>{formatleTutar(ayTop)}</td>
+                                         return <td key={`top-grp-${ay}`} style={{padding: '12px 10px', textAlign: 'right', borderLeft: '2px solid #ddd', background: 'var(--surface-container-low)', fontWeight: '800', color: 'var(--enba-dark)', borderBottom: '1px solid var(--border-grey)'}}>{formatleTutar(ayTop)}</td>
                                     }
                                 })}
                                 {showTotalCol && <td style={{padding: '12px 10px', textAlign: 'right', fontWeight: '800', borderLeft: '2px solid #ddd', color: 'var(--enba-dark)', borderBottom: '1px solid var(--border-grey)'}}>{formatleTutar(grupGloGenel)} ₺</td>}
@@ -416,35 +418,35 @@ function PnlRaporu() {
 
                             {isOpen && gruplar[grupAdi].map(kat => {
                                     const isAmort = kat.includes("Amortisman");
-                                    const highlightStyle = isAmort ? {background: 'rgba(243, 156, 18, 0.05)', color: '#d35400', fontWeight: 'bold'} : {};
+                                    const highlightStyle = isAmort ? {background: 'rgba(243, 156, 18, 0.05)', color: 'var(--enba-orange)', fontWeight: 'bold'} : {};
                                     let cGloGenel = 0;
                                     oAylarFull.forEach(ga => modeller.forEach(gm => cGloGenel += getHucreselTutar(data, kat, ga, gm)));
 
                                     return (
-                                        <tr key={kat} style={{borderBottom: '1px solid var(--border-grey)', ...highlightStyle}}>
-                                            <td style={{padding: '10px 10px 10px 36px', color: isAmort ? '#d35400' : '#4b6584', fontWeight: isAmort ? '700' : '500', fontSize: '13px'}}>
+                                        <tr key={kat} style={{borderBottom: '1px solid var(--surface-container-high)', ...highlightStyle}}>
+                                            <td style={{padding: '10px 10px 10px 36px', color: isAmort ? 'var(--enba-orange)' : '#4b6584', fontWeight: isAmort ? '800' : '500', fontSize: '13px'}}>
                                                 <span style={{color: '#bdc3c7', marginRight: '6px'}}>└</span>
-                                                {isAmort ? "✨ " + kat : kat}
+                                                {isAmort ? <><i className="ph ph-sparkle"></i> {kat}</> : kat}
                                             </td>
                                             {sAylar.map(ay => {
                                                 let ayTop = 0;
                                                 const modCells = modeller.map(mod => {
                                                     const val = getHucreselTutar(data, kat, ay, mod);
                                                     ayTop += val;
-                                                    return <td key={`ch-${ay}-${mod}`} style={{padding: '10px 10px', textAlign: 'right', color: isAmort ? '#d35400' : '#7f8c8d', fontSize: '13px', borderLeft: mod === modeller[0] ? '2px solid #eee' : '1px solid transparent'}}>{val > 0 ? formatleTutar(val) : '-'}</td>
+                                                    return <td key={`ch-${ay}-${mod}`} style={{padding: '10px 10px', textAlign: 'right', color: isAmort ? 'var(--enba-orange)' : '#7f8c8d', fontSize: '13px', borderLeft: mod === modeller[0] ? '2px solid var(--surface-container-high)' : '1px solid transparent'}}>{val > 0 ? formatleTutar(val) : '-'}</td>
                                                 });
                                                 if (modelDetayAcik) {
                                                     return (
                                                         <React.Fragment key={`frag-ch-${ay}`}>
                                                             {modCells}
-                                                            <td style={{padding: '10px 10px', textAlign: 'right', borderLeft: '1px solid #ddd', background: '#fafafa', fontWeight: 'bold', fontSize: '13px', color: isAmort ? '#d35400' : '#34495E'}}>{ayTop > 0 ? formatleTutar(ayTop) : '-'}</td>
+                                                            <td style={{padding: '10px 10px', textAlign: 'right', borderLeft: '1px solid var(--surface-container-high)', background: 'var(--surface-container-lowest)', fontWeight: 'bold', fontSize: '13px', color: isAmort ? 'var(--enba-orange)' : '#34495E'}}>{ayTop > 0 ? formatleTutar(ayTop) : '-'}</td>
                                                         </React.Fragment>
                                                     )
                                                 } else {
-                                                    return <td key={`top-ch-${ay}`} style={{padding: '10px 10px', textAlign: 'right', borderLeft: '2px solid #eee', background: '#fafafa', fontWeight: 'bold', fontSize: '13px', color: isAmort ? '#d35400' : '#34495E'}}>{ayTop > 0 ? formatleTutar(ayTop) : '-'}</td>
+                                                    return <td key={`top-ch-${ay}`} style={{padding: '10px 10px', textAlign: 'right', borderLeft: '2px solid var(--surface-container-high)', background: 'var(--surface-container-lowest)', fontWeight: 'bold', fontSize: '13px', color: isAmort ? 'var(--enba-orange)' : '#34495E'}}>{ayTop > 0 ? formatleTutar(ayTop) : '-'}</td>
                                                 }
                                             })}
-                                            {showTotalCol && <td style={{padding: '10px 10px', textAlign: 'right', fontWeight: 'bold', borderLeft: '2px solid #eee', color: colorCss, fontSize: '13px'}}>{formatleTutar(cGloGenel)} ₺</td>}
+                                            {showTotalCol && <td style={{padding: '10px 10px', textAlign: 'right', fontWeight: 'bold', borderLeft: '2px solid var(--surface-container-high)', color: colorCss, fontSize: '13px'}}>{formatleTutar(cGloGenel)} ₺</td>}
                                         </tr>
                                     )
                             })}
@@ -455,14 +457,14 @@ function PnlRaporu() {
         };
 
         return (
-            <table id={`pnl-table-report-${tableIndex}`} className="matrix-table html2pdf__page-break" style={{width: '100%', minWidth: '800px', borderCollapse: 'collapse', marginBottom: '20px', background: '#fff'}}>
+            <table id={`pnl-table-report-${tableIndex}`} className="matrix-table html2pdf__page-break" style={{width: '100%', minWidth: '800px', borderCollapse: 'collapse', marginBottom: '20px', background: '#fff', border: '1px solid var(--surface-container-highest)'}}>
                 <thead>
                     <tr style={{background: 'var(--surface-container-low)'}}>
-                        <th rowSpan="2" style={{textAlign: 'left', padding: '12px', borderBottom: '2px solid var(--enba-dark)', color: 'var(--enba-dark)', width: '250px'}}>FİNANSAL KATEGORİSİ</th>
+                        <th rowSpan="2" style={{textAlign: 'left', padding: '16px', borderBottom: '2px solid var(--enba-dark)', color: 'var(--enba-dark)', width: '250px', fontSize: '13px', fontWeight: 800}}>FİNANSAL KATEGORİSİ</th>
                         {sAylar.map(ay => (
-                            <th key={ay} colSpan={modelDetayAcik ? modeller.length + 1 : 1} style={{textAlign: 'center', padding: '8px', borderBottom: '1px solid #ddd', borderLeft: '2px solid #ddd', color: 'var(--enba-dark)'}}>{ay}</th>
+                            <th key={ay} colSpan={modelDetayAcik ? modeller.length + 1 : 1} style={{textAlign: 'center', padding: '12px', borderBottom: '1px solid var(--surface-container-high)', borderLeft: '1px solid var(--surface-container-high)', color: 'var(--enba-dark)', fontSize: '13px', fontWeight: 800}}>{ay}</th>
                         ))}
-                        {showTotalCol && <th rowSpan="2" style={{textAlign: 'right', padding: '12px', borderBottom: '2px solid var(--enba-orange)', borderLeft: '2px solid #ddd', color: 'var(--enba-orange)'}}>GENEL TOPLAM</th>}
+                        {showTotalCol && <th rowSpan="2" style={{textAlign: 'right', padding: '16px', borderBottom: '2px solid var(--enba-orange)', borderLeft: '1px solid var(--surface-container-high)', color: 'var(--enba-orange)', fontSize: '13px', fontWeight: 800}}>GENEL TOPLAM</th>}
                     </tr>
                     <tr style={{background: 'var(--surface-container-lowest)'}}>
                         {sAylar.map(ay => {
@@ -470,13 +472,13 @@ function PnlRaporu() {
                                 return (
                                     <React.Fragment key={`th-${ay}`}>
                                         {modeller.map(mod => (
-                                            <th key={`${ay}-${mod}`} style={{textAlign: 'right', padding: '8px', fontSize: '13px', borderBottom: '2px solid var(--enba-dark)', borderLeft: mod === modeller[0] ? '2px solid #ddd' : '1px solid #eee', color: mod === 'Ortak' ? '#7f8c8d' : 'var(--enba-dark)'}}>{mod}</th>
+                                            <th key={`${ay}-${mod}`} style={{textAlign: 'right', padding: '10px 12px', fontSize: '11px', borderBottom: '2px solid var(--enba-dark)', borderLeft: mod === modeller[0] ? '1px solid var(--surface-container-high)' : '1px solid var(--surface-container-lowest)', color: mod === 'Ortak' ? 'var(--on-surface-variant)' : 'var(--enba-dark)', fontWeight: 700}}>{mod}</th>
                                         ))}
-                                        <th key={`${ay}-toplam`} style={{textAlign: 'right', padding: '8px', fontSize: '13px', borderBottom: '2px solid var(--enba-dark)', borderLeft: '1px solid #ddd', background: '#f8f9fa', color: 'var(--enba-dark)'}}>TOPLAM</th>
+                                        <th key={`${ay}-toplam`} style={{textAlign: 'right', padding: '10px 12px', fontSize: '11px', borderBottom: '2px solid var(--enba-dark)', borderLeft: '1px solid var(--surface-container-high)', background: 'var(--surface-container-low)', color: 'var(--enba-dark)', fontWeight: 800}}>TOPLAM</th>
                                     </React.Fragment>
                                 )
                             } else {
-                                return <th key={`${ay}-toplam`} style={{textAlign: 'right', padding: '8px', fontSize: '13px', borderBottom: '2px solid var(--enba-dark)', borderLeft: '2px solid #ddd', background: '#f8f9fa', color: 'var(--enba-dark)'}}>TOPLAM</th>
+                                return <th key={`${ay}-toplam`} style={{textAlign: 'right', padding: '10px 12px', fontSize: '11px', borderBottom: '2px solid var(--enba-dark)', borderLeft: '1px solid var(--surface-container-high)', background: 'var(--surface-container-low)', color: 'var(--enba-dark)', fontWeight: 800}}>TOPLAM</th>
                             }
                         })}
                     </tr>
@@ -486,33 +488,33 @@ function PnlRaporu() {
                     {gelirData && (
                         <>
                             <tr>
-                                <td colSpan={1 + sAylar.length * (modelDetayAcik ? modeller.length + 1 : 1) + (showTotalCol ? 1 : 0)} onClick={() => setGelirAcik(!gelirAcik)} style={{background: '#f9fcec', color: '#27ae60', fontWeight: 'bold', padding: '10px 14px', borderBottom: '2px solid #2ecc71', cursor: 'pointer'}}>
-                                    <span style={{display: 'inline-block', width: '20px', fontSize: '12px'}}>{gelirAcik || isPdfGenerating ? '▼' : '▶'}</span>
+                                <td colSpan={1 + sAylar.length * (modelDetayAcik ? modeller.length + 1 : 1) + (showTotalCol ? 1 : 0)} onClick={() => setGelirAcik(!gelirAcik)} style={{background: 'var(--surface-container-lowest)', color: 'var(--success)', fontWeight: '800', padding: '14px 16px', borderBottom: '2px solid var(--success)', cursor: 'pointer', fontSize: '14px'}}>
+                                    <span style={{display: 'inline-block', width: '24px', fontSize: '14px'}}><i className={`ph ph-caret-${gelirAcik || isPdfGenerating ? 'down' : 'right'}`}></i></span>
                                     I. GELİRLER (SATIŞLAR)
                                 </td>
                             </tr>
-                            {(gelirAcik || isPdfGenerating) && renderKategoriSatirlari(gelirData, 'GELİR', '#27ae60')}
+                            {(gelirAcik || isPdfGenerating) && renderKategoriSatirlari(gelirData, 'GELİR', 'var(--success)')}
                             
-                            <tr style={{background: 'rgba(46, 204, 113, 0.08)'}}>
-                                <td style={{padding: '12px 14px', fontWeight: 'bold', color: '#27ae60'}}>GELİR TOPLAMI:</td>
+                            <tr style={{background: 'rgba(46, 204, 113, 0.05)'}}>
+                                <td style={{padding: '14px 16px', fontWeight: '800', color: 'var(--success)', borderBottom: '1px solid var(--success)'}}>GELİR TOPLAMI:</td>
                                 {sAylar.map(ay => {
                                     let ayTop = getAylikToplam(gelirData, ay, 'Toplam');
                                     const modCells = modeller.map(mod => (
-                                        <td key={`gelir-${ay}-${mod}`} style={{padding: '12px 10px', textAlign: 'right', fontWeight: '700', color: '#27ae60', borderLeft: mod === modeller[0] ? '2px solid #ddd' : '1px solid transparent'}}>{formatleTutar(getAylikToplam(gelirData, ay, mod))}</td>
+                                        <td key={`gelir-${ay}-${mod}`} style={{padding: '14px 12px', textAlign: 'right', fontWeight: '800', color: 'var(--success)', borderLeft: mod === modeller[0] ? '1px solid var(--surface-container-high)' : '1px solid transparent', borderBottom: '1px solid var(--success)'}}>{formatleTutar(getAylikToplam(gelirData, ay, mod))}</td>
                                     ));
 
                                     if (modelDetayAcik) {
                                         return (
                                             <React.Fragment key={`frag-geltop-${ay}`}>
                                                 {modCells}
-                                                <td style={{padding: '12px 10px', textAlign: 'right', fontWeight: '800', borderLeft: '1px solid #ddd', background: 'rgba(46, 204, 113, 0.15)', color: '#27ae60'}}>{formatleTutar(ayTop)}</td>
+                                                <td style={{padding: '14px 12px', textAlign: 'right', fontWeight: '800', borderLeft: '1px solid var(--success)', background: 'rgba(46, 204, 113, 0.1)', color: 'var(--success)', borderBottom: '1px solid var(--success)'}}>{formatleTutar(ayTop)}</td>
                                             </React.Fragment>
                                         )
                                     } else {
-                                        return <td key={`top-geltop-${ay}`} style={{padding: '12px 10px', textAlign: 'right', fontWeight: '800', borderLeft: '2px solid #ddd', background: 'rgba(46, 204, 113, 0.15)', color: '#27ae60'}}>{formatleTutar(ayTop)}</td>
+                                        return <td key={`top-geltop-${ay}`} style={{padding: '14px 12px', textAlign: 'right', fontWeight: '800', borderLeft: '1px solid var(--success)', background: 'rgba(46, 204, 113, 0.1)', color: 'var(--success)', borderBottom: '1px solid var(--success)'}}>{formatleTutar(ayTop)}</td>
                                     }
                                 })}
-                                {showTotalCol && <td style={{padding: '12px 10px', textAlign: 'right', fontWeight: '800', color: '#27ae60', borderLeft: '2px solid #ddd', borderBottom: '1px solid #2ecc71'}}>
+                                {showTotalCol && <td style={{padding: '14px 12px', textAlign: 'right', fontWeight: '800', color: 'var(--success)', borderLeft: '1px solid var(--success)', borderBottom: '1px solid var(--success)'}}>
                                     {formatleTutar(oAylarFull.reduce((a, b) => a + getAylikToplam(gelirData, b, 'Toplam'), 0))} ₺
                                 </td>}
                             </tr>
@@ -522,33 +524,33 @@ function PnlRaporu() {
                     {pGiderData && (
                         <>
                             <tr>
-                                <td colSpan={1 + sAylar.length * (modelDetayAcik ? modeller.length + 1 : 1) + (showTotalCol ? 1 : 0)} onClick={() => setGiderAcik(!giderAcik)} style={{background: '#fdf2f0', color: '#c0392b', fontWeight: 'bold', padding: '10px 14px', borderBottom: '2px solid #e74c3c', borderTop: '4px solid transparent', cursor: 'pointer'}}>
-                                    <span style={{display: 'inline-block', width: '20px', fontSize: '12px'}}>{giderAcik || isPdfGenerating ? '▼' : '▶'}</span>
+                                <td colSpan={1 + sAylar.length * (modelDetayAcik ? modeller.length + 1 : 1) + (showTotalCol ? 1 : 0)} onClick={() => setGiderAcik(!giderAcik)} style={{background: 'var(--surface-container-lowest)', color: 'var(--error)', fontWeight: '800', padding: '14px 16px', borderBottom: '2px solid var(--error)', borderTop: '4px solid transparent', cursor: 'pointer', fontSize: '14px'}}>
+                                    <span style={{display: 'inline-block', width: '24px', fontSize: '14px'}}><i className={`ph ph-caret-${giderAcik || isPdfGenerating ? 'down' : 'right'}`}></i></span>
                                     II. GİDERLER (OPEX & YATIRIM)
                                 </td>
                             </tr>
-                            {(giderAcik || isPdfGenerating) && renderKategoriSatirlari(pGiderData, 'GİDER', '#c0392b', true)}
+                            {(giderAcik || isPdfGenerating) && renderKategoriSatirlari(pGiderData, 'GİDER', 'var(--error)', true)}
                             
-                            <tr style={{background: 'rgba(231, 76, 60, 0.08)'}}>
-                                <td style={{padding: '12px 14px', fontWeight: 'bold', color: '#c0392b'}}>GİDER TOPLAMI:</td>
+                            <tr style={{background: 'rgba(231, 76, 60, 0.05)'}}>
+                                <td style={{padding: '14px 16px', fontWeight: '800', color: 'var(--error)', borderBottom: '1px solid var(--error)'}}>GİDER TOPLAMI:</td>
                                 {sAylar.map(ay => {
                                     let ayTop = getAylikToplam(pGiderData, ay, 'Toplam');
                                     const modCells = modeller.map(mod => (
-                                        <td key={`gider-${ay}-${mod}`} style={{padding: '12px 10px', textAlign: 'right', fontWeight: '700', color: '#c0392b', borderLeft: mod === modeller[0] ? '2px solid #ddd' : '1px solid transparent'}}>{formatleTutar(getAylikToplam(pGiderData, ay, mod))}</td>
+                                        <td key={`gider-${ay}-${mod}`} style={{padding: '14px 12px', textAlign: 'right', fontWeight: '800', color: 'var(--error)', borderLeft: mod === modeller[0] ? '1px solid var(--surface-container-high)' : '1px solid transparent', borderBottom: '1px solid var(--error)'}}>{formatleTutar(getAylikToplam(pGiderData, ay, mod))}</td>
                                     ));
 
                                     if (modelDetayAcik) {
                                         return (
                                             <React.Fragment key={`frag-gidtop-${ay}`}>
                                                 {modCells}
-                                                <td style={{padding: '12px 10px', textAlign: 'right', fontWeight: '800', borderLeft: '1px solid #ddd', background: 'rgba(231, 76, 60, 0.15)', color: '#c0392b'}}>{formatleTutar(ayTop)}</td>
+                                                <td style={{padding: '14px 12px', textAlign: 'right', fontWeight: '800', borderLeft: '1px solid var(--error)', background: 'rgba(231, 76, 60, 0.1)', color: 'var(--error)', borderBottom: '1px solid var(--error)'}}>{formatleTutar(ayTop)}</td>
                                             </React.Fragment>
                                         )
                                     } else {
-                                        return <td key={`top-gidtop-${ay}`} style={{padding: '12px 10px', textAlign: 'right', fontWeight: '800', borderLeft: '2px solid #ddd', background: 'rgba(231, 76, 60, 0.15)', color: '#c0392b'}}>{formatleTutar(ayTop)}</td>
+                                        return <td key={`top-gidtop-${ay}`} style={{padding: '14px 12px', textAlign: 'right', fontWeight: '800', borderLeft: '1px solid var(--error)', background: 'rgba(231, 76, 60, 0.1)', color: 'var(--error)', borderBottom: '1px solid var(--error)'}}>{formatleTutar(ayTop)}</td>
                                     }
                                 })}
-                                {showTotalCol && <td style={{padding: '12px 10px', textAlign: 'right', fontWeight: '800', color: '#c0392b', borderLeft: '2px solid #ddd', borderBottom: '1px solid #e74c3c'}}>
+                                {showTotalCol && <td style={{padding: '14px 12px', textAlign: 'right', fontWeight: '800', color: 'var(--error)', borderLeft: '1px solid var(--error)', borderBottom: '1px solid var(--error)'}}>
                                     {formatleTutar(oAylarFull.reduce((a, b) => a + getAylikToplam(pGiderData, b, 'Toplam'), 0))} ₺
                                 </td>}
                             </tr>
@@ -559,34 +561,34 @@ function PnlRaporu() {
                         <>
                             <tr><td colSpan={1 + sAylar.length * (modelDetayAcik ? modeller.length + 1 : 1) + (showTotalCol ? 1 : 0)} style={{borderTop: '6px solid var(--enba-dark)'}}></td></tr>
                             <tr style={{background: 'var(--enba-dark)'}}>
-                                <td style={{padding: '20px 14px', fontWeight: 'bold', color: '#fff', fontSize: '15px'}}>NET KÂR / ZARAR (EBITDA)</td>
+                                <td style={{padding: '24px 16px', fontWeight: '900', color: '#fff', fontSize: '16px'}}>NET KÂR / ZARAR (EBITDA)</td>
                                 {sAylar.map(ay => {
                                     const gTot = getAylikToplam(gelirData, ay, 'Toplam');
                                     const cTot = getAylikToplam(pGiderData, ay, 'Toplam');
                                     const netTop = gTot - cTot;
-                                    const topColor = netTop > 0 ? '#2ecc71' : (netTop < 0 ? '#e74c3c' : '#bdc3c7');
+                                    const topColor = netTop > 0 ? 'var(--success)' : (netTop < 0 ? 'var(--error)' : '#bdc3c7');
 
                                     const modCells = modeller.map(mod => {
                                         const gelir = getAylikToplam(gelirData, ay, mod);
                                         const c = getAylikToplam(pGiderData, ay, mod);
                                         const net = gelir - c;
-                                        const rColor = net > 0 ? '#2ecc71' : (net < 0 ? '#e74c3c' : '#bdc3c7'); 
-                                        return <td key={`net-${ay}-${mod}`} style={{padding: '20px 10px', textAlign: 'right', fontWeight: '800', color: rColor, borderLeft: mod === modeller[0] ? '1px solid rgba(255,255,255,0.2)' : '1px solid transparent'}}>{formatleTutar(net)}</td>
+                                        const rColor = net > 0 ? 'var(--success)' : (net < 0 ? 'var(--error)' : '#bdc3c7'); 
+                                        return <td key={`net-${ay}-${mod}`} style={{padding: '24px 12px', textAlign: 'right', fontWeight: '800', color: rColor, borderLeft: mod === modeller[0] ? '1px solid rgba(255,255,255,0.1)' : '1px solid transparent'}}>{formatleTutar(net)}</td>
                                     });
 
                                     if (modelDetayAcik) {
                                         return (
                                             <React.Fragment key={`f-net-${ay}`}>
                                                 {modCells}
-                                                <td style={{padding: '20px 10px', textAlign: 'right', fontWeight: '900', color: topColor, borderLeft: '1px solid rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.1)'}}>{formatleTutar(netTop)}</td>
+                                                <td style={{padding: '24px 12px', textAlign: 'right', fontWeight: '900', color: topColor, borderLeft: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.05)'}}>{formatleTutar(netTop)}</td>
                                             </React.Fragment>
                                         )
                                     } else {
-                                        return <td key={`top-net-${ay}`} style={{padding: '20px 10px', textAlign: 'right', fontWeight: '900', color: topColor, borderLeft: '1px solid rgba(255,255,255,0.3)'}}>{formatleTutar(netTop)}</td>
+                                        return <td key={`top-net-${ay}`} style={{padding: '24px 12px', textAlign: 'right', fontWeight: '900', color: topColor, borderLeft: '1px solid rgba(255,255,255,0.2)'}}>{formatleTutar(netTop)}</td>
                                     }
                                 })}
                                 
-                                {showTotalCol && <td style={{padding: '20px 10px', textAlign: 'right', fontWeight: '900', color: '#fff', borderLeft: '1px solid rgba(255,255,255,0.2)', fontSize: '15px', background: 'rgba(255,255,255,0.05)'}}>
+                                {showTotalCol && <td style={{padding: '24px 12px', textAlign: 'right', fontWeight: '900', color: '#fff', borderLeft: '1px solid rgba(255,255,255,0.2)', fontSize: '16px', background: 'rgba(255,255,255,0.1)'}}>
                                     {formatleTutar(
                                         oAylarFull.reduce((a, b) => a + getAylikToplam(gelirData, b, 'Toplam'), 0) - oAylarFull.reduce((a, b) => a + getAylikToplam(pGiderData, b, 'Toplam'), 0)
                                     )} ₺
@@ -600,22 +602,26 @@ function PnlRaporu() {
     }
 
     return (
-        <div className="page-container" style={{maxWidth: '96%', margin: '0 auto', padding: '20px 10px'}}>
-            <h2 style={{color: 'var(--enba-dark)', textTransform: 'uppercase', marginBottom: '8px'}}>⚡  Kâr/Zarar (P&L) Tablo Modülü</h2>
-            <p style={{color: '#7F8C8D', marginBottom: '24px'}}>Muhasebe programından aldığınız gelir ve gider raporlarını (.xlsx) ayrı ayrı yükleyerek EBITDA bazlı net karlılığınızı ay ve model kırılımına göre görün.</p>
+        <div className="page-container" style={{maxWidth: '1400px', margin: '0 auto', padding: '40px 48px'}}>
+            <h2 style={{color: 'var(--enba-dark)', fontWeight: 800, fontFamily: "'Manrope',sans-serif", fontSize: '28px', display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px'}}>
+                <i className="ph-fill ph-chart-pie" style={{ color: 'var(--enba-orange)' }}></i> Kâr/Zarar (P&L) Tablo Modülü
+            </h2>
+            <p style={{color: 'var(--on-surface-variant)', fontSize: '15px', marginBottom: '32px'}}>Muhasebe programından aldığınız gelir ve gider raporlarını (.xlsx) ayrı ayrı yükleyerek EBITDA bazlı net karlılığınızı ay ve model kırılımına göre görün.</p>
             
             {/* KAYITLI RAPORLAR SECTION */}
             {savedReports.length > 0 && (
-                <div style={{marginBottom: '30px', background: '#fff', padding: '16px 20px', borderRadius: '12px', border: '1px solid var(--border-grey)', boxShadow: '0 4px 12px rgba(0,0,0,0.03)'}}>
-                    <h3 style={{margin: '0 0 12px 0', fontSize: '15px', color: 'var(--enba-dark)'}}>⚡  Kayıtlı Raporlarınız (Tarayıcı Belleği)</h3>
-                    <div style={{display: 'flex', gap: '10px', flexWrap: 'wrap'}}>
+                <div style={{marginBottom: '32px', background: '#fff', padding: '20px 24px', borderRadius: '1.5rem', border: '1px solid var(--surface-container-highest)', boxShadow: 'var(--shadow-sm)'}}>
+                    <h3 style={{margin: '0 0 16px 0', fontSize: '14px', fontWeight: 800, color: 'var(--enba-dark)', display: 'flex', alignItems: 'center', gap: '8px'}}>
+                        <i className="ph ph-archive"></i> Kayıtlı Raporlarınız (Tarayıcı Belleği)
+                    </h3>
+                    <div style={{display: 'flex', gap: '12px', flexWrap: 'wrap'}}>
                         {savedReports.map(rep => (
-                            <div key={rep.id} style={{display: 'flex', alignItems: 'center', background: '#f8f9fa', border: '1px solid #e9ecef', borderRadius: '8px', overflow: 'hidden'}}>
-                                <button onClick={() => raporuYukle(rep)} style={{padding: '8px 14px', background: 'transparent', border: 'none', cursor: 'pointer', fontWeight: '600', color: 'var(--enba-dark)', fontSize: '13px', transition: '0.2s', outline: 'none'}} title="Bu raporu ekrana yükle">
-                                    {rep.name} <span style={{color: '#95a5a6', fontSize: '11px', marginLeft: '6px', fontWeight: '400'}}>{rep.date}</span>
+                            <div key={rep.id} style={{display: 'flex', alignItems: 'center', background: 'var(--surface-container-lowest)', border: '1px solid var(--surface-container-high)', borderRadius: '0.8rem', overflow: 'hidden'}}>
+                                <button onClick={() => raporuYukle(rep)} style={{padding: '10px 16px', background: 'transparent', border: 'none', cursor: 'pointer', fontWeight: '700', color: 'var(--enba-dark)', fontSize: '13px', transition: '0.2s', outline: 'none'}}>
+                                    {rep.name} <span style={{color: 'var(--on-surface-variant)', fontSize: '11px', marginLeft: '8px', fontWeight: '500'}}>{rep.date}</span>
                                 </button>
-                                <button onClick={() => raporuSil(rep.id)} style={{padding: '8px 12px', background: '#e74c3c', color: '#fff', border: 'none', cursor: 'pointer', fontSize: '12px'}} title="Veriyi Sil">
-                                    ⚡ ️
+                                <button onClick={() => raporuSil(rep.id)} className="btn-icon" style={{padding: '10px 14px', background: 'var(--enba-danger)', color: '#fff', borderRadius: 0}} title="Veriyi Sil">
+                                    <i className="ph ph-trash"></i>
                                 </button>
                             </div>
                         ))}
@@ -623,76 +629,72 @@ function PnlRaporu() {
                 </div>
             )}
 
-            <div style={{display: 'flex', gap: '20px', marginBottom: '30px', flexWrap: 'wrap'}}>
+            <div style={{display: 'flex', gap: '24px', marginBottom: '40px', flexWrap: 'wrap'}}>
                 {/* Gelir Upload */}
-                <div style={{flex: 1, minWidth: '300px', background: '#fff', border: '2px dashed #2ecc71', borderRadius: '12px', padding: '30px', textAlign: 'center', transition: 'background 0.2s', boxShadow: '0 4px 12px rgba(46, 204, 113, 0.05)'}}>
+                <div style={{flex: 1, minWidth: '300px', background: 'var(--surface-container-lowest)', border: '2px dashed var(--enba-orange)', borderRadius: '1.5rem', padding: '40px', textAlign: 'center', transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)'}}>
                     <input type="file" accept=".xlsx, .xls, .csv" onChange={(e) => dosyaSecildi(e, 'gelir')} style={{display: 'none'}} id="pnl-gelir-upload" />
                     <label htmlFor="pnl-gelir-upload" style={{cursor: 'pointer', display: 'block'}}>
-                        <div style={{fontSize: '48px', marginBottom: '10px'}}>⚡ </div>
-                        <h3 style={{margin: '0 0 10px 0', color: '#27ae60'}}>{gelirDosya ? gelirDosya : "1. GELİRLER Dosyasını Yükle"}</h3>
-                        <p style={{color: '#2ecc71', fontWeight: 'bold'}}>{gelirDosya ? 'Değiştirmek için tıklayın' : 'Satışlar tablosunu sürükleyin'}</p>
+                        <div style={{fontSize: '48px', marginBottom: '16px', color: 'var(--enba-orange)'}}><i className="ph ph-trend-up"></i></div>
+                        <h3 style={{margin: '0 0 12px 0', color: 'var(--enba-dark)', fontWeight: 800, fontSize: '18px'}}>{gelirDosya ? gelirDosya : "1. GELİRLER Dosyasını Yükle"}</h3>
+                        <p style={{color: 'var(--on-surface-variant)', fontWeight: 600, fontSize: '14px'}}>{gelirDosya ? 'Değiştirmek için tıklayın' : 'Satışlar tablosunu sürükleyin'}</p>
                     </label>
                 </div>
 
                 {/* Gider Upload */}
-                <div style={{flex: 1, minWidth: '300px', background: '#fff', border: '2px dashed #e74c3c', borderRadius: '12px', padding: '30px', textAlign: 'center', transition: 'background 0.2s', boxShadow: '0 4px 12px rgba(231, 76, 60, 0.05)'}}>
+                <div style={{flex: 1, minWidth: '300px', background: 'var(--surface-container-lowest)', border: '2px dashed var(--enba-dark)', borderRadius: '1.5rem', padding: '40px', textAlign: 'center', transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)'}}>
                     <input type="file" accept=".xlsx, .xls, .csv" onChange={(e) => dosyaSecildi(e, 'gider')} style={{display: 'none'}} id="pnl-gider-upload" />
                     <label htmlFor="pnl-gider-upload" style={{cursor: 'pointer', display: 'block'}}>
-                        <div style={{fontSize: '48px', marginBottom: '10px'}}>⚡ </div>
-                        <h3 style={{margin: '0 0 10px 0', color: '#c0392b'}}>{giderDosya ? giderDosya : "2. GİDERLER Dosyasını Yükle"}</h3>
-                        <p style={{color: '#e74c3c', fontWeight: 'bold'}}>{giderDosya ? 'Değiştirmek için tıklayın' : 'Harcamalar tablosunu sürükleyin'}</p>
+                        <div style={{fontSize: '48px', marginBottom: '16px', color: 'var(--enba-dark)'}}><i className="ph ph-trend-down"></i></div>
+                        <h3 style={{margin: '0 0 12px 0', color: 'var(--enba-dark)', fontWeight: 800, fontSize: '18px'}}>{giderDosya ? giderDosya : "2. GİDERLER Dosyasını Yükle"}</h3>
+                        <p style={{color: 'var(--on-surface-variant)', fontWeight: 600, fontSize: '14px'}}>{giderDosya ? 'Değiştirmek için tıklayın' : 'Harcamalar tablosunu sürükleyin'}</p>
                     </label>
                 </div>
             </div>
             
             {(gelirData || pGiderData) && (
-                <div id="pnl-report-container" style={{overflowX: 'auto', background: '#fff', padding: '24px', borderRadius: '12px', boxShadow: '0 4px 16px rgba(0,0,0,0.05)', border: '1px solid var(--border-grey)'}}>
+                <div id="pnl-report-container" className="enba-card" style={{padding: '32px', border: '1px solid var(--surface-container-highest)', boxShadow: 'var(--shadow-md)'}}>
                     
-                    <div id="pnl-actions" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap', gap: '10px'}}>
-                        <div style={{display: 'flex', alignItems: 'center', gap: '15px', flexWrap: 'wrap'}}>
-                            <h3 style={{margin: 0, color: 'var(--enba-dark)', fontSize: '16px'}}>KONSOLİDE P&L TABLOSU</h3>
+                    <div id="pnl-actions" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px'}}>
+                        <div style={{display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap'}}>
+                            <h3 style={{margin: 0, color: 'var(--enba-dark)', fontSize: '18px', fontWeight: 800}}>KONSOLİDE P&L TABLOSU</h3>
                             
                             <button 
                                 onClick={() => setModelDetayAcik(!modelDetayAcik)}
-                                style={{padding: '6px 14px', background: modelDetayAcik ? 'var(--info-blue)' : '#fdfdfd', color: modelDetayAcik ? '#fff' : 'var(--info-blue)', border: '1px solid var(--info-blue)', borderRadius: '20px', fontWeight: 'bold', cursor: 'pointer', transition: '0.2s', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px'}}>
-                                ⚡  {modelDetayAcik ? 'Model Detaylarını Gizle' : 'Model (V, Ortak) Detaylarını Gör'}
+                                className={`btn ${modelDetayAcik ? 'btn-primary' : 'btn-secondary'}`}
+                                style={{padding: '8px 18px', borderRadius: '24px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px'}}>
+                                <i className="ph ph-eye"></i> {modelDetayAcik ? 'Detayları Gizle' : 'V/Ortak Detaylarını Gör'}
                             </button>
 
                             {/* CAPEX Toggle */}
-                            <div style={{display: 'flex', alignItems: 'center', gap: '6px', background: '#fdf2e9', padding: '4px 8px', borderRadius: '20px', border: '1px solid #fdebd0'}}>
-                                <span style={{fontSize: '11px', fontWeight: 'bold', color: '#e67e22', marginLeft: '4px'}}>VADE (AY):</span>
-                                <input type="number" min="1" max="120" value={capexVade} onChange={(e) => setCapexVade(Number(e.target.value) || 1)} disabled={capexActive} style={{width: '45px', padding: '4px', borderRadius: '4px', border: '1px solid #f39c12', outline: 'none', textAlign: 'center', fontSize: '12px', background: capexActive ? '#fcf3cf' : '#fff'}} onFocus={window.selectOnFocus} />
+                            <div style={{display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--surface-container-low)', padding: '6px 16px', borderRadius: '24px', border: '1px solid var(--surface-container-highest)'}}>
+                                <span style={{fontSize: '11px', fontWeight: 800, color: 'var(--on-surface-variant)', letterSpacing: '0.5px'}}>VADE (AY):</span>
+                                <input type="number" min="1" max="120" value={capexVade} onChange={(e) => setCapexVade(Number(e.target.value) || 1)} disabled={capexActive} style={{width: '50px', padding: '4px', borderRadius: '6px', border: '1px solid var(--surface-container-high)', outline: 'none', textAlign: 'center', fontSize: '12px', background: capexActive ? 'var(--surface-container-highest)' : '#fff'}} onFocus={window.selectOnFocus} />
                                 <button 
                                     onClick={() => setCapexActive(!capexActive)}
-                                    style={{padding: '6px 14px', background: capexActive ? '#f39c12' : '#fff', color: capexActive ? '#fff' : '#f39c12', border: capexActive ? 'none' : '1px solid #f39c12', borderRadius: '14px', fontWeight: 'bold', cursor: 'pointer', transition: '0.2s', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', boxShadow: capexActive ? '0 2px 8px rgba(243, 156, 18, 0.3)' : 'none'}}>
-                                    ⚡ ️ {capexActive ? 'Uygulanıyor' : 'Demirbaş & Kurulumları CAPEX Ayır'}
+                                    className={`btn ${capexActive ? 'btn-primary' : 'btn-secondary'}`}
+                                    style={{padding: '8px 18px', borderRadius: '20px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px'}}>
+                                    <i className="ph ph-hourglass"></i> {capexActive ? 'CAPEX Uygulanıyor' : 'CAPEX Ayır'}
                                 </button>
                             </div>
                         </div>
 
                         <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap'}}>
                             
-                            <div style={{display: 'flex', alignItems: 'center', gap: '6px', marginRight: '20px'}}>
-                                <input type="text" value={raporAdi} onChange={(e) => setRaporAdi(e.target.value)} placeholder="Rapor Adı (Örn: Q1 2024)" style={{padding: '8px 10px', borderRadius: '6px', border: '1px solid #ccc', outline: 'none', fontSize: '13px', width: '180px'}} />
-                                <button onClick={raporuKaydet} style={{padding: '8px 16px', background: 'var(--enba-dark)', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px'}}>
-                                    ⚡  Kaydet
+                            <div style={{display: 'flex', alignItems: 'center', gap: '8px', marginRight: '16px'}}>
+                                <input type="text" value={raporAdi} onChange={(e) => setRaporAdi(e.target.value)} placeholder="Rapor Adı..." style={{padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--surface-container-high)', outline: 'none', fontSize: '13px', width: '180px'}} />
+                                <button onClick={raporuKaydet} className="btn btn-primary" style={{padding: '10px 18px', borderRadius: '10px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px'}}>
+                                    <i className="ph ph-floppy-disk"></i> Kaydet
                                 </button>
                             </div>
 
-                            <button 
-                                onClick={excelIndir}
-                                style={{padding: '8px 16px', background: '#27ae60', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: '600', cursor: 'pointer', transition: '0.2s', fontSize: '13px'}}>
-                                ⚡  Excel
+                            <button onClick={excelIndir} className="btn btn-secondary" style={{padding: '10px 18px', borderRadius: '10px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px'}}>
+                                <i className="ph ph-file-xls"></i> Excel
                             </button>
-                            <button 
-                                onClick={pdfIndir}
-                                style={{padding: '8px 16px', background: '#e74c3c', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: '600', cursor: 'pointer', transition: '0.2s', fontSize: '13px'}}>
-                                ⚡  PDF
+                            <button onClick={pdfIndir} className="btn btn-secondary" style={{padding: '10px 18px', borderRadius: '10px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px'}}>
+                                <i className="ph ph-file-pdf"></i> PDF
                             </button>
-                            <button 
-                                onClick={() => { setGelirAcik(false); setGiderAcik(false); setGrupAcik({}); }}
-                                style={{padding: '8px 16px', background: '#f0f0f0', color: '#333', border: 'none', borderRadius: '6px', fontWeight: '600', cursor: 'pointer', transition: '0.2s', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px'}}>
-                                ⚡ ️ Tümünü Gizle
+                            <button onClick={() => { setGelirAcik(false); setGiderAcik(false); setGrupAcik({}); }} className="btn btn-icon" style={{padding: '10px 18px', borderRadius: '10px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px'}} title="Tümünü Gizle">
+                                <i className="ph ph-eye-slash"></i>
                             </button>
                         </div>
                     </div>
@@ -725,4 +727,3 @@ function PnlRaporu() {
 }
 
 window.PnlRaporu = PnlRaporu;
-

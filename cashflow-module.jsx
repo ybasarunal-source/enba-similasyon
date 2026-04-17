@@ -371,13 +371,14 @@ function NakitAkisModulu({ aktifPlanlar = [] }) {
     const btnPrimary   = { padding:'10px 20px', background:'var(--enba-dark)', color:'#fff', border:'none', borderRadius:'0.75rem', fontWeight:700, cursor:'pointer', fontSize:'14px' };
     const btnSecondary = { padding:'10px 14px', background:'var(--surface-container-high)', border:'none', borderRadius:'0.75rem', fontWeight:700, cursor:'pointer', fontSize:'14px' };
 
-    const SekmeBtn = ({ id, label }) => (
-        <button onClick={() => setSekme(id)} style={{
-            padding:'10px 22px', borderRadius:'2rem', border:'none',
-            background: sekme === id ? 'var(--enba-dark)' : 'var(--surface-container-high)',
-            color:      sekme === id ? '#fff' : 'var(--on-surface-variant)',
-            fontWeight:700, fontSize:'14px', cursor:'pointer', transition:'all 0.18s'
-        }}>{label}</button>
+    const SekmeBtn = ({ id, label, icon }) => (
+        <button onClick={() => setSekme(id)} className={`btn ${sekme === id ? 'btn-primary' : 'btn-secondary'}`} style={{
+            padding:'10px 24px', borderRadius:'2rem', display: 'flex', alignItems: 'center', gap: '8px',
+            fontSize:'14px', cursor:'pointer', transition:'all 0.18s'
+        }}>
+            {icon && <i className={icon}></i>}
+            {label}
+        </button>
     );
 
     const fmt = window.fmt || (v => Number(v||0).toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 1 }));
@@ -386,12 +387,14 @@ function NakitAkisModulu({ aktifPlanlar = [] }) {
     // ── Boş durum ────────────────────────────────────────────
     if (aktifPlanlar.length === 0) {
         return (
-            <div style={{ padding:'60px 40px', textAlign:'center', fontFamily:"'Inter', sans-serif" }}>
-                <div style={{ fontSize:'48px', marginBottom:'16px' }}>⚡ </div>
-                <h2 style={{ fontFamily:"'Manrope', sans-serif", color:'var(--enba-dark)', marginBottom:'12px' }}>
+            <div style={{ padding:'80px 40px', textAlign:'center', fontFamily:"'Inter', sans-serif" }}>
+                <div style={{ fontSize:'64px', marginBottom:'24px', color: 'var(--enba-orange)' }}>
+                    <i className="ph ph-warning-circle"></i>
+                </div>
+                <h2 style={{ fontFamily:"'Manrope', sans-serif", fontWeight: 800, color:'var(--enba-dark)', marginBottom:'12px', fontSize: '28px' }}>
                     Aktif İş Planı Bulunamadı
                 </h2>
-                <p style={{ color:'var(--on-surface-variant)', maxWidth:'480px', margin:'0 auto' }}>
+                <p style={{ color:'var(--on-surface-variant)', maxWidth:'480px', margin:'0 auto', fontSize: '16px', lineHeight: '1.6' }}>
                     Nakit akışı modülü, Detaylı İş Planlama Modülü'ndeki <strong>aktif</strong> planlardan beslenir.
                     Önce bir plan oluşturup aktif hale getirin.
                 </p>
@@ -425,7 +428,7 @@ function NakitAkisModulu({ aktifPlanlar = [] }) {
                     const x    = padL + i * barW + barW * 0.1;
                     const w    = barW * 0.8;
                     const y    = v >= 0 ? zeroY - barH : zeroY;
-                    const fill = v >= 0 ? '#27ae60' : '#e74c3c';
+                    const fill = v >= 0 ? 'var(--enba-success)' : 'var(--enba-danger)';
                     return (
                         <g key={i}>
                             <rect x={x} y={y} width={w} height={barH} fill={fill} rx="2" opacity="0.85" />
@@ -435,7 +438,7 @@ function NakitAkisModulu({ aktifPlanlar = [] }) {
                             >{fmt(Math.round(v/1000))}K</text>
                             <text
                                 x={x + w/2} y={H - 4}
-                                textAnchor="middle" fontSize="26" fill="#888"
+                                textAnchor="middle" fontSize="26" fill="var(--on-surface-variant)"
                             >{AYLAR_CF[(a.gercekAy)]?.slice(0,3)}</text>
                         </g>
                     );
@@ -446,20 +449,20 @@ function NakitAkisModulu({ aktifPlanlar = [] }) {
 
     // ── RENDER ───────────────────────────────────────────────
     return (
-        <div style={{ padding:'32px 40px', maxWidth:'1180px', margin:'0 auto', fontFamily:"'Inter', sans-serif", opacity: loading ? 0.6 : 1, transition: 'opacity 0.2s' }}>
+        <div style={{ padding:'40px 48px', maxWidth:'1400px', margin:'0 auto', fontFamily:"'Inter', sans-serif", opacity: loading ? 0.6 : 1, transition: 'opacity 0.2s' }}>
             {loading && (
-                <div style={{ position:'fixed', top:'20px', right:'20px', background:'var(--enba-orange)', color:'#fff', padding:'8px 16px', borderRadius:'1rem', fontSize:'12px', fontWeight:700, zIndex:1000, boxShadow:'0 4px 12px rgba(0,0,0,0.1)' }}>
-                    ⚡  Senkronize ediliyor...
+                <div style={{ position:'fixed', top:'20px', right:'20px', background:'var(--enba-orange)', color:'#fff', padding:'10px 20px', borderRadius:'1rem', fontSize:'13px', fontWeight:800, zIndex:1000, boxShadow: 'var(--shadow-lg)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <i className="ph ph-arrows-clockwise ph-spin"></i> Senkronize ediliyor...
                 </div>
             )}
 
             {/* Başlık */}
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'24px', flexWrap:'wrap', gap:'16px' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'32px', flexWrap:'wrap', gap:'16px' }}>
                 <div>
-                    <h1 style={{ fontFamily:"'Manrope', sans-serif", fontSize:'26px', color:'var(--enba-dark)', margin:'0 0 6px' }}>
-                        ⚡  Nakit Akışı Planlama
+                    <h1 style={{ fontFamily:"'Manrope', sans-serif", fontSize:'28px', fontWeight: 800, color:'var(--enba-dark)', margin:'0 0 8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <i className="ph-fill ph-money" style={{ color: 'var(--enba-orange)' }}></i> Nakit Akışı Planlama
                     </h1>
-                    <p style={{ margin:0, color:'var(--on-surface-variant)', fontSize:'14px' }}>
+                    <p style={{ margin:0, color:'var(--on-surface-variant)', fontSize:'15px' }}>
                         İş planı verilerini nakit akışı tahsilatlarıyla birleştirerek kasa projeksiyonu oluşturun.
                     </p>
                 </div>
@@ -477,10 +480,10 @@ function NakitAkisModulu({ aktifPlanlar = [] }) {
             {/* Özet Kartlar */}
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(200px, 1fr))', gap:'14px', marginBottom:'24px' }}>
                 {[
-                    { baslik:'Başlangıç Kasası',   deger: params.baslangicKasasi || 0, renk:'#1565C0', alt: 'Plan başı nakit' },
-                    { baslik:'Dönem Sonu Kasası',   deger: sonKasa,   renk: sonKasa >= 0 ? '#2E7D32' : '#C62828', alt: '12. ay sonu' },
-                    { baslik:'En Düşük Kasa',       deger: minKasa,   renk: minKasa < 0 ? '#C62828' : '#2E7D32',  alt: 'Kritik ay değeri' },
-                    { baslik:'Negatif Ay Sayısı',   deger: negAylar,  renk: negAylar > 0 ? '#E65100' : '#2E7D32', alt: 'Kasa eksi olan ay', birim:' ay', fmt: v => v },
+                    { baslik:'Başlangıç Kasası',   deger: params.baslangicKasasi || 0, renk:'var(--info)', alt: 'Plan başı nakit' },
+                    { baslik:'Dönem Sonu Kasası',   deger: sonKasa,   renk: sonKasa >= 0 ? 'var(--enba-success)' : 'var(--enba-danger)', alt: '12. ay sonu' },
+                    { baslik:'En Düşük Kasa',       deger: minKasa,   renk: minKasa < 0 ? 'var(--enba-danger)' : 'var(--enba-success)',  alt: 'Kritik ay değeri' },
+                    { baslik:'Negatif Ay Sayısı',   deger: negAylar,  renk: negAylar > 0 ? 'var(--enba-orange)' : 'var(--enba-success)', alt: 'Kasa eksi olan ay', birim:' ay', fmt: v => v },
                     { baslik:'Toplam Kredi Servisi', deger: toplamKrediOdeme, renk:'#6A1B9A', alt: '12 ay anapara+faiz' },
                 ].map((k, i) => (
                     <div key={i} style={{ ...cardStyle, borderTop:`3px solid ${k.renk}` }}>
@@ -495,20 +498,20 @@ function NakitAkisModulu({ aktifPlanlar = [] }) {
 
             {/* Uyarı: negatif kasa */}
             {minKasa < 0 && (
-                <div style={{ background:'#FFF3E0', border:'1px solid #FFB300', borderRadius:'1rem', padding:'14px 20px', marginBottom:'20px', fontSize:'14px', color:'#E65100', display:'flex', alignItems:'center', gap:'12px' }}>
-                    <span style={{ fontSize:'20px' }}>⚠️</span>
-                    <span>
-                        <strong>{nakitAkisi.filter(a=>a.donemSonu<0).length} ayda kasa negatife düşüyor.</strong>
-                        {' '}Bunu önlemek için başlangıç kasasını en az <strong>{fmt(onerilKasa)} ₺</strong> artırın veya kredi/öz kaynak girişi ekleyin.
+                <div style={{ background:'var(--surface-container-lowest)', border:'1px solid var(--enba-danger)', borderRadius:'1rem', padding:'16px 24px', marginBottom:'24px', fontSize:'14px', color:'var(--enba-danger)', display:'flex', alignItems:'center', gap: '16px', boxShadow: 'var(--shadow-sm)' }}>
+                    <div style={{ fontSize: '24px', flexShrink: 0 }}><i className="ph ph-warning"></i></div>
+                    <span style={{ fontWeight: 500 }}>
+                        <strong style={{ fontWeight: 800 }}>{nakitAkisi.filter(a=>a.donemSonu<0).length} ayda kasa negatife düşüyor.</strong>
+                        {' '}Bunu önlemek için başlangıç kasasını en az <strong style={{ fontWeight: 800 }}>{fmt(onerilKasa)} ₺</strong> artırın veya kredi/öz kaynak girişi ekleyin.
                     </span>
                 </div>
             )}
 
             {/* Sekmeler */}
-            <div style={{ display:'flex', gap:'8px', marginBottom:'24px', flexWrap:'wrap' }}>
-                <SekmeBtn id="parametreler" label="⚙️ Parametreler" />
-                <SekmeBtn id="aylik"        label="⚡  Aylık Nakit Akışı" />
-                <SekmeBtn id="projeksiyon"  label="⚡  5 Yıl Projeksiyonu" />
+            <div style={{ display:'flex', gap:'12px', marginBottom:'32px', flexWrap:'wrap' }}>
+                <SekmeBtn id="parametreler" label="Parametreler" icon="ph ph-gear" />
+                <SekmeBtn id="aylik"        label="Aylık Nakit Akışı" icon="ph ph-chart-line" />
+                <SekmeBtn id="projeksiyon"  label="5 Yıl Projeksiyonu" icon="ph ph-presentation-chart" />
             </div>
 
             {/* ═══════════════════════════════════════════════
@@ -518,8 +521,10 @@ function NakitAkisModulu({ aktifPlanlar = [] }) {
                 <div style={{ display:'flex', flexDirection:'column', gap:'24px' }}>
 
                     {/* Başlangıç kasası + vade */}
-                    <div style={{ ...cardStyle }}>
-                        <h3 style={{ fontFamily:"'Manrope', sans-serif", color:'var(--enba-dark)', margin:'0 0 20px', fontSize:'16px' }}>⚡  Temel Nakit Parametreleri</h3>
+                    <div className="enba-card" style={{ padding: '32px' }}>
+                        <h3 style={{ fontFamily:"'Manrope', sans-serif", color:'var(--enba-dark)', margin:'0 0 24px', fontSize:'18px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <i className="ph ph-sliders"></i> Temel Nakit Parametreleri
+                        </h3>
                         <div style={{ display:'flex', flexWrap:'wrap', gap:'20px' }}>
 
                             {/* Başlangıç Kasası */}
@@ -585,8 +590,10 @@ function NakitAkisModulu({ aktifPlanlar = [] }) {
                     </div>
 
                     {/* Vergi */}
-                    <div style={{ ...cardStyle }}>
-                        <h3 style={{ fontFamily:"'Manrope', sans-serif", color:'var(--enba-dark)', margin:'0 0 20px', fontSize:'16px' }}>⚡ ️ Kurumlar Vergisi</h3>
+                    <div className="enba-card" style={{ padding: '32px' }}>
+                        <h3 style={{ fontFamily:"'Manrope', sans-serif", color:'var(--enba-dark)', margin:'0 0 24px', fontSize:'18px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <i className="ph ph-receipt"></i> Kurumlar Vergisi
+                        </h3>
                         <div style={{ display:'flex', flexWrap:'wrap', gap:'20px' }}>
                             <div style={{ flex:'1 1 180px' }}>
                                 <label style={labelStyle}>Vergi Oranı (%)</label>
@@ -606,10 +613,14 @@ function NakitAkisModulu({ aktifPlanlar = [] }) {
                     </div>
 
                     {/* Krediler */}
-                    <div style={{ ...cardStyle }}>
-                        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'16px' }}>
-                            <h3 style={{ fontFamily:"'Manrope', sans-serif", color:'var(--enba-dark)', margin:0, fontSize:'16px' }}>⚡  Kredi ve Finansman</h3>
-                            <button onClick={() => krediFormAc()} style={btnPrimary}>+ Kredi Ekle</button>
+                    <div className="enba-card" style={{ padding: '32px' }}>
+                        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'24px' }}>
+                            <h3 style={{ fontFamily:"'Manrope', sans-serif", color:'var(--enba-dark)', margin:0, fontSize:'18px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <i className="ph ph-bank"></i> Kredi ve Finansman
+                            </h3>
+                            <button onClick={() => krediFormAc()} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <i className="ph ph-plus-circle"></i> Kredi Ekle
+                            </button>
                         </div>
 
                         {krediFormAcik && (
@@ -679,8 +690,11 @@ function NakitAkisModulu({ aktifPlanlar = [] }) {
                                                 <td style={{ padding:'10px 12px' }}>{krd.tur === 'esit_taksit' ? 'Eşit Taksit' : 'Sabit Ana.'}</td>
                                                 <td style={{ padding:'10px 12px', fontWeight:700, color:'#6A1B9A' }}>{fmt(Math.round(ilkTaksit))} ₺</td>
                                                 <td style={{ padding:'10px 12px' }}>
-                                                    <button onClick={()=>krediFormAc(krd)} style={{ background:'none', border:'none', cursor:'pointer', fontSize:'16px' }}>✏️</button>
-                                                    <button onClick={()=>krediSil(krd.id)} style={{ background:'none', border:'none', cursor:'pointer', fontSize:'16px' }}>⚡ ️</button>
+                                                <td style={{ padding:'12px 12px' }}>
+                                                    <div style={{ display:'flex', gap:'8px' }}>
+                                                        <button onClick={()=>krediFormAc(krd)} className="btn-icon" title="Düzenle"><i className="ph ph-pencil-simple"></i></button>
+                                                        <button onClick={()=>krediSil(krd.id)} className="btn-icon" style={{ background: 'var(--enba-danger)', color: '#fff' }} title="Sil"><i className="ph ph-trash"></i></button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         );
@@ -693,10 +707,14 @@ function NakitAkisModulu({ aktifPlanlar = [] }) {
                     </div>
 
                     {/* Öz Kaynak / Diğer Nakit */}
-                    <div style={{ ...cardStyle }}>
-                        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'16px' }}>
-                            <h3 style={{ fontFamily:"'Manrope', sans-serif", color:'var(--enba-dark)', margin:0, fontSize:'16px' }}>⚡  Öz Kaynak ve Diğer Nakit Hareketleri</h3>
-                            <button onClick={() => ozFormAc()} style={{ ...btnPrimary, background:'#2E7D32' }}>+ Hareket Ekle</button>
+                    <div className="enba-card" style={{ padding: '32px' }}>
+                        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'24px' }}>
+                            <h3 style={{ fontFamily:"'Manrope', sans-serif", color:'var(--enba-dark)', margin:0, fontSize:'18px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <i className="ph ph-hand-coins"></i> Öz Kaynak ve Diğer Nakit
+                            </h3>
+                            <button onClick={() => ozFormAc()} className="btn btn-primary" style={{ background:'var(--enba-success)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <i className="ph ph-plus-circle"></i> Hareket Ekle
+                            </button>
                         </div>
 
                         {ozFormAcik && (
@@ -722,7 +740,7 @@ function NakitAkisModulu({ aktifPlanlar = [] }) {
                                     <label style={labelStyle}>Tür</label>
                                     <select style={inputStyle} value={ozForm.tur}
                                         onChange={e => setOzForm(p=>({...p, tur:e.target.value}))}>
-                                        <option value="giris">Nakit Girişşi (+)</option>
+                                        <option value="giris">Nakit Girişi (+)</option>
                                         <option value="cikis">Nakit Çıkışı (−)</option>
                                     </select>
                                 </div>
@@ -770,11 +788,13 @@ function NakitAkisModulu({ aktifPlanlar = [] }) {
             {sekme === 'aylik' && (
                 <div>
                     {/* Chart */}
-                    <div style={{ ...cardStyle, marginBottom:'24px' }}>
-                        <h3 style={{ fontFamily:"'Manrope', sans-serif", color:'var(--enba-dark)', margin:'0 0 4px', fontSize:'16px' }}>Dönem Sonu Nakit Bakiyesi</h3>
-                        <p style={{ color:'var(--on-surface-variant)', fontSize:'12px', margin:'0 0 16px' }}>Değerler: Bin TL (K)</p>
-                        <CashChart />
-                    </div>
+                                    <div className="enba-card" style={{ marginBottom:'32px', padding: '32px' }}>
+                                        <h3 style={{ fontFamily:"'Manrope', sans-serif", color:'var(--enba-dark)', margin:'0 0 8px', fontSize:'18px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                            <i className="ph ph-chart-bar"></i> Dönem Sonu Nakit Bakiyesi
+                                        </h3>
+                                        <p style={{ color:'var(--on-surface-variant)', fontSize:'13px', margin:'0 0 24px' }}>Değerler: Bin TL (K)</p>
+                                        <CashChart />
+                                    </div>
 
                     {/* Detay Tablosu */}
                     <div style={{ overflowX:'auto' }}>

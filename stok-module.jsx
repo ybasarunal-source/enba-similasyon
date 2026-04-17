@@ -14,21 +14,22 @@ const VARSAYILAN_MAMUL = [
 ];
 
 // ---- Renk sabitleri ----
-const BG     = '#0e2035';
-const CARD   = '#163049';
-const CARD2  = '#1b3a58';
-const INP    = '#0c1d2d';
-const BRD    = 'rgba(110,175,220,0.22)';
-const BRD_IN = 'rgba(110,175,220,0.32)';
-const TXT    = '#ddeeff';
-const TXT2   = '#7fb8d8';
-const TXT3   = '#5a8dad';
-const LBL    = '#6da8c8';
-const GREEN  = '#27c76f';
-const BLUE   = '#4fa8f5';
-const PURPLE = '#a07cf5';
-const AMBER  = '#e8a020';
-const RED    = '#f06060';
+// ---- Renk Sabitleri (Corporate Theme) ----
+const BG     = 'var(--surface)';
+const CARD   = 'var(--surface-container-lowest)';
+const CARD2  = 'var(--surface-container-low)';
+const INP    = 'var(--surface-container-lowest)';
+const BRD    = 'var(--surface-container-highest)';
+const BRD_IN = 'var(--surface-container-high)';
+const TXT    = 'var(--on-surface)';
+const TXT2   = 'var(--on-surface-variant)';
+const TXT3   = 'rgba(26, 26, 26, 0.45)';
+const LBL    = 'var(--on-surface-variant)';
+const GREEN  = '#27ae60';
+const BLUE   = 'var(--info)';
+const PURPLE = '#6c5ce7';
+const AMBER  = 'var(--warning)';
+const RED    = 'var(--enba-danger)';
 const TEAL   = '#28c9a0';
 
 function fmtN(n, d) {
@@ -271,17 +272,25 @@ function StokModulu() {
     }
 
 
-    // ---- Stil şablonları ----
-    const card = { background: CARD, borderRadius: '1rem', padding: '20px', border: `1px solid ${BRD}`, boxShadow: '0 4px 24px rgba(0,0,0,0.4)' };
-    const inp  = { width: '100%', padding: '9px 12px', borderRadius: '0.6rem', border: `1px solid ${BRD_IN}`, background: INP, color: TXT, fontFamily: "'Inter',sans-serif", fontSize: '13px', outline: 'none', boxSizing: 'border-box' };
-    const lbl  = { display: 'block', fontSize: '11px', fontWeight: 700, color: LBL, marginBottom: '5px', textTransform: 'uppercase', letterSpacing: '0.6px' };
-    const btnG = { padding: '10px 20px', background: '#1a9a52', color: '#fff', border: 'none', borderRadius: '0.6rem', cursor: 'pointer', fontWeight: 700, fontSize: '13px', fontFamily: "'Inter',sans-serif" };
-    const btnB = { ...( {} ), padding: '10px 20px', background: '#1a5ea0', color: '#fff', border: 'none', borderRadius: '0.6rem', cursor: 'pointer', fontWeight: 700, fontSize: '13px', fontFamily: "'Inter',sans-serif" };
-    const btnS = { padding: '8px 14px', background: 'rgba(110,175,220,0.1)', color: TXT2, border: `1px solid ${BRD}`, borderRadius: '0.5rem', cursor: 'pointer', fontSize: '12px', fontFamily: "'Inter',sans-serif" };
-    const thS  = { padding: '10px 12px', textAlign: 'left', color: LBL, fontWeight: 700, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap', background: CARD2, borderBottom: `1px solid ${BRD}` };
-    const tdR  = { padding: '9px 12px', textAlign: 'right', fontFamily: 'monospace', fontSize: '13px', color: TXT };
-    const tdL  = { padding: '9px 12px', fontSize: '13px', color: TXT };
-    const trHover = { borderBottom: `1px solid ${BRD}`, transition: 'background 0.15s' };
+    // ---- Stil şablonları (Kurumsal tasarım sistemine uygun) ----
+    const card = { background: '#fff', borderRadius: '1.5rem', padding: '24px', border: '1px solid var(--surface-container-highest)', boxShadow: 'var(--shadow-sm)' };
+    const inp  = { width: '100%', padding: '10px 14px', borderRadius: '0.8rem', border: '1px solid var(--surface-container-highest)', background: 'var(--surface-container-lowest)', color: 'var(--enba-dark)', fontFamily: "'Inter',sans-serif", fontSize: '13px', outline: 'none', boxSizing: 'border-box' };
+    const lbl  = { display: 'block', fontSize: '12px', fontWeight: 800, color: 'var(--on-surface-variant)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' };
+    const btnG = { padding: '10px 20px', background: 'var(--enba-orange)', color: '#fff', border: 'none', borderRadius: '0.8rem', cursor: 'pointer', fontWeight: 700, fontSize: '13px', fontFamily: "'Inter',sans-serif" };
+    const btnB = { padding: '10px 20px', background: 'var(--enba-dark)', color: '#fff', border: 'none', borderRadius: '0.8rem', cursor: 'pointer', fontWeight: 700, fontSize: '13px', fontFamily: "'Inter',sans-serif" };
+    const btnS = { padding: '8px 14px', background: 'var(--surface-container-low)', color: 'var(--on-surface-variant)', border: '1px solid var(--surface-container-highest)', borderRadius: '0.6rem', cursor: 'pointer', fontSize: '12px', fontFamily: "'Inter',sans-serif" };
+    const thS  = { padding: '12px 16px', textAlign: 'left', color: 'var(--on-surface-variant)', fontWeight: 800, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap', background: 'var(--surface-container-low)', borderBottom: '1px solid var(--surface-container-highest)' };
+    const tdR  = { padding: '12px 16px', textAlign: 'right', fontFamily: 'monospace', fontSize: '13px', color: 'var(--enba-dark)' };
+    const tdL  = { padding: '12px 16px', fontSize: '13px', color: 'var(--enba-dark)' };
+    const trHover = { borderBottom: '1px solid var(--surface-container-high)', transition: 'background 0.15s' };
+    
+    const liStyle = (act) => ({
+        padding: '8px 16px', borderRadius: '0.6rem', border: 'none',
+        fontSize: '13px', fontWeight: act ? 800 : 500, cursor: 'pointer',
+        transition: '0.2s', background: act ? '#fff' : 'transparent',
+        color: act ? 'var(--enba-orange)' : 'var(--on-surface-variant)',
+        boxShadow: act ? 'var(--shadow-sm)' : 'none'
+    });
 
     // ============================================================
     //  TAB: ALIŞLAR
@@ -337,14 +346,16 @@ function StokModulu() {
                         </div>
                     )}
                     <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
-                        <button style={btnG} onClick={alisKaydet}>{alisDuzenleId ? '⚡  Güncelle' : '✅ Kaydet'}</button>
+                        <button style={btnG} onClick={alisKaydet}>
+                            {alisDuzenleId ? <><i className="ph ph-arrow-counter-clockwise"></i> Güncelle</> : <><i className="ph ph-check"></i> Kaydet</>}
+                        </button>
                         {alisDuzenleId && <button style={btnS} onClick={() => { setAlisDuzenleId(null); setAlisForm(BOSH_ALIS()); }}>İptal</button>}
                     </div>
                 </div>
 
                 {/* Filtre */}
                 <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
-                    <input type="text" style={{ ...inp, maxWidth: '200px' }} placeholder="🔍 Tedarikçi ara..."
+                    <input type="text" style={{ ...inp, maxWidth: '200px' }} placeholder="Tedarikçi ara..."
                         value={alisFiltre.tedarikci} onChange={e => setAlisFiltre(f => ({ ...f, tedarikci: e.target.value }))} />
                     <select style={{ ...inp, maxWidth: '190px' }} value={alisFiltre.tur} onChange={e => setAlisFiltre(f => ({ ...f, tur: e.target.value }))}>
                         <option value="">Tüm türler</option>
@@ -354,7 +365,7 @@ function StokModulu() {
                     <span style={{ color: TXT3 }}>—</span>
                     <input type="date" style={{ ...inp, maxWidth: '155px' }} value={alisFiltre.donemBit} onChange={e => setAlisFiltre(f => ({ ...f, donemBit: e.target.value }))} />
                     {(alisFiltre.tedarikci || alisFiltre.tur || alisFiltre.donemBas || alisFiltre.donemBit) &&
-                        <button style={btnS} onClick={() => setAlisFiltre({ tedarikci: '', tur: '', donemBas: '', donemBit: '' })}>✕ Temizle</button>}
+                        <button style={btnS} onClick={() => setAlisFiltre({ tedarikci: '', tur: '', donemBas: '', donemBit: '' })}><i className="ph ph-x"></i> Temizle</button>}
                 </div>
 
                 {filtreliAlislar.length > 0 && (
@@ -399,8 +410,12 @@ function StokModulu() {
                                         <td style={{ ...tdR, color: AMBER }}>{fmtN((parseFloat(a.netMiktar) || 0) * (parseFloat(a.birimMaliyet) || 0))}</td>
                                         <td style={{ ...tdL, color: TXT3, maxWidth: '110px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.notlar}</td>
                                         <td style={{ padding: '9px 10px', textAlign: 'center', whiteSpace: 'nowrap' }}>
-                                            <button style={{ ...btnS, padding: '4px 9px', marginRight: '4px' }} onClick={() => { setAlisForm({ ...a }); setAlisDuzenleId(a.id); window.scrollTo(0,0); }}>✏️</button>
-                                            <button style={{ ...btnS, padding: '4px 9px', color: RED }} onClick={() => setSilOnay({ tip: 'alis', id: a.id })}>⚡ ️</button>
+                                            <button className="btn-icon" style={{ marginRight: '8px' }} onClick={() => { setAlisForm({ ...a }); setAlisDuzenleId(a.id); window.scrollTo(0,0); }} title="Düzenle">
+                                                <i className="ph ph-pencil-simple"></i>
+                                            </button>
+                                            <button className="btn-icon" style={{ color: 'var(--enba-danger)' }} onClick={() => setSilOnay({ tip: 'alis', id: a.id })} title="Sil">
+                                                <i className="ph ph-trash"></i>
+                                            </button>
                                         </td>
                                     </tr>
                                 ))}
@@ -436,8 +451,8 @@ function StokModulu() {
                             <input type="text" list="mus-list" style={inp} placeholder="Müşteri..." value={satisForm.musteriAdi} onChange={e => setSatisForm(f => ({ ...f, musteriAdi: e.target.value }))} /></div>
                         <div><label style={lbl}>Ürün Tipi</label>
                             <select style={inp} value={satisForm.stokTuru} onChange={e => setSatisForm(f => ({ ...f, stokTuru: e.target.value }))}>
-                                <option value="hammadde">⚡ ️ Hammadde</option>
-                                <option value="mamul">⚡  Mamül Ürün</option>
+                                <option value="hammadde">Hammadde</option>
+                                <option value="mamul">Mamül Ürün</option>
                             </select></div>
                         <div><label style={lbl}>{satisForm.stokTuru === 'hammadde' ? 'Hammadde Türü' : 'Mamül Türü'}</label>
                             <input type="text" list={satisForm.stokTuru === 'hammadde' ? 'ham-list2' : 'mam-list'} style={inp} placeholder="Tür..."
@@ -466,19 +481,21 @@ function StokModulu() {
                         </div>
                     )}
                     <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
-                        <button style={btnB} onClick={satisKaydet}>{satisDuzenleId ? '⚡  Güncelle' : '✅ Kaydet'}</button>
+                        <button style={btnB} onClick={satisKaydet}>
+                            {satisDuzenleId ? <><i className="ph ph-arrow-counter-clockwise"></i> Güncelle</> : <><i className="ph ph-check"></i> Kaydet</>}
+                        </button>
                         {satisDuzenleId && <button style={btnS} onClick={() => { setSatisDuzenleId(null); setSatisForm(BOSH_SATIS()); }}>İptal</button>}
                     </div>
                 </div>
 
                 <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
-                    <input type="text" style={{ ...inp, maxWidth: '200px' }} placeholder="⚡  Müşteri ara..."
+                    <input type="text" style={{ ...inp, maxWidth: '200px' }} placeholder="Müşteri ara..."
                         value={satisFiltre.musteri} onChange={e => setSatisFiltre(f => ({ ...f, musteri: e.target.value }))} />
                     <input type="date" style={{ ...inp, maxWidth: '155px' }} value={satisFiltre.donemBas} onChange={e => setSatisFiltre(f => ({ ...f, donemBas: e.target.value }))} />
                     <span style={{ color: TXT3 }}>—</span>
                     <input type="date" style={{ ...inp, maxWidth: '155px' }} value={satisFiltre.donemBit} onChange={e => setSatisFiltre(f => ({ ...f, donemBit: e.target.value }))} />
                     {(satisFiltre.musteri || satisFiltre.donemBas || satisFiltre.donemBit) &&
-                        <button style={btnS} onClick={() => setSatisFiltre({ musteri: '', donemBas: '', donemBit: '' })}>✕ Temizle</button>}
+                        <button style={btnS} onClick={() => setSatisFiltre({ musteri: '', donemBas: '', donemBit: '' })}><i className="ph ph-x"></i> Temizle</button>}
                 </div>
 
                 {filtreliSatislar.length > 0 && (
@@ -527,8 +544,12 @@ function StokModulu() {
                                             <td style={{ ...tdR, fontWeight: 700, color: netGelir >= 0 ? GREEN : RED }}>{fmtN(netGelir)}</td>
                                             <td style={{ ...tdL, color: TXT3, maxWidth: '110px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.notlar}</td>
                                             <td style={{ padding: '9px 10px', textAlign: 'center', whiteSpace: 'nowrap' }}>
-                                                <button style={{ ...btnS, padding: '4px 9px', marginRight: '4px' }} onClick={() => { setSatisForm({ ...s }); setSatisDuzenleId(s.id); window.scrollTo(0,0); }}>✏️</button>
-                                                <button style={{ ...btnS, padding: '4px 9px', color: RED }} onClick={() => setSilOnay({ tip: 'satis', id: s.id })}>⚡ ️</button>
+                                                <button className="btn-icon" style={{ marginRight: '8px' }} onClick={() => { setSatisForm({ ...s }); setSatisDuzenleId(s.id); window.scrollTo(0,0); }} title="Düzenle">
+                                                    <i className="ph ph-pencil-simple"></i>
+                                                </button>
+                                                <button className="btn-icon" style={{ color: 'var(--enba-danger)' }} onClick={() => setSilOnay({ tip: 'satis', id: s.id })} title="Sil">
+                                                    <i className="ph ph-trash"></i>
+                                                </button>
                                             </td>
                                         </tr>
                                     );
@@ -551,10 +572,10 @@ function StokModulu() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '14px' }}>
                     {[
-                        { lbl: 'Hammadde Stok', val: fmtN(topNetStok, 0) + ' kg', sub: '₺ ' + fmtN(topStokDeg), c: GREEN, ico: '⚡ ️' },
-                        { lbl: 'Mamül Stok',    val: fmtN(mamulStok.netMamul, 0) + ' kg', sub: 'Üretim − Satış', c: PURPLE, ico: '⚡ ' },
-                        { lbl: 'Stok Değeri',   val: '₺ ' + fmtN(topStokDeg), sub: 'Ağırlıklı ort. maliyet', c: AMBER, ico: '⚡ ' },
-                        { lbl: 'Toplam Net Alış', val: fmtN(topAlisKg, 0) + ' kg', sub: alislar.length + ' alış kaydı', c: BLUE, ico: '⚡ ' },
+                        { lbl: 'Hammadde Stok', val: fmtN(topNetStok, 0) + ' kg', sub: '₺ ' + fmtN(topStokDeg), c: 'var(--enba-orange)', ico: <i className="ph-fill ph-package"></i> },
+                        { lbl: 'Mamül Stok',    val: fmtN(mamulStok.netMamul, 0) + ' kg', sub: 'Üretim − Satış', c: 'var(--enba-dark)', ico: <i className="ph-fill ph-cube"></i> },
+                        { lbl: 'Stok Değeri',   val: '₺ ' + fmtN(topStokDeg), sub: 'Ağırlıklı ort. maliyet', c: 'var(--enba-orange)', ico: <i className="ph-fill ph-coins"></i> },
+                        { lbl: 'Toplam Net Alış', val: fmtN(topAlisKg, 0) + ' kg', sub: alislar.length + ' alış kaydı', c: 'var(--enba-dark)', ico: <i className="ph-fill ph-storefront"></i> },
                     ].map(k => (
                         <div key={k.lbl} style={{ ...card, padding: '18px 20px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
@@ -567,8 +588,10 @@ function StokModulu() {
                     ))}
                 </div>
 
-                <div style={card}>
-                    <h3 style={{ margin: '0 0 16px', fontSize: '15px', fontWeight: 700, color: TXT, fontFamily: "'Inter',sans-serif" }}>⚡ ️ Hammadde Stok — Türe Göre</h3>
+                <div className="enba-card">
+                    <h3 style={{ margin: '0 0 16px', fontSize: '15px', fontWeight: 800, color: 'var(--enba-dark)', fontFamily: "'Manrope',sans-serif", display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <i className="ph-fill ph-chart-bar" style={{ color: 'var(--enba-orange)' }}></i> Hammadde Stok — Türe Göre
+                    </h3>
                     {turler.length === 0
                         ? <div style={{ textAlign: 'center', padding: '28px', color: TXT3, fontStyle: 'italic' }}>Henüz alış kaydı yok</div>
                         : (
@@ -601,8 +624,10 @@ function StokModulu() {
                         )}
                 </div>
 
-                <div style={card}>
-                    <h3 style={{ margin: '0 0 16px', fontSize: '15px', fontWeight: 700, color: TXT, fontFamily: "'Inter',sans-serif" }}>⚡  Mamül Ürün Stoku</h3>
+                <div className="enba-card">
+                    <h3 style={{ margin: '0 0 16px', fontSize: '15px', fontWeight: 800, color: 'var(--enba-dark)', fontFamily: "'Manrope',sans-serif", display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <i className="ph-fill ph-factory" style={{ color: 'var(--enba-orange)' }}></i> Mamül Ürün Stoku
+                    </h3>
                     <div style={{ display: 'flex', gap: '32px', flexWrap: 'wrap' }}>
                         {[
                             { lbl: 'Toplam Üretim', val: fmtN(mamulStok.toplamUretim, 0) + ' kg', c: BLUE },
@@ -659,8 +684,10 @@ function StokModulu() {
 
         return (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                <div style={card}>
-                    <h3 style={{ margin: '0 0 16px', fontSize: '15px', fontWeight: 700, color: GREEN, fontFamily: "'Inter',sans-serif" }}>⚡  Tedarikçi Bazında Alış Raporu</h3>
+                <div className="enba-card">
+                    <h3 style={{ margin: '0 0 16px', fontSize: '15px', fontWeight: 800, color: 'var(--enba-dark)', fontFamily: "'Manrope',sans-serif", display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <i className="ph-fill ph-truck" style={{ color: 'var(--enba-orange)' }}></i> Tedarikçi Bazında Alış Raporu
+                    </h3>
                     {Object.keys(tedOz).length === 0 ? <div style={{ textAlign: 'center', padding: '24px', color: TXT3, fontStyle: 'italic' }}>Veri yok</div> : (
                         <div style={{ overflowX: 'auto' }}>
                             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', fontFamily: "'Inter',sans-serif" }}>
@@ -681,8 +708,10 @@ function StokModulu() {
                         </div>
                     )}
                 </div>
-                <div style={card}>
-                    <h3 style={{ margin: '0 0 16px', fontSize: '15px', fontWeight: 700, color: BLUE, fontFamily: "'Inter',sans-serif" }}>⚡  Müşteri Bazında Satış Raporu</h3>
+                <div className="enba-card">
+                    <h3 style={{ margin: '0 0 16px', fontSize: '15px', fontWeight: 800, color: 'var(--enba-dark)', fontFamily: "'Manrope',sans-serif", display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <i className="ph-fill ph-users-three" style={{ color: 'var(--enba-orange)' }}></i> Müşteri Bazında Satış Raporu
+                    </h3>
                     {Object.keys(musOz).length === 0 ? <div style={{ textAlign: 'center', padding: '24px', color: TXT3, fontStyle: 'italic' }}>Veri yok</div> : (
                         <div style={{ overflowX: 'auto' }}>
                             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', fontFamily: "'Inter',sans-serif" }}>
@@ -702,8 +731,10 @@ function StokModulu() {
                         </div>
                     )}
                 </div>
-                <div style={card}>
-                    <h3 style={{ margin: '0 0 16px', fontSize: '15px', fontWeight: 700, color: PURPLE, fontFamily: "'Inter',sans-serif" }}>⚡  Aylık Alış / Satış ve Marjin Özeti</h3>
+                <div className="enba-card">
+                    <h3 style={{ margin: '0 0 16px', fontSize: '15px', fontWeight: 800, color: 'var(--enba-dark)', fontFamily: "'Manrope',sans-serif", display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <i className="ph-fill ph-calendar-check" style={{ color: 'var(--enba-orange)' }}></i> Aylık Alış / Satış ve Marjin Özeti
+                    </h3>
                     {aylar.length === 0 ? <div style={{ textAlign: 'center', padding: '24px', color: TXT3, fontStyle: 'italic' }}>Veri yok</div> : (
                         <div style={{ overflowX: 'auto' }}>
                             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', fontFamily: "'Inter',sans-serif" }}>
@@ -787,8 +818,12 @@ function StokModulu() {
                                         <td style={{ ...tdL, color: TXT3, maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{x.adres || '—'}</td>
                                         <td style={{ ...tdL, color: TXT3, maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{x.notlar || '—'}</td>
                                         <td style={{ padding: '9px 10px', textAlign: 'center', whiteSpace: 'nowrap' }}>
-                                            <button style={{ ...btnS, padding: '4px 9px', marginRight: '4px' }} onClick={() => duzenleBaslat(x)}>✏️</button>
-                                            <button style={{ ...btnS, padding: '4px 9px', color: RED }} onClick={() => silFn(x.id)}>⚡ ️</button>
+                                            <button className="btn-icon" style={{ marginRight: '8px' }} onClick={() => duzenleBaslat(x)} title="Düzenle">
+                                                <i className="ph ph-pencil-simple"></i>
+                                            </button>
+                                            <button className="btn-icon" style={{ color: 'var(--enba-danger)' }} onClick={() => silFn(x.id)} title="Sil">
+                                                <i className="ph ph-trash"></i>
+                                            </button>
                                         </td>
                                     </tr>
                                 ))}
@@ -810,19 +845,23 @@ function StokModulu() {
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                         {liste.map((m, i) => (
-                            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: CARD2, borderRadius: '0.6rem', border: `1px solid ${BRD}` }}>
+                            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: 'var(--surface-container-lowest)', borderRadius: '0.8rem', border: '1px solid var(--surface-container-highest)' }}>
                                 {duzenle && duzenle.idx === i
                                     ? <>
                                         <input type="text" style={{ ...inp, flex: 1 }} value={duzenle.val}
                                             onChange={e => setDuzenle(d => ({ ...d, val: e.target.value }))}
                                             onKeyDown={e => { if (e.key === 'Enter' && duzenle.val.trim()) { setListe(l => l.map((x, j) => j === i ? duzenle.val.trim() : x)); setDuzenle(null); } if (e.key === 'Escape') setDuzenle(null); }} />
-                                        <button style={{ ...btnG, padding: '5px 12px', fontSize: '12px' }} onClick={() => { if (duzenle.val.trim()) { setListe(l => l.map((x, j) => j === i ? duzenle.val.trim() : x)); setDuzenle(null); } }}>✓</button>
-                                        <button style={{ ...btnS, padding: '5px 10px', fontSize: '12px' }} onClick={() => setDuzenle(null)}>✕</button>
+                                        <button style={{ ...btnG, padding: '5px 12px', fontSize: '12px' }} onClick={() => { if (duzenle.val.trim()) { setListe(l => l.map((x, j) => j === i ? duzenle.val.trim() : x)); setDuzenle(null); } }}><i className="ph ph-check"></i></button>
+                                        <button style={{ ...btnS, padding: '5px 10px', fontSize: '12px' }} onClick={() => setDuzenle(null)}><i className="ph ph-x"></i></button>
                                       </>
                                     : <>
-                                        <span style={{ flex: 1, color: TXT, fontSize: '13px', fontWeight: 500 }}>{m}</span>
-                                        <button style={{ ...btnS, padding: '4px 9px', fontSize: '11px' }} onClick={() => setDuzenle({ idx: i, val: m })}>✏️</button>
-                                        <button style={{ ...btnS, padding: '4px 9px', fontSize: '11px', color: RED }} onClick={() => setListe(l => l.filter((_, j) => j !== i))}>⚡ ️</button>
+                                        <span style={{ flex: 1, color: 'var(--enba-dark)', fontSize: '13px', fontWeight: 600 }}>{m}</span>
+                                        <button className="btn-icon" style={{ marginRight: '4px' }} onClick={() => setDuzenle({ idx: i, val: m })}>
+                                            <i className="ph ph-pencil-simple"></i>
+                                        </button>
+                                        <button className="btn-icon" style={{ color: 'var(--enba-danger)' }} onClick={() => setListe(l => l.filter((_, j) => j !== i))}>
+                                            <i className="ph ph-trash"></i>
+                                        </button>
                                       </>
                                 }
                             </div>
@@ -835,29 +874,40 @@ function StokModulu() {
         return (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 {/* Alt tab bar */}
-                <div style={{ display: 'flex', gap: '4px', background: CARD2, borderRadius: '0.8rem', padding: '4px', width: 'fit-content', flexWrap: 'wrap', border: `1px solid ${BRD}` }}>
-                    {altTabs.map(t => <button key={t.id} style={liStyle(ayarAlt === t.id)} onClick={() => setAyarAlt(t.id)}>{t.lbl}</button>)}
+                <div style={{ display: 'flex', gap: '4px', background: 'var(--surface-container-low)', borderRadius: '0.8rem', padding: '4px', width: 'fit-content', flexWrap: 'wrap', border: '1px solid var(--surface-container-highest)' }}>
+                    {altTabs.map(t => <button key={t.id} style={{
+                        ...liStyle(ayarAlt === t.id),
+                        background: ayarAlt === t.id ? '#fff' : 'transparent',
+                        boxShadow: ayarAlt === t.id ? 'var(--shadow-sm)' : 'none',
+                        color: ayarAlt === t.id ? 'var(--enba-orange)' : 'var(--on-surface-variant)'
+                    }} onClick={() => setAyarAlt(t.id)}>{t.lbl}</button>)}
                 </div>
 
                 {ayarAlt === 'hammadde' && (
-                    <div style={card}>
-                        <h3 style={{ margin: '0 0 16px', fontSize: '15px', fontWeight: 700, color: TXT, fontFamily: "'Inter',sans-serif" }}>⚡ ️ Hammadde Türleri</h3>
+                    <div className="enba-card">
+                        <h3 style={{ margin: '0 0 16px', fontSize: '15px', fontWeight: 800, color: 'var(--enba-dark)', fontFamily: "'Manrope',sans-serif", display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <i className="ph-fill ph-leaf" style={{ color: 'var(--enba-orange)' }}></i> Hammadde Türleri
+                        </h3>
                         <p style={{ margin: '0 0 16px', fontSize: '12px', color: TXT2 }}>Alış formunda otomatik tamamlama için kullanılır. İstediğiniz türü ekleyip düzenleyebilirsiniz.</p>
                         {MalzemeListesi({ liste: hammaddeler, setListe: setHammaddeler, yeni: yeniHammadde, setYeni: setYeniHammadde, duzenle: duzenleHam, setDuzenle: setDuzenleHam, baslik: 'Hammadde' })}
                     </div>
                 )}
 
                 {ayarAlt === 'mamul' && (
-                    <div style={card}>
-                        <h3 style={{ margin: '0 0 16px', fontSize: '15px', fontWeight: 700, color: TXT, fontFamily: "'Inter',sans-serif" }}>⚡  Mamül Ürün Türleri</h3>
+                    <div className="enba-card">
+                        <h3 style={{ margin: '0 0 16px', fontSize: '15px', fontWeight: 800, color: 'var(--enba-dark)', fontFamily: "'Manrope',sans-serif", display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <i className="ph-fill ph-package" style={{ color: 'var(--enba-orange)' }}></i> Mamül Ürün Türleri
+                        </h3>
                         <p style={{ margin: '0 0 16px', fontSize: '12px', color: TXT2 }}>Satış formundaki mamül ürün türleri için kullanılır.</p>
                         {MalzemeListesi({ liste: mamulListesi, setListe: setMamulListesi, yeni: yeniMamul, setYeni: setYeniMamul, duzenle: duzenleMam, setDuzenle: setDuzenleMam, baslik: 'Mamül' })}
                     </div>
                 )}
 
                 {ayarAlt === 'tedarikciler' && (
-                    <div style={card}>
-                        <h3 style={{ margin: '0 0 16px', fontSize: '15px', fontWeight: 700, color: TXT, fontFamily: "'Inter',sans-serif" }}>⚡  Tedarikçi Kayıtları</h3>
+                    <div className="enba-card">
+                        <h3 style={{ margin: '0 0 16px', fontSize: '15px', fontWeight: 800, color: 'var(--enba-dark)', fontFamily: "'Manrope',sans-serif", display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <i className="ph-fill ph-identification-card" style={{ color: 'var(--enba-orange)' }}></i> Tedarikçi Kayıtları
+                        </h3>
                         {contactForm(tedForm, setTedForm, tedDuzenleId, tedKaydet, () => { setTedDuzenleId(null); setTedForm(BOSH_TED()); }, 'Tedarikçi')}
                         {contactTable(tedarikciler,
                             x => { setTedForm({ ...x }); setTedDuzenleId(x.id); },
@@ -868,8 +918,10 @@ function StokModulu() {
                 )}
 
                 {ayarAlt === 'musteriler' && (
-                    <div style={card}>
-                        <h3 style={{ margin: '0 0 16px', fontSize: '15px', fontWeight: 700, color: TXT, fontFamily: "'Inter',sans-serif" }}>⚡  Müşteri Kayıtları</h3>
+                    <div className="enba-card">
+                        <h3 style={{ margin: '0 0 16px', fontSize: '15px', fontWeight: 800, color: 'var(--enba-dark)', fontFamily: "'Manrope',sans-serif", display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <i className="ph-fill ph-address-book" style={{ color: 'var(--enba-orange)' }}></i> Müşteri Kayıtları
+                        </h3>
                         {contactForm(musForm, setMusForm, musDuzenleId, musKaydet, () => { setMusDuzenleId(null); setMusForm(BOSH_MUS()); }, 'Müşteri')}
                         {contactTable(musteriler,
                             x => { setMusForm({ ...x }); setMusDuzenleId(x.id); },
@@ -886,51 +938,51 @@ function StokModulu() {
     //  RENDER
     // ============================================================
     const TABS = [
-        { id: 'alislar',  lbl: '⚡  Alışlar',     cnt: alislar.length },
-        { id: 'satislar', lbl: '⚡  Satışlar',     cnt: satislar.length },
-        { id: 'stok',     lbl: '⚡  Stok Durumu',  cnt: null },
-        { id: 'raporlar', lbl: '⚡  Raporlar',     cnt: null },
-        { id: 'ayarlar',  lbl: '⚙️ Ayarlar',      cnt: null },
+        { id: 'alislar',  lbl: 'Alışlar',     cnt: alislar.length },
+        { id: 'satislar', lbl: 'Satışlar',     cnt: satislar.length },
+        { id: 'stok',     lbl: 'Stok Durumu',  cnt: null },
+        { id: 'raporlar', lbl: 'Raporlar',     cnt: null },
+        { id: 'ayarlar',  lbl: 'Ayarlar',      cnt: null },
     ];
 
     return (
-        <div style={{ minHeight: '100vh', background: BG, padding: '24px 28px', fontFamily: "'Inter',sans-serif" }}>
+        <div style={{ minHeight: '100vh', background: 'var(--surface-container-lowest)', padding: '32px 40px', fontFamily: "'Inter',sans-serif" }}>
 
-            <div style={{ marginBottom: '20px' }}>
-                <h1 style={{ margin: 0, fontSize: '22px', fontWeight: 800, color: TXT, fontFamily: "'Manrope',sans-serif", letterSpacing: '-0.5px' }}>⚡  Stok & Ticaret Takibi</h1>
-                <p style={{ margin: '4px 0 0', fontSize: '13px', color: TXT2 }}>Hammadde alış / satış kayıtları, fire takibi, stok durumu ve raporlar</p>
+            <div style={{ marginBottom: '32px' }}>
+                <h1 style={{ margin: 0, fontSize: '28px', fontWeight: 800, color: 'var(--enba-dark)', fontFamily: "'Manrope',sans-serif", display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <i className="ph-fill ph-stack" style={{ color: 'var(--enba-orange)' }}></i> Stok & Ticaret Takibi
+                </h1>
+                <p style={{ margin: '8px 0 0', fontSize: '14px', color: 'var(--on-surface-variant)' }}>Hammadde alış / satış kayıtları, fire takibi, stok durumu ve raporlar</p>
             </div>
 
-            {/* Özet kartlar */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px', marginBottom: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px', marginBottom: '32px' }}>
                 {[
-                    { lbl: 'Toplam Alış (net)', val: fmtN(topAlisKg, 0) + ' kg', sub: '₺ ' + fmtN(topAlisTL),    c: GREEN },
-                    { lbl: 'Toplam Satış',       val: fmtN(topSatisKg, 0) + ' kg', sub: '₺ ' + fmtN(topSatisTL), c: BLUE },
-                    { lbl: 'Ham. Stok Değeri',   val: '₺ ' + fmtN(topStokDeg), sub: 'Ağırlıklı ort. maliyet',    c: AMBER },
-                    { lbl: 'Mamül Stok',         val: fmtN(mamulStok.netMamul, 0) + ' kg', sub: 'Üretim − Satış', c: PURPLE },
+                    { lbl: 'Toplam Alış (net)', val: fmtN(topAlisKg, 0) + ' kg', sub: '₺ ' + fmtN(topAlisTL),    c: 'var(--enba-orange)' },
+                    { lbl: 'Toplam Satış',       val: fmtN(topSatisKg, 0) + ' kg', sub: '₺ ' + fmtN(topSatisTL), c: 'var(--enba-dark)' },
+                    { lbl: 'Ham. Stok Değeri',   val: '₺ ' + fmtN(topStokDeg), sub: 'Ağırlıklı ort. maliyet',    c: 'var(--enba-orange)' },
+                    { lbl: 'Mamül Stok',         val: fmtN(mamulStok.netMamul, 0) + ' kg', sub: 'Üretim − Satış', c: 'var(--enba-dark)' },
                 ].map(k => (
-                    <div key={k.lbl} style={{ background: CARD, borderRadius: '0.9rem', padding: '14px 16px', border: `1px solid ${BRD}`, boxShadow: '0 2px 12px rgba(0,0,0,0.3)' }}>
-                        <div style={{ fontSize: '10px', color: TXT2, textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '6px', fontWeight: 600 }}>{k.lbl}</div>
-                        <div style={{ fontSize: '20px', fontWeight: 800, color: k.c, fontFamily: "'Manrope',sans-serif" }}>{k.val}</div>
-                        <div style={{ fontSize: '11px', color: TXT3, marginTop: '3px' }}>{k.sub}</div>
+                    <div key={k.lbl} className="enba-card" style={{ padding: '20px 24px' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--on-surface-variant)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '8px', fontWeight: 800 }}>{k.lbl}</div>
+                        <div style={{ fontSize: '24px', fontWeight: 800, color: k.c, fontFamily: "'Manrope',sans-serif" }}>{k.val}</div>
+                        <div style={{ fontSize: '12px', color: 'var(--on-surface-variant)', marginTop: '4px' }}>{k.sub}</div>
                     </div>
                 ))}
             </div>
 
-            {/* Tab bar */}
-            <div style={{ display: 'flex', gap: '4px', marginBottom: '20px', background: CARD, borderRadius: '0.8rem', padding: '5px', width: 'fit-content', border: `1px solid ${BRD}`, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '4px', marginBottom: '32px', background: 'var(--surface-container-low)', borderRadius: '1rem', padding: '6px', width: 'fit-content', border: '1px solid var(--surface-container-highest)', flexWrap: 'wrap' }}>
                 {TABS.map(t => (
                     <button key={t.id} onClick={() => setAktifTab(t.id)} style={{
-                        padding: '8px 18px', border: 'none', borderRadius: '0.6rem', cursor: 'pointer',
-                        background: aktifTab === t.id ? CARD2 : 'transparent',
-                        color: aktifTab === t.id ? TXT : TXT2,
-                        fontWeight: aktifTab === t.id ? 700 : 500,
-                        fontFamily: "'Inter',sans-serif", fontSize: '13px',
-                        transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: '6px',
-                        boxShadow: aktifTab === t.id ? '0 1px 6px rgba(0,0,0,0.3)' : 'none',
+                        padding: '10px 24px', border: 'none', borderRadius: '0.8rem', cursor: 'pointer',
+                        background: aktifTab === t.id ? '#fff' : 'transparent',
+                        color: aktifTab === t.id ? 'var(--enba-orange)' : 'var(--on-surface-variant)',
+                        fontWeight: aktifTab === t.id ? 800 : 500,
+                        fontFamily: "'Inter',sans-serif", fontSize: '14px',
+                        transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '8px',
+                        boxShadow: aktifTab === t.id ? 'var(--shadow-sm)' : 'none',
                     }}>
                         {t.lbl}
-                        {t.cnt !== null && <span style={{ fontSize: '10px', background: 'rgba(110,175,220,0.15)', color: TXT2, padding: '1px 7px', borderRadius: '1rem', fontWeight: 600 }}>{t.cnt}</span>}
+                        {t.cnt !== null && <span style={{ fontSize: '11px', background: 'var(--surface-container-highest)', color: 'var(--enba-dark)', padding: '2px 8px', borderRadius: '1rem', fontWeight: 700 }}>{t.cnt}</span>}
                     </button>
                 ))}
             </div>
@@ -943,10 +995,10 @@ function StokModulu() {
 
             {/* Yükleniyor Overlay */}
             {loading && (
-                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter:'blur(4px)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <div style={{ padding:'20px 40px', background:CARD, borderRadius:'1rem', border:`1px solid ${BRD}`, display:'flex', alignItems:'center', gap:'12px', boxShadow:'0 10px 40px rgba(0,0,0,0.5)' }}>
-                        <div className="spinner" style={{ width:'20px', height:'20px', border:'3px solid rgba(255,255,255,0.1)', borderTopColor: BLUE, borderRadius:'50%', animation:'spin 1s linear infinite' }}></div>
-                        <span style={{ color: TXT, fontWeight: 700, fontSize:'14px' }}>İşleniyor...</span>
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(26, 26, 26, 0.4)', backdropFilter: 'blur(4px)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ padding: '24px 40px', background: '#fff', borderRadius: '1.2rem', border: '1px solid var(--surface-container-high)', display: 'flex', alignItems: 'center', gap: '16px', boxShadow: 'var(--shadow-elevated)' }}>
+                        <div className="spinner" style={{ width: '24px', height: '24px', border: '3px solid var(--surface-container-high)', borderTopColor: 'var(--enba-orange)', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+                        <span style={{ color: 'var(--enba-dark)', fontWeight: 800, fontSize: '15px' }}>Veriler Hazırlanıyor...</span>
                     </div>
                 </div>
             )}
@@ -954,13 +1006,13 @@ function StokModulu() {
             {/* Silme onay modal */}
             {silOnay && (
                 <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <div style={{ background: CARD, borderRadius: '1rem', padding: '28px 32px', maxWidth: '360px', width: '90%', boxShadow: '0 20px 60px rgba(0,0,0,0.6)', border: `1px solid ${BRD}` }}>
-                        <div style={{ fontSize: '32px', textAlign: 'center', marginBottom: '12px' }}>⚡ ️</div>
-                        <h3 style={{ margin: '0 0 8px', fontSize: '16px', color: TXT, textAlign: 'center', fontFamily: "'Inter',sans-serif" }}>Kaydı Sil</h3>
-                        <p style={{ margin: '0 0 20px', fontSize: '13px', color: TXT2, textAlign: 'center' }}>Bu kayıt kalıcı olarak silinecek. Emin misiniz?</p>
-                        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                    <div style={{ background: '#fff', borderRadius: '1.5rem', padding: '32px', maxWidth: '400px', width: '90%', boxShadow: 'var(--shadow-elevated)', border: '1px solid var(--surface-container-high)' }}>
+                        <div style={{ fontSize: '32px', textAlign: 'center', marginBottom: '16px', color: 'var(--enba-danger)' }}><i className="ph ph-warning-circle"></i></div>
+                        <h3 style={{ margin: '0 0 12px', fontSize: '18px', color: 'var(--enba-dark)', textAlign: 'center', fontWeight: 800 }}>Kaydı Sil</h3>
+                        <p style={{ margin: '0 0 24px', fontSize: '14px', color: 'var(--on-surface-variant)', textAlign: 'center' }}>Bu kayıt kalıcı olarak silinecek. Emin misiniz?</p>
+                        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
                             <button style={btnS} onClick={() => setSilOnay(null)}>İptal</button>
-                            <button style={{ ...btnG, background: '#c0392b' }} onClick={silGercekles}>Sil</button>
+                            <button style={{ ...btnG, background: 'var(--enba-danger)' }} onClick={silGercekles}>Sil</button>
                         </div>
                     </div>
                 </div>
