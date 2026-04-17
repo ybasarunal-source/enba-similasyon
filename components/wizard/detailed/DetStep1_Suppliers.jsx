@@ -10,8 +10,13 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
     yeniTedarikci, setYeniTedarikci,
     topluTedarikler, guncelleTopluTedarik, guncelleTopluTedarikUrun,
     guncelleTopluTedarikBaslangicAy, uygulaTopluTedarik, tumTedarikVerileriniTemizle,
-    ayVerileri, acikAylar, setAcikAylar, tedarikGuncelle, tedarikSonrakiAylara, fmt, AYLAR, setAdim
+    ayVerileri, acikAylar, setAcikAylar, tedarikGuncelle, tedarikSonrakiAylara,
+    planOlcumBirimi, fmt, AYLAR, setAdim
 }) {
+    const birimEtiketi = planOlcumBirimi === 'kg' ? 'kg' : 'T';
+    // Convert stored-tons to display value and back
+    const tonToDisplay = (tons) => planOlcumBirimi === 'kg' ? (Number(tons) || 0) * 1000 : (Number(tons) || 0);
+    const displayToTon = (val) => planOlcumBirimi === 'kg' ? Number(val) / 1000 : Number(val);
     // 12-month column headers starting from plan start date
     const ayBasliklari = Array.from({ length: 12 }, (_, i) => {
         const ayIdx = (baslangicAyi + i) % 12;
@@ -191,7 +196,7 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
                                                         </select>
                                                     </div>
                                                 </td>
-                                                {labelTd('Miktar (T)')}
+                                                {labelTd(`Miktar (${birimEtiketi})`)}
                                                 {monthCells('miktar')}
                                             </tr>
                                             {/* Row 2: Alış Fiyatı */}
@@ -241,11 +246,12 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
                             const gercekAyIdx = (baslangicAyi + i) % 12;
                             const isOpen = acikAylar[i];
                             let ayTon = 0; tedarikciler.forEach(t => { ayTon += (a.tedarikler?.[t.id]?.miktar || 0); });
+                            const ayMiktar = tonToDisplay(ayTon);
                             return (
                                 <React.Fragment key={i}>
                                     <tr style={{ background:'var(--surface)', cursor:'pointer', borderBottom:'1px solid var(--surface-container)' }} onClick={() => setAcikAylar(p => ({ ...p, [i]: !p[i] }))}>
                                         <td style={{ padding:'14px', fontWeight:600 }}>{isOpen ? '▼' : '▶'} {AYLAR[gercekAyIdx]}</td>
-                                        <td style={{ padding:'14px', textAlign:'right', fontWeight:700 }}>{fmt(ayTon)} T</td>
+                                        <td style={{ padding:'14px', textAlign:'right', fontWeight:700 }}>{fmt(ayMiktar)} {birimEtiketi}</td>
                                         <td style={{ padding:'14px', textAlign:'right', color:'var(--enba-orange)' }}>Genişlet</td>
                                     </tr>
                                     {isOpen && (
@@ -256,7 +262,7 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
                                                         <tr style={{ background:'rgba(0,0,0,0.05)' }}>
                                                             <th style={{ padding:'8px 12px', textAlign:'left', fontSize:'12px', color:'var(--enba-dark)' }}>Tedarikçi</th>
                                                             <th style={{ padding:'8px 12px', textAlign:'left', fontSize:'12px', color:'var(--enba-dark)' }}>Açıklama / Ürün</th>
-                                                            <th style={{ padding:'8px 12px', textAlign:'right', fontSize:'12px', color:'var(--enba-dark)' }}>Miktar (T)</th>
+                                                            <th style={{ padding:'8px 12px', textAlign:'right', fontSize:'12px', color:'var(--enba-dark)' }}>Miktar ({birimEtiketi})</th>
                                                             <th style={{ padding:'8px 12px', textAlign:'right', fontSize:'12px', color:'var(--enba-dark)' }}>Alış Fiy. (₺)</th>
                                                             <th style={{ padding:'8px 12px', textAlign:'right', fontSize:'12px', color:'var(--enba-dark)' }}>Nakliye (₺)</th>
                                                             <th style={{ padding:'8px 12px', textAlign:'center', fontSize:'12px', color:'var(--enba-dark)' }}>İşlem</th>
@@ -272,7 +278,7 @@ window.DetStep1_Suppliers = function DetStep1_Suppliers({
                                                                         <input type="text" placeholder="Örn: Hurda Karton" value={td.urun || ''} onChange={e => tedarikGuncelle(i, t.id, 'urun', e.target.value)} style={{ width:'120px', padding:'6px', borderRadius:'0.25rem', border:'1px solid #ccc' }} onFocus={window.selectOnFocus} />
                                                                     </td>
                                                                     <td style={{ padding:'8px 12px', textAlign:'right' }}>
-                                                                        <input type="number" value={td.miktar} onChange={e => tedarikGuncelle(i, t.id, 'miktar', e.target.value)} style={{ width:'80px', padding:'6px', textAlign:'right', borderRadius:'0.25rem', border:'1px solid #ccc' }} onFocus={window.selectOnFocus} />
+                                                                        <input type="number" value={td.miktar !== '' && td.miktar !== undefined ? tonToDisplay(td.miktar) : ''} onChange={e => tedarikGuncelle(i, t.id, 'miktar', displayToTon(e.target.value))} style={{ width:'80px', padding:'6px', textAlign:'right', borderRadius:'0.25rem', border:'1px solid #ccc' }} onFocus={window.selectOnFocus} />
                                                                     </td>
                                                                     <td style={{ padding:'8px 12px', textAlign:'right' }}>
                                                                         <input type="number" value={td.fiyat} onChange={e => tedarikGuncelle(i, t.id, 'fiyat', e.target.value)} style={{ width:'80px', padding:'6px', textAlign:'right', borderRadius:'0.25rem', border:'1px solid #ccc' }} onFocus={window.selectOnFocus} />
