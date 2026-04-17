@@ -1152,7 +1152,7 @@ function App({ globalAyarlar }) {
                     </button>
                     <button className="mobile-nav-btn" onClick={yeniIpkBaslat}>
                         <i className="ph ph-plus-circle" style={{fontSize:'20px'}}></i>
-                        YENİ İPK
+                        HIZLI İŞ PLANI
                     </button>
                 </nav>
             </div>
@@ -1165,7 +1165,7 @@ function App({ globalAyarlar }) {
         <div className="page-header">
             <h2 style={{ margin: 0, color: 'var(--enba-dark)', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '-0.5px' }}>
                 <i className="ph ph-rocket" style={{marginRight:'10px', color:'var(--enba-orange)'}}></i>
-                {duzenlenenPlanId ? 'İPK DÜZENLE' : 'YENİ İPK TASARLA'}
+                {duzenlenenPlanId ? 'İPK DÜZENLE' : 'HIZLI İŞ PLANI'}
             </h2>
             <div className="btn-group">
                 <button className="btn btn-secondary" onClick={() => setAktifSayfa('anaSayfa')}>Vazgeç</button>

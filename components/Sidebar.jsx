@@ -24,7 +24,7 @@ window.Sidebar = function Sidebar({
                 
                 <div style={{display:'flex', flexDirection:'column', gap:'10px', marginBottom:'30px'}}>
                     <button className="btn btn-primary" style={{width:'100%', padding:'12px'}} onClick={yeniIpkBaslat}>
-                        <i className="ph ph-plus-circle" style={{fontSize:'18px'}}></i> YENİ İPK TASARLA
+                        <i className="ph ph-plus-circle" style={{fontSize:'18px'}}></i> HIZLI İŞ PLANI
                     </button>
                     
                     <input type="file" id="excel-upload" accept=".xlsx, .xls, .csv" style={{display: 'none'}} onChange={excelIceAktar} />
