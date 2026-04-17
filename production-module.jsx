@@ -143,6 +143,7 @@ function UretimTakipModulu() {
     const numFmt = (num) => new Intl.NumberFormat(localStorage.getItem('enba_lang') === 'TR' ? 'tr-TR' : 'en-US', { minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(num || 0);
 
     return (
+        <div style={{ padding: '32px 40px', maxWidth: '1400px', margin: '0 auto' }}>
             <div style={{ marginBottom: '32px' }}>
                 <h2 style={{ color: 'var(--enba-dark)', margin: '0 0 8px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <i className="ph-fill ph-factory" style={{ color: 'var(--enba-orange)' }}></i> {window.t('prod.title')}
@@ -150,7 +151,7 @@ function UretimTakipModulu() {
                 <p style={{ color: 'var(--on-surface-variant)', fontSize: '15px' }}>{window.t('prod.desc')}</p>
             </div>
             
-            <div style={{display: 'flex', gap: '20px', flexWrap: 'wrap', alignItems: 'flex-start', opacity: loading ? 0.5 : 1, pointerEvents: loading ? 'none' : 'auto'}}>
+            <div style={{display: 'flex', gap: '20px', flexWrap: 'wrap', alignItems: 'flex-start', opacity: loading ? 0.5 : 1, pointerEvents: loading ? 'none' : 'auto', position: 'relative'}}>
                 {loading && (
                     <div style={{position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 10, background: 'rgba(255,255,255,0.8)', padding: '20px', borderRadius: '10px', fontWeight: 'bold'}}>
                         {window.t('common.loading') || 'Yükleniyor...'}
@@ -161,7 +162,7 @@ function UretimTakipModulu() {
                     <h3 style={{ margin: '0 0 24px 0', fontSize: '18px', fontWeight: 800, color: 'var(--enba-dark)', display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <i className="ph ph-plus-circle"></i> {window.t('prod.form_title')}
                     </h3>
-                               <form onSubmit={kayitEkle} style={{display: 'flex', flexDirection: 'column', gap: '20px'}}>
+                    <form onSubmit={kayitEkle} style={{display: 'flex', flexDirection: 'column', gap: '20px'}}>
                         <div style={{display: 'flex', gap: '12px'}}>
                             <div style={{flex: 1}}>
                                 <label style={{display: 'block', fontSize: '11px', fontWeight: 800, color: 'var(--on-surface-variant)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px'}}>{window.t('prod.date')}</label>
@@ -249,12 +250,10 @@ function UretimTakipModulu() {
                             <i className="ph ph-check-circle"></i> {window.t('prod.save_data')}
                         </button>
                     </form>
- domestic        </form>
                 </div>
 
                 {/* VERİ TABLOSU */}
-                <div style={{flex: '2 1 600px', background: '#fff', padding: '24px', borderRadius: '12px', border: '1px solid var(--border-grey)', boxShadow: '0 4px 12px rgba(0,0,0,0.04)', overflowX: 'auto'}}>
-                    
+                <div style={{flex: '2 1 600px', background: '#fff', padding: '24px', borderRadius: '12px', border: '1px solid var(--surface-container-high)', boxShadow: 'var(--shadow-sm)', overflowX: 'auto'}}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                         <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: 'var(--enba-dark)', display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <i className="ph ph-list-bullets"></i> {window.t('prod.history_title')}
@@ -323,16 +322,17 @@ function UretimTakipModulu() {
                                             <div style={{fontWeight: 'bold', color: 'var(--on-surface-variant)', fontSize: '13px'}}>{numFmt(k.elektrikSarfiyat)} kWh</div>
                                             <div style={{fontSize: '11px', color: '#7f8c8d'}}>({k.sayacBasi} - {k.sayacSonu})</div>
                                         </td>
+                                        <td style={{padding: '10px', textAlign: 'center'}}>
                                             <button onClick={() => kayitSil(k.id)} className="btn-icon" style={{ color: 'var(--error)' }} title={window.t('common.delete')}>
                                                 <i className="ph ph-trash"></i>
                                             </button>
+                                        </td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
                     )}
                 </div>
-
             </div>
         </div>
     );
