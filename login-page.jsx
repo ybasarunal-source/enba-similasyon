@@ -60,6 +60,7 @@ function LoginPage({ onLogin }) {
                     avatar: null
                 };
                 
+                setLoading(false);
                 onLogin(mappedUser, beniHatirla);
             }
         } catch (err) {

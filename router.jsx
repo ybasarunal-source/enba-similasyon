@@ -65,10 +65,21 @@ function EnbaRouter() {
         // Splash screen'i kaldır (Uygulama bileşeni mount olduğunda)
         const splash = document.getElementById('enba-splash');
         if (splash) {
-            setTimeout(() => {
+            const removeSplash = () => {
                 splash.classList.add('hidden');
                 setTimeout(() => splash.style.display = 'none', 500);
-            }, 600); // Babel compilation için güvenli bir süre bırak
+            };
+            // Wait until critical components are ready, then show app
+            const checkReady = () => {
+                if (window.DetayliPlanModulu && window.DetStep1_Suppliers) {
+                    removeSplash();
+                } else {
+                    setTimeout(checkReady, 200);
+                }
+            };
+            // Start checking after a minimum delay, give up after 12s
+            setTimeout(checkReady, 800);
+            setTimeout(removeSplash, 12000);
         }
 
         return () => window.removeEventListener('enba_users_updated', handleUpdate);
