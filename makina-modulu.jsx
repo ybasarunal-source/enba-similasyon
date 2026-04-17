@@ -9,10 +9,10 @@ function MakinaKatalog() {
         const k = localStorage.getItem('enba_makinalar_v2');
         if (k) return JSON.parse(k);
         return [
-            { id: "m1", adi: "Kırma Makinası 1",  marka: "", motorGucu: 250, kapasite: 10, yatirimBedeli: 0, satinaalmaTarihi: "", kategori: "Üretim Makinası" },
-            { id: "m2", adi: "Yıkama Hattı",       marka: "", motorGucu: 150, kapasite: 8,  yatirimBedeli: 0, satinaalmaTarihi: "", kategori: "Üretim Makinası" },
-            { id: "m3", adi: "Taşıma Bandı",        marka: "", motorGucu: 15,  kapasite: 20, yatirimBedeli: 0, satinaalmaTarihi: "", kategori: "Konveyör" },
-            { id: "m4", adi: "Ekstrüder",            marka: "", motorGucu: 300, kapasite: 5,  yatirimBedeli: 0, satinaalmaTarihi: "", kategori: "Üretim Makinası" }
+            { id: "m1", adi: "Kırma Makinası 1",  marka: "", motorGucu: 250, kapasite: 10, yatirimBedeli: 0, satinalmaTarihi: "", kategori: "production" },
+            { id: "m2", adi: "Yıkama Hattı",       marka: "", motorGucu: 150, kapasite: 8,  yatirimBedeli: 0, satinalmaTarihi: "", kategori: "production" },
+            { id: "m3", adi: "Taşıma Bandı",        marka: "", motorGucu: 15,  kapasite: 20, yatirimBedeli: 0, satinalmaTarihi: "", kategori: "conveyor" },
+            { id: "m4", adi: "Ekstrüder",            marka: "", motorGucu: 300, kapasite: 5,  yatirimBedeli: 0, satinalmaTarihi: "", kategori: "production" }
         ];
     });
 
@@ -46,7 +46,7 @@ function MakinaKatalog() {
     const [mMotorGucu,     setMMotorGucu]     = React.useState('');
     const [mYatirim,       setMYatirim]       = React.useState('');
     const [mTarih,         setMTarih]         = React.useState('');
-    const [mKategori,      setMKategori]      = React.useState('Üretim Makinası');
+    const [mKategori,      setMKategori]      = React.useState('production');
     const [mKapasite,       setMKapasite]       = React.useState('');
     const [mBoyut,          setMBoyut]          = React.useState('Orta');
 
@@ -54,7 +54,7 @@ function MakinaKatalog() {
     const [dFormAcik,      setDFormAcik]      = React.useState(false);
     const [dDuzenlenen,    setDDuzenlenen]    = React.useState(null);
     const [dAdi,           setDAdi]           = React.useState('');
-    const [dKategori,      setDKategori]      = React.useState('Ofis Ekipmanı');
+    const [dKategori,      setDKategori]      = React.useState('office');
     const [dYatirim,       setDYatirim]       = React.useState('');
     const [dTarih,         setDTarih]         = React.useState('');
 
@@ -109,10 +109,10 @@ function MakinaKatalog() {
                     adi:             String(r[0] || '').trim(),
                     marka:           String(r[1] || '').trim(),
                     motorGucu:       Number(r[2]) || 0,
-                    kategori:        formatliTarih(r[3]) ? 'Üretim Makinası' : (r[3] || 'Üretim Makinası'),
+                    kategori:        'production', // Excel import assumed production by default or needs better mapping
                     kapasite:        Number(r[4]) || 0,
                     boyut:           r[7] || 'Orta',
-                    satinaalmaTarihi: formatliTarih(r[5]),
+                    satinalmaTarihi: formatliTarih(r[5]),
                     yatirimBedeli:   Number(r[6]) || 0,
                 }));
 
@@ -166,12 +166,12 @@ function MakinaKatalog() {
         if (m) {
             setMDuzenlenen(m.id); setMAdi(m.adi); setMMarka(m.marka || ''); setMMotorGucu(m.motorGucu);
             setMYatirim(m.yatirimBedeli || '');
-            setMTarih(m.satinaalmaTarihi || ''); setMKategori(m.kategori || 'Üretim Makinası');
+            setMTarih(m.satinalmaTarihi || ''); setMKategori(m.kategori || 'production');
             setMKapasite(m.kapasite || '');
             setMBoyut(m.boyut || 'Orta');
         } else {
             setMDuzenlenen(null); setMAdi(''); setMMarka(''); setMMotorGucu('');
-            setMYatirim(''); setMTarih(''); setMKategori('Üretim Makinası');
+            setMYatirim(''); setMTarih(''); setMKategori('production');
             setMKapasite('');
             setMBoyut('Orta');
         }
@@ -186,7 +186,7 @@ function MakinaKatalog() {
             marka:           mMarka,
             motorGucu:       Number(mMotorGucu)  || 0,
             yatirimBedeli:   Number(mYatirim)    || 0,
-            satinaalmaTarihi: mTarih,
+            satinalmaTarihi: mTarih,
             kategori:        mKategori,
             kapasite:        Number(mKapasite) || 0,
             boyut:           mBoyut
@@ -207,10 +207,10 @@ function MakinaKatalog() {
     // ── Demirbaş form işlemleri ───────────────────────────────
     const dFormAc = (d = null) => {
         if (d) {
-            setDDuzenlenen(d.id); setDAdi(d.adi); setDKategori(d.kategori || 'Ofis Ekipmanı');
-            setDYatirim(d.yatirimBedeli || ''); setDTarih(d.satinaalmaTarihi || '');
+            setDDuzenlenen(d.id); setDAdi(d.adi); setDKategori(d.kategori || 'office');
+            setDYatirim(d.yatirimBedeli || ''); setDTarih(d.satinalmaTarihi || '');
         } else {
-            setDDuzenlenen(null); setDAdi(''); setDKategori('Ofis Ekipmanı'); setDYatirim(''); setDTarih('');
+            setDDuzenlenen(null); setDAdi(''); setDKategori('office'); setDYatirim(''); setDTarih('');
         }
         setDFormAcik(true);
     };
@@ -222,7 +222,7 @@ function MakinaKatalog() {
             adi:             dAdi,
             kategori:        dKategori,
             yatirimBedeli:   Number(dYatirim) || 0,
-            satinaalmaTarihi: dTarih
+            satinalmaTarihi: dTarih
         };
         if (dDuzenlenen) {
             setDemirbaslar(p => p.map(x => x.id === dDuzenlenen ? yeni : x));
@@ -327,8 +327,8 @@ function MakinaKatalog() {
         border: 'none', borderRadius: '0.75rem', fontWeight: 700, cursor: 'pointer', fontSize: '14px'
     };
 
-    const MAKINA_KATEGORILER = ['Üretim Makinası', 'Konveyör', 'Kompresör', 'Forklift', 'Vinç', 'Elektrik/Panel', 'Diğer'];
-    const DEMIRBAS_KATEGORILER = ['Ofis Ekipmanı', 'Araç', 'Bilgisayar/IT', 'Güvenlik Sistemi', 'Aydınlatma', 'Mobilya', 'Diğer'];
+    const MAKINA_KATEGORILER = ['production', 'conveyor', 'compressor', 'forklift', 'crane', 'panel', 'other'];
+    const DEMIRBAS_KATEGORILER = ['office', 'vehicle', 'it', 'security', 'lighting', 'furniture', 'other'];
     const BAKIM_TURLERI = ['Bakım', 'Onarım', 'Tadilat', 'Revizyon', 'Yedek Parça', 'Nakliye Ücreti', 'Kurulum', 'Diğer'];
 
 
@@ -487,9 +487,9 @@ function MakinaKatalog() {
                                                             <td style={{ padding: '8px 12px' }}>{p.marka || '—'}</td>
                                                             <td style={{ padding: '8px 12px' }}>{p.motorGucu ? p.motorGucu + ' kW' : '—'}</td>
                                                             <td style={{ padding: '8px 12px' }}>
-                                                                <span style={{ background: 'rgba(25,118,210,0.1)', color: '#1565C0', padding: '2px 8px', borderRadius: '1rem', fontSize: '11px', fontWeight: 600 }}>{p.kategori || '—'}</span>
+                                                                <span style={{ background: 'rgba(25,118,210,0.1)', color: '#1565C0', padding: '2px 8px', borderRadius: '1rem', fontSize: '11px', fontWeight: 600 }}>{window.t(`assets.categories.${p.kategori}`) || p.kategori}</span>
                                                             </td>
-                                                            <td style={{ padding: '8px 12px' }}>{p.satinaalmaTarihi ? new Date(p.satinaalmaTarihi).toLocaleDateString(localStorage.getItem('enba_lang') === 'TR' ? 'tr-TR' : 'en-US') : '—'}</td>
+                                                            <td style={{ padding: '8px 12px' }}>{p.satinalmaTarihi ? new Date(p.satinalmaTarihi).toLocaleDateString(localStorage.getItem('enba_lang') === 'TR' ? 'tr-TR' : 'en-US') : '—'}</td>
                                                             <td style={{ padding: '8px 12px', fontWeight: 700 }}>{p.yatirimBedeli ? window.fmt(p.yatirimBedeli) + ' ₺' : '—'}</td>
                                                         </tr>
                                                     ))}
@@ -527,7 +527,7 @@ function MakinaKatalog() {
                             <div style={{ flex: '1 1 160px' }}>
                                 <label style={labelStyle}>{window.t('assets.category')}</label>
                                 <select style={inputStyle} value={mKategori} onChange={e => setMKategori(e.target.value)}>
-                                    {MAKINA_KATEGORILER.map(k => <option key={k} value={k}>{window.t(`assets.categories.${k.toLowerCase().replace(' ', '_')}`) || k}</option>)}
+                                    {MAKINA_KATEGORILER.map(k => <option key={k} value={k}>{window.t(`assets.categories.${k}`) || k}</option>)}
                                 </select>
                             </div>
                             <div style={{ flex: '1 1 140px' }}>
@@ -655,7 +655,7 @@ function MakinaKatalog() {
                             <div style={{ flex: '1 1 160px' }}>
                                 <label style={labelStyle}>{window.t('assets.category')}</label>
                                 <select style={inputStyle} value={dKategori} onChange={e => setDKategori(e.target.value)}>
-                                    {DEMIRBAS_KATEGORILER.map(k => <option key={k} value={k}>{window.t(`assets.categories.${k.toLowerCase().replace(' ', '_')}`) || k}</option>)}
+                                    {DEMIRBAS_KATEGORILER.map(k => <option key={k} value={k}>{window.t(`assets.categories.${k}`) || k}</option>)}
                                 </select>
                             </div>
                             <div style={{ flex: '1 1 160px' }}>
@@ -689,13 +689,13 @@ function MakinaKatalog() {
                                         <tr key={d.id} style={{ borderBottom: '1px solid var(--surface-container-highest)', background: i % 2 === 0 ? 'transparent' : 'var(--surface-container-lowest)' }}>
                                             <td style={{ padding: '12px 14px', fontWeight: 600, color: 'var(--enba-dark)' }}>{d.adi}</td>
                                             <td style={{ padding: '12px 14px' }}>
-                                                <span style={{ background: 'rgba(123,31,162,0.1)', color: '#6A1B9A', padding: '3px 10px', borderRadius: '1rem', fontSize: '12px', fontWeight: 600 }}>{d.kategori || '—'}</span>
+                                                <span style={{ background: 'rgba(123,31,162,0.1)', color: '#6A1B9A', padding: '3px 10px', borderRadius: '1rem', fontSize: '12px', fontWeight: 600 }}>{window.t(`assets.categories.${d.kategori}`) || d.kategori}</span>
                                             </td>
                                             <td style={{ padding: '12px 14px', fontWeight: 700, color: d.yatirimBedeli ? '#7B1FA2' : 'var(--on-surface-variant)' }}>
                                                 {d.yatirimBedeli ? window.fmt(d.yatirimBedeli) + ' ₺' : '—'}
                                             </td>
                                             <td style={{ padding: '12px 14px', color: 'var(--on-surface-variant)' }}>
-                                                {d.satinaalmaTarihi ? new Date(d.satinaalmaTarihi).toLocaleDateString(localStorage.getItem('enba_lang') === 'TR' ? 'tr-TR' : 'en-US') : '—'}
+                                                {d.satinalmaTarihi ? new Date(d.satinalmaTarihi).toLocaleDateString(localStorage.getItem('enba_lang') === 'TR' ? 'tr-TR' : 'en-US') : '—'}
                                             </td>
                                             <td style={{ padding: '12px 14px' }}>
                                                 <div style={{ display: 'flex', gap: '6px' }}>
@@ -795,7 +795,7 @@ function MakinaKatalog() {
                             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
                                 <thead>
                                     <tr style={{ background: 'var(--surface-container-low)' }}>
-                                        {['Tarih', window.t('assets.name'), window.t('assets.category'), window.t('assets.maintenance.type'), window.t('common.description'), 'Maliyet', window.t('common.actions')].map(h => (
+                                        {[window.t('assets.date'), window.t('assets.name'), window.t('assets.category'), window.t('assets.maintenance.type'), window.t('common.description'), window.t('assets.price'), window.t('common.actions')].map(h => (
                                             <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: 'var(--on-surface-variant)', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap', borderBottom: '2px solid var(--surface-container-highest)' }}>{h}</th>
                                         ))}
                                     </tr>
