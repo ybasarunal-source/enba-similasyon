@@ -123,15 +123,11 @@ function EnbaRouter() {
             const allPlans = await window.DataService.getPlans();
             // Veritabanından gelen formatı uygulama formatına çevir (content içinde saklıyoruz)
             // Eğer content yoksa boş bir nesne ile yayılmasını sağla
-            const extracted = allPlans.map(p => {
-                const content = p.content || {};
-                return { 
-                    ...content, 
-                    id: p.id, 
-                    status: p.status || 'pending',
-                    plan_type: p.plan_type || (content.ayVerileri ? 'detailed' : 'fast')
-                };
-            });
+            // getPlans() already spreads r.data to top level — use plans directly
+            const extracted = allPlans.map(p => ({
+                ...p,
+                plan_type: p.plan_type || (p.ayVerileri ? 'detailed' : 'fast')
+            }));
             setBekleyenPlanlar(extracted.filter(p => !p.status || p.status === 'pending'));
             setAktifPlanlar(extracted.filter(p => p.status === 'active'));
         };
