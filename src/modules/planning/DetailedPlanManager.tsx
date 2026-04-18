@@ -155,8 +155,15 @@ export const DetailedPlanManager: React.FC = () => {
     planSilSync(id);
   };
 
+  // ── Geçerli planlar (eski format Supabase kayıtlarına karşı guard) ──
+  const DEFAULT_SUMMARY = { yillikGelir: 0, yillikOpex: 0, yillikEbitda: 0, yillikNet: 0, toplamYatirim: 0 };
+  const gecerliPlanlar = planlar.map(p => ({
+    ...p,
+    summary: p.summary || (p.planData ? planOzetiHesapla(p.planData) : DEFAULT_SUMMARY),
+  }));
+
   // ── Konsolide ─────────────────────────────────────────────
-  const aktifPlanlar = planlar.filter(p => p.status === 'active');
+  const aktifPlanlar = gecerliPlanlar.filter(p => p.status === 'active');
   const konsolide = useMemo(() => {
     if (aktifPlanlar.length === 0) return null;
     return {
@@ -276,7 +283,7 @@ export const DetailedPlanManager: React.FC = () => {
       )}
 
       {/* Boş durum */}
-      {planlar.length === 0 && (
+      {gecerliPlanlar.length === 0 && (
         <div className="bg-white rounded-[2.5rem] p-20 border border-gray-100 shadow-card flex flex-col items-center gap-6 text-center">
           <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center">
             <FileText size={48} className="text-gray-200" />
@@ -297,16 +304,16 @@ export const DetailedPlanManager: React.FC = () => {
       )}
 
       {/* Bekleyen Planlar */}
-      {planlar.filter(p => p.status === 'pending').length > 0 && (
+      {gecerliPlanlar.filter(p => p.status === 'pending').length > 0 && (
         <div>
           <div className="flex items-center gap-3 mb-5">
             <div className="w-2.5 h-2.5 rounded-full bg-gray-300" />
             <span className="text-[10px] font-black text-gray-400 uppercase tracking-[4px]">
-              Bekleyen Planlar — {planlar.filter(p => p.status === 'pending').length} Kart
+              Bekleyen Planlar — {gecerliPlanlar.filter(p => p.status === 'pending').length} Kart
             </span>
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-            {planlar.filter(p => p.status === 'pending').map(plan => (
+            {gecerliPlanlar.filter(p => p.status === 'pending').map(plan => (
               <DetailedKartBileseni
                 key={plan.id} plan={plan}
                 onToggle={() => statusToggle(plan.id)}
