@@ -360,7 +360,7 @@ export const Profile: React.FC = () => {
               <img
                 ref={imgRef}
                 src={rawSrc}
-                className="absolute pointer-events-none"
+                className="absolute pointer-events-none max-w-none max-h-none"
                 style={{ transformOrigin: '0 0', transform: `translate(${cropPos.x}px, ${cropPos.y}px) scale(${zoom})` }}
               />
               <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: '0 0 0 999px rgba(0,0,0,0.3)' }} />
