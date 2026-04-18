@@ -14,3 +14,88 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
 }
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ── Profil & Yetki Tipleri ────────────────────────────────
+export type UserRole = 'admin' | 'user';
+
+export interface ModulePermissions {
+  dashboard?: boolean;
+  stock?: boolean;
+  production?: boolean;
+  logistics?: boolean;
+  hr?: boolean;
+  archive?: boolean;
+  cashflow?: boolean;
+  planning?: boolean;
+  fastplan?: boolean;
+  machinery?: boolean;
+  tasks?: boolean;
+  licensing?: boolean;
+  pnl?: boolean;
+  settings?: boolean;
+  profile?: boolean;
+  [key: string]: boolean | undefined;
+}
+
+export interface UserProfile {
+  id: string;
+  email: string;
+  full_name: string;
+  avatar_url?: string;
+  role: UserRole;
+  permissions: ModulePermissions;
+  created_at: string;
+}
+
+// ── Yardımcı Fonksiyonlar ──────────────────────────────────
+export const profileAPI = {
+  async getMyProfile(): Promise<UserProfile | null> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+    
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+      
+    if (error) {
+      console.error("Profil yüklenemedi:", error);
+      return null;
+    }
+    return data;
+  },
+
+  async getAllProfiles(): Promise<UserProfile[]> {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
+      
+    if (error) {
+      console.error("Profiller listelenemedi:", error);
+      return [];
+    }
+    return data || [];
+  },
+
+  async updateProfile(id: string, updates: Partial<UserProfile>): Promise<boolean> {
+    const { error } = await supabase
+      .from('profiles')
+      .update(updates)
+      .eq('id', id);
+      
+    if (error) {
+      console.error("Profil güncellenemedi:", error);
+      return false;
+    }
+    return true;
+  },
+
+  async resetPassword(email: string): Promise<boolean> {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin,
+    });
+    return !error;
+  }
+};

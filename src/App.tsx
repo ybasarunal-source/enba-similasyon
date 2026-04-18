@@ -3,6 +3,7 @@ import { useTranslation } from './api/i18n';
 import { supabase } from './api/supabase';
 import { Login } from './modules/Login';
 import type { Session } from '@supabase/supabase-js';
+import { profileAPI, type UserProfile } from './api/supabase';
 import Dashboard from './modules/Dashboard';
 import { Stock } from './modules/Stock';
 import { Production } from './modules/Production';
@@ -61,6 +62,8 @@ export const App: React.FC = () => {
   const [profileAvatar, setProfileAvatar] = useState(getProfileAvatar);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [isProfileLoading, setIsProfileLoading] = useState(true);
 
   // Dışarı tıklayınca menüyü kapat
   useEffect(() => {
@@ -81,10 +84,26 @@ export const App: React.FC = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const user = { name: session?.user?.email?.split('@')[0] || 'Administrator' };
+  useEffect(() => {
+    if (session?.user) {
+      setIsProfileLoading(true);
+      profileAPI.getMyProfile().then(profile => {
+        setUserProfile(profile);
+        setIsProfileLoading(false);
+      });
+    } else {
+      setUserProfile(null);
+      setIsProfileLoading(false);
+    }
+  }, [session]);
 
-  // Auth veya i18n yüklenirken splash
-  if (session === undefined || isLoading) {
+  const user = { 
+    name: userProfile?.full_name || session?.user?.email?.split('@')[0] || 'User',
+    role: userProfile?.role || 'user'
+  };
+
+  // Auth veya i18n veya Profil yüklenirken splash
+  if (session === undefined || isLoading || isProfileLoading) {
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-[#1A1A1A] text-white">
           <div className="flex flex-col items-center gap-4 animate-pulse">
@@ -116,7 +135,14 @@ export const App: React.FC = () => {
     { id: 'logistics',  label: t('modules.logistics'),     icon: Truck },
     { id: 'settings',   label: t('nav.sistem'),            icon: SettingsIcon },
     { id: 'profile',    label: 'Profilim',                 icon: User },
-  ];
+  ].filter(item => {
+    // Admin ise her şeyi görür
+    if (user.role === 'admin') return true;
+    // Settings ve Profile her zaman görünür (ya da sadece Profile?)
+    if (item.id === 'profile' || item.id === 'dashboard') return true;
+    // Diğerleri izinlere bağlı
+    return userProfile?.permissions?.[item.id] === true;
+  });
 
   const navigate = (view: string) => {
     const mod = view as ModuleType;
@@ -479,7 +505,7 @@ export const App: React.FC = () => {
             {activeModule === 'tasks'      && <Tasks />}
             {activeModule === 'licensing'  && <Licensing />}
             {activeModule === 'pnl'        && <PnL />}
-            {activeModule === 'settings'   && <Settings />}
+            {activeModule === 'settings'   && <Settings profile={userProfile} />}
             {activeModule === 'fastplan'   && <FastPlan />}
             {activeModule === 'planning'   && <DetailedPlanManager />}
             {activeModule === 'profile'    && <Profile />}

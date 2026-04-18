@@ -1,32 +1,74 @@
--- Detaylı ve Hızlı İş Planlarını saklayan tablo
-CREATE TABLE IF NOT EXISTS public.business_plans (
-    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-    user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE,
-    title text DEFAULT 'Adsız Plan',
-    year integer DEFAULT date_part('year', CURRENT_DATE),
-    plan_type text DEFAULT 'fast', -- 'fast' veya 'detailed'
-    status text DEFAULT 'pending', -- 'pending' veya 'active'
-    data jsonb DEFAULT '{}'::jsonb, -- Planın tüm detaylarını (aylar, maliyetler vb.) burada saklıyoruz
+-- Kullanıcı Profilleri ve Yetki Yönetimi Tablosu
+CREATE TABLE IF NOT EXISTS public.profiles (
+    id uuid REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+    email text,
+    full_name text,
+    avatar_url text,
+    role text DEFAULT 'user', -- 'admin' veya 'user'
+    permissions jsonb DEFAULT '{"dashboard": true}'::jsonb, -- Varsayılan olarak sadece Ana Sayfa açık
     created_at timestamptz DEFAULT now(),
-    updated_at timestamptz DEFAULT now(),
-    shared_with uuid[] DEFAULT ARRAY[]::uuid[] -- Gelecekte paylaşım özelliği için
+    updated_at timestamptz DEFAULT now()
 );
 
--- RLS (Row Level Security) Politikaları
-ALTER TABLE public.business_plans ENABLE ROW LEVEL SECURITY;
+-- RLS (Row Level Security) - Profiles
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Herkes kendi planını görebilir" ON public.business_plans
+CREATE POLICY "Herkes kendi profilini görebilir" ON public.profiles
     FOR SELECT TO authenticated
-    USING (auth.uid() = user_id OR auth.uid() = ANY(shared_with));
+    USING (auth.uid() = id);
 
-CREATE POLICY "Herkes kendi planını ekleyebilir" ON public.business_plans
-    FOR INSERT TO authenticated
-    WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Adminler tüm profilleri görebilir" ON public.profiles
+    FOR SELECT TO authenticated
+    USING (
+        EXISTS (
+            SELECT 1 FROM public.profiles 
+            WHERE id = auth.uid() AND role = 'admin'
+        )
+    );
 
-CREATE POLICY "Herkes kendi planını güncelleyebilir" ON public.business_plans
+CREATE POLICY "Adminler profilleri güncelleyebilir" ON public.profiles
     FOR UPDATE TO authenticated
-    USING (auth.uid() = user_id);
+    USING (
+        EXISTS (
+            SELECT 1 FROM public.profiles 
+            WHERE id = auth.uid() AND role = 'admin'
+        )
+    );
 
-CREATE POLICY "Herkes kendi planını silebilir" ON public.business_plans
-    FOR DELETE TO authenticated
-    USING (auth.uid() = user_id);
+-- Yeni kullanıcı kaydı olduğunda otomatik profil oluşturan fonksiyon
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger AS $$
+BEGIN
+    INSERT INTO public.profiles (id, email, full_name, role, permissions)
+    VALUES (
+        new.id, 
+        new.email, 
+        split_part(new.email, '@', 1), 
+        'user', 
+        '{"dashboard": true}'::jsonb
+    );
+    RETURN new;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Trigger: Auth.users tablosuna kayıt geldiğinde çalışır
+CREATE OR REPLACE TRIGGER on_auth_user_created
+    AFTER INSERT ON auth.users
+    FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- Detaylı ve Hızlı İş Planlarını saklayan tablo
+CREATE TABLE IF NOT EXISTS public.business_plans (
+...
+);
+
+-- RLS (Row Level Security) Politikaları - Business Plans
+-- Adminlerin tüm planları görebilmesi için SELECT politikası güncellendi
+CREATE POLICY "Adminler tüm planları görebilir" ON public.business_plans
+    FOR SELECT TO authenticated
+    USING (
+        EXISTS (
+            SELECT 1 FROM public.profiles 
+            WHERE id = auth.uid() AND role = 'admin'
+        )
+    );
+...
