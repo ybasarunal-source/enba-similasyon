@@ -2,159 +2,24 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Enba Sim">
-    <meta name="theme-color" content="#15222E">
-    <meta name="description" content="Enba Recycling Kapasite ve Finans Simülasyon Platformu">
-
-    <title>Enba Recycling - Kapasite ve Finans Simülasyonu</title>
+    <title>Enba Recycling Platform | Modern Management</title>
     
-    <!-- Kaynak İpuçları: CDN bağlantılarını hızlandırır -->
-    <link rel="preconnect" href="https://unpkg.com">
-    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
-    <link rel="preconnect" href="https://cdn.jsdelivr.net">
-
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="manifest.json">
-
-    <!-- Uygulama İkonları -->
-    <link rel="shortcut icon" href="icons/icon-32.png?v=3">
-    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png?v=3">
-    <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png?v=3">
-    <link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png?v=3">
-    <link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png?v=3">
-    <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-192.png?v=3">
-
-    <!-- Üretim Sürümleri: Daha küçük ve daha hızlı -->
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
-    
-    <!-- Phosphor Icons: Premium Vektör İkon Seti -->
-    <script src="https://unpkg.com/@phosphor-icons/web" defer></script>
-
+    <!-- Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <!-- Kritik Yükleme Ekranı Stilleri (Gecikmeyi önlemek için inline) -->
-    <style>
-        .splash-screen {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-color: #1A1A1A;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            transition: opacity 0.5s ease, visibility 0.5s;
-        }
-        .splash-screen.hidden { opacity: 0; visibility: hidden; }
-        .splash-content { text-align: center; width: 280px; }
-        .splash-logo {
-            display: flex; justify-content: center; align-items: baseline;
-            gap: 5px; margin-bottom: 30px;
-            animation: splashPulse 2s infinite ease-in-out;
-        }
-        .splash-logo .enba { font-family: 'Manrope', sans-serif; font-weight: 800; color: #E35205; font-size: 32px; letter-spacing: -1px; }
-        .splash-logo .recycling { font-family: 'Manrope', sans-serif; font-weight: 400; color: #ffffff; font-size: 24px; }
-        .loader-wrapper { width: 100%; height: 4px; background: rgba(255, 255, 255, 0.05); border-radius: 2px; overflow: hidden; margin-bottom: 15px; }
-        .loader-bar {
-            width: 100%; height: 100%;
-            background: linear-gradient(90deg, transparent, #E35205, transparent);
-            background-size: 200% 100%;
-            animation: loaderMove 1.5s infinite linear;
-        }
-        .splash-status { font-size: 11px; color: rgba(255, 255, 255, 0.4); text-transform: uppercase; letter-spacing: 2px; font-weight: 600; }
-        @keyframes splashPulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.02); opacity: 0.9; } }
-        @keyframes loaderMove { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-    </style>
-
-    <link rel="stylesheet" href="style.css?v=2.1">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&family=Rajdhani:wght@500;600;700&family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <!-- Branding -->
+    <meta name="theme-color" content="#15222e">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>♻️</text></svg>">
 </head>
-<body>
-    <!-- Premium Splash Screen -->
-    <div id="enba-splash" class="splash-screen">
-        <div class="splash-content">
-            <div class="splash-logo">
-                <span class="enba">ENBA</span><span class="recycling">Recycling</span>
-            </div>
-            <div class="loader-wrapper">
-                <div class="loader-bar"></div>
-            </div>
-            <div class="splash-status">Sistem Hazırlanıyor...</div>
-        </div>
-    </div>
-
+<body class="bg-gray-50">
     <div id="root"></div>
-
-    <!-- Supabase CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-    <!-- Supabase İstemcisi ve Ortak Veri Katmanı -->
-    <script src="supabase-client.js?v=20260417" defer></script>
-    <script src="data-service.js?v=20260417" defer></script>
-
-    <script src="data.js?v=20260417" defer></script>
-    <script src="translations.js?v=20260417" defer></script>
-    <script src="finance-utils.js?v=20260417" defer></script>
-    <script src="io-utils.js?v=20260417" defer></script>
-    <script type="text/babel" src="components/Sidebar.jsx?v=20260417"></script>
-    <script type="text/babel" src="components/DashboardMatrix.jsx?v=20260417"></script>
-    <script type="text/babel" src="settings-module.jsx?v=20260417"></script>
-    <script type="text/babel" src="app.jsx?v=20260417"></script>
-    <script type="text/babel" src="components/wizard/detailed/DetStep1_Suppliers.jsx?v=20260418"></script>
-    <script type="text/babel" src="components/wizard/detailed/DetStep2_Customers.jsx?v=20260418"></script>
-    <script type="text/babel" src="components/wizard/detailed/DetStep3_Operations.jsx?v=20260417"></script>
-    <script type="text/babel" src="components/wizard/detailed/DetStep4_Personnel.jsx?v=20260418"></script>
-    <script type="text/babel" src="components/wizard/detailed/DetStep5_Expenses.jsx?v=20260418"></script>
-    <script type="text/babel" src="components/wizard/detailed/DetStep6_Investment.jsx?v=20260417b"></script>
-    <script type="text/babel" src="components/wizard/detailed/DetStep7_Report.jsx?v=20260417"></script>
-    <script type="text/babel" src="detailed-plan.jsx?v=20260419b"></script>
-    <script type="text/babel" src="landing.jsx?v=20260417"></script>
-    <script type="text/babel" src="login-page.jsx?v=20260417"></script>
-    <script type="text/babel" src="router.jsx?v=20260417"></script>
-    <script type="text/babel" src="pnl-module.jsx?v=20260417"></script>
-    <script type="text/babel" src="production-module.jsx?v=20260417"></script>
-    <script type="text/babel" src="logistics-module.jsx?v=20260417"></script>
-    <script type="text/babel" src="catalog-module.jsx?v=20260417"></script>
-    <script type="text/babel" src="makina-modulu.jsx?v=20260417"></script>
-    <script type="text/babel" src="production-line-module.jsx?v=20260417"></script>
-    <script type="text/babel" src="cashflow-module.jsx?v=20260417"></script>
-    <script type="text/babel" src="production-plan-module.jsx?v=20260417"></script>
-    <script type="text/babel" src="arsiv-module.jsx?v=20260417"></script>
-    <script type="text/babel" src="stok-module.jsx?v=20260417"></script>
-    <script type="text/babel" src="lisans-module.jsx?v=20260417"></script>
-    <script type="text/babel" src="tasks-module.jsx?v=20260417"></script>
-    <script type="text/babel" src="yetki-yonetimi.jsx?v=20260417"></script>
-    <script type="text/babel" src="messaging-module.jsx?v=20260417"></script>
-    <script type="text/babel" src="ai-assistant.jsx?v=20260417"></script>
-    <script type="text/babel" src="messenger-overlay.jsx"></script>
-    <script type="text/babel" src="profile-module.jsx"></script>
-    <script type="text/babel" src="org-chart-module.jsx"></script>
-    <script type="text/babel" src="hr-module.jsx"></script>
-    <script type="text/babel" src="payments-module.jsx"></script>
-
-    <!-- Face Detection & Tracking Lib -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tracking.js/1.1.3/tracking-min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tracking.js/1.1.3/data/face-min.js"></script>
-
-    <!-- Service Worker Kaydı -->
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
-                    .then(reg => console.log('SW kayıtlı:', reg.scope))
-                    .catch(err => console.log('SW hatası:', err));
-            });
-        }
-    </script>
+    <script type="module" src="/src/main.tsx"></script>
 </body>
 </html>
