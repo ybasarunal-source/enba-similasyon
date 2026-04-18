@@ -644,10 +644,6 @@ export const PnL: React.FC = () => {
                         </div>
                     </div>
                 </div>
-                <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-[4px]">Finansal İstihbarat Aktif</span>
-                </div>
             </div>
             
             {/* Saved Reports Section */}
