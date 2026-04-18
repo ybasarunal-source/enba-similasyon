@@ -128,12 +128,14 @@ export const Profile: React.FC = () => {
     ctx.fillStyle = '#fff';
     ctx.fillRect(0, 0, 400, 400);
     const img = imgRef.current;
-    const drawScale = zoom * (400 / 300);
-    ctx.drawImage(
-      img, 0, 0, img.naturalWidth, img.naturalHeight,
-      cropPos.x * (400 / 300), cropPos.y * (400 / 300),
-      img.naturalWidth * drawScale, img.naturalHeight * drawScale
-    );
+    // CSS transform: translate(cropPos.x, cropPos.y) scale(zoom) with origin 0,0
+    // Viewport is 300x300. Source pixel at (sx,sy) maps to screen (sx*zoom+cropPos.x, sy*zoom+cropPos.y).
+    // We want the 300x300 viewport region mapped onto the 400x400 canvas output.
+    const sx = -cropPos.x / zoom;
+    const sy = -cropPos.y / zoom;
+    const sw = 300 / zoom;
+    const sh = 300 / zoom;
+    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, 400, 400);
     setForm(f => ({ ...f, avatar: canvas.toDataURL('image/jpeg', 0.85) }));
     setShowCropper(false);
   };
