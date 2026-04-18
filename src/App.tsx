@@ -1,5 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from './api/i18n';
+import { supabase } from './api/supabase';
+import { Login } from './modules/Login';
+import type { Session } from '@supabase/supabase-js';
 import Dashboard from './modules/Dashboard';
 import { Stock } from './modules/Stock';
 import { Production } from './modules/Production';
@@ -32,7 +35,8 @@ import {
   PanelLeftOpen,
   User,
   BarChart3,
-  ChevronRight
+  ChevronRight,
+  LogOut
 } from 'lucide-react';
 
 type ModuleType =
@@ -50,9 +54,18 @@ export const App: React.FC = () => {
   const [activeModule, setActiveModule] = useState<ModuleType>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [profileAvatar, setProfileAvatar] = useState(getProfileAvatar);
-  const user = { name: 'Administrator' };
+  const [session, setSession] = useState<Session | null | undefined>(undefined); // undefined = loading
 
-  if (isLoading) {
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setSession(data.session));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const user = { name: session?.user?.email?.split('@')[0] || 'Administrator' };
+
+  // Auth veya i18n yüklenirken splash
+  if (session === undefined || isLoading) {
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-[#1A1A1A] text-white">
         <div className="flex flex-col items-center gap-2 animate-pulse">
@@ -66,6 +79,9 @@ export const App: React.FC = () => {
       </div>
     );
   }
+
+  // Giriş yapılmamışsa Login ekranı
+  if (!session) return <Login />;
 
   const menuItems = [
     { id: 'dashboard',  label: t('nav.home'),              icon: Home },
@@ -189,6 +205,14 @@ export const App: React.FC = () => {
               {language === 'TR' ? '🇹🇷 Türkçe' : '🇬🇧 English'}
             </button>
           )}
+          <button
+            onClick={() => supabase.auth.signOut()}
+            title="Çıkış Yap"
+            className={`flex items-center rounded-xl py-2.5 text-gray-500 hover:text-red-400 hover:bg-white/5 transition-all duration-200 ${isSidebarOpen ? 'px-3 gap-3' : 'px-0 justify-center'}`}
+          >
+            <LogOut size={16} />
+            {isSidebarOpen && <span style={{ fontFamily: "'Poppins', sans-serif" }} className="text-[11px] font-medium">Çıkış Yap</span>}
+          </button>
           <button
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             title={isSidebarOpen ? 'Menüyü Gizle' : 'Menüyü Göster'}

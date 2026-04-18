@@ -1,4 +1,6 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
+import { usePlanSync } from '../hooks/usePlanSync';
+import { SyncBanner } from '../components/SyncBanner';
 import {
   Zap, TrendingUp, TrendingDown, Package, Factory,
   Users, DollarSign, BarChart3, AlertTriangle, CheckCircle2,
@@ -65,6 +67,7 @@ interface PlanSonuc {
 
 interface PlanCard {
   id: string;
+  supabaseId?: string;
   baslik: string;
   aciklama: string;
   status: 'pending' | 'active';
@@ -127,8 +130,11 @@ const VARSAYILAN_PARAMS: PlanParams = {
 export const FastPlan: React.FC = () => {
   // Görünüm: 'cards' (plan listesi) veya 'form' (yeni/düzenleme formu)
   const [view, setView] = useState<'cards' | 'form'>('cards');
-  const [planlar, setPlanlar] = useState<PlanCard[]>([]);
   const [duzenlemId, setDuzenlemId] = useState<string | null>(null);
+  const { planlar, kaydet, sil: planSilSync, syncStatus, syncError } = usePlanSync<PlanCard>({
+    localKey: STORAGE_KEY,
+    planType: 'fast',
+  });
 
   // Form state
   const [baslik, setBaslik] = useState('');
@@ -142,18 +148,6 @@ export const FastPlan: React.FC = () => {
   const [panelPer, setPanelPer] = useState(true);
   const [panelGider, setPanelGider] = useState(false);
 
-  // ─── Persist ──────────────────────────────────────────────
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) setPlanlar(JSON.parse(saved));
-    } catch { /* ignore */ }
-  }, []);
-
-  const kaydet = (guncelPlanlar: PlanCard[]) => {
-    setPlanlar(guncelPlanlar);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(guncelPlanlar));
-  };
 
   // ─── Anlık hesaplama (form önizlemesi) ────────────────────
   const formSonuc = useMemo(() => hesapla(params), [params]);
@@ -209,6 +203,7 @@ export const FastPlan: React.FC = () => {
     const kopya: PlanCard = {
       ...plan,
       id: Date.now().toString(),
+      supabaseId: undefined,
       baslik: `${plan.baslik} (Kopya)`,
       status: 'pending',
       createdAt: new Date().toISOString(),
@@ -218,7 +213,7 @@ export const FastPlan: React.FC = () => {
 
   const planSil = (id: string) => {
     if (!window.confirm('Bu plan kartı silinecek. Emin misiniz?')) return;
-    kaydet(planlar.filter(p => p.id !== id));
+    planSilSync(id);
   };
 
   const statusToggle = (id: string) => {
@@ -294,6 +289,7 @@ export const FastPlan: React.FC = () => {
   if (view === 'cards') {
     return (
       <div className="p-10 space-y-8 animate-in fade-in duration-700">
+        <SyncBanner status={syncStatus} error={syncError} onRetry={() => kaydet(planlar)} />
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="flex items-center gap-5">

@@ -1,4 +1,6 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
+import { usePlanSync } from '../../hooks/usePlanSync';
+import { SyncBanner } from '../../components/SyncBanner';
 import {
   BarChart3, Plus, Trash2, Edit3, Copy, FileText, Layout,
   Play, Save, ChevronDown, ChevronUp, TrendingUp, TrendingDown,
@@ -15,6 +17,7 @@ import { PlanningWizard } from './PlanningWizard';
 // ── Types ──────────────────────────────────────────────────────
 interface DetailedPlanCard {
   id: string;
+  supabaseId?: string;
   title: string;
   status: 'pending' | 'active';
   createdAt: string;
@@ -97,23 +100,12 @@ const kpiColor = (v: number) =>
 
 // ── Main Component ─────────────────────────────────────────────
 export const DetailedPlanManager: React.FC = () => {
-  const [planlar, setPlanlar] = useState<DetailedPlanCard[]>([]);
-  // view: 'cards' = kart listesi, 'wizard' = yeni/düzenleme sihirbazı
   const [view, setView] = useState<'cards' | 'wizard'>('cards');
   const [editingCard, setEditingCard] = useState<DetailedPlanCard | null>(null);
-
-  // ── Persist ────────────────────────────────────────────────
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) setPlanlar(JSON.parse(saved));
-    } catch { /* ignore */ }
-  }, []);
-
-  const kaydet = (guncel: DetailedPlanCard[]) => {
-    setPlanlar(guncel);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(guncel));
-  };
+  const { planlar, kaydet, sil: planSilSync, syncStatus, syncError } = usePlanSync<DetailedPlanCard>({
+    localKey: STORAGE_KEY,
+    planType: 'detailed',
+  });
 
   // ── Wizard'dan gelen save callback'i ──────────────────────
   const handleWizardSave = (planData: any) => {
@@ -149,6 +141,7 @@ export const DetailedPlanManager: React.FC = () => {
     const kopya: DetailedPlanCard = {
       ...plan,
       id: Date.now().toString(),
+      supabaseId: undefined,
       title: `${plan.title} (Kopya)`,
       status: 'pending',
       createdAt: new Date().toISOString(),
@@ -159,7 +152,7 @@ export const DetailedPlanManager: React.FC = () => {
 
   const planSil = (id: string) => {
     if (!window.confirm('Bu plan kartı silinecek. Emin misiniz?')) return;
-    kaydet(planlar.filter(p => p.id !== id));
+    planSilSync(id);
   };
 
   // ── Konsolide ─────────────────────────────────────────────
@@ -189,6 +182,7 @@ export const DetailedPlanManager: React.FC = () => {
   // ── Kart Listesi Görünümü ──────────────────────────────────
   return (
     <div className="p-10 space-y-8 animate-in fade-in duration-700">
+      <SyncBanner status={syncStatus} error={syncError} onRetry={() => kaydet(planlar)} />
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
         <div className="flex items-center gap-5">
