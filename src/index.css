@@ -79,6 +79,27 @@
   .custom-scrollbar::-webkit-scrollbar-thumb {
     @apply bg-gray-200 rounded-full hover:bg-gray-300;
   }
+
+  /* Sidebar'a özel dikey scrollbar — koyu arka plana uyumlu */
+  .sidebar-scrollbar {
+    overflow-x: hidden;              /* yatay çubuk asla çıkmasın */
+    scrollbar-width: thin;           /* Firefox */
+    scrollbar-color: rgba(227,82,5,0.25) transparent;
+  }
+  .sidebar-scrollbar::-webkit-scrollbar {
+    width: 4px;
+    height: 0px;                     /* yatay çubuk tamamen gizli */
+  }
+  .sidebar-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .sidebar-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(227, 82, 5, 0.30);   /* turuncu, %30 opaklık */
+    border-radius: 99px;
+  }
+  .sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(227, 82, 5, 0.55);   /* hover'da belirginleşir */
+  }
 }
 
 .animate-fade-in {

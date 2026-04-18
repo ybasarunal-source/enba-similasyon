@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from './api/i18n';
 import { supabase } from './api/supabase';
 import { Login } from './modules/Login';
@@ -36,7 +36,9 @@ import {
   User,
   BarChart3,
   ChevronRight,
-  LogOut
+  ChevronLeft,
+  LogOut,
+  SlidersHorizontal
 } from 'lucide-react';
 
 type ModuleType =
@@ -52,8 +54,25 @@ const getProfileAvatar = () => {
 export const App: React.FC = () => {
   const { t, language, setLanguage, isLoading } = useTranslation();
   const [activeModule, setActiveModule] = useState<ModuleType>('dashboard');
+  // Sayfa geçmişi — geri/ileri navigasyon için
+  const [history, setHistory] = useState<ModuleType[]>(['dashboard']);
+  const [historyIndex, setHistoryIndex] = useState(0);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [profileAvatar, setProfileAvatar] = useState(getProfileAvatar);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  // Dışarı tıklayınca menüyü kapat
+  useEffect(() => {
+    if (!userMenuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [userMenuOpen]);
   const [session, setSession] = useState<Session | null | undefined>(undefined); // undefined = loading
 
   useEffect(() => {
@@ -102,9 +121,33 @@ export const App: React.FC = () => {
   ];
 
   const navigate = (view: string) => {
-    setActiveModule(view as ModuleType);
+    const mod = view as ModuleType;
+    // Mevcut konumun ilerisindeki geçmişi sil, yeni sayfayı ekle
+    setHistory(prev => [...prev.slice(0, historyIndex + 1), mod]);
+    setHistoryIndex(prev => prev + 1);
+    setActiveModule(mod);
     setProfileAvatar(getProfileAvatar());
   };
+
+  const goBack = () => {
+    if (historyIndex <= 0) return;
+    const newIndex = historyIndex - 1;
+    setHistoryIndex(newIndex);
+    setActiveModule(history[newIndex]);
+    setProfileAvatar(getProfileAvatar());
+  };
+
+  const goForward = () => {
+    if (historyIndex >= history.length - 1) return;
+    const newIndex = historyIndex + 1;
+    setHistoryIndex(newIndex);
+    setActiveModule(history[newIndex]);
+    setProfileAvatar(getProfileAvatar());
+  };
+
+  const canGoBack    = historyIndex > 0;
+  const canGoForward = historyIndex < history.length - 1;
+
   const activeLabel = menuItems.find(i => i.id === activeModule)?.label ?? '';
 
   return (
@@ -114,7 +157,7 @@ export const App: React.FC = () => {
       <aside
         className={`
           enba-sidebar-glass text-white flex flex-col flex-shrink-0
-          transition-all duration-500 ease-in-out z-20
+          transition-all duration-500 ease-in-out z-20 overflow-hidden
           ${isSidebarOpen ? 'w-[240px]' : 'w-16'}
         `}
       >
@@ -138,7 +181,7 @@ export const App: React.FC = () => {
         </div>
 
         {/* Nav items */}
-        <nav className="flex-1 py-3 overflow-y-auto custom-scrollbar flex flex-col gap-0.5 px-2">
+        <nav className="flex-1 py-3 overflow-y-auto sidebar-scrollbar flex flex-col gap-0.5 px-2">
           {menuItems.map(item => {
             const active = activeModule === item.id;
             return (
@@ -244,50 +287,184 @@ export const App: React.FC = () => {
 
         {/* ─── Top Header ─────────────────────────────────── */}
         <header className="h-13 bg-white border-b border-gray-100 flex items-center justify-between px-8 flex-shrink-0 z-10" style={{ height: '52px' }}>
-          {/* Breadcrumb */}
-          <div className="flex items-center gap-2 text-gray-400">
-            <span
-              style={{ fontFamily: "'Poppins', sans-serif" }}
-              className="text-[11px] font-medium text-gray-400 uppercase tracking-widest"
-            >
-              Enba
-            </span>
-            <ChevronRight size={12} className="text-gray-300" />
-            <span
-              style={{ fontFamily: "'Poppins', sans-serif" }}
-              className="text-[12px] font-semibold text-[var(--enba-dark)]"
-            >
-              {activeLabel}
-            </span>
+          {/* Sol: Geri/İleri + Breadcrumb */}
+          <div className="flex items-center gap-3">
+
+            {/* Geri / İleri butonları */}
+            <div className="flex items-center gap-1">
+              <button
+                onClick={goBack}
+                disabled={!canGoBack}
+                title="Geri"
+                style={{
+                  width: '28px', height: '28px', borderRadius: '8px', border: 'none',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: canGoBack ? 'pointer' : 'default',
+                  background: canGoBack ? 'rgba(0,0,0,0.05)' : 'transparent',
+                  color: canGoBack ? '#374151' : '#d1d5db',
+                  transition: 'all 0.15s',
+                }}
+                onMouseEnter={e => { if (canGoBack) e.currentTarget.style.background = 'rgba(0,0,0,0.09)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = canGoBack ? 'rgba(0,0,0,0.05)' : 'transparent'; }}
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <button
+                onClick={goForward}
+                disabled={!canGoForward}
+                title="İleri"
+                style={{
+                  width: '28px', height: '28px', borderRadius: '8px', border: 'none',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  cursor: canGoForward ? 'pointer' : 'default',
+                  background: canGoForward ? 'rgba(0,0,0,0.05)' : 'transparent',
+                  color: canGoForward ? '#374151' : '#d1d5db',
+                  transition: 'all 0.15s',
+                }}
+                onMouseEnter={e => { if (canGoForward) e.currentTarget.style.background = 'rgba(0,0,0,0.09)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = canGoForward ? 'rgba(0,0,0,0.05)' : 'transparent'; }}
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
+
+            {/* Ayraç */}
+            <div style={{ width: '1px', height: '16px', background: '#e5e7eb' }} />
+
+            {/* Breadcrumb */}
+            <div className="flex items-center gap-2 text-gray-400">
+              <span
+                style={{ fontFamily: "'Poppins', sans-serif" }}
+                className="text-[11px] font-medium text-gray-400 uppercase tracking-widest"
+              >
+                Enba
+              </span>
+              <ChevronRight size={12} className="text-gray-300" />
+              <span
+                style={{ fontFamily: "'Poppins', sans-serif" }}
+                className="text-[12px] font-semibold text-[var(--enba-dark)]"
+              >
+                {activeLabel}
+              </span>
+            </div>
           </div>
 
-          {/* User area */}
-          <button
-            onClick={() => setActiveModule('profile')}
-            className="flex items-center gap-3 hover:opacity-80 transition-opacity"
-            title="Profilimi Görüntüle"
-          >
-            <div className="flex flex-col items-end">
-              <span
-                style={{ fontFamily: "'Poppins', sans-serif" }}
-                className="text-[12px] font-semibold text-[var(--enba-dark)] leading-none"
-              >
-                {user.name}
-              </span>
-              <span
-                style={{ fontFamily: "'Poppins', sans-serif" }}
-                className="text-[10px] font-medium text-[var(--enba-orange)] mt-0.5"
-              >
-                Platform Yöneticisi
-              </span>
-            </div>
-            <div className="w-8 h-8 rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center border border-gray-200 relative flex-shrink-0">
-              {profileAvatar
-                ? <img src={profileAvatar} className="w-full h-full object-cover" />
-                : <User size={16} className="text-gray-400" />}
-              <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full shadow" />
-            </div>
-          </button>
+          {/* User area — dropdown menu */}
+          <div ref={userMenuRef} style={{ position: 'relative' }}>
+            <button
+              onClick={() => setUserMenuOpen(v => !v)}
+              className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+              title="Hesap Menüsü"
+            >
+              <div className="flex flex-col items-end">
+                <span
+                  style={{ fontFamily: "'Poppins', sans-serif" }}
+                  className="text-[12px] font-semibold text-[var(--enba-dark)] leading-none"
+                >
+                  {user.name}
+                </span>
+                <span
+                  style={{ fontFamily: "'Poppins', sans-serif" }}
+                  className="text-[10px] font-medium text-[var(--enba-orange)] mt-0.5"
+                >
+                  Platform Yöneticisi
+                </span>
+              </div>
+              <div className="w-8 h-8 rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center border border-gray-200 relative flex-shrink-0">
+                {profileAvatar
+                  ? <img src={profileAvatar} className="w-full h-full object-cover" />
+                  : <User size={16} className="text-gray-400" />}
+                <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full shadow" />
+              </div>
+            </button>
+
+            {/* Dropdown */}
+            {userMenuOpen && (
+              <div style={{
+                position: 'absolute',
+                top: 'calc(100% + 10px)',
+                right: 0,
+                background: '#fff',
+                border: '1px solid rgba(0,0,0,0.08)',
+                borderRadius: '14px',
+                padding: '6px',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)',
+                minWidth: '200px',
+                zIndex: 999,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '2px',
+              }}>
+                {/* Kullanıcı bilgisi */}
+                <div style={{
+                  padding: '10px 12px 8px',
+                  borderBottom: '1px solid rgba(0,0,0,0.06)',
+                  marginBottom: '4px'
+                }}>
+                  <div style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: '13px', color: '#1a1a2e' }}>
+                    {user.name}
+                  </div>
+                  <div style={{ fontFamily: "'Poppins', sans-serif", fontSize: '10px', color: 'var(--enba-orange)', fontWeight: 600 }}>
+                    Platform Yöneticisi
+                  </div>
+                </div>
+
+                {/* Profili Düzenle */}
+                <button
+                  onClick={() => { setActiveModule('profile'); setUserMenuOpen(false); }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '10px',
+                    padding: '9px 12px', borderRadius: '9px', border: 'none',
+                    background: 'transparent', cursor: 'pointer', width: '100%', textAlign: 'left',
+                    fontFamily: "'Poppins', sans-serif", fontSize: '12px', fontWeight: 600,
+                    color: '#374151', transition: 'background 0.15s'
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.background = '#f3f4f6')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                >
+                  <User size={14} style={{ color: '#6b7280' }} />
+                  Profili Düzenle
+                </button>
+
+                {/* Ayarlara Git */}
+                <button
+                  onClick={() => { setActiveModule('settings'); setUserMenuOpen(false); }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '10px',
+                    padding: '9px 12px', borderRadius: '9px', border: 'none',
+                    background: 'transparent', cursor: 'pointer', width: '100%', textAlign: 'left',
+                    fontFamily: "'Poppins', sans-serif", fontSize: '12px', fontWeight: 600,
+                    color: '#374151', transition: 'background 0.15s'
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.background = '#f3f4f6')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                >
+                  <SlidersHorizontal size={14} style={{ color: '#6b7280' }} />
+                  Ayarlara Git
+                </button>
+
+                {/* Ayraç */}
+                <div style={{ height: '1px', background: 'rgba(0,0,0,0.06)', margin: '4px 0' }} />
+
+                {/* Oturumu Kapat */}
+                <button
+                  onClick={() => { supabase.auth.signOut(); setUserMenuOpen(false); }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '10px',
+                    padding: '9px 12px', borderRadius: '9px', border: 'none',
+                    background: 'transparent', cursor: 'pointer', width: '100%', textAlign: 'left',
+                    fontFamily: "'Poppins', sans-serif", fontSize: '12px', fontWeight: 600,
+                    color: '#ef4444', transition: 'background 0.15s'
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.background = '#fef2f2')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                >
+                  <LogOut size={14} />
+                  Oturumu Kapat
+                </button>
+              </div>
+            )}
+          </div>
         </header>
 
         {/* ─── Module Content ──────────────────────────────── */}
