@@ -101,10 +101,17 @@ export const Profile: React.FC = () => {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = ev => {
-      setRawSrc(ev.target?.result as string);
-      setCropPos({ x: 0, y: 0 });
-      setZoom(1);
-      setShowCropper(true);
+      const src = ev.target?.result as string;
+      const img = new Image();
+      img.onload = () => {
+        // Fit the smaller dimension to the 300px viewport so the image fills it
+        const initZoom = 300 / Math.min(img.naturalWidth, img.naturalHeight);
+        setRawSrc(src);
+        setCropPos({ x: 0, y: 0 });
+        setZoom(initZoom);
+        setShowCropper(true);
+      };
+      img.src = src;
     };
     reader.readAsDataURL(file);
   };
@@ -121,21 +128,21 @@ export const Profile: React.FC = () => {
 
   const finalizeCrop = () => {
     if (!imgRef.current) return;
+    const VIEWPORT = 300;
+    const OUTPUT = 400;
     const canvas = document.createElement('canvas');
-    canvas.width = 400;
-    canvas.height = 400;
+    canvas.width = OUTPUT;
+    canvas.height = OUTPUT;
     const ctx = canvas.getContext('2d')!;
     ctx.fillStyle = '#fff';
-    ctx.fillRect(0, 0, 400, 400);
+    ctx.fillRect(0, 0, OUTPUT, OUTPUT);
+    // Replicate CSS: translate(cropPos.x, cropPos.y) scale(zoom) transform-origin:0 0
+    // Scale everything up from 300px viewport → 400px output
+    const s = OUTPUT / VIEWPORT;
+    ctx.translate(cropPos.x * s, cropPos.y * s);
+    ctx.scale(zoom * s, zoom * s);
     const img = imgRef.current;
-    // CSS transform: translate(cropPos.x, cropPos.y) scale(zoom) with origin 0,0
-    // Viewport is 300x300. Source pixel at (sx,sy) maps to screen (sx*zoom+cropPos.x, sy*zoom+cropPos.y).
-    // We want the 300x300 viewport region mapped onto the 400x400 canvas output.
-    const sx = -cropPos.x / zoom;
-    const sy = -cropPos.y / zoom;
-    const sw = 300 / zoom;
-    const sh = 300 / zoom;
-    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, 400, 400);
+    ctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight);
     setForm(f => ({ ...f, avatar: canvas.toDataURL('image/jpeg', 0.85) }));
     setShowCropper(false);
   };
