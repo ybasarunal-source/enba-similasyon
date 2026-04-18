@@ -40,10 +40,16 @@ type ModuleType =
   | 'archive' | 'cashflow' | 'planning' | 'fastplan' | 'machinery'
   | 'tasks' | 'licensing' | 'settings' | 'pnl' | 'profile';
 
+const getProfileAvatar = () => {
+  try { return JSON.parse(localStorage.getItem('enba_profile_data') || '{}').avatar || ''; }
+  catch { return ''; }
+};
+
 export const App: React.FC = () => {
   const { t, language, setLanguage, isLoading } = useTranslation();
   const [activeModule, setActiveModule] = useState<ModuleType>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [profileAvatar, setProfileAvatar] = useState(getProfileAvatar);
   const user = { name: 'Administrator' };
 
   if (isLoading) {
@@ -79,7 +85,10 @@ export const App: React.FC = () => {
     { id: 'profile',    label: 'Profilim',                 icon: User },
   ];
 
-  const navigate = (view: string) => setActiveModule(view as ModuleType);
+  const navigate = (view: string) => {
+    setActiveModule(view as ModuleType);
+    setProfileAvatar(getProfileAvatar());
+  };
   const activeLabel = menuItems.find(i => i.id === activeModule)?.label ?? '';
 
   return (
@@ -119,7 +128,7 @@ export const App: React.FC = () => {
             return (
               <button
                 key={item.id}
-                onClick={() => setActiveModule(item.id as ModuleType)}
+                onClick={() => { setActiveModule(item.id as ModuleType); setProfileAvatar(getProfileAvatar()); }}
                 title={!isSidebarOpen ? item.label : ''}
                 className={`
                   group relative flex items-center rounded-xl transition-all duration-200
@@ -229,7 +238,11 @@ export const App: React.FC = () => {
           </div>
 
           {/* User area */}
-          <div className="flex items-center gap-3">
+          <button
+            onClick={() => setActiveModule('profile')}
+            className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+            title="Profilimi Görüntüle"
+          >
             <div className="flex flex-col items-end">
               <span
                 style={{ fontFamily: "'Poppins', sans-serif" }}
@@ -244,11 +257,13 @@ export const App: React.FC = () => {
                 Platform Yöneticisi
               </span>
             </div>
-            <div className="w-8 h-8 rounded-xl bg-gray-100 flex items-center justify-center border border-gray-200 relative">
-              <User size={16} className="text-gray-400" />
+            <div className="w-8 h-8 rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center border border-gray-200 relative flex-shrink-0">
+              {profileAvatar
+                ? <img src={profileAvatar} className="w-full h-full object-cover" />
+                : <User size={16} className="text-gray-400" />}
               <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full shadow" />
             </div>
-          </div>
+          </button>
         </header>
 
         {/* ─── Module Content ──────────────────────────────── */}
