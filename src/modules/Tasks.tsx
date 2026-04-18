@@ -109,7 +109,7 @@ export const Tasks: React.FC = () => {
     const Icon = icon;
     
     return (
-      <div className="flex-1 min-w-[380px] bg-gray-50/50 rounded-[3rem] p-10 flex flex-col gap-8 border border-gray-100 shadow-inner group">
+      <div className="flex-1 min-w-[380px] bg-gray-50/50 rounded-[2.5rem] p-10 flex flex-col gap-8 border border-gray-100 shadow-inner group">
         <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-5">
                <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-2xl transition-transform group-hover:rotate-6" style={{ backgroundColor: color }}>

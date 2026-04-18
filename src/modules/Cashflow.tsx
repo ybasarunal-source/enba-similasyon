@@ -124,30 +124,31 @@ export const Cashflow: React.FC<{ aktifPlanlar?: any[] }> = ({ aktifPlanlar = []
   }, [params, aktifPlanlar, seciliPlanId]);
 
   return (
-    <div className="flex flex-col gap-8 p-4 animate-in fade-in duration-700">
+    <div className="flex flex-col gap-10 p-10 animate-in fade-in duration-1000">
       {/* Header */}
-      <div className="flex justify-between items-end bg-white p-8 rounded-[2.5rem] shadow-card border border-gray-100 overflow-hidden relative">
-        <div className="flex flex-col gap-2 relative z-10">
-          <h2 className="text-3xl font-black text-enba-dark flex items-center gap-3 tracking-tighter">
-            <Banknote className="text-enba-orange fill-enba-orange" size={32} /> Nakit Akışı & Likidite Planı
-          </h2>
-          <p className="text-gray-500 font-medium text-sm">İş planınızı nakit akışına dönüştürün, kasa açıklarını önceden tespit edin.</p>
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-10">
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 bg-enba-dark rounded-[1.2rem] flex items-center justify-center text-enba-orange shadow-2xl border border-white/5">
+              <Banknote size={28} />
+            </div>
+            <div>
+              <h2 className="text-3xl font-black text-enba-dark tracking-tighter uppercase leading-none">Nakit Akışı & Likidite</h2>
+              <p className="text-[10px] text-gray-400 font-black uppercase tracking-[4px] mt-2">İş Planından Kasa Projeksiyonu</p>
+            </div>
+          </div>
         </div>
-
-        <div className="flex items-center gap-4 relative z-10">
-           <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Aktif Senaryo:</label>
-           <select 
-             value={seciliPlanId} 
+        <div className="flex items-center gap-4">
+           <label className="text-[10px] font-black text-gray-400 uppercase tracking-[4px]">Aktif Senaryo:</label>
+           <select
+             value={seciliPlanId}
              onChange={e => setSeciliPlanId(e.target.value)}
-             className="bg-gray-50 border border-transparent rounded-2xl px-5 py-3 text-sm font-bold text-enba-dark focus:bg-white focus:border-enba-orange/30 outline-none w-64 transition-all"
+             className="bg-white border border-gray-200 rounded-2xl px-5 py-3 text-sm font-bold text-enba-dark focus:border-enba-orange/30 outline-none w-64 transition-all shadow-card"
            >
              {aktifPlanlar.map(p => <option key={p.id} value={p.id}>{p.baslik}</option>)}
              {aktifPlanlar.length === 0 && <option>Aktif Plan Bulunamadı</option>}
            </select>
         </div>
-        
-        {/* Background Accent */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-enba-orange/5 rounded-full -mr-32 -mt-32 blur-3xl text-enba-orange/10 pointer-events-none"></div>
       </div>
 
       {/* Stats Grid */}
@@ -158,7 +159,7 @@ export const Cashflow: React.FC<{ aktifPlanlar?: any[] }> = ({ aktifPlanlar = []
           { label: 'Min. Kasa Seviyesi', value: Math.min(...nakitVerileri.map(v => v.balance)), color: 'text-enba-orange', icon: Zap },
           { label: 'Toplam Nakit Girişi', value: nakitVerileri.reduce((s,v)=>s+v.inflow,0), color: 'text-indigo-500', icon: TrendingUp }
         ].map((stat, i) => (
-          <div key={i} className="bg-white p-6 rounded-[2rem] shadow-card border border-gray-100 flex flex-col gap-3 relative overflow-hidden group hover:-translate-y-1 transition-all">
+          <div key={i} className="bg-white p-6 rounded-[2.5rem] shadow-card border border-gray-100 flex flex-col gap-3 relative overflow-hidden group hover:-translate-y-1 transition-all">
              <div className={`w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center ${stat.color} text-xl group-hover:bg-enba-dark group-hover:text-white transition-all`}>
                 <stat.icon size={20} />
              </div>
@@ -272,7 +273,7 @@ export const Cashflow: React.FC<{ aktifPlanlar?: any[] }> = ({ aktifPlanlar = []
                  </div>
               </div>
               
-              <div className="bg-gray-50 rounded-[2rem] p-8 border border-gray-100">
+              <div className="bg-gray-50 rounded-[2.5rem] p-8 border border-gray-100">
                  <h4 className="text-xs font-black text-enba-dark uppercase tracking-[3px] mb-6 flex items-center gap-2">
                     <Info className="text-enba-orange" size={20} /> Planlama Notu
                  </h4>

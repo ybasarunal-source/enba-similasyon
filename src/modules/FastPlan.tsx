@@ -270,7 +270,7 @@ export const FastPlan: React.FC = () => {
     title: string; icon: React.ReactNode; open: boolean;
     onToggle: () => void; children: React.ReactNode; badge?: string;
   }> = ({ title, icon, open, onToggle, children, badge }) => (
-    <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
+    <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">
       <button onClick={onToggle} className="w-full flex items-center justify-between px-8 py-5 hover:bg-gray-50/50 transition-colors">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 bg-enba-dark/5 rounded-xl flex items-center justify-center text-enba-orange">{icon}</div>
@@ -288,17 +288,19 @@ export const FastPlan: React.FC = () => {
   // ════════════════════════════════════════════════════════
   if (view === 'cards') {
     return (
-      <div className="p-10 space-y-8 animate-in fade-in duration-700">
+      <div className="flex flex-col gap-10 p-10 animate-in fade-in duration-1000">
         <SyncBanner status={syncStatus} error={syncError} onRetry={() => kaydet(planlar)} />
         {/* Header */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="flex items-center gap-5">
-            <div className="w-16 h-16 bg-enba-orange rounded-[1.5rem] flex items-center justify-center shadow-2xl shadow-enba-orange/30 -rotate-3">
-              <Zap size={36} className="fill-white text-white" />
-            </div>
-            <div>
-              <h1 className="text-4xl font-black text-enba-dark tracking-tighter leading-none italic uppercase">Hızlı İş Planı</h1>
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-[4px] mt-1.5">Anlık Kârlılık & Fizibilite — Kart Sistemi</p>
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-10">
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-enba-dark rounded-[1.2rem] flex items-center justify-center text-enba-orange shadow-2xl border border-white/5">
+                <Zap size={28} className="fill-enba-orange" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-black text-enba-dark tracking-tighter leading-none uppercase">Hızlı İş Planı</h1>
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[4px] mt-2">Anlık Kârlılık & Fizibilite — Kart Sistemi</p>
+              </div>
             </div>
           </div>
           <button
@@ -479,7 +481,7 @@ export const FastPlan: React.FC = () => {
       </div>
 
       {/* Plan Başlığı */}
-      <div className="bg-white rounded-[2rem] px-10 py-8 shadow-card border border-gray-100">
+      <div className="bg-white rounded-[2.5rem] px-10 py-8 shadow-card border border-gray-100">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="space-y-2">
             <label className="text-[10px] font-black text-gray-400 uppercase tracking-[3px]">Plan Başlığı *</label>
@@ -512,7 +514,7 @@ export const FastPlan: React.FC = () => {
           { label: 'FAVÖK', value: `₺${fmt(formSonuc.ebitda)}`, sub: `%${fmtDec(formSonuc.ebitdaMarji)} marj`, color: kpiColor(formSonuc.ebitda), bg: formSonuc.ebitda >= 0 ? 'bg-emerald-50' : 'bg-rose-50' },
           { label: 'Net Kâr', value: `₺${fmt(formSonuc.netKar)}`, sub: formSonuc.netKar >= 0 ? 'Kârlı ✓' : 'Zarar ✗', color: kpiColor(formSonuc.netKar), bg: formSonuc.netKar >= 0 ? 'bg-emerald-50' : 'bg-rose-50' },
         ].map((kpi, i) => (
-          <div key={i} className={`${kpi.bg} rounded-[2rem] p-7`}>
+          <div key={i} className={`${kpi.bg} rounded-[2.5rem] p-7`}>
             <div className="text-[9px] font-black text-gray-400 uppercase tracking-[2px] mb-1">{kpi.label}</div>
             <div className={`text-2xl font-black ${kpi.color} tabular-nums leading-none`}>{kpi.value}</div>
             <div className="text-[10px] text-gray-400 mt-1">{kpi.sub}</div>
@@ -619,7 +621,7 @@ export const FastPlan: React.FC = () => {
         {/* Sağ: Detaylı P&L önizleme */}
         <div className="xl:col-span-5 space-y-5 sticky top-10">
           {/* Kütle Dengesi */}
-          <div className="bg-enba-dark rounded-[2rem] p-8 text-white border border-white/5">
+          <div className="bg-enba-dark rounded-[2.5rem] p-8 text-white border border-white/5">
             <div className="text-[9px] font-black text-gray-500 uppercase tracking-[3px] mb-5 flex items-center gap-2">
               <Factory size={14} className="text-enba-orange" /> Kütle Dengesi
             </div>
@@ -637,7 +639,7 @@ export const FastPlan: React.FC = () => {
           </div>
 
           {/* P&L Tablosu */}
-          <div className="bg-white rounded-[2rem] p-8 shadow-card border border-gray-100 space-y-3">
+          <div className="bg-white rounded-[2.5rem] p-8 shadow-card border border-gray-100 space-y-3">
             <div className="text-[9px] font-black text-gray-400 uppercase tracking-[3px] flex items-center gap-2 mb-2">
               <BarChart3 size={14} className="text-enba-orange" /> Aylık P&L
             </div>
@@ -695,7 +697,7 @@ const PlanKartBileseni: React.FC<{
   const aktif = plan.status === 'active';
   const s = plan.sonuc;
   return (
-    <div className={`bg-white rounded-[2rem] border-2 transition-all duration-300 overflow-hidden shadow-card ${aktif ? 'border-enba-orange shadow-enba-orange/10' : 'border-transparent'}`}>
+    <div className={`bg-white rounded-[2.5rem] border-2 transition-all duration-300 overflow-hidden shadow-card ${aktif ? 'border-enba-orange shadow-enba-orange/10' : 'border-transparent'}`}>
       <div className={`px-8 py-5 ${aktif ? 'bg-enba-orange/5' : 'bg-gray-50'} border-b border-gray-100 flex items-start justify-between gap-4`}>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-3 mb-1">

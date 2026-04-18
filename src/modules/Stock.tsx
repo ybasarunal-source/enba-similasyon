@@ -834,7 +834,20 @@ export const Stock: React.FC = () => {
 
   // ── RENDER ──────────────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col gap-6 p-1">
+    <div className="flex flex-col gap-8 p-10 animate-in fade-in duration-1000">
+      {/* Header */}
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-10">
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 bg-enba-dark rounded-[1.2rem] flex items-center justify-center text-enba-orange shadow-2xl border border-white/5">
+            <Package size={28} />
+          </div>
+          <div>
+            <h2 className="text-3xl font-black text-enba-dark tracking-tighter uppercase leading-none">Stok Yönetimi</h2>
+            <p className="text-[10px] text-gray-400 font-black uppercase tracking-[4px] mt-2">Alım · Satış · Stok · Raporlar</p>
+          </div>
+        </div>
+      </div>
+
       {/* Tab bar */}
       <div className="flex items-center gap-1 bg-slate-100/60 p-1.5 rounded-2xl self-start border border-slate-200/50 shadow-inner">
         {TABS.map(tab => (

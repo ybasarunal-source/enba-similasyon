@@ -170,23 +170,27 @@ export const Production: React.FC = () => {
   const labelCls = "block text-[10px] font-black text-gray-400 uppercase tracking-[4px] mb-2 ml-1";
 
   return (
-    <div className="flex flex-col gap-8 p-2 animate-in fade-in duration-500">
+    <div className="flex flex-col gap-10 p-10 animate-in fade-in duration-1000">
       {/* Başlık */}
-      <div className="flex items-center gap-4">
-        <div className="w-12 h-12 bg-[var(--enba-dark)] rounded-2xl flex items-center justify-center text-[var(--enba-orange)] shadow-xl">
-          <Factory size={26}/>
-        </div>
-        <div>
-          <h2 className="text-2xl font-black text-[var(--enba-dark)] tracking-tight uppercase leading-none">
-            Günlük Üretim Takibi
-          </h2>
-          <p className="text-[10px] text-gray-400 font-black uppercase tracking-[3px] mt-1">Vardiya Bazlı Fabrika Operasyonel Kayıt</p>
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-10">
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 bg-enba-dark rounded-[1.2rem] flex items-center justify-center text-enba-orange shadow-2xl border border-white/5">
+              <Factory size={28}/>
+            </div>
+            <div>
+              <h2 className="text-3xl font-black text-enba-dark tracking-tighter uppercase leading-none">
+                Günlük Üretim Takibi
+              </h2>
+              <p className="text-[10px] text-gray-400 font-black uppercase tracking-[4px] mt-2">Vardiya Bazlı Fabrika Operasyonel Kayıt</p>
+            </div>
+          </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
         {/* ── FORM ── */}
-        <div className="xl:col-span-4 bg-white rounded-3xl p-8 shadow-card border border-gray-100 sticky top-6">
+        <div className="xl:col-span-4 bg-white rounded-[2.5rem] p-8 shadow-card border border-gray-100 sticky top-6">
           <div className="flex items-center justify-between mb-7">
             <h3 className="text-xs font-black text-[var(--enba-dark)] uppercase tracking-[3px] flex items-center gap-2">
               <Pencil size={16} className="text-[var(--enba-orange)]"/> Vardiya Kayıt Formu
@@ -326,7 +330,7 @@ export const Production: React.FC = () => {
         </div>
 
         {/* ── TABLO ── */}
-        <div className="xl:col-span-8 bg-white rounded-3xl shadow-card border border-gray-100 overflow-hidden flex flex-col">
+        <div className="xl:col-span-8 bg-white rounded-[2.5rem] shadow-card border border-gray-100 overflow-hidden flex flex-col">
           <div className="p-7 border-b border-gray-50 flex items-center justify-between bg-gray-50/30">
             <div>
               <h3 className="text-base font-black text-[var(--enba-dark)] uppercase tracking-tight">Üretim Operasyon Arşivi</h3>
@@ -452,7 +456,7 @@ export const Production: React.FC = () => {
       {/* Silme Onay Dialog */}
       {silOnayId && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => setSilOnayId(null)}>
-          <div className="bg-white rounded-3xl p-8 shadow-2xl max-w-sm w-full mx-4" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-[2.5rem] p-8 shadow-2xl max-w-sm w-full mx-4" onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-3 mb-4">
               <div className="p-3 bg-red-50 rounded-2xl"><AlertTriangle size={20} className="text-red-500"/></div>
               <div>

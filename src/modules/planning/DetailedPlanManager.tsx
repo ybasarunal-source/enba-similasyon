@@ -188,21 +188,23 @@ export const DetailedPlanManager: React.FC = () => {
 
   // ── Kart Listesi Görünümü ──────────────────────────────────
   return (
-    <div className="p-10 space-y-8 animate-in fade-in duration-700">
+    <div className="flex flex-col gap-10 p-10 animate-in fade-in duration-1000">
       <SyncBanner status={syncStatus} error={syncError} onRetry={() => kaydet(planlar)} />
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-        <div className="flex items-center gap-5">
-          <div className="w-16 h-16 bg-enba-dark rounded-[1.5rem] flex items-center justify-center shadow-2xl shadow-enba-dark/30 -rotate-3">
-            <BarChart3 size={36} className="text-enba-orange" />
-          </div>
-          <div>
-            <h1 className="text-4xl font-black text-enba-dark tracking-tighter leading-none italic uppercase">
-              Detaylı İş Planı
-            </h1>
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[4px] mt-1.5">
-              7-Adımlı Sihirbaz · Kart Sistemi · Konsolide Analiz
-            </p>
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-10">
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 bg-enba-dark rounded-[1.2rem] flex items-center justify-center text-enba-orange shadow-2xl border border-white/5">
+              <BarChart3 size={28} />
+            </div>
+            <div>
+              <h1 className="text-3xl font-black text-enba-dark tracking-tighter leading-none uppercase">
+                Detaylı İş Planı
+              </h1>
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-[4px] mt-2">
+                7-Adımlı Sihirbaz · Kart Sistemi · Konsolide Analiz
+              </p>
+            </div>
           </div>
         </div>
         <button
@@ -365,7 +367,7 @@ const DetailedKartBileseni: React.FC<{
   const ebitdaMarj = s.yillikGelir > 0 ? (s.yillikEbitda / s.yillikGelir) * 100 : 0;
 
   return (
-    <div className={`bg-white rounded-[2rem] border-2 transition-all duration-300 overflow-hidden shadow-card ${aktif ? 'border-enba-orange shadow-enba-orange/10' : 'border-transparent'}`}>
+    <div className={`bg-white rounded-[2.5rem] border-2 transition-all duration-300 overflow-hidden shadow-card ${aktif ? 'border-enba-orange shadow-enba-orange/10' : 'border-transparent'}`}>
       {/* Kart Başlığı */}
       <div className={`px-8 py-5 ${aktif ? 'bg-enba-orange/5' : 'bg-gray-50'} border-b border-gray-100 flex items-start justify-between gap-4`}>
         <div className="flex-1 min-w-0">

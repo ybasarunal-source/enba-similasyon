@@ -630,32 +630,29 @@ export const PnL: React.FC = () => {
     }
 
     return (
-        <div className="flex flex-col gap-8 p-4 animate-in fade-in duration-700 pb-20">
+        <div className="flex flex-col gap-10 p-10 animate-in fade-in duration-1000 pb-20">
             {/* Header */}
-            <div className="flex justify-between items-end bg-white p-8 rounded-[2.5rem] shadow-card border border-gray-100 overflow-hidden relative">
-                <div className="flex flex-col gap-2 relative z-10">
-                    <h2 className="text-3xl font-black text-enba-dark flex items-center gap-3 tracking-tighter">
-                        <BarChart3 className="text-enba-orange fill-enba-orange" size={32} /> Kâr/Zarar (P&L) Analizi
-                    </h2>
-                    <p className="text-gray-500 font-medium text-sm">Finansal tablolarınızı yükleyin, operasyonel karlılığınızı ay ve model bazında ölçün.</p>
+            <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-10">
+                <div className="flex flex-col gap-3">
+                    <div className="flex items-center gap-4">
+                        <div className="w-14 h-14 bg-enba-dark rounded-[1.2rem] flex items-center justify-center text-enba-orange shadow-2xl border border-white/5">
+                            <BarChart3 size={28} />
+                        </div>
+                        <div>
+                            <h2 className="text-3xl font-black text-enba-dark tracking-tighter uppercase leading-none">Kâr / Zarar Analizi</h2>
+                            <p className="text-[10px] text-gray-400 font-black uppercase tracking-[4px] mt-2">Excel Tablosu Yükle · Model Bazlı P&L</p>
+                        </div>
+                    </div>
                 </div>
-
-                <div className="flex items-center gap-4 relative z-10">
-                   <div className="flex flex-col items-end">
-                      <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Status</span>
-                      <span className="text-emerald-500 text-xs font-bold mt-1 flex items-center gap-1">
-                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div> Finansal İstihbarat Aktif
-                      </span>
-                   </div>
+                <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-[4px]">Finansal İstihbarat Aktif</span>
                 </div>
-                
-                {/* Background Accent */}
-                <div className="absolute top-0 right-0 w-64 h-64 bg-enba-orange/5 rounded-full -mr-32 -mt-32 blur-3xl text-enba-orange/10 pointer-events-none"></div>
             </div>
             
             {/* Saved Reports Section */}
             {savedReports.length > 0 && (
-                <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-card">
+                <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-card">
                   <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[3px] mb-4 flex items-center gap-2">
                     <Terminal size={14} /> Kayıtlı Analizler
                   </h3>
@@ -719,7 +716,7 @@ export const PnL: React.FC = () => {
                 <div id="pnl-report-container" className="flex flex-col gap-6 animate-in slide-in-from-bottom-10 duration-1000">
                     
                     {/* Toolbar */}
-                    <div id="pnl-actions" className="bg-white p-6 rounded-[2rem] shadow-card border border-gray-100 flex flex-wrap justify-between items-center gap-6">
+                    <div id="pnl-actions" className="bg-white p-6 rounded-[2.5rem] shadow-card border border-gray-100 flex flex-wrap justify-between items-center gap-6">
                         <div className="flex items-center gap-4">
                             <button 
                                 onClick={() => setModelDetayAcik(!modelDetayAcik)}
