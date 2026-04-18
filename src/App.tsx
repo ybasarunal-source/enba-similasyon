@@ -102,18 +102,18 @@ export const App: React.FC = () => {
 
   const menuItems = [
     { id: 'dashboard',  label: t('nav.home'),              icon: Home },
-    { id: 'stock',      label: t('modules.inventory'),     icon: Package },
-    { id: 'production', label: t('modules.prod_tracking'), icon: Factory },
     { id: 'fastplan',   label: 'Hızlı İş Planı',           icon: Zap },
     { id: 'planning',   label: 'Detaylı İş Planı',          icon: BarChart3 },
-    { id: 'logistics',  label: t('modules.logistics'),     icon: Truck },
+    { id: 'pnl',        label: 'P&L Analizi',              icon: BarChart3 },
+    { id: 'stock',      label: t('modules.inventory'),     icon: Package },
+    { id: 'production', label: t('modules.prod_tracking'), icon: Factory },
     { id: 'hr',         label: t('modules.hr'),            icon: Contact },
     { id: 'archive',    label: t('modules.archive'),       icon: ArchiveIcon },
+    { id: 'licensing',  label: t('modules.licensing'),     icon: FileBadge },
     { id: 'cashflow',   label: t('modules.cashflow'),      icon: Coins },
     { id: 'machinery',  label: t('modules.machinery'),     icon: Wrench },
     { id: 'tasks',      label: t('modules.tasks'),         icon: ClipboardList },
-    { id: 'licensing',  label: t('modules.licensing'),     icon: FileBadge },
-    { id: 'pnl',        label: 'P&L Analizi',              icon: BarChart3 },
+    { id: 'logistics',  label: t('modules.logistics'),     icon: Truck },
     { id: 'settings',   label: t('nav.sistem'),            icon: SettingsIcon },
     { id: 'profile',    label: 'Profilim',                 icon: User },
   ];
