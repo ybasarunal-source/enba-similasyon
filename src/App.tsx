@@ -12,6 +12,7 @@ import { Tasks } from './modules/Tasks';
 import { Licensing } from './modules/Licensing';
 import { PnL } from './modules/PnL';
 import { Settings } from './modules/Settings';
+import { Profile } from './modules/Profile';
 import { DetailedPlanManager } from './modules/planning/DetailedPlanManager';
 import { FastPlan } from './modules/FastPlan';
 import {
@@ -37,7 +38,7 @@ import {
 type ModuleType =
   | 'dashboard' | 'stock' | 'production' | 'logistics' | 'hr'
   | 'archive' | 'cashflow' | 'planning' | 'fastplan' | 'machinery'
-  | 'tasks' | 'licensing' | 'settings' | 'pnl';
+  | 'tasks' | 'licensing' | 'settings' | 'pnl' | 'profile';
 
 export const App: React.FC = () => {
   const { t, language, setLanguage, isLoading } = useTranslation();
@@ -75,6 +76,7 @@ export const App: React.FC = () => {
     { id: 'licensing',  label: t('modules.licensing'),     icon: FileBadge },
     { id: 'pnl',        label: 'P&L Analizi',              icon: BarChart3 },
     { id: 'settings',   label: t('nav.sistem'),            icon: SettingsIcon },
+    { id: 'profile',    label: 'Profilim',                 icon: User },
   ];
 
   const navigate = (view: string) => setActiveModule(view as ModuleType);
@@ -266,6 +268,7 @@ export const App: React.FC = () => {
             {activeModule === 'settings'   && <Settings />}
             {activeModule === 'fastplan'   && <FastPlan />}
             {activeModule === 'planning'   && <DetailedPlanManager />}
+            {activeModule === 'profile'    && <Profile />}
           </div>
         </div>
       </main>
