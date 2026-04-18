@@ -1,5 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Upload, Check, X, Linkedin, Twitter, Instagram, Globe, Github, MapPin, Building2, Briefcase, Calendar } from 'lucide-react';
+import { supabase } from '../api/supabase';
 
 interface ProfileData {
   // Kişisel
@@ -39,7 +40,7 @@ const defaultProfile = (): ProfileData => ({
   website: '',
 });
 
-const loadProfile = (): ProfileData => {
+const loadProfileLocal = (): ProfileData => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     return raw ? { ...defaultProfile(), ...JSON.parse(raw) } : defaultProfile();
@@ -82,8 +83,21 @@ const SocialInput: React.FC<{
 );
 
 export const Profile: React.FC = () => {
-  const [form, setForm] = useState<ProfileData>(loadProfile);
+  // localStorage'dan anında göster, Supabase'den gelirse üzerine yaz
+  const [form, setForm] = useState<ProfileData>(loadProfileLocal);
   const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      const cloud = user?.user_metadata?.profile_data as Partial<ProfileData> | undefined;
+      if (cloud) {
+        const local = loadProfileLocal();
+        // avatar sadece localStorage'da — cloud'dan gelen diğer alanlarla birleştir
+        setForm({ ...defaultProfile(), ...cloud, avatar: local.avatar || '' });
+      }
+    })();
+  }, []);
   const set = (key: keyof ProfileData) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm(f => ({ ...f, [key]: e.target.value }));
 
@@ -153,9 +167,23 @@ export const Profile: React.FC = () => {
     setShowCropper(false);
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    // 1. localStorage'a anında kaydet (avatar dahil)
     localStorage.setItem(STORAGE_KEY, JSON.stringify(form));
+
+    // 2. Supabase user_metadata'ya kaydet (avatar hariç — base64 boyutu çok büyük)
+    const { name, title, department, location, startDate, email, phone, bio,
+            linkedin, twitter, instagram, github, website } = form;
+    try {
+      await supabase.auth.updateUser({
+        data: { profile_data: { name, title, department, location, startDate, email, phone, bio,
+                                linkedin, twitter, instagram, github, website } }
+      });
+    } catch (err) {
+      console.warn('Supabase profil senkronizasyonu başarısız:', err);
+    }
+
     setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   };
