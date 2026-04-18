@@ -1,22 +1,42 @@
 import React, { useState, useRef } from 'react';
-import { Upload, Check, X } from 'lucide-react';
+import { Upload, Check, X, Linkedin, Twitter, Instagram, Globe, Github, MapPin, Building2, Briefcase, Calendar } from 'lucide-react';
 
 interface ProfileData {
+  // Kişisel
   name: string;
+  title: string;
+  department: string;
+  location: string;
+  startDate: string;
   email: string;
   phone: string;
   bio: string;
   avatar: string;
+  // Sosyal medya
+  linkedin: string;
+  twitter: string;
+  instagram: string;
+  github: string;
+  website: string;
 }
 
 const STORAGE_KEY = 'enba_profile_data';
 
 const defaultProfile = (): ProfileData => ({
   name: 'Administrator',
+  title: '',
+  department: '',
+  location: '',
+  startDate: '',
   email: '',
   phone: '',
   bio: '',
   avatar: '',
+  linkedin: '',
+  twitter: '',
+  instagram: '',
+  github: '',
+  website: '',
 });
 
 const loadProfile = (): ProfileData => {
@@ -32,9 +52,40 @@ const labelCls = 'block text-[10px] font-semibold text-gray-400 uppercase tracki
 const inputCls =
   'w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-[var(--enba-dark)] outline-none focus:border-[var(--enba-orange)] focus:bg-white transition-colors';
 
+const SectionTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <div className="flex items-center gap-3 mb-5">
+    <span className="text-[11px] font-black text-[var(--enba-dark)] uppercase tracking-[0.12em]">{children}</span>
+    <div className="flex-1 h-px bg-gray-100" />
+  </div>
+);
+
+const SocialInput: React.FC<{
+  icon: React.ReactNode;
+  label: string;
+  placeholder: string;
+  value: string;
+  onChange: (v: string) => void;
+  color: string;
+}> = ({ icon, label, placeholder, value, onChange, color }) => (
+  <div>
+    <label className={labelCls}>{label}</label>
+    <div className="relative">
+      <div className={`absolute left-3 top-1/2 -translate-y-1/2 ${color}`}>{icon}</div>
+      <input
+        className={inputCls + ' pl-10'}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+      />
+    </div>
+  </div>
+);
+
 export const Profile: React.FC = () => {
   const [form, setForm] = useState<ProfileData>(loadProfile);
   const [saved, setSaved] = useState(false);
+  const set = (key: keyof ProfileData) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+    setForm(f => ({ ...f, [key]: e.target.value }));
 
   // Cropper state
   const [rawSrc, setRawSrc] = useState<string | null>(null);
@@ -97,82 +148,184 @@ export const Profile: React.FC = () => {
   const initials = form.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
 
   return (
-    <div className="p-8 max-w-4xl mx-auto">
+    <div className="p-8 max-w-5xl mx-auto">
+
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-black text-[var(--enba-dark)] tracking-tight">Profilim</h1>
-          <p className="text-sm text-gray-400 mt-1">Kişisel bilgilerinizi ve profil fotoğrafınızı yönetin.</p>
+          <p className="text-sm text-gray-400 mt-1">Kişisel bilgilerinizi ve sosyal medya hesaplarınızı yönetin.</p>
         </div>
         <span className="px-3 py-1 bg-orange-50 text-[var(--enba-orange)] text-[10px] font-black uppercase tracking-widest rounded-full border border-orange-100">
           Kişisel Hesap
         </span>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-[220px_1fr] gap-8">
+      <form onSubmit={handleSave}>
+        <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-8">
 
-        {/* Avatar */}
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-48 h-48 rounded-3xl overflow-hidden relative bg-gray-100 border-4 border-white shadow-xl flex items-center justify-center flex-shrink-0">
-            {form.avatar ? (
-              <img src={form.avatar} className="w-full h-full object-cover" />
-            ) : (
-              <span className="text-4xl font-black text-gray-300">{initials}</span>
+          {/* Sol: Avatar + özet kart */}
+          <div className="flex flex-col items-center gap-5">
+            {/* Avatar */}
+            <div className="w-52 h-52 rounded-3xl overflow-hidden relative bg-gray-100 border-4 border-white shadow-xl flex items-center justify-center flex-shrink-0">
+              {form.avatar ? (
+                <img src={form.avatar} className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-5xl font-black text-gray-300">{initials}</span>
+              )}
+              <label className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-center py-2.5 text-[11px] font-semibold cursor-pointer backdrop-blur-sm flex items-center justify-center gap-1.5 hover:bg-black/70 transition-colors">
+                <Upload size={12} /> Fotoğraf Yükle
+                <input type="file" hidden accept="image/*" onChange={handleFile} />
+              </label>
+            </div>
+            <p className="text-[10px] text-gray-400 text-center leading-relaxed">JPG veya PNG. Maks. 5 MB.</p>
+
+            {/* Mini önizleme kartı */}
+            {(form.name || form.title) && (
+              <div className="w-full bg-white rounded-2xl border border-gray-100 shadow-sm p-4 text-center">
+                <div className="text-sm font-black text-[var(--enba-dark)] truncate">{form.name}</div>
+                {form.title && <div className="text-[11px] text-[var(--enba-orange)] font-semibold mt-0.5 truncate">{form.title}</div>}
+                {form.department && <div className="text-[10px] text-gray-400 mt-0.5 truncate">{form.department}</div>}
+                {form.location && (
+                  <div className="flex items-center justify-center gap-1 mt-2 text-[10px] text-gray-400">
+                    <MapPin size={10} />{form.location}
+                  </div>
+                )}
+                {/* Sosyal ikonlar önizleme */}
+                <div className="flex items-center justify-center gap-2 mt-3 flex-wrap">
+                  {form.linkedin  && <a href={form.linkedin}  target="_blank" rel="noreferrer" className="text-[#0A66C2] hover:opacity-80"><Linkedin  size={14}/></a>}
+                  {form.twitter   && <a href={form.twitter}   target="_blank" rel="noreferrer" className="text-[#1DA1F2] hover:opacity-80"><Twitter   size={14}/></a>}
+                  {form.instagram && <a href={form.instagram} target="_blank" rel="noreferrer" className="text-[#E1306C] hover:opacity-80"><Instagram size={14}/></a>}
+                  {form.github    && <a href={form.github}    target="_blank" rel="noreferrer" className="text-gray-700 hover:opacity-80"><Github    size={14}/></a>}
+                  {form.website   && <a href={form.website}   target="_blank" rel="noreferrer" className="text-gray-500 hover:opacity-80"><Globe     size={14}/></a>}
+                </div>
+              </div>
             )}
-            <label className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-center py-2.5 text-[11px] font-semibold cursor-pointer backdrop-blur-sm flex items-center justify-center gap-1.5 hover:bg-black/70 transition-colors">
-              <Upload size={12} /> Fotoğraf Yükle
-              <input type="file" hidden accept="image/*" onChange={handleFile} />
-            </label>
           </div>
-          <p className="text-[10px] text-gray-400 text-center leading-relaxed">
-            JPG veya PNG.<br />Maks. 5 MB.
-          </p>
-        </div>
 
-        {/* Form */}
-        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8">
-          <form onSubmit={handleSave} className="flex flex-col gap-5">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className={labelCls}>Ad Soyad</label>
-                <input className={inputCls} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required />
+          {/* Sağ: Formlar */}
+          <div className="flex flex-col gap-6">
+
+            {/* Kişisel Bilgiler */}
+            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-7">
+              <SectionTitle>Kişisel Bilgiler</SectionTitle>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className={labelCls}>Ad Soyad</label>
+                  <input className={inputCls} value={form.name} onChange={set('name')} required />
+                </div>
+                <div>
+                  <label className={labelCls}>Ünvan / Pozisyon</label>
+                  <div className="relative">
+                    <Briefcase size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input className={inputCls + ' pl-9'} value={form.title} onChange={set('title')} placeholder="Operasyon Müdürü" />
+                  </div>
+                </div>
+                <div>
+                  <label className={labelCls}>Departman</label>
+                  <div className="relative">
+                    <Building2 size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input className={inputCls + ' pl-9'} value={form.department} onChange={set('department')} placeholder="Operasyon" />
+                  </div>
+                </div>
+                <div>
+                  <label className={labelCls}>Lokasyon</label>
+                  <div className="relative">
+                    <MapPin size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input className={inputCls + ' pl-9'} value={form.location} onChange={set('location')} placeholder="İstanbul, Türkiye" />
+                  </div>
+                </div>
+                <div>
+                  <label className={labelCls}>İşe Başlama Tarihi</label>
+                  <div className="relative">
+                    <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input className={inputCls + ' pl-9'} type="date" value={form.startDate} onChange={set('startDate')} />
+                  </div>
+                </div>
+                <div>
+                  <label className={labelCls}>Telefon No</label>
+                  <input className={inputCls} value={form.phone} onChange={set('phone')} placeholder="+90 5XX XXX XX XX" />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className={labelCls}>E-posta</label>
+                  <input className={inputCls} type="email" value={form.email} onChange={set('email')} placeholder="ornek@enba.com" />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className={labelCls}>Kısa Biyografi</label>
+                  <textarea
+                    className={inputCls + ' resize-none'}
+                    rows={3}
+                    value={form.bio}
+                    onChange={set('bio')}
+                    placeholder="Kendinizden, uzmanlık alanlarınızdan veya ilgi alanlarınızdan bahsedin..."
+                  />
+                </div>
               </div>
-              <div>
-                <label className={labelCls}>E-posta</label>
-                <input className={inputCls} type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="ornek@enba.com" />
-              </div>
-            </div>
-            <div>
-              <label className={labelCls}>Telefon No</label>
-              <input className={inputCls} value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="+90 5XX XXX XX XX" />
-            </div>
-            <div>
-              <label className={labelCls}>Kısa Biyografi</label>
-              <textarea
-                className={inputCls + ' resize-none'}
-                rows={3}
-                value={form.bio}
-                onChange={e => setForm(f => ({ ...f, bio: e.target.value }))}
-                placeholder="Kendinizden bahsedin..."
-              />
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-2">
+            {/* Sosyal Medya */}
+            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-7">
+              <SectionTitle>Sosyal Medya & Bağlantılar</SectionTitle>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <SocialInput
+                  icon={<Linkedin size={14} />}
+                  label="LinkedIn"
+                  placeholder="https://linkedin.com/in/kullaniciadi"
+                  value={form.linkedin}
+                  onChange={v => setForm(f => ({ ...f, linkedin: v }))}
+                  color="text-[#0A66C2]"
+                />
+                <SocialInput
+                  icon={<Twitter size={14} />}
+                  label="X / Twitter"
+                  placeholder="https://x.com/kullaniciadi"
+                  value={form.twitter}
+                  onChange={v => setForm(f => ({ ...f, twitter: v }))}
+                  color="text-[#1DA1F2]"
+                />
+                <SocialInput
+                  icon={<Instagram size={14} />}
+                  label="Instagram"
+                  placeholder="https://instagram.com/kullaniciadi"
+                  value={form.instagram}
+                  onChange={v => setForm(f => ({ ...f, instagram: v }))}
+                  color="text-[#E1306C]"
+                />
+                <SocialInput
+                  icon={<Github size={14} />}
+                  label="GitHub"
+                  placeholder="https://github.com/kullaniciadi"
+                  value={form.github}
+                  onChange={v => setForm(f => ({ ...f, github: v }))}
+                  color="text-gray-700"
+                />
+                <div className="sm:col-span-2">
+                  <SocialInput
+                    icon={<Globe size={14} />}
+                    label="Kişisel Web Sitesi"
+                    placeholder="https://www.orneksite.com"
+                    value={form.website}
+                    onChange={v => setForm(f => ({ ...f, website: v }))}
+                    color="text-gray-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Kaydet */}
+            <div className="flex items-center justify-end gap-4">
               {saved && (
                 <span className="flex items-center gap-1.5 text-emerald-600 text-sm font-semibold animate-fade-in">
                   <Check size={14} /> Kaydedildi
                 </span>
               )}
-              <button
-                type="submit"
-                className="btn-premium btn-premium-orange px-8 py-3 text-[10px]"
-              >
+              <button type="submit" className="btn-premium btn-premium-orange px-8 py-3 text-[10px]">
                 Değişiklikleri Kaydet
               </button>
             </div>
-          </form>
+          </div>
         </div>
-      </div>
+      </form>
 
       {/* Cropper Modal */}
       {showCropper && rawSrc && (
@@ -182,8 +335,6 @@ export const Profile: React.FC = () => {
               <h3 className="font-black text-lg">Fotoğrafı Hizalayın</h3>
               <p className="text-sm text-white/60">Sürükleyerek veya yakınlaştırarak ayarlayın.</p>
             </div>
-
-            {/* Crop area */}
             <div
               className="w-[300px] h-[300px] rounded-3xl border-4 border-white overflow-hidden relative bg-gray-800 cursor-move select-none"
               onMouseDown={handleMouseDown}
@@ -199,8 +350,6 @@ export const Profile: React.FC = () => {
               />
               <div className="absolute inset-0 pointer-events-none" style={{ boxShadow: '0 0 0 999px rgba(0,0,0,0.3)' }} />
             </div>
-
-            {/* Zoom slider */}
             <div className="w-full flex flex-col gap-2">
               <div className="flex justify-between text-white text-xs">
                 <span>Yakınlaştır</span>
@@ -213,7 +362,6 @@ export const Profile: React.FC = () => {
                 className="w-full cursor-pointer accent-[var(--enba-orange)]"
               />
             </div>
-
             <div className="flex gap-3 w-full">
               <button
                 onClick={() => setShowCropper(false)}
