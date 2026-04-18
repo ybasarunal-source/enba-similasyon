@@ -52,8 +52,8 @@ export const Login: React.FC = () => {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-14 h-14 bg-[var(--enba-orange)] rounded-2xl shadow-xl shadow-orange-950/40 mb-5">
-            <span style={{ fontFamily: "'Nunito', sans-serif", fontWeight: 900, fontSize: '28px', color: 'white', lineHeight: 1 }}>e</span>
+          <div className="inline-flex items-center justify-center w-20 h-20 mb-5 text-center">
+            <img src="/icons/logo.png" className="w-full h-full object-contain filter drop-shadow-2xl" alt="Enba Logo" />
           </div>
           <div style={{ fontFamily: "'Nunito', sans-serif", fontWeight: 800, fontSize: '28px', letterSpacing: '-0.01em', lineHeight: 1 }}>
             <span style={{ color: 'var(--enba-orange)' }}>en</span><span style={{ color: 'white' }}>ba</span>

@@ -87,14 +87,12 @@ export const App: React.FC = () => {
   if (session === undefined || isLoading) {
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-[#1A1A1A] text-white">
-        <div className="flex flex-col items-center gap-2 animate-pulse">
-          <div style={{ fontFamily: "'Nunito', sans-serif", fontWeight: 800, fontSize: '32px', letterSpacing: '-0.5px', lineHeight: 1 }}>
-            <span style={{ color: '#E35205' }}>en</span><span style={{ color: 'white' }}>ba</span>
+          <div className="flex flex-col items-center gap-4 animate-pulse">
+            <img src="/icons/logo.png" className="w-24 h-24 object-contain" alt="Enba Logo" />
+            <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: '11px', letterSpacing: '0.22em', color: 'rgba(255,255,255,0.4)' }} className="uppercase">
+              Recycling Platform
+            </div>
           </div>
-          <div style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 600, fontSize: '11px', letterSpacing: '0.22em', color: 'rgba(255,255,255,0.4)' }} className="uppercase">
-            Recycling
-          </div>
-        </div>
       </div>
     );
   }
@@ -165,8 +163,8 @@ export const App: React.FC = () => {
         <div className={`flex items-center flex-shrink-0 border-b border-white/5
           ${isSidebarOpen ? 'px-5 py-5 gap-3' : 'px-0 py-5 justify-center'}`}
         >
-          <div className="w-9 h-9 bg-[var(--enba-orange)] rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-orange-950/40">
-            <span style={{ fontFamily: "'Nunito', sans-serif", fontWeight: 900, fontSize: '20px', color: 'white', lineHeight: 1 }}>e</span>
+          <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
+            <img src="/icons/logo.png" className="w-full h-full object-contain filter drop-shadow-lg" alt="e" />
           </div>
           {isSidebarOpen && (
             <div className="animate-in fade-in slide-in-from-left-2 duration-300">
