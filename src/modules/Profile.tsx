@@ -92,9 +92,12 @@ export const Profile: React.FC = () => {
   const [showCropper, setShowCropper] = useState(false);
   const [cropPos, setCropPos] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
+  const [minZoom, setMinZoom] = useState(0.01);
   const [dragging, setDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const imgRef = useRef<HTMLImageElement>(null);
+
+  const VIEWPORT = 300;
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -104,11 +107,15 @@ export const Profile: React.FC = () => {
       const src = ev.target?.result as string;
       const img = new Image();
       img.onload = () => {
-        // Fit the smaller dimension to the 300px viewport so the image fills it
-        const initZoom = 300 / Math.min(img.naturalWidth, img.naturalHeight);
+        // Cover: scale so the shorter edge fills the 300px viewport
+        const coverZoom = VIEWPORT / Math.min(img.naturalWidth, img.naturalHeight);
+        // Center the image inside the viewport
+        const visW = img.naturalWidth * coverZoom;
+        const visH = img.naturalHeight * coverZoom;
         setRawSrc(src);
-        setCropPos({ x: 0, y: 0 });
-        setZoom(initZoom);
+        setZoom(coverZoom);
+        setMinZoom(coverZoom * 0.25);
+        setCropPos({ x: (VIEWPORT - visW) / 2, y: (VIEWPORT - visH) / 2 });
         setShowCropper(true);
       };
       img.src = src;
@@ -128,7 +135,6 @@ export const Profile: React.FC = () => {
 
   const finalizeCrop = () => {
     if (!imgRef.current) return;
-    const VIEWPORT = 300;
     const OUTPUT = 400;
     const canvas = document.createElement('canvas');
     canvas.width = OUTPUT;
@@ -365,7 +371,7 @@ export const Profile: React.FC = () => {
                 <span>%{Math.round(zoom * 100)}</span>
               </div>
               <input
-                type="range" min="0.1" max="5" step="0.01"
+                type="range" min={minZoom} max={Math.max(5, zoom * 2)} step={0.001}
                 value={zoom}
                 onChange={e => setZoom(parseFloat(e.target.value))}
                 className="w-full cursor-pointer accent-[var(--enba-orange)]"
