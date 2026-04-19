@@ -87,10 +87,15 @@ export const App: React.FC = () => {
   useEffect(() => {
     if (session?.user) {
       setIsProfileLoading(true);
-      profileAPI.getMyProfile().then(profile => {
-        setUserProfile(profile);
-        setIsProfileLoading(false);
-      });
+      profileAPI.getMyProfile()
+        .then(profile => {
+          setUserProfile(profile);
+          setIsProfileLoading(false);
+        })
+        .catch(() => {
+          console.warn("Profil yüklenirken hata oluştu, varsayılan görünümle devam ediliyor.");
+          setIsProfileLoading(false);
+        });
     } else {
       setUserProfile(null);
       setIsProfileLoading(false);
@@ -505,7 +510,7 @@ export const App: React.FC = () => {
             {activeModule === 'tasks'      && <Tasks />}
             {activeModule === 'licensing'  && <Licensing />}
             {activeModule === 'pnl'        && <PnL />}
-            {activeModule === 'settings'   && <Settings profile={userProfile} />}
+            {activeModule === 'settings'   && <Settings profile={userProfile ? { ...userProfile, role: user.role as any } : { role: user.role } as any} />}
             {activeModule === 'fastplan'   && <FastPlan />}
             {activeModule === 'planning'   && <DetailedPlanManager />}
             {activeModule === 'profile'    && <Profile />}

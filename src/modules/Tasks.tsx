@@ -15,8 +15,13 @@ import {
   ArrowRight, 
   ArrowLeft,
   AlertTriangle,
-  Package
+  Package,
+  Share2,
+  RefreshCw,
+  Download,
+  LogOut as LogOutIcon
 } from 'lucide-react';
+import { microsoftService, msalInstance } from '../api/microsoft';
 
 interface Task {
   id: string | number;
@@ -28,6 +33,8 @@ interface Task {
   moduleRef: string;
   status: 'todo' | 'doing' | 'done';
   createdAt: string;
+  msTodoId?: string; // Microsoft To Do ID
+  msListId?: string; // Microsoft To Do List ID
 }
 
 interface Project {
@@ -52,8 +59,36 @@ export const Tasks: React.FC = () => {
     ];
   });
 
+  const [msAccount, setMsAccount] = useState<any>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'todo' | 'doing' | 'done'>('all');
+
   // ── Sync with LocalStorage ───────────────────────────────
   useEffect(() => {
+    const initMSAL = async () => {
+      try {
+        await msalInstance.initialize();
+        
+        // Önce redirect sonucunu işle (girişten dönüldüyse)
+        const response = await msalInstance.handleRedirectPromise();
+        if (response && response.account) {
+          setMsAccount(response.account);
+        } else {
+          // Redirect yoksa mevcut hesapları kontrol et
+          const accounts = msalInstance.getAllAccounts();
+          if (accounts.length > 0) {
+            setMsAccount(accounts[0]);
+          }
+        }
+      } catch (err) {
+        console.error("MSAL Init Error:", err);
+      }
+    };
+    
+    initMSAL();
+    
     localStorage.setItem('enba_tasks', JSON.stringify(tasks));
     localStorage.setItem('enba_projects', JSON.stringify(projects));
   }, [tasks, projects]);
@@ -93,10 +128,146 @@ export const Tasks: React.FC = () => {
     setShowTaskForm(false);
     setEditingTask(null);
     setFormData({ title: '', desc: '', priority: 'medium', deadline: '', projectId: 'p1', moduleRef: 'genel' });
+
+    // Sync newly added task if connected
+    if (msAccount && !editingTask) {
+      (async () => {
+        const project = projects.find(p => p.id === (newTask.projectId || 'p1'));
+        const listName = project?.name || 'Enba Tasks';
+        const list = await microsoftService.ensureTodoList(listName);
+        if (list) {
+          const result: any = await microsoftService.syncTask(list.id, newTask as any);
+          if (result && result.id) {
+            setTasks(prev => prev.map(t => t.id === newTask.id ? { ...t, msTodoId: result.id, msListId: list.id } : t));
+          }
+        }
+      })();
+    } else if (msAccount && editingTask) {
+       // Update existing
+       (async () => {
+         if (newTask.msListId && newTask.msTodoId) {
+            await microsoftService.syncTask(newTask.msListId, newTask as any, newTask.msTodoId);
+         }
+       })();
+    }
   };
 
-  const moveTask = (id: string | number, newStatus: 'todo' | 'doing' | 'done') => {
+  const moveTask = async (id: string | number, newStatus: 'todo' | 'doing' | 'done') => {
     setTasks(prev => prev.map(t => t.id === id ? { ...t, status: newStatus } : t));
+    
+    // Sync if connected
+    const taskToSync = tasks.find(t => t.id === id);
+    if (msAccount && taskToSync) {
+      const project = projects.find(p => p.id === taskToSync.projectId);
+      const listName = project?.name || 'Enba Tasks';
+      const list = await microsoftService.ensureTodoList(listName);
+      if (list) {
+        await microsoftService.syncTask(list.id, { ...taskToSync, status: newStatus }, taskToSync.msTodoId);
+      }
+    }
+  };
+
+  const handleMsLogin = () => microsoftService.login();
+  const handleMsLogout = () => {
+    microsoftService.logout();
+    setMsAccount(null);
+  };
+
+  const handleBulkSync = async () => {
+    if (!msAccount) return;
+    setIsSyncing(true);
+    try {
+      const currentTasks = [...tasks];
+      for (let i = 0; i < currentTasks.length; i++) {
+        const task = currentTasks[i];
+        const project = projects.find(p => p.id === task.projectId);
+        const listName = project?.name || 'Enba Tasks';
+        const list = await microsoftService.ensureTodoList(listName);
+        
+        if (list) {
+          const result: any = await microsoftService.syncTask(list.id, task as any, task.msTodoId);
+          if (result && result.id) {
+            currentTasks[i] = { ...task, msTodoId: result.id, msListId: list.id };
+          }
+        }
+      }
+      setTasks(currentTasks);
+      alert('Tüm görevler Microsoft To Do ile senkronize edildi!');
+    } catch (err) {
+      console.error('Bulk Sync Error:', err);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleImportFromMs = async () => {
+    if (!msAccount) return;
+    setIsSyncing(true);
+    try {
+      const lists = await microsoftService.getTodoLists();
+      let importedCount = 0;
+      let updatedCount = 0;
+      const newTasksList = [...tasks];
+      const currentProjects = [...projects];
+      let projectsChanged = false;
+
+      // 1. Önce eksik projeleri (listeleri) oluşturalım
+      for (const list of lists) {
+        const existingProject = currentProjects.find(p => 
+          p.id === list.id || p.name.toLowerCase() === list.displayName.toLowerCase()
+        );
+        
+        if (!existingProject) {
+          currentProjects.push({ id: list.id, name: list.displayName });
+          projectsChanged = true;
+        }
+      }
+
+      if (projectsChanged) {
+        setProjects(currentProjects);
+        localStorage.setItem('enba_projects', JSON.stringify(currentProjects));
+      }
+
+      // 2. Şimdi görevleri aktaralım
+      for (const list of lists) {
+        const msTasks = await microsoftService.getTodoListTasks(list.id);
+        const project = currentProjects.find(p => p.id === list.id || p.name.toLowerCase() === list.displayName.toLowerCase()) || currentProjects[0];
+
+        for (const msTask of msTasks) {
+          const existingIndex = newTasksList.findIndex(t => t.msTodoId === msTask.id);
+          
+          const mappedTask: Task = {
+            id: existingIndex >= 0 ? newTasksList[existingIndex].id : Date.now() + Math.random(),
+            title: msTask.title,
+            desc: msTask.body?.content || '',
+            priority: msTask.importance === 'high' ? 'high' : (msTask.importance === 'low' ? 'low' : 'medium'),
+            deadline: msTask.dueDateTime?.dateTime ? new Date(msTask.dueDateTime.dateTime).toISOString() : '',
+            projectId: project.id,
+            moduleRef: 'genel',
+            status: msTask.status === 'completed' ? 'done' : (msTask.status === 'inProgress' ? 'doing' : 'todo'),
+            createdAt: existingIndex >= 0 ? newTasksList[existingIndex].createdAt : new Date().toISOString(),
+            msTodoId: msTask.id,
+            msListId: list.id
+          };
+
+          if (existingIndex >= 0) {
+            newTasksList[existingIndex] = mappedTask;
+            updatedCount++;
+          } else {
+            newTasksList.push(mappedTask);
+            importedCount++;
+          }
+        }
+      }
+
+      setTasks(newTasksList);
+      alert(`Senkronizasyon Tamamlandı:\n- ${importedCount} yeni görev eklendi\n- ${updatedCount} görev güncellendi\n- ${projectsChanged ? 'Yeni listeler proje olarak eklendi.' : 'Proje yapısı korundu.'}`);
+    } catch (err) {
+      console.error('Import Error:', err);
+      alert('İçe aktarma sırasında bir hata oluştu.');
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   const isOverdue = (date: string, status: string) => {
@@ -104,93 +275,118 @@ export const Tasks: React.FC = () => {
     return new Date(date) < new Date();
   };
 
-  const KanbanColumn = ({ title, status, icon, color }: { title: string, status: 'todo'|'doing'|'done', icon: any, color: string }) => {
-    const filteredTasks = tasks.filter(t => t.status === status);
-    const Icon = icon;
-    
+  const { activeTasksGrouped, doneTasks } = useMemo(() => {
+    const filtered = tasks.filter(t => {
+      const matchesSearch = t.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                           t.desc.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = statusFilter === 'all' || t.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+
+    const active = filtered.filter(t => t.status !== 'done');
+    const done = filtered.filter(t => t.status === 'done');
+
+    // Group active by project
+    const grouped: Record<string, Task[]> = {};
+    active.forEach(t => {
+      if (!grouped[t.projectId]) grouped[t.projectId] = [];
+      grouped[t.projectId].push(t);
+    });
+
+    return { activeTasksGrouped: grouped, doneTasks: done };
+  }, [tasks, searchTerm, statusFilter]);
+
+  const TaskRow = ({ task }: { task: Task }) => {
+    const overdue = isOverdue(task.deadline, task.status);
+    const project = projects.find(p => p.id === task.projectId);
+    const cat = categories.find(c => c.id === task.moduleRef);
+
+    const statusIcons = {
+      todo: <Clock size={16} className="text-slate-400" />,
+      doing: <RotateCw size={16} className="text-blue-500 animate-spin-slow" />,
+      done: <CheckCircle size={16} className="text-emerald-500" />
+    };
+
     return (
-      <div className="flex-1 min-w-[380px] bg-gray-50/50 rounded-[2.5rem] p-10 flex flex-col gap-8 border border-gray-100 shadow-inner group">
-        <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-5">
-               <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-2xl transition-transform group-hover:rotate-6" style={{ backgroundColor: color }}>
-                  <Icon size={24} />
-               </div>
-               <div>
-                  <h3 className="text-xl font-black text-enba-dark tracking-tighter uppercase italic leading-none">{title}</h3>
-                  <div className="text-[10px] font-black text-gray-400 uppercase tracking-[3px] mt-1.5">{filteredTasks.length} GÖREV AKTİF</div>
-               </div>
-            </div>
-        </div>
-
-        <div className="flex flex-col gap-6">
-           {filteredTasks.map(task => {
-             const overdue = isOverdue(task.deadline, task.status);
-             const project = projects.find(p => p.id === task.projectId);
-             const cat = categories.find(c => c.id === task.moduleRef);
-
-             return (
-               <div key={task.id} className={`bg-white p-8 rounded-[2.5rem] shadow-card border ${overdue ? 'border-rose-100' : 'border-gray-50'} group hover:shadow-2xl hover:-translate-y-1 transition-all relative overflow-hidden`}>
-                  <div className="absolute top-0 left-0 w-full h-1" style={{ backgroundColor: cat?.color || '#eee' }}></div>
-                  
-                  <div className="flex justify-between items-start mb-6">
-                     <span className={`text-[9px] font-black px-4 py-1.5 rounded-xl uppercase tracking-[3px] italic ${
-                        task.priority === 'high' ? 'bg-rose-50 text-rose-600 border border-rose-100' :
-                        task.priority === 'medium' ? 'bg-orange-50 text-orange-600 border border-orange-100' :
-                        'bg-blue-50 text-blue-600 border border-blue-100'
-                     }`}>
-                        {task.priority === 'high' ? 'ACİL' : task.priority === 'medium' ? 'ORTA' : 'DÜŞÜK'}
-                     </span>
-                     <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => { setEditingTask(task); setFormData(task); setShowTaskForm(true); }} className="w-9 h-9 rounded-xl bg-gray-50 text-gray-400 hover:bg-enba-dark hover:text-white flex items-center justify-center transition-all">
-                           <Pencil size={14} />
-                        </button>
-                        <button onClick={() => setTasks(tks => tks.filter(t => t.id !== task.id))} className="w-9 h-9 rounded-xl bg-gray-50 text-gray-400 hover:bg-rose-500 hover:text-white flex items-center justify-center transition-all">
-                           <Trash2 size={14} />
-                        </button>
-                     </div>
-                  </div>
-
-                  <h4 className="text-base font-black text-enba-dark mb-3 tracking-tight italic uppercase leading-none">{task.title}</h4>
-                  <p className="text-xs text-gray-400 font-medium leading-relaxed mb-6 line-clamp-3 italic opacity-80 group-hover:opacity-100">"{task.desc}"</p>
-
-                  <div className="flex flex-wrap gap-3 mb-8">
-                     <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 border border-gray-100 rounded-xl text-[9px] font-black text-gray-500 uppercase tracking-widest italic leading-none">
-                        <Package size={14} className="text-enba-orange" /> {project?.name}
-                     </div>
-                  </div>
-
-                  <div className="flex justify-between items-center pt-6 border-t border-gray-50">
-                     <div className={`flex items-center gap-2 text-[10px] font-black uppercase tracking-widest italic ${overdue ? 'text-rose-500' : 'text-gray-400'}`}>
-                        <Clock size={14} /> {task.deadline ? new Date(task.deadline).toLocaleDateString('tr-TR') : 'SÜRESİZ'}
-                     </div>
-                     <div className="flex gap-3">
-                        {status !== 'todo' && (
-                          <button onClick={() => moveTask(task.id, status === 'done' ? 'doing' : 'todo')} className="w-10 h-10 rounded-xl bg-gray-100 text-gray-400 hover:bg-enba-dark hover:text-white flex items-center justify-center transition-all shadow-sm active:scale-90 cursor-w-resize">
-                             <ArrowLeft size={16} />
-                          </button>
-                        )}
-                        {status !== 'done' && (
-                          <button onClick={() => moveTask(task.id, status === 'todo' ? 'doing' : 'done')} className="w-10 h-10 rounded-xl bg-enba-dark text-white hover:bg-enba-orange flex items-center justify-center transition-all shadow-xl active:scale-90 cursor-e-resize">
-                             <ArrowRight size={16} />
-                          </button>
-                        )}
-                     </div>
-                  </div>
-                  {overdue && (
-                    <div className="absolute top-0 right-0 w-12 h-12 bg-rose-500 text-white flex items-center justify-center rotate-45 translate-x-1/2 -translate-y-1/2 shadow-lg z-20">
-                       <AlertTriangle size={14} className="-rotate-45 translate-y-1" />
-                    </div>
-                  )}
-               </div>
-             );
-           })}
-        </div>
-      </div>
+      <tr className="group hover:bg-slate-50/80 transition-all border-b border-gray-50">
+        <td className="py-5 px-4">
+          <div className="flex items-center gap-4">
+             <div className="w-9 h-9 rounded-xl bg-white border border-gray-100 shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform">
+                {statusIcons[task.status]}
+             </div>
+             <div>
+                <div className="text-xs font-black text-enba-dark uppercase italic tracking-tight">{task.title}</div>
+                <div className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-0.5 max-w-[250px] truncate">{task.desc || 'Açıklama yok'}</div>
+             </div>
+          </div>
+        </td>
+        <td className="py-5 px-4">
+           <div className="flex items-center gap-2 text-[9px] font-black text-gray-400 uppercase tracking-widest italic">
+              <Package size={12} className="text-enba-orange" /> {project?.name}
+           </div>
+        </td>
+        <td className="py-5 px-4">
+           <span className={`text-[8px] font-black px-2.5 py-1 rounded-lg uppercase tracking-[2px] italic border ${
+              task.priority === 'high' ? 'bg-rose-50 text-rose-600 border-rose-100' :
+              task.priority === 'medium' ? 'bg-orange-50 text-orange-600 border-orange-100' :
+              'bg-blue-50 text-blue-600 border-blue-100'
+           }`}>
+              {task.priority === 'high' ? 'ACİL' : task.priority === 'medium' ? 'ORTA' : 'DÜŞÜK'}
+           </span>
+        </td>
+        <td className="py-5 px-4">
+           <div className={`flex items-center gap-2 text-[9px] font-black uppercase tracking-widest italic ${overdue ? 'text-rose-500' : 'text-gray-400'}`}>
+              <Calendar size={12} /> {task.deadline ? new Date(task.deadline).toLocaleDateString('tr-TR') : 'SÜRESİZ'}
+           </div>
+        </td>
+        <td className="py-5 px-4">
+           <div className="flex items-center gap-2">
+              <select 
+                value={task.status} 
+                onChange={(e) => moveTask(task.id, e.target.value as any)}
+                className="bg-gray-50 border border-transparent rounded-lg px-2 py-1 text-[9px] font-black text-enba-dark uppercase tracking-widest italic focus:bg-white focus:border-enba-orange/20 outline-none transition-all cursor-pointer"
+              >
+                 <option value="todo">YAPILACAK</option>
+                 <option value="doing">İŞLEMDE</option>
+                 <option value="done">TAMAMLANDI</option>
+              </select>
+           </div>
+        </td>
+        <td className="py-5 px-4">
+           <div className="flex gap-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+              <button onClick={() => { setEditingTask(task); setFormData(task); setShowTaskForm(true); }} className="w-8 h-8 rounded-lg bg-gray-50 text-gray-400 hover:bg-enba-dark hover:text-white flex items-center justify-center transition-all">
+                 <Pencil size={12} />
+              </button>
+              <button onClick={async () => {
+                 if (msAccount && task.msListId && task.msTodoId) {
+                   await microsoftService.deleteTask(task.msListId, task.msTodoId);
+                 }
+                 setTasks(tks => tks.filter(t => t.id !== task.id));
+              }} className="w-8 h-8 rounded-lg bg-gray-50 text-gray-400 hover:bg-rose-500 hover:text-white flex items-center justify-center transition-all">
+                 <Trash2 size={12} />
+              </button>
+           </div>
+        </td>
+      </tr>
     );
   };
 
+  const TaskTableHeader = () => (
+    <thead>
+       <tr className="bg-gray-50/50 border-b border-gray-100">
+          <th className="py-4 px-6 text-[9px] font-black text-gray-400 uppercase tracking-[4px] italic">Görev Tanımı</th>
+          <th className="py-4 px-4 text-[9px] font-black text-gray-400 uppercase tracking-[4px] italic">Proje</th>
+          <th className="py-4 px-4 text-[9px] font-black text-gray-400 uppercase tracking-[4px] italic">Öncelik</th>
+          <th className="py-4 px-4 text-[9px] font-black text-gray-400 uppercase tracking-[4px] italic">Deadline</th>
+          <th className="py-4 px-4 text-[9px] font-black text-gray-400 uppercase tracking-[4px] italic">Durum</th>
+          <th className="py-4 px-6 text-[9px] font-black text-gray-400 uppercase tracking-[4px] italic text-right">İşlem</th>
+       </tr>
+    </thead>
+  );
+
   return (
     <div className="flex flex-col gap-10 p-10 animate-in fade-in duration-1000">
+       {/* Header Code remains same but simplified */}
        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-10">
           <div className="flex flex-col gap-3">
              <div className="flex items-center gap-4">
@@ -201,23 +397,119 @@ export const Tasks: React.FC = () => {
                    <h2 className="text-3xl font-black text-enba-dark tracking-tighter uppercase italic leading-none">
                      Operasyon Matrixi
                    </h2>
-                   <p className="text-[10px] text-gray-400 font-black uppercase tracking-[4px] mt-2 italic">Proje ve Görev Yönetim Merkezi</p>
+                   <p className="text-[10px] text-gray-400 font-black uppercase tracking-[4px] mt-2 italic">Gruplandırılmış Görev Yönetimi</p>
                 </div>
              </div>
           </div>
-          <div className="flex gap-4">
-             <button onClick={() => setShowTaskForm(true)} className="px-10 py-5 bg-enba-dark text-white rounded-[1.8rem] font-black text-[11px] uppercase tracking-[3px] shadow-2xl shadow-black/20 hover:bg-black transition-all flex items-center gap-4 group active:scale-95 border border-white/5">
-                <PlusCircle size={20} className="text-enba-orange transition-transform group-hover:rotate-90" />
-                Yeni Görev Ataması
+          <div className="flex flex-wrap gap-4 items-center">
+             <div className="relative group">
+                <input 
+                  type="text" 
+                  placeholder="ARAMA..." 
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="bg-white border border-gray-100 rounded-[1.2rem] px-6 py-3 text-[10px] font-black text-enba-dark uppercase tracking-widest italic outline-none focus:ring-2 focus:ring-enba-orange/20 transition-all w-[240px] shadow-sm"
+                />
+                <Hash size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300" />
+             </div>
+             
+             <select 
+               value={statusFilter}
+               onChange={(e) => setStatusFilter(e.target.value as any)}
+               className="bg-white border border-gray-100 rounded-[1.2rem] px-5 py-3 text-[9px] font-black text-enba-dark uppercase tracking-widest italic outline-none shadow-sm cursor-pointer"
+             >
+                <option value="all">FİLTRE: TÜMÜ</option>
+                <option value="todo">YAPILACAK</option>
+                <option value="doing">İŞLEMDE</option>
+                <option value="done">TAMAMLANDI</option>
+             </select>
+
+             <button onClick={() => setShowTaskForm(true)} className="px-8 py-3 bg-enba-dark text-white rounded-[1.2rem] font-black text-[10px] uppercase tracking-[3px] shadow-xl hover:bg-black transition-all flex items-center gap-3 active:scale-95 border border-white/5">
+                <PlusCircle size={18} className="text-enba-orange" />
+                Yeni Atama
              </button>
+
+             {/* Microsoft Buttons Simplified */}
+             <div className="flex gap-2">
+                {!msAccount ? (
+                  <button onClick={handleMsLogin} className="px-5 py-3 bg-[#0078d4] text-white rounded-[1.2rem] font-black text-[10px] uppercase tracking-[2px] shadow-md hover:brightness-110 flex items-center gap-2">
+                     <Share2 size={16} />
+                  </button>
+                ) : (
+                  <>
+                    <button onClick={handleImportFromMs} disabled={isSyncing} className="px-5 py-3 bg-blue-600 text-white rounded-[1.2rem] font-black text-[10px] uppercase shadow-md flex items-center gap-2 disabled:opacity-50">
+                       <Download size={16} />
+                    </button>
+                    <button onClick={handleBulkSync} disabled={isSyncing} className="px-5 py-3 bg-emerald-600 text-white rounded-[1.2rem] font-black text-[10px] uppercase shadow-md flex items-center gap-2 disabled:opacity-50">
+                       <RefreshCw size={16} className={isSyncing ? 'animate-spin' : ''} />
+                    </button>
+                    <button onClick={handleMsLogout} className="w-10 h-10 bg-rose-500 text-white rounded-[1rem] flex items-center justify-center shadow-md">
+                       <LogOutIcon size={16} />
+                    </button>
+                  </>
+                )}
+             </div>
           </div>
        </div>
 
-       <div className="flex gap-10 overflow-x-auto pb-20 custom-scrollbar -mx-4 px-4 h-[calc(100vh-280px)]">
-          <KanbanColumn title="Backlog" status="todo" icon={Clock} color="#94a3b8" />
-          <KanbanColumn title="İşlemde" status="doing" icon={RotateCw} color="#3b82f6" />
-          <KanbanColumn title="Tamamlandı" status="done" icon={CheckCircle} color="#10b981" />
+       {/* ACTIVE TASKS BY PROJECT */}
+       <div className="space-y-10">
+          {projects.map(project => {
+            const projectTasks = activeTasksGrouped[project.id] || [];
+            if (projectTasks.length === 0) return null;
+
+            return (
+              <div key={project.id} className="space-y-4">
+                 <div className="flex items-center gap-4 px-2">
+                    <div className="w-1.5 h-6 bg-enba-orange rounded-full shadow-lg shadow-enba-orange/30"></div>
+                    <h3 className="text-sm font-black text-enba-dark tracking-tighter uppercase italic">{project.name}</h3>
+                    <span className="text-[9px] font-black bg-gray-100 text-gray-400 px-2 py-0.5 rounded-full">{projectTasks.length} AKTİF</span>
+                 </div>
+                 <div className="bg-white rounded-[2rem] shadow-xl border border-gray-50 overflow-hidden">
+                    <div className="overflow-x-auto">
+                       <table className="w-full text-left border-collapse">
+                          <TaskTableHeader />
+                          <tbody>
+                             {projectTasks.map(task => <TaskRow key={task.id} task={task} />)}
+                          </tbody>
+                       </table>
+                    </div>
+                 </div>
+              </div>
+            );
+          })}
+
+          {/* EMPTY STATE IF NO ACTIVE TASKS */}
+          {Object.keys(activeTasksGrouped).length === 0 && (
+              <div className="py-20 text-center bg-gray-50/50 rounded-[3rem] border-2 border-dashed border-gray-100">
+                 <ClipboardList size={48} className="mx-auto text-gray-200 mb-4" />
+                 <div className="text-[10px] font-black text-gray-300 uppercase tracking-[4px] italic">Aktif Operasyon Bulunmamaktadır</div>
+              </div>
+          )}
        </div>
+
+       {/* COMPLETED TASKS SECTION */}
+       {doneTasks.length > 0 && (
+         <div className="mt-10 space-y-4 opacity-70 hover:opacity-100 transition-opacity">
+            <div className="flex items-center gap-4 px-2">
+                <div className="w-1.5 h-6 bg-emerald-500 rounded-full"></div>
+                <h3 className="text-sm font-black text-gray-400 tracking-tighter uppercase italic">Tamamlanan Görevler</h3>
+                <span className="text-[9px] font-black bg-emerald-50 text-emerald-500 px-2 py-0.5 rounded-full">{doneTasks.length} BİTEN</span>
+            </div>
+            <div className="bg-white rounded-[2rem] shadow-lg border border-gray-50 overflow-hidden">
+               <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                     <TaskTableHeader />
+                     <tbody>
+                        {doneTasks.map(task => <TaskRow key={task.id} task={task} />)}
+                     </tbody>
+                  </table>
+               </div>
+            </div>
+         </div>
+       )}
+
+       {/* Task Form Modal */}
 
        {/* Task Form Modal */}
        {showTaskForm && (

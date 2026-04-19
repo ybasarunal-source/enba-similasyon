@@ -13,27 +13,30 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 -- RLS (Row Level Security) - Profiles
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
+-- 1. Helper Function: SECURITY DEFINER ile yetki kontrolü (Recursion'ı önler)
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS boolean AS $$
+BEGIN
+  RETURN (
+    SELECT (role = 'admin')
+    FROM public.profiles
+    WHERE id = auth.uid()
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 2. Politikalar
 CREATE POLICY "Herkes kendi profilini görebilir" ON public.profiles
     FOR SELECT TO authenticated
     USING (auth.uid() = id);
 
 CREATE POLICY "Adminler tüm profilleri görebilir" ON public.profiles
     FOR SELECT TO authenticated
-    USING (
-        EXISTS (
-            SELECT 1 FROM public.profiles 
-            WHERE id = auth.uid() AND role = 'admin'
-        )
-    );
+    USING (public.is_admin());
 
 CREATE POLICY "Adminler profilleri güncelleyebilir" ON public.profiles
     FOR UPDATE TO authenticated
-    USING (
-        EXISTS (
-            SELECT 1 FROM public.profiles 
-            WHERE id = auth.uid() AND role = 'admin'
-        )
-    );
+    USING (public.is_admin());
 
 -- Yeni kullanıcı kaydı olduğunda otomatik profil oluşturan fonksiyon
 CREATE OR REPLACE FUNCTION public.handle_new_user()
@@ -65,10 +68,5 @@ CREATE TABLE IF NOT EXISTS public.business_plans (
 -- Adminlerin tüm planları görebilmesi için SELECT politikası güncellendi
 CREATE POLICY "Adminler tüm planları görebilir" ON public.business_plans
     FOR SELECT TO authenticated
-    USING (
-        EXISTS (
-            SELECT 1 FROM public.profiles 
-            WHERE id = auth.uid() AND role = 'admin'
-        )
-    );
+    USING (public.is_admin());
 ...

@@ -14,11 +14,11 @@ export default defineConfig({
     dedupe: ['react', 'react-dom']
   },
   server: {
-    port: 5700,
+    port: 5173,
     strictPort: true,
     host: true,
     hmr: {
-      clientPort: 5700,
+      clientPort: 5173,
       protocol: 'ws'
     },
     open: true

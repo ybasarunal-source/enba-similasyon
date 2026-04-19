@@ -50,20 +50,26 @@ export interface UserProfile {
 // ── Yardımcı Fonksiyonlar ──────────────────────────────────
 export const profileAPI = {
   async getMyProfile(): Promise<UserProfile | null> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return null;
-    
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
       
-    if (error) {
-      console.error("Profil yüklenemedi:", error);
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+        
+      if (error) {
+        // RLS recursion errors often return 500, we catch it here and return null
+        console.warn("Profil veritabanından alınamadı (RLS hatası), varsayılan profil kullanılacak.");
+        return null;
+      }
+      return data;
+    } catch (err) {
+      console.error("Profil servis hatası:", err);
       return null;
     }
-    return data;
   },
 
   async getAllProfiles(): Promise<UserProfile[]> {

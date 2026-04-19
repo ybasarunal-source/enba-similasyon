@@ -1,4 +1,22 @@
-import { profileAPI, type UserProfile, type UserRole, type ModulePermissions } from '../api/supabase';
+import React, { useState } from 'react';
+import { useTranslation } from '../api/i18n';
+import { supabase, profileAPI, type UserProfile, type UserRole, type ModulePermissions } from '../api/supabase';
+import { 
+  Settings as SettingsIcon, 
+  RefreshCw, 
+  Save, 
+  CircleDollarSign, 
+  Scale, 
+  Globe, 
+  Languages, 
+  Bell, 
+  UserCircle, 
+  LogOut, 
+  ShieldCheck, 
+  Ruler, 
+  Weight, 
+  CheckCircle 
+} from 'lucide-react';
 
 interface SettingsProps {
   profile?: UserProfile | null;
@@ -358,13 +376,6 @@ export const Settings: React.FC<SettingsProps> = ({ profile }) => {
                <Save size={24} className="text-enba-orange group-hover:rotate-12 transition-transform" />
              )}
              {loading ? 'YÜKLENİYOR...' : 'SİSTEMİ GÜNCELLE'}
-          </button>
-       </div>
-    </div>
-  );
-};
-
-export default Settings;LENİYOR...' : 'SİSTEMİ GÜNCELLE'}
           </button>
        </div>
     </div>

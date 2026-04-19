@@ -188,6 +188,7 @@ export const Profile: React.FC = () => {
     setTimeout(() => setSaved(false), 3000);
   };
 
+
   const initials = form.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
 
   return (
@@ -199,9 +200,11 @@ export const Profile: React.FC = () => {
           <h1 className="text-2xl font-black text-[var(--enba-dark)] tracking-tight">Profilim</h1>
           <p className="text-sm text-gray-400 mt-1">Kişisel bilgilerinizi ve sosyal medya hesaplarınızı yönetin.</p>
         </div>
-        <span className="px-3 py-1 bg-orange-50 text-[var(--enba-orange)] text-[10px] font-black uppercase tracking-widest rounded-full border border-orange-100">
-          Kişisel Hesap
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="px-3 py-1 bg-orange-50 text-[var(--enba-orange)] text-[10px] font-black uppercase tracking-widest rounded-full border border-orange-100">
+            Kişisel Hesap
+          </span>
+        </div>
       </div>
 
       <form onSubmit={handleSave}>
