@@ -25,6 +25,9 @@ window.GorevModulu = function({ navigate }) {
     const [msAccount, setMsAccount] = React.useState(null);
     const [isConnecting, setIsConnecting] = React.useState(false);
     const [isSyncing, setIsSyncing] = React.useState(false);
+    const [isCompact, setIsCompact] = React.useState(() => {
+        return localStorage.getItem('enba_tasks_compact') === 'true';
+    });
 
     // Form states
     const [formData, setFormData] = React.useState({
@@ -48,7 +51,8 @@ window.GorevModulu = function({ navigate }) {
     React.useEffect(() => {
         localStorage.setItem('enba_tasks', JSON.stringify(tasks));
         localStorage.setItem('enba_projects', JSON.stringify(projects));
-    }, [tasks, projects]);
+        localStorage.setItem('enba_tasks_compact', isCompact.toString());
+    }, [tasks, projects, isCompact]);
 
     // Microsoft Initializer
     React.useEffect(() => {
@@ -145,46 +149,98 @@ window.GorevModulu = function({ navigate }) {
                     const cat = categories.find(c => c.id === task.moduleRef);
                     const overdue = isOverdue(task.deadline) && task.status !== 'done';
 
+                    if (isCompact) {
+                        return (
+                            <div key={task.id} style={{ 
+                                background: '#ffffff', 
+                                padding: '8px 10px', 
+                                borderRadius: '0.75rem', 
+                                boxShadow: 'var(--shadow-sm)', 
+                                border: overdue ? '2px solid var(--enba-danger)' : '1px solid var(--surface-container-high)',
+                                position: 'relative',
+                                transition: 'all 0.2s',
+                                cursor: 'grab',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '4px'
+                            }}>
+                                 <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: task.priority === 'high' ? 'var(--enba-danger)' : task.priority === 'medium' ? 'var(--enba-orange)' : 'var(--info)' }}></div>
+
+                                {/* Line 1: Title & Actions */}
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingLeft: '4px' }}>
+                                    <h4 style={{ margin: 0, fontSize: '11px', fontWeight: 800, color: 'var(--enba-dark)', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: '8px' }}>{task.title}</h4>
+                                    <div style={{ display: 'flex', gap: '2px' }}>
+                                        <button className="btn-icon" style={{ width: '20px', height: '20px' }} onClick={() => { setEditingTask(task); setFormData(task); setShowTaskForm(true); }} title="Düzenle">
+                                            <i className="ph ph-pencil-simple" style={{ fontSize: '10px' }}></i>
+                                        </button>
+                                        <button className="btn-icon" style={{ color: 'var(--enba-danger)', width: '20px', height: '20px' }} onClick={() => handleDeleteTask(task.id)} title="Sil">
+                                            <i className="ph ph-trash" style={{ fontSize: '10px' }}></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Line 2: Meta & Steps */}
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingLeft: '4px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <span style={{ fontSize: '8px', color: overdue ? '#ef4444' : '#94a3b8', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '3px', textTransform: 'uppercase' }}>
+                                            <i className="ph ph-calendar"></i> {task.deadline ? new Date(task.deadline).toLocaleDateString('tr-TR') : 'SÜRESİZ'}
+                                        </span>
+                                        <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: task.priority === 'high' ? 'var(--enba-danger)' : task.priority === 'medium' ? 'var(--enba-orange)' : 'var(--info)' }}></div>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '2px' }}>
+                                        {status !== 'todo' && <button onClick={() => moveTask(task.id, status === 'done' ? 'doing' : 'todo')} style={{ width: '18px', height: '18px', fontSize: '8px', borderRadius: '4px', border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer' }}>←</button>}
+                                        {status !== 'done' && <button onClick={() => moveTask(task.id, status === 'todo' ? 'doing' : 'done')} style={{ width: '18px', height: '18px', fontSize: '8px', borderRadius: '4px', border: '1px solid #e2e8f0', background: 'var(--enba-dark)', color: '#fff', cursor: 'pointer' }}>→</button>}
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    }
+
                     return (
                         <div key={task.id} style={{ 
                             background: '#ffffff', 
-                            padding: '8px 10px', 
-                            borderRadius: '0.75rem', 
+                            padding: '18px', 
+                            borderRadius: '1.25rem', 
                             boxShadow: 'var(--shadow-sm)', 
                             border: overdue ? '2px solid var(--enba-danger)' : '1px solid var(--surface-container-high)',
                             position: 'relative',
                             transition: 'all 0.2s',
-                            cursor: 'grab',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: '4px'
+                            cursor: 'grab'
                         }}>
-                             <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: task.priority === 'high' ? 'var(--enba-danger)' : task.priority === 'medium' ? 'var(--enba-orange)' : 'var(--info)' }}></div>
+                             <div style={{ position: 'absolute', top: 0, left: 0, width: '6px', height: '100%', background: task.priority === 'high' ? 'var(--enba-danger)' : task.priority === 'medium' ? 'var(--enba-orange)' : 'var(--info)' }}></div>
 
-                            {/* Line 1: Title & Actions */}
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingLeft: '4px' }}>
-                                <h4 style={{ margin: 0, fontSize: '11px', fontWeight: 800, color: 'var(--enba-dark)', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: '8px' }}>{task.title}</h4>
-                                <div style={{ display: 'flex', gap: '2px' }}>
-                                    <button className="btn-icon" style={{ width: '20px', height: '20px' }} onClick={() => { setEditingTask(task); setFormData(task); setShowTaskForm(true); }} title="Düzenle">
-                                        <i className="ph ph-pencil-simple" style={{ fontSize: '10px' }}></i>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px', paddingLeft: '8px' }}>
+                                <span style={{ 
+                                    fontSize: '10px', 
+                                    fontWeight: 800, 
+                                    padding: '2px 10px', 
+                                    borderRadius: '1rem', 
+                                    background: task.priority === 'high' ? 'var(--error-container)' : task.priority === 'medium' ? 'var(--secondary-container)' : '#f0f9ff',
+                                    color: task.priority === 'high' ? 'var(--enba-danger)' : task.priority === 'medium' ? 'var(--enba-orange)' : 'var(--info)',
+                                    textTransform: 'uppercase'
+                                }}>
+                                    {task.priority === 'high' ? 'Acil' : task.priority === 'medium' ? 'Orta' : 'Düşük'}
+                                </span>
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    <button className="btn-icon" onClick={() => { setEditingTask(task); setFormData(task); setShowTaskForm(true); }} title="Düzenle">
+                                        <i className="ph ph-pencil-simple" style={{ fontSize: '14px' }}></i>
                                     </button>
-                                    <button className="btn-icon" style={{ color: 'var(--enba-danger)', width: '20px', height: '20px' }} onClick={() => handleDeleteTask(task.id)} title="Sil">
-                                        <i className="ph ph-trash" style={{ fontSize: '10px' }}></i>
+                                    <button className="btn-icon" style={{ color: 'var(--enba-danger)' }} onClick={() => handleDeleteTask(task.id)} title="Sil">
+                                        <i className="ph ph-trash" style={{ fontSize: '14px' }}></i>
                                     </button>
                                 </div>
                             </div>
 
-                            {/* Line 2: Meta & Steps */}
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingLeft: '4px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <span style={{ fontSize: '8px', color: overdue ? '#ef4444' : '#94a3b8', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '3px', textTransform: 'uppercase' }}>
-                                        <i className="ph ph-calendar"></i> {task.deadline ? new Date(task.deadline).toLocaleDateString('tr-TR') : 'SÜRESİZ'}
-                                    </span>
-                                    <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: task.priority === 'high' ? 'var(--enba-danger)' : task.priority === 'medium' ? 'var(--enba-orange)' : 'var(--info)' }}></div>
-                                </div>
-                                <div style={{ display: 'flex', gap: '2px' }}>
-                                    {status !== 'todo' && <button onClick={() => moveTask(task.id, status === 'done' ? 'doing' : 'todo')} style={{ width: '18px', height: '18px', fontSize: '8px', borderRadius: '4px', border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer' }}>←</button>}
-                                    {status !== 'done' && <button onClick={() => moveTask(task.id, status === 'todo' ? 'doing' : 'done')} style={{ width: '18px', height: '18px', fontSize: '8px', borderRadius: '4px', border: '1px solid #e2e8f0', background: 'var(--enba-dark)', color: '#fff', cursor: 'pointer' }}>→</button>}
+                            <h4 style={{ margin: '0 0 6px', fontSize: '15px', fontWeight: 800, color: 'var(--enba-dark)', paddingLeft: '8px' }}>{task.title}</h4>
+                            {task.desc && <p style={{ margin: '0 0 12px', fontSize: '12px', color: '#64748b', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', paddingLeft: '8px' }}>{task.desc}</p>}
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '12px', borderTop: '1px solid #f1f5f9', marginTop: 'auto', paddingLeft: '8px' }}>
+                                <span style={{ fontSize: '10px', color: overdue ? '#ef4444' : '#94a3b8', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <i className="ph ph-calendar" style={{ fontSize: '14px' }}></i> {task.deadline ? new Date(task.deadline).toLocaleDateString('tr-TR') : 'SÜRESİZ'}
+                                </span>
+                                <div style={{ display: 'flex', gap: '4px' }}>
+                                    {status !== 'todo' && <button onClick={() => moveTask(task.id, status === 'done' ? 'doing' : 'todo')} style={{ padding: '6px 12px', fontSize: '11px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer' }}>←</button>}
+                                    {status !== 'done' && <button onClick={() => moveTask(task.id, status === 'todo' ? 'doing' : 'done')} style={{ padding: '6px 12px', fontSize: '11px', borderRadius: '8px', border: '1px solid #e2e8f0', background: 'var(--enba-dark)', color: '#fff', cursor: 'pointer' }}>→</button>}
                                 </div>
                             </div>
                         </div>
@@ -238,6 +294,19 @@ window.GorevModulu = function({ navigate }) {
                             {isSyncing ? '🔄  Senkronize Ediliyor...' : '✅  MS To Do Güncelle'}
                         </button>
                     )}
+                    <button 
+                        onClick={() => setIsCompact(!isCompact)}
+                        style={{ 
+                            padding: '10px 20px', borderRadius: '12px', fontWeight: 800, fontSize: '11px', 
+                            background: isCompact ? 'var(--secondary-container)' : '#f1f5f9', 
+                            color: isCompact ? 'var(--enba-orange)' : '#64748b', 
+                            border: isCompact ? '1px solid rgba(230, 126, 34, 0.2)' : '1px solid transparent', 
+                            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' 
+                        }}
+                    >
+                        <i className={isCompact ? "ph ph-corners-out" : "ph ph-corners-in"}></i>
+                        {isCompact ? 'Genişletilmiş' : 'Süper Kompakt'}
+                    </button>
                     <button 
                         onClick={() => setShowProjectForm(true)}
                         className="btn btn-secondary"

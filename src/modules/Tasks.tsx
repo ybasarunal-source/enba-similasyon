@@ -27,7 +27,9 @@ import {
   MoreVertical,
   Layers,
   Filter,
-  Check
+  Check,
+  Maximize,
+  Minimize
 } from 'lucide-react';
 import { microsoftService, msalInstance } from '../api/microsoft';
 
@@ -87,6 +89,9 @@ export const Tasks: React.FC = () => {
   const [viewMode, setViewMode] = useState<'board' | 'list'>('board');
   const [selectedProjectId, setSelectedProjectId] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [isCompact, setIsCompact] = useState<boolean>(() => {
+    return localStorage.getItem('enba_tasks_compact') === 'true';
+  });
 
   // ── Sync with LocalStorage ───────────────────────────────
   useEffect(() => {
@@ -199,33 +204,67 @@ export const Tasks: React.FC = () => {
   };
 
   // ── Computed ─────────────────────────────────────────────
-  const TaskCard = ({ task }: { task: Task }) => (
-    <div className="group bg-white p-2 rounded-lg border border-gray-100 shadow-sm hover:shadow-md transition-all animate-fade-in relative overflow-hidden flex flex-col gap-1">
-      <div className={`absolute top-0 left-0 w-1 h-full ${task.priority === 'high' ? 'bg-rose-500' : task.priority === 'medium' ? 'bg-amber-500' : 'bg-blue-500'}`} />
-      
-      {/* Line 1: Title & Actions */}
-      <div className="flex justify-between items-center pl-1.5">
-        <h4 className="text-[11px] font-bold text-enba-dark truncate flex-1 min-w-0 pr-2">{task.title}</h4>
-        <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-          <button onClick={() => { setEditingTask(task); setFormData(task); setShowTaskForm(true); }} className="p-0.5 hover:bg-gray-100 rounded text-gray-400 hover:text-enba-dark transition-colors"><Pencil size={11} /></button>
-          <button onClick={() => setTasks(prev => prev.filter(t => t.id !== task.id))} className="p-0.5 hover:bg-rose-50 rounded text-gray-400 hover:text-rose-600 transition-colors"><Trash2 size={11} /></button>
-        </div>
-      </div>
+  // Compact Mode Persist
+  useEffect(() => {
+    localStorage.setItem('enba_tasks_compact', isCompact.toString());
+  }, [isCompact]);
 
-      {/* Line 2: Meta & Progress */}
-      <div className="flex items-center justify-between pl-1.5">
-        <div className="flex items-center gap-2 text-[8px] text-gray-400 font-bold uppercase tracking-tighter">
-          <Calendar size={9} className={new Date(task.deadline) < new Date() && task.status !== 'done' ? 'text-rose-500' : ''} />
-          <span>{task.deadline ? new Date(task.deadline).toLocaleDateString('tr-TR') : 'SÜRESİZ'}</span>
-          <div className={`w-1.5 h-1.5 rounded-full ${task.priority === 'high' ? 'bg-rose-500' : task.priority === 'medium' ? 'bg-amber-500' : 'bg-blue-500'}`} />
+  const TaskCard = ({ task }: { task: Task }) => {
+    if (isCompact) {
+      return (
+        <div className="group bg-white p-2 rounded-lg border border-gray-100 shadow-sm hover:shadow-md transition-all animate-fade-in relative overflow-hidden flex flex-col gap-1">
+          <div className={`absolute top-0 left-0 w-1 h-full ${task.priority === 'high' ? 'bg-rose-500' : task.priority === 'medium' ? 'bg-amber-500' : 'bg-blue-500'}`} />
+          <div className="flex justify-between items-center pl-1.5">
+            <h4 className="text-[11px] font-bold text-enba-dark truncate flex-1 min-w-0 pr-2">{task.title}</h4>
+            <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+              <button onClick={() => { setEditingTask(task); setFormData(task); setShowTaskForm(true); }} className="p-0.5 hover:bg-gray-100 rounded text-gray-400 hover:text-enba-dark transition-colors"><Pencil size={11} /></button>
+              <button onClick={() => setTasks(prev => prev.filter(t => t.id !== task.id))} className="p-0.5 hover:bg-rose-50 rounded text-gray-400 hover:text-rose-600 transition-colors"><Trash2 size={11} /></button>
+            </div>
+          </div>
+          <div className="flex items-center justify-between pl-1.5">
+            <div className="flex items-center gap-2 text-[8px] text-gray-400 font-bold uppercase tracking-tighter">
+              <Calendar size={9} className={new Date(task.deadline) < new Date() && task.status !== 'done' ? 'text-rose-500' : ''} />
+              <span>{task.deadline ? new Date(task.deadline).toLocaleDateString('tr-TR') : 'SÜRESİZ'}</span>
+              <div className={`w-1.5 h-1.5 rounded-full ${task.priority === 'high' ? 'bg-rose-500' : task.priority === 'medium' ? 'bg-amber-500' : 'bg-blue-500'}`} />
+            </div>
+            <div className="flex gap-0.5">
+              {task.status !== 'todo' && <button onClick={() => moveTask(task.id, task.status === 'done' ? 'doing' : 'todo')} className="w-4 h-4 flex items-center justify-center rounded bg-gray-50 text-gray-400 hover:bg-gray-100 transition-colors"><ArrowLeft size={9} /></button>}
+              {task.status !== 'done' && <button onClick={() => moveTask(task.id, task.status === 'todo' ? 'doing' : 'done')} className="w-4 h-4 flex items-center justify-center rounded bg-enba-dark text-white hover:bg-black transition-colors"><ArrowRight size={9} /></button>}
+            </div>
+          </div>
         </div>
-        <div className="flex gap-0.5">
-          {task.status !== 'todo' && <button onClick={() => moveTask(task.id, task.status === 'done' ? 'doing' : 'todo')} className="w-4 h-4 flex items-center justify-center rounded bg-gray-50 text-gray-400 hover:bg-gray-100 transition-colors"><ArrowLeft size={9} /></button>}
-          {task.status !== 'done' && <button onClick={() => moveTask(task.id, task.status === 'todo' ? 'doing' : 'done')} className="w-4 h-4 flex items-center justify-center rounded bg-enba-dark text-white hover:bg-black transition-colors"><ArrowRight size={9} /></button>}
+      );
+    }
+
+    return (
+      <div className="group bg-white p-3.5 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all animate-fade-in relative overflow-hidden flex flex-col min-h-[110px]">
+        <div className={`absolute top-0 left-0 w-1.5 h-full ${task.priority === 'high' ? 'bg-rose-500' : task.priority === 'medium' ? 'bg-amber-500' : 'bg-blue-500'}`} />
+        <div className="flex justify-between items-start mb-2">
+          <span className={`text-[9px] font-black px-2 py-0.5 rounded-lg uppercase tracking-wider ${
+            task.priority === 'high' ? 'bg-rose-50 text-rose-600' : task.priority === 'medium' ? 'bg-amber-50 text-amber-600' : 'bg-blue-50 text-blue-600'
+          }`}>
+            {task.priority === 'high' ? 'Acil' : task.priority === 'medium' ? 'Orta' : 'Düşük'}
+          </span>
+          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button onClick={() => { setEditingTask(task); setFormData(task); setShowTaskForm(true); }} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-enba-dark transition-colors"><Pencil size={14} /></button>
+            <button onClick={() => setTasks(prev => prev.filter(t => t.id !== task.id))} className="p-1.5 hover:bg-rose-50 rounded-lg text-gray-400 hover:text-rose-600 transition-colors"><Trash2 size={14} /></button>
+          </div>
+        </div>
+        <h4 className="text-[14px] font-bold text-enba-dark mb-1 line-clamp-1">{task.title}</h4>
+        {task.desc && <p className="text-[11px] text-gray-400 mb-3 line-clamp-2 leading-snug">{task.desc}</p>}
+        <div className="flex items-center justify-between pt-3 border-t border-gray-50 mt-auto">
+          <div className="flex items-center gap-2 text-[10px] text-gray-400 font-bold uppercase tracking-tight">
+            <Calendar size={12} className={new Date(task.deadline) < new Date() && task.status !== 'done' ? 'text-rose-500' : ''} />
+            {task.deadline ? new Date(task.deadline).toLocaleDateString('tr-TR') : 'Süresiz'}
+          </div>
+          <div className="flex gap-1">
+            {task.status !== 'todo' && <button onClick={() => moveTask(task.id, task.status === 'done' ? 'doing' : 'todo')} className="w-6 h-6 flex items-center justify-center rounded-lg bg-gray-50 text-gray-400 hover:bg-gray-100 transition-colors"><ArrowLeft size={12} /></button>}
+            {task.status !== 'done' && <button onClick={() => moveTask(task.id, task.status === 'todo' ? 'doing' : 'done')} className="w-6 h-6 flex items-center justify-center rounded-lg bg-enba-dark text-white hover:bg-black transition-colors"><ArrowRight size={12} /></button>}
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const filteredTasks = useMemo(() => {
     return tasks.filter(t => {
@@ -369,6 +408,14 @@ export const Tasks: React.FC = () => {
                 <ListIcon size={14} /> Sıralı
               </button>
             </div>
+
+            <button 
+              onClick={() => setIsCompact(!isCompact)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${isCompact ? 'bg-enba-orange/10 text-enba-orange border border-enba-orange/20' : 'bg-gray-100 text-gray-400 border border-transparent'}`}
+            >
+              {isCompact ? <Maximize size={14} /> : <Minimize size={14} />}
+              {isCompact ? 'Geniş Görünüm' : 'Kompakt'}
+            </button>
           </div>
 
           <div className="flex items-center gap-4">
