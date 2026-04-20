@@ -327,9 +327,9 @@ export const Tasks: React.FC = () => {
             </div>
             {!msAccount ? (
               <button 
-                onClick={() => {
-                  sessionStorage.setItem('enba_return_module', 'tasks');
-                  microsoftService.login();
+                onClick={async () => {
+                  const account = await microsoftService.loginPopup();
+                  if (account) setMsAccount(account);
                 }} 
                 className="w-full py-2.5 bg-[#0078d4] text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-blue-900/10 active:scale-95 transition-all"
               >

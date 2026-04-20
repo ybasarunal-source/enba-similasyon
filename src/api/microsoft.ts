@@ -35,6 +35,17 @@ export const microsoftService = {
     }
   },
 
+  async loginPopup() {
+    try {
+      await msalInstance.initialize();
+      const response = await msalInstance.loginPopup(loginRequest);
+      return response.account;
+    } catch (err) {
+      console.error('MS Popup Login Error:', err);
+      return null;
+    }
+  },
+
   async logout() {
     try {
       await msalInstance.logoutRedirect();
