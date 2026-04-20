@@ -121,35 +121,27 @@ export const microsoftService = {
     }
   },
 
-  async loginPopup(retryCount = 0): Promise<any> {
-    const canProceed = checkAndLockInteraction(retryCount > 0);
+  async loginPopup(): Promise<any> {
+    // Save current state so we can return here after redirect
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.setItem('enba_return_module', 'tasks');
+    }
+    
+    const canProceed = checkAndLockInteraction();
     if (!canProceed) {
       console.warn('MSAL: Interaction locked (safety clock).');
       return null;
     }
     
     try {
-      await ensureInitialized(retryCount > 0);
-      
-      const response = await Promise.race([
-        msalInstance.loginPopup(loginRequest),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Login Timeout')), 60000))
-      ]) as any;
-      
-      return response.account;
+      await ensureInitialized();
+      // Directly using redirect for maximum reliability as requested
+      await msalInstance.loginRedirect(loginRequest as any);
+      return null; // Page will unload
     } catch (err: any) {
-      if (err.errorCode === 'interaction_in_progress' || err.message === 'Login Timeout') {
-        if (retryCount < 1) {
-            console.warn('MSAL: Interaction stuck. Implementing Hyper-Reset...');
-            resetMsalInstance();
-            await new Promise(r => setTimeout(r, 800));
-            return this.loginPopup(retryCount + 1);
-        }
-        return this.login();
-      } else {
-        console.error('MS Popup Login Error:', err);
-        return null;
-      }
+      console.error('MS Redirect Login Error:', err);
+      resetMsalInstance();
+      return null;
     } finally {
       unlockInteraction();
     }
