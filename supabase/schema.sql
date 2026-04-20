@@ -16,27 +16,27 @@ ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 -- 1. Helper Function: SECURITY DEFINER ile yetki kontrolü (Recursion'ı önler)
 CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS boolean AS $$
+DECLARE
+    is_admin_role boolean;
 BEGIN
-  RETURN (
-    SELECT (role = 'admin')
+    SELECT (role = 'admin') INTO is_admin_role
     FROM public.profiles
-    WHERE id = auth.uid()
-  );
+    WHERE id = auth.uid();
+    RETURN COALESCE(is_admin_role, false);
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
 -- 2. Politikalar
 CREATE POLICY "Herkes kendi profilini görebilir" ON public.profiles
     FOR SELECT TO authenticated
     USING (auth.uid() = id);
 
-CREATE POLICY "Adminler tüm profilleri görebilir" ON public.profiles
-    FOR SELECT TO authenticated
-    USING (public.is_admin());
-
-CREATE POLICY "Adminler profilleri güncelleyebilir" ON public.profiles
-    FOR UPDATE TO authenticated
-    USING (public.is_admin());
+-- Admin çekirdek yetki kontrolü (is_admin fonksiyonu üzerinden)
+CREATE POLICY "Adminler tum profilleri gorebilir" ON public.profiles
+    FOR ALL TO authenticated
+    USING (
+      (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'admin'
+    );
 
 -- Yeni kullanıcı kaydı olduğunda otomatik profil oluşturan fonksiyon
 CREATE OR REPLACE FUNCTION public.handle_new_user()

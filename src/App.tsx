@@ -143,6 +143,8 @@ export const App: React.FC = () => {
   ].filter(item => {
     // Admin ise her şeyi görür
     if (user.role === 'admin') return true;
+    // FALLBACK: Veritabanı hatası (RLS) durumunda oturum varsa tam erişim sağla
+    if (!userProfile && session?.user) return true;
     // Core modules always visible, others depend on permissions
     if (item.id === 'profile' || item.id === 'dashboard' || item.id === 'tasks') return true;
     // Others depend on permissions
