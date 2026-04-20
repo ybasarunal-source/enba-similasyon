@@ -148,47 +148,43 @@ window.GorevModulu = function({ navigate }) {
                     return (
                         <div key={task.id} style={{ 
                             background: '#ffffff', 
-                            padding: '12px', 
-                            borderRadius: '1rem', 
+                            padding: '8px 10px', 
+                            borderRadius: '0.75rem', 
                             boxShadow: 'var(--shadow-sm)', 
                             border: overdue ? '2px solid var(--enba-danger)' : '1px solid var(--surface-container-high)',
                             position: 'relative',
                             transition: 'all 0.2s',
-                            cursor: 'grab'
+                            cursor: 'grab',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '4px'
                         }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
-                                <span style={{ 
-                                    fontSize: '9px', 
-                                    fontWeight: 800, 
-                                    padding: '1px 8px', 
-                                    borderRadius: '1rem', 
-                                    background: task.priority === 'high' ? 'var(--error-container)' : task.priority === 'medium' ? 'var(--secondary-container)' : '#f0f9ff',
-                                    color: task.priority === 'high' ? 'var(--enba-danger)' : task.priority === 'medium' ? 'var(--enba-orange)' : 'var(--info)',
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.5px'
-                                }}>
-                                    {task.priority === 'high' ? 'Acil' : task.priority === 'medium' ? 'Orta' : 'Düşük'}
-                                </span>
-                                <div style={{ display: 'flex', gap: '4px' }}>
-                                    <button className="btn-icon" style={{ width: '24px', height: '24px' }} onClick={() => { setEditingTask(task); setFormData(task); setShowTaskForm(true); }} title="Düzenle">
-                                        <i className="ph ph-pencil-simple" style={{ fontSize: '12px' }}></i>
+                             <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: task.priority === 'high' ? 'var(--enba-danger)' : task.priority === 'medium' ? 'var(--enba-orange)' : 'var(--info)' }}></div>
+
+                            {/* Line 1: Title & Actions */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingLeft: '4px' }}>
+                                <h4 style={{ margin: 0, fontSize: '11px', fontWeight: 800, color: 'var(--enba-dark)', flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: '8px' }}>{task.title}</h4>
+                                <div style={{ display: 'flex', gap: '2px' }}>
+                                    <button className="btn-icon" style={{ width: '20px', height: '20px' }} onClick={() => { setEditingTask(task); setFormData(task); setShowTaskForm(true); }} title="Düzenle">
+                                        <i className="ph ph-pencil-simple" style={{ fontSize: '10px' }}></i>
                                     </button>
-                                    <button className="btn-icon" style={{ color: 'var(--enba-danger)', width: '24px', height: '24px' }} onClick={() => handleDeleteTask(task.id)} title="Sil">
-                                        <i className="ph ph-trash" style={{ fontSize: '12px' }}></i>
+                                    <button className="btn-icon" style={{ color: 'var(--enba-danger)', width: '20px', height: '20px' }} onClick={() => handleDeleteTask(task.id)} title="Sil">
+                                        <i className="ph ph-trash" style={{ fontSize: '10px' }}></i>
                                     </button>
                                 </div>
                             </div>
 
-                            <h4 style={{ margin: '0 0 4px', fontSize: '12px', fontWeight: 800, color: 'var(--enba-dark)', lineHeight: 1.2 }}>{task.title}</h4>
-                            {task.desc && <p style={{ margin: '0 0 8px', fontSize: '10px', color: '#64748b', lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{task.desc}</p>}
-
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '8px', borderTop: '1px solid #f8fafc' }}>
-                                <span style={{ fontSize: '9px', color: overdue ? '#ef4444' : '#94a3b8', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '4px', textTransform: 'uppercase' }}>
-                                    <i className="ph ph-calendar"></i> {task.deadline ? new Date(task.deadline).toLocaleDateString('tr-TR') : 'SÜRESİZ'}
-                                </span>
+                            {/* Line 2: Meta & Steps */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingLeft: '4px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <span style={{ fontSize: '8px', color: overdue ? '#ef4444' : '#94a3b8', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '3px', textTransform: 'uppercase' }}>
+                                        <i className="ph ph-calendar"></i> {task.deadline ? new Date(task.deadline).toLocaleDateString('tr-TR') : 'SÜRESİZ'}
+                                    </span>
+                                    <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: task.priority === 'high' ? 'var(--enba-danger)' : task.priority === 'medium' ? 'var(--enba-orange)' : 'var(--info)' }}></div>
+                                </div>
                                 <div style={{ display: 'flex', gap: '2px' }}>
-                                    {status !== 'todo' && <button onClick={() => moveTask(task.id, status === 'done' ? 'doing' : 'todo')} style={{ width: '20px', height: '20px', fontSize: '9px', borderRadius: '4px', border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer' }}>←</button>}
-                                    {status !== 'done' && <button onClick={() => moveTask(task.id, status === 'todo' ? 'doing' : 'done')} style={{ width: '20px', height: '20px', fontSize: '9px', borderRadius: '4px', border: '1px solid #e2e8f0', background: 'var(--enba-dark)', color: '#fff', cursor: 'pointer' }}>→</button>}
+                                    {status !== 'todo' && <button onClick={() => moveTask(task.id, status === 'done' ? 'doing' : 'todo')} style={{ width: '18px', height: '18px', fontSize: '8px', borderRadius: '4px', border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer' }}>←</button>}
+                                    {status !== 'done' && <button onClick={() => moveTask(task.id, status === 'todo' ? 'doing' : 'done')} style={{ width: '18px', height: '18px', fontSize: '8px', borderRadius: '4px', border: '1px solid #e2e8f0', background: 'var(--enba-dark)', color: '#fff', cursor: 'pointer' }}>→</button>}
                                 </div>
                             </div>
                         </div>

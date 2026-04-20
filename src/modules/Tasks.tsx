@@ -199,27 +199,25 @@ export const Tasks: React.FC = () => {
   };
 
   // ── Computed ─────────────────────────────────────────────
-  const filteredTasks = useMemo(() => {
-    return tasks.filter(t => {
-      const matchesProject = selectedProjectId === 'all' || t.projectId === selectedProjectId;
-      const matchesSearch = t.title.toLowerCase().includes(searchTerm.toLowerCase()) || t.desc.toLowerCase().includes(searchTerm.toLowerCase());
-      return matchesProject && matchesSearch;
-    });
-  }, [tasks, selectedProjectId, searchTerm]);
-
-  // ── Components ───────────────────────────────────────────
+  const TaskCard = ({ task }: { task: Task }) => (
+    <div className="group bg-white p-2 rounded-lg border border-gray-100 shadow-sm hover:shadow-md transition-all animate-fade-in relative overflow-hidden flex flex-col gap-1">
+      <div className={`absolute top-0 left-0 w-1 h-full ${task.priority === 'high' ? 'bg-rose-500' : task.priority === 'medium' ? 'bg-amber-500' : 'bg-blue-500'}`} />
+      
+      {/* Line 1: Title & Actions */}
+      <div className="flex justify-between items-center pl-1.5">
+        <h4 className="text-[11px] font-bold text-enba-dark truncate flex-1 min-w-0 pr-2">{task.title}</h4>
+        <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
           <button onClick={() => { setEditingTask(task); setFormData(task); setShowTaskForm(true); }} className="p-0.5 hover:bg-gray-100 rounded text-gray-400 hover:text-enba-dark transition-colors"><Pencil size={11} /></button>
           <button onClick={() => setTasks(prev => prev.filter(t => t.id !== task.id))} className="p-0.5 hover:bg-rose-50 rounded text-gray-400 hover:text-rose-600 transition-colors"><Trash2 size={11} /></button>
         </div>
       </div>
 
-      <h4 className="text-[11px] font-bold text-enba-dark mb-0.5 line-clamp-1 leading-tight">{task.title}</h4>
-      {task.desc && <p className="text-[9px] text-gray-400 mb-1.5 line-clamp-1 leading-tight">{task.desc}</p>}
-
-      <div className="flex items-center justify-between pt-1.5 border-t border-gray-50 mt-1">
-        <div className="flex items-center gap-1 text-[8px] text-gray-400 font-bold uppercase tracking-tighter">
+      {/* Line 2: Meta & Progress */}
+      <div className="flex items-center justify-between pl-1.5">
+        <div className="flex items-center gap-2 text-[8px] text-gray-400 font-bold uppercase tracking-tighter">
           <Calendar size={9} className={new Date(task.deadline) < new Date() && task.status !== 'done' ? 'text-rose-500' : ''} />
-          {task.deadline ? new Date(task.deadline).toLocaleDateString('tr-TR') : 'SÜRESİZ'}
+          <span>{task.deadline ? new Date(task.deadline).toLocaleDateString('tr-TR') : 'SÜRESİZ'}</span>
+          <div className={`w-1.5 h-1.5 rounded-full ${task.priority === 'high' ? 'bg-rose-500' : task.priority === 'medium' ? 'bg-amber-500' : 'bg-blue-500'}`} />
         </div>
         <div className="flex gap-0.5">
           {task.status !== 'todo' && <button onClick={() => moveTask(task.id, task.status === 'done' ? 'doing' : 'todo')} className="w-4 h-4 flex items-center justify-center rounded bg-gray-50 text-gray-400 hover:bg-gray-100 transition-colors"><ArrowLeft size={9} /></button>}
@@ -228,6 +226,14 @@ export const Tasks: React.FC = () => {
       </div>
     </div>
   );
+
+  const filteredTasks = useMemo(() => {
+    return tasks.filter(t => {
+      const matchesProject = selectedProjectId === 'all' || t.projectId === selectedProjectId;
+      const matchesSearch = t.title.toLowerCase().includes(searchTerm.toLowerCase()) || t.desc.toLowerCase().includes(searchTerm.toLowerCase());
+      return matchesProject && matchesSearch;
+    });
+  }, [tasks, selectedProjectId, searchTerm]);
 
   return (
     <div className="flex h-full bg-[#FAFAFA] animate-fade-in">
