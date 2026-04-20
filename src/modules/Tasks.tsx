@@ -320,6 +320,7 @@ export const Tasks: React.FC = () => {
             </div>
             {!msAccount ? (
               <button 
+                type="button"
                 onClick={async () => {
                   const account = await microsoftService.loginPopup();
                   if (account) setMsAccount(account);

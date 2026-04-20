@@ -34,9 +34,7 @@ CREATE POLICY "Herkes kendi profilini görebilir" ON public.profiles
 -- Admin çekirdek yetki kontrolü (is_admin fonksiyonu üzerinden)
 CREATE POLICY "Adminler tum profilleri gorebilir" ON public.profiles
     FOR ALL TO authenticated
-    USING (
-      (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'admin'
-    );
+    USING (public.is_admin());
 
 -- Yeni kullanıcı kaydı olduğunda otomatik profil oluşturan fonksiyon
 CREATE OR REPLACE FUNCTION public.handle_new_user()
@@ -46,10 +44,11 @@ BEGIN
     VALUES (
         new.id, 
         new.email, 
-        split_part(new.email, '@', 1), 
+        COALESCE(new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1)), 
         'user', 
         '{"dashboard": true}'::jsonb
-    );
+    )
+    ON CONFLICT (id) DO NOTHING;
     RETURN new;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
