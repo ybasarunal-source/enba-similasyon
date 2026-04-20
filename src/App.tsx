@@ -143,9 +143,9 @@ export const App: React.FC = () => {
   ].filter(item => {
     // Admin ise her şeyi görür
     if (user.role === 'admin') return true;
-    // Settings ve Profile her zaman görünür (ya da sadece Profile?)
-    if (item.id === 'profile' || item.id === 'dashboard') return true;
-    // Diğerleri izinlere bağlı
+    // Core modules always visible, others depend on permissions
+    if (item.id === 'profile' || item.id === 'dashboard' || item.id === 'tasks') return true;
+    // Others depend on permissions
     return userProfile?.permissions?.[item.id] === true;
   });
 

@@ -78,7 +78,7 @@ const Dashboard: React.FC<DashboardProps> = ({ navigate, user }) => {
           .reduce((s: number, u: any) => s + (parseFloat(u.cikanUrun) || 0) / 1000, 0);
 
         const urgentTasks = tasks
-          .filter((t: any) => t.status !== 'tamamlandi' && (t.priority === 'high' || t.priority === 'medium'))
+          .filter((t: any) => t.status !== 'done' && (t.priority === 'high' || t.priority === 'medium'))
           .slice(0, 4);
 
         const now = new Date();

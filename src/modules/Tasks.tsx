@@ -19,7 +19,15 @@ import {
   Share2,
   RefreshCw,
   Download,
-  LogOut as LogOutIcon
+  LogOut as LogOutIcon,
+  ChevronRight,
+  Search,
+  Kanban,
+  List as ListIcon,
+  MoreVertical,
+  Layers,
+  Filter,
+  Check
 } from 'lucide-react';
 import { microsoftService, msalInstance } from '../api/microsoft';
 
@@ -33,11 +41,17 @@ interface Task {
   moduleRef: string;
   status: 'todo' | 'doing' | 'done';
   createdAt: string;
-  msTodoId?: string; // Microsoft To Do ID
-  msListId?: string; // Microsoft To Do List ID
+  msTodoId?: string;
+  msListId?: string;
 }
 
 interface Project {
+  id: string;
+  name: string;
+  groupId?: string; // Custom grouping support
+}
+
+interface ProjectGroup {
   id: string;
   name: string;
 }
@@ -59,45 +73,48 @@ export const Tasks: React.FC = () => {
     ];
   });
 
+  const [groups, setGroups] = useState<ProjectGroup[]>(() => {
+    const saved = localStorage.getItem('enba_project_groups');
+    return saved ? JSON.parse(saved) : [
+      { id: 'g1', name: 'KRİTİK PROJELER' },
+      { id: 'g2', name: 'RUTİN İŞLER' }
+    ];
+  });
+
   const [msAccount, setMsAccount] = useState<any>(null);
   const [isSyncing, setIsSyncing] = useState(false);
-
+  const [viewMode, setViewMode] = useState<'board' | 'list'>('board');
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'todo' | 'doing' | 'done'>('all');
 
   // ── Sync with LocalStorage ───────────────────────────────
+  useEffect(() => {
+    localStorage.setItem('enba_tasks', JSON.stringify(tasks));
+    localStorage.setItem('enba_projects', JSON.stringify(projects));
+    localStorage.setItem('enba_project_groups', JSON.stringify(groups));
+  }, [tasks, projects, groups]);
+
   useEffect(() => {
     const initMSAL = async () => {
       try {
         await msalInstance.initialize();
-        
-        // Önce redirect sonucunu işle (girişten dönüldüyse)
         const response = await msalInstance.handleRedirectPromise();
-        if (response && response.account) {
-          setMsAccount(response.account);
-        } else {
-          // Redirect yoksa mevcut hesapları kontrol et
+        if (response?.account) setMsAccount(response.account);
+        else {
           const accounts = msalInstance.getAllAccounts();
-          if (accounts.length > 0) {
-            setMsAccount(accounts[0]);
-          }
+          if (accounts.length > 0) setMsAccount(accounts[0]);
         }
-      } catch (err) {
-        console.error("MSAL Init Error:", err);
-      }
+      } catch (err) { console.error("MSAL Init Error:", err); }
     };
-    
     initMSAL();
-    
-    localStorage.setItem('enba_tasks', JSON.stringify(tasks));
-    localStorage.setItem('enba_projects', JSON.stringify(projects));
-  }, [tasks, projects]);
+  }, []);
 
   // ── UI States ────────────────────────────────────────────
   const [showTaskForm, setShowTaskForm] = useState(false);
+  const [showProjectForm, setShowProjectForm] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [formData, setFormData] = useState<Partial<Task>>({
-    title: '', desc: '', priority: 'medium', deadline: '', projectId: 'p1', moduleRef: 'genel'
+    title: '', desc: '', priority: 'medium', deadline: '', projectId: projects[0]?.id || 'p1', moduleRef: 'genel'
   });
 
   const categories = [
@@ -119,84 +136,31 @@ export const Tasks: React.FC = () => {
       createdAt: editingTask ? editingTask.createdAt : new Date().toISOString()
     };
 
-    if (editingTask) {
-      setTasks(prev => prev.map(t => t.id === editingTask.id ? newTask : t));
-    } else {
-      setTasks(prev => [...prev, newTask]);
-    }
-
+    setTasks(prev => editingTask ? prev.map(t => t.id === editingTask.id ? newTask : t) : [...prev, newTask]);
     setShowTaskForm(false);
     setEditingTask(null);
-    setFormData({ title: '', desc: '', priority: 'medium', deadline: '', projectId: 'p1', moduleRef: 'genel' });
+    setFormData({ title: '', desc: '', priority: 'medium', deadline: '', projectId: projects[0]?.id || 'p1', moduleRef: 'genel' });
 
-    // Sync newly added task if connected
-    if (msAccount && !editingTask) {
-      (async () => {
-        const project = projects.find(p => p.id === (newTask.projectId || 'p1'));
-        const listName = project?.name || 'Enba Tasks';
-        const list = await microsoftService.ensureTodoList(listName);
+    if (msAccount) {
+      const sync = async () => {
+        const project = projects.find(p => p.id === newTask.projectId);
+        const list = await microsoftService.ensureTodoList(project?.name || 'Enba Tasks');
         if (list) {
-          const result: any = await microsoftService.syncTask(list.id, newTask as any);
-          if (result && result.id) {
+          const result: any = await microsoftService.syncTask(list.id, newTask as any, newTask.msTodoId);
+          if (result?.id) {
             setTasks(prev => prev.map(t => t.id === newTask.id ? { ...t, msTodoId: result.id, msListId: list.id } : t));
           }
         }
-      })();
-    } else if (msAccount && editingTask) {
-       // Update existing
-       (async () => {
-         if (newTask.msListId && newTask.msTodoId) {
-            await microsoftService.syncTask(newTask.msListId, newTask as any, newTask.msTodoId);
-         }
-       })();
+      }
+      sync();
     }
   };
 
   const moveTask = async (id: string | number, newStatus: 'todo' | 'doing' | 'done') => {
     setTasks(prev => prev.map(t => t.id === id ? { ...t, status: newStatus } : t));
-    
-    // Sync if connected
-    const taskToSync = tasks.find(t => t.id === id);
-    if (msAccount && taskToSync) {
-      const project = projects.find(p => p.id === taskToSync.projectId);
-      const listName = project?.name || 'Enba Tasks';
-      const list = await microsoftService.ensureTodoList(listName);
-      if (list) {
-        await microsoftService.syncTask(list.id, { ...taskToSync, status: newStatus }, taskToSync.msTodoId);
-      }
-    }
-  };
-
-  const handleMsLogin = () => microsoftService.login();
-  const handleMsLogout = () => {
-    microsoftService.logout();
-    setMsAccount(null);
-  };
-
-  const handleBulkSync = async () => {
-    if (!msAccount) return;
-    setIsSyncing(true);
-    try {
-      const currentTasks = [...tasks];
-      for (let i = 0; i < currentTasks.length; i++) {
-        const task = currentTasks[i];
-        const project = projects.find(p => p.id === task.projectId);
-        const listName = project?.name || 'Enba Tasks';
-        const list = await microsoftService.ensureTodoList(listName);
-        
-        if (list) {
-          const result: any = await microsoftService.syncTask(list.id, task as any, task.msTodoId);
-          if (result && result.id) {
-            currentTasks[i] = { ...task, msTodoId: result.id, msListId: list.id };
-          }
-        }
-      }
-      setTasks(currentTasks);
-      alert('Tüm görevler Microsoft To Do ile senkronize edildi!');
-    } catch (err) {
-      console.error('Bulk Sync Error:', err);
-    } finally {
-      setIsSyncing(false);
+    const task = tasks.find(t => t.id === id);
+    if (msAccount && task?.msTodoId && task.msListId) {
+      await microsoftService.syncTask(task.msListId, { ...task, status: newStatus }, task.msTodoId);
     }
   };
 
@@ -206,388 +170,398 @@ export const Tasks: React.FC = () => {
     try {
       const lists = await microsoftService.getTodoLists();
       let importedCount = 0;
-      let updatedCount = 0;
-      const newTasksList = [...tasks];
-      const currentProjects = [...projects];
-      let projectsChanged = false;
+      const newProjects = [...projects];
+      const newTasks = [...tasks];
 
-      // 1. Önce eksik projeleri (listeleri) oluşturalım
       for (const list of lists) {
-        const existingProject = currentProjects.find(p => 
-          p.id === list.id || p.name.toLowerCase() === list.displayName.toLowerCase()
-        );
-        
-        if (!existingProject) {
-          currentProjects.push({ id: list.id, name: list.displayName });
-          projectsChanged = true;
+        if (!newProjects.find(p => p.id === list.id)) {
+          newProjects.push({ id: list.id, name: list.displayName, groupId: 'g2' });
         }
-      }
-
-      if (projectsChanged) {
-        setProjects(currentProjects);
-        localStorage.setItem('enba_projects', JSON.stringify(currentProjects));
-      }
-
-      // 2. Şimdi görevleri aktaralım
-      for (const list of lists) {
         const msTasks = await microsoftService.getTodoListTasks(list.id);
-        const project = currentProjects.find(p => p.id === list.id || p.name.toLowerCase() === list.displayName.toLowerCase()) || currentProjects[0];
-
         for (const msTask of msTasks) {
-          const existingIndex = newTasksList.findIndex(t => t.msTodoId === msTask.id);
-          
-          const mappedTask: Task = {
-            id: existingIndex >= 0 ? newTasksList[existingIndex].id : Date.now() + Math.random(),
-            title: msTask.title,
-            desc: msTask.body?.content || '',
-            priority: msTask.importance === 'high' ? 'high' : (msTask.importance === 'low' ? 'low' : 'medium'),
-            deadline: msTask.dueDateTime?.dateTime ? new Date(msTask.dueDateTime.dateTime).toISOString() : '',
-            projectId: project.id,
-            moduleRef: 'genel',
-            status: msTask.status === 'completed' ? 'done' : (msTask.status === 'inProgress' ? 'doing' : 'todo'),
-            createdAt: existingIndex >= 0 ? newTasksList[existingIndex].createdAt : new Date().toISOString(),
-            msTodoId: msTask.id,
-            msListId: list.id
-          };
-
-          if (existingIndex >= 0) {
-            newTasksList[existingIndex] = mappedTask;
-            updatedCount++;
-          } else {
-            newTasksList.push(mappedTask);
+          if (!newTasks.find(t => t.msTodoId === msTask.id)) {
+            newTasks.push({
+              id: Date.now() + Math.random(),
+              title: msTask.title,
+              desc: msTask.body?.content || '',
+              priority: msTask.importance === 'high' ? 'high' : 'medium',
+              deadline: msTask.dueDateTime?.dateTime || '',
+              projectId: list.id,
+              moduleRef: 'genel',
+              status: msTask.status === 'completed' ? 'done' : (msTask.status === 'inProgress' ? 'doing' : 'todo'),
+              createdAt: msTask.createdDateTime || new Date().toISOString(),
+              msTodoId: msTask.id,
+              msListId: list.id
+            });
             importedCount++;
           }
         }
       }
-
-      setTasks(newTasksList);
-      alert(`Senkronizasyon Tamamlandı:\n- ${importedCount} yeni görev eklendi\n- ${updatedCount} görev güncellendi\n- ${projectsChanged ? 'Yeni listeler proje olarak eklendi.' : 'Proje yapısı korundu.'}`);
-    } catch (err) {
-      console.error('Import Error:', err);
-      alert('İçe aktarma sırasında bir hata oluştu.');
-    } finally {
-      setIsSyncing(false);
-    }
+      setProjects(newProjects);
+      setTasks(newTasks);
+      alert(`${importedCount} yeni görev ve eksik listeler aktarıldı.`);
+    } catch (err) { console.error(err); }
+    finally { setIsSyncing(false); }
   };
 
-  const isOverdue = (date: string, status: string) => {
-    if (!date || status === 'done') return false;
-    return new Date(date) < new Date();
-  };
-
-  const { activeTasksGrouped, doneTasks } = useMemo(() => {
-    const filtered = tasks.filter(t => {
-      const matchesSearch = t.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                           t.desc.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = statusFilter === 'all' || t.status === statusFilter;
-      return matchesSearch && matchesStatus;
+  // ── Computed ─────────────────────────────────────────────
+  const filteredTasks = useMemo(() => {
+    return tasks.filter(t => {
+      const matchesProject = selectedProjectId === 'all' || t.projectId === selectedProjectId;
+      const matchesSearch = t.title.toLowerCase().includes(searchTerm.toLowerCase()) || t.desc.toLowerCase().includes(searchTerm.toLowerCase());
+      return matchesProject && matchesSearch;
     });
+  }, [tasks, selectedProjectId, searchTerm]);
 
-    const active = filtered.filter(t => t.status !== 'done');
-    const done = filtered.filter(t => t.status === 'done');
+  // ── Components ───────────────────────────────────────────
+  const TaskCard = ({ task }: { task: Task }) => (
+    <div className="group bg-white p-3.5 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all animate-fade-in relative overflow-hidden flex flex-col min-h-[110px]">
+      <div className={`absolute top-0 left-0 w-1 h-full ${task.priority === 'high' ? 'bg-rose-500' : task.priority === 'medium' ? 'bg-amber-500' : 'bg-blue-500'}`} />
+      
+      <div className="flex justify-between items-start mb-2">
+        <span className={`text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider ${
+          task.priority === 'high' ? 'bg-rose-50 text-rose-600' : task.priority === 'medium' ? 'bg-amber-50 text-amber-600' : 'bg-blue-50 text-blue-600'
+        }`}>
+          {task.priority === 'high' ? 'Acil' : task.priority === 'medium' ? 'Orta' : 'Düşük'}
+        </span>
+        <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button onClick={() => { setEditingTask(task); setFormData(task); setShowTaskForm(true); }} className="p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-enba-dark transition-colors"><Pencil size={12} /></button>
+          <button onClick={() => setTasks(prev => prev.filter(t => t.id !== task.id))} className="p-1 hover:bg-rose-50 rounded text-gray-400 hover:text-rose-600 transition-colors"><Trash2 size={12} /></button>
+        </div>
+      </div>
 
-    // Group active by project
-    const grouped: Record<string, Task[]> = {};
-    active.forEach(t => {
-      if (!grouped[t.projectId]) grouped[t.projectId] = [];
-      grouped[t.projectId].push(t);
-    });
+      <h4 className="text-[12px] font-bold text-enba-dark mb-0.5 line-clamp-1">{task.title}</h4>
+      <p className="text-[10px] text-gray-400 mb-2 line-clamp-2 leading-tight">{task.desc}</p>
 
-    return { activeTasksGrouped: grouped, doneTasks: done };
-  }, [tasks, searchTerm, statusFilter]);
-
-  const TaskRow = ({ task }: { task: Task }) => {
-    const overdue = isOverdue(task.deadline, task.status);
-    const project = projects.find(p => p.id === task.projectId);
-    const cat = categories.find(c => c.id === task.moduleRef);
-
-    const statusIcons = {
-      todo: <Clock size={16} className="text-slate-400" />,
-      doing: <RotateCw size={16} className="text-blue-500 animate-spin-slow" />,
-      done: <CheckCircle size={16} className="text-emerald-500" />
-    };
-
-    return (
-      <tr className="group hover:bg-slate-50/80 transition-all border-b border-gray-50">
-        <td className="py-5 px-4">
-          <div className="flex items-center gap-4">
-             <div className="w-9 h-9 rounded-xl bg-white border border-gray-100 shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform">
-                {statusIcons[task.status]}
-             </div>
-             <div>
-                <div className="text-xs font-black text-enba-dark uppercase italic tracking-tight">{task.title}</div>
-                <div className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-0.5 max-w-[250px] truncate">{task.desc || 'Açıklama yok'}</div>
-             </div>
-          </div>
-        </td>
-        <td className="py-5 px-4">
-           <div className="flex items-center gap-2 text-[9px] font-black text-gray-400 uppercase tracking-widest italic">
-              <Package size={12} className="text-enba-orange" /> {project?.name}
-           </div>
-        </td>
-        <td className="py-5 px-4">
-           <span className={`text-[8px] font-black px-2.5 py-1 rounded-lg uppercase tracking-[2px] italic border ${
-              task.priority === 'high' ? 'bg-rose-50 text-rose-600 border-rose-100' :
-              task.priority === 'medium' ? 'bg-orange-50 text-orange-600 border-orange-100' :
-              'bg-blue-50 text-blue-600 border-blue-100'
-           }`}>
-              {task.priority === 'high' ? 'ACİL' : task.priority === 'medium' ? 'ORTA' : 'DÜŞÜK'}
-           </span>
-        </td>
-        <td className="py-5 px-4">
-           <div className={`flex items-center gap-2 text-[9px] font-black uppercase tracking-widest italic ${overdue ? 'text-rose-500' : 'text-gray-400'}`}>
-              <Calendar size={12} /> {task.deadline ? new Date(task.deadline).toLocaleDateString('tr-TR') : 'SÜRESİZ'}
-           </div>
-        </td>
-        <td className="py-5 px-4">
-           <div className="flex items-center gap-2">
-              <select 
-                value={task.status} 
-                onChange={(e) => moveTask(task.id, e.target.value as any)}
-                className="bg-gray-50 border border-transparent rounded-lg px-2 py-1 text-[9px] font-black text-enba-dark uppercase tracking-widest italic focus:bg-white focus:border-enba-orange/20 outline-none transition-all cursor-pointer"
-              >
-                 <option value="todo">YAPILACAK</option>
-                 <option value="doing">İŞLEMDE</option>
-                 <option value="done">TAMAMLANDI</option>
-              </select>
-           </div>
-        </td>
-        <td className="py-5 px-4">
-           <div className="flex gap-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-              <button onClick={() => { setEditingTask(task); setFormData(task); setShowTaskForm(true); }} className="w-8 h-8 rounded-lg bg-gray-50 text-gray-400 hover:bg-enba-dark hover:text-white flex items-center justify-center transition-all">
-                 <Pencil size={12} />
-              </button>
-              <button onClick={async () => {
-                 if (msAccount && task.msListId && task.msTodoId) {
-                   await microsoftService.deleteTask(task.msListId, task.msTodoId);
-                 }
-                 setTasks(tks => tks.filter(t => t.id !== task.id));
-              }} className="w-8 h-8 rounded-lg bg-gray-50 text-gray-400 hover:bg-rose-500 hover:text-white flex items-center justify-center transition-all">
-                 <Trash2 size={12} />
-              </button>
-           </div>
-        </td>
-      </tr>
-    );
-  };
-
-  const TaskTableHeader = () => (
-    <thead>
-       <tr className="bg-gray-50/50 border-b border-gray-100">
-          <th className="py-4 px-6 text-[9px] font-black text-gray-400 uppercase tracking-[4px] italic">Görev Tanımı</th>
-          <th className="py-4 px-4 text-[9px] font-black text-gray-400 uppercase tracking-[4px] italic">Proje</th>
-          <th className="py-4 px-4 text-[9px] font-black text-gray-400 uppercase tracking-[4px] italic">Öncelik</th>
-          <th className="py-4 px-4 text-[9px] font-black text-gray-400 uppercase tracking-[4px] italic">Deadline</th>
-          <th className="py-4 px-4 text-[9px] font-black text-gray-400 uppercase tracking-[4px] italic">Durum</th>
-          <th className="py-4 px-6 text-[9px] font-black text-gray-400 uppercase tracking-[4px] italic text-right">İşlem</th>
-       </tr>
-    </thead>
+      <div className="flex items-center justify-between pt-2 border-t border-gray-50 mt-auto">
+        <div className="flex items-center gap-1.5 text-[9px] text-gray-400 font-medium">
+          <Calendar size={10} className={new Date(task.deadline) < new Date() && task.status !== 'done' ? 'text-rose-500' : ''} />
+          {task.deadline ? new Date(task.deadline).toLocaleDateString('tr-TR') : 'Süresiz'}
+        </div>
+        <div className="flex gap-0.5">
+          {task.status !== 'todo' && <button onClick={() => moveTask(task.id, task.status === 'done' ? 'doing' : 'todo')} className="w-5 h-5 flex items-center justify-center rounded bg-gray-50 text-gray-400 hover:bg-gray-100 transition-colors"><ArrowLeft size={10} /></button>}
+          {task.status !== 'done' && <button onClick={() => moveTask(task.id, task.status === 'todo' ? 'doing' : 'done')} className="w-5 h-5 flex items-center justify-center rounded bg-enba-dark text-white hover:bg-black transition-colors"><ArrowRight size={10} /></button>}
+        </div>
+      </div>
+    </div>
   );
 
   return (
-    <div className="flex flex-col gap-10 p-10 animate-in fade-in duration-1000">
-       {/* Header Code remains same but simplified */}
-       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-10">
-          <div className="flex flex-col gap-3">
-             <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-enba-dark rounded-[1.2rem] flex items-center justify-center text-enba-orange shadow-2xl border border-white/5">
-                   <ClipboardList size={32} />
-                </div>
-                <div>
-                   <h2 className="text-3xl font-black text-enba-dark tracking-tighter uppercase italic leading-none">
-                     Operasyon Matrixi
-                   </h2>
-                   <p className="text-[10px] text-gray-400 font-black uppercase tracking-[4px] mt-2 italic">Gruplandırılmış Görev Yönetimi</p>
-                </div>
-             </div>
+    <div className="flex h-full bg-[#FAFAFA] animate-fade-in">
+      {/* ─── LEFT SIDEBAR ─────────────────────────────────── */}
+      <aside className="w-72 bg-white border-r border-gray-100 flex flex-col flex-shrink-0 relative z-10 shadow-sm">
+        <div className="p-8 pb-4">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-enba-dark rounded-xl flex items-center justify-center text-enba-orange shadow-lg">
+              <ClipboardList size={20} />
+            </div>
+            <div>
+              <h2 className="text-sm font-black text-enba-dark tracking-tight uppercase">Operasyon</h2>
+              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">Matrix v2.0</p>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-4 items-center">
-             <div className="relative group">
-                <input 
-                  type="text" 
-                  placeholder="ARAMA..." 
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="bg-white border border-gray-100 rounded-[1.2rem] px-6 py-3 text-[10px] font-black text-enba-dark uppercase tracking-widest italic outline-none focus:ring-2 focus:ring-enba-orange/20 transition-all w-[240px] shadow-sm"
-                />
-                <Hash size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300" />
-             </div>
-             
-             <select 
-               value={statusFilter}
-               onChange={(e) => setStatusFilter(e.target.value as any)}
-               className="bg-white border border-gray-100 rounded-[1.2rem] px-5 py-3 text-[9px] font-black text-enba-dark uppercase tracking-widest italic outline-none shadow-sm cursor-pointer"
-             >
-                <option value="all">FİLTRE: TÜMÜ</option>
-                <option value="todo">YAPILACAK</option>
-                <option value="doing">İŞLEMDE</option>
-                <option value="done">TAMAMLANDI</option>
-             </select>
+          
+          <button onClick={() => setSelectedProjectId('all')} className={`w-full flex items-center justify-between p-3.5 rounded-2xl transition-all mb-4 ${selectedProjectId === 'all' ? 'bg-enba-dark text-white shadow-xl shadow-gray-200' : 'text-gray-400 hover:bg-gray-50'}`}>
+            <div className="flex items-center gap-3">
+              <Layers size={18} className={selectedProjectId === 'all' ? 'text-enba-orange' : ''} />
+              <span className="text-xs font-bold uppercase tracking-wide">Tüm Görevler</span>
+            </div>
+            <span className="text-[10px] font-black opacity-50">{tasks.length}</span>
+          </button>
+        </div>
 
-             <button onClick={() => setShowTaskForm(true)} className="px-8 py-3 bg-enba-dark text-white rounded-[1.2rem] font-black text-[10px] uppercase tracking-[3px] shadow-xl hover:bg-black transition-all flex items-center gap-3 active:scale-95 border border-white/5">
-                <PlusCircle size={18} className="text-enba-orange" />
-                Yeni Atama
-             </button>
-
-             {/* Microsoft Buttons Simplified */}
-             <div className="flex gap-2">
-                {!msAccount ? (
-                  <button onClick={handleMsLogin} className="px-5 py-3 bg-[#0078d4] text-white rounded-[1.2rem] font-black text-[10px] uppercase tracking-[2px] shadow-md hover:brightness-110 flex items-center gap-2">
-                     <Share2 size={16} />
-                  </button>
-                ) : (
-                  <>
-                    <button onClick={handleImportFromMs} disabled={isSyncing} className="px-5 py-3 bg-blue-600 text-white rounded-[1.2rem] font-black text-[10px] uppercase shadow-md flex items-center gap-2 disabled:opacity-50">
-                       <Download size={16} />
-                    </button>
-                    <button onClick={handleBulkSync} disabled={isSyncing} className="px-5 py-3 bg-emerald-600 text-white rounded-[1.2rem] font-black text-[10px] uppercase shadow-md flex items-center gap-2 disabled:opacity-50">
-                       <RefreshCw size={16} className={isSyncing ? 'animate-spin' : ''} />
-                    </button>
-                    <button onClick={handleMsLogout} className="w-10 h-10 bg-rose-500 text-white rounded-[1rem] flex items-center justify-center shadow-md">
-                       <LogOutIcon size={16} />
-                    </button>
-                  </>
-                )}
-             </div>
-          </div>
-       </div>
-
-       {/* ACTIVE TASKS BY PROJECT */}
-       <div className="space-y-10">
-          {projects.map(project => {
-            const projectTasks = activeTasksGrouped[project.id] || [];
-            if (projectTasks.length === 0) return null;
-
+        <div className="flex-1 overflow-y-auto px-4 sidebar-scrollbar custom-scrollbar pb-10">
+          {groups.map(group => {
+            const groupProjects = projects.filter(p => p.groupId === group.id || (!p.groupId && group.id === 'g1'));
+            
             return (
-              <div key={project.id} className="space-y-4">
-                 <div className="flex items-center gap-4 px-2">
-                    <div className="w-1.5 h-6 bg-enba-orange rounded-full shadow-lg shadow-enba-orange/30"></div>
-                    <h3 className="text-sm font-black text-enba-dark tracking-tighter uppercase italic">{project.name}</h3>
-                    <span className="text-[9px] font-black bg-gray-100 text-gray-400 px-2 py-0.5 rounded-full">{projectTasks.length} AKTİF</span>
-                 </div>
-                 <div className="bg-white rounded-[2rem] shadow-xl border border-gray-50 overflow-hidden">
-                    <div className="overflow-x-auto">
-                       <table className="w-full text-left border-collapse">
-                          <TaskTableHeader />
-                          <tbody>
-                             {projectTasks.map(task => <TaskRow key={task.id} task={task} />)}
-                          </tbody>
-                       </table>
-                    </div>
-                 </div>
+              <div key={group.id} className="mb-8">
+                <div className="px-4 mb-3 flex items-center justify-between group">
+                  <h3 className="text-[10px] font-black text-gray-300 uppercase tracking-[2px]">{group.name}</h3>
+                </div>
+                <div className="space-y-1">
+                  {groupProjects.map(project => (
+                    <button 
+                      key={project.id} 
+                      onClick={() => setSelectedProjectId(project.id)}
+                      className={`w-full flex items-center justify-between p-3.5 rounded-xl transition-all ${selectedProjectId === project.id ? 'bg-orange-50 text-enba-orange' : 'text-gray-500 hover:bg-gray-50'}`}
+                    >
+                      <div className="flex items-center gap-3 overflow-hidden">
+                        <FolderPlus size={16} className="flex-shrink-0" />
+                        <span className="text-[11px] font-bold uppercase truncate">{project.name}</span>
+                      </div>
+                      <span className={`text-[9px] font-black ${selectedProjectId === project.id ? 'text-enba-orange/50' : 'text-gray-300'}`}>
+                        {tasks.filter(t => t.projectId === project.id).length}
+                      </span>
+                    </button>
+                  ))}
+                </div>
               </div>
             );
           })}
+        </div>
 
-          {/* EMPTY STATE IF NO ACTIVE TASKS */}
-          {Object.keys(activeTasksGrouped).length === 0 && (
-              <div className="py-20 text-center bg-gray-50/50 rounded-[3rem] border-2 border-dashed border-gray-100">
-                 <ClipboardList size={48} className="mx-auto text-gray-200 mb-4" />
-                 <div className="text-[10px] font-black text-gray-300 uppercase tracking-[4px] italic">Aktif Operasyon Bulunmamaktadır</div>
+        <div className="p-6 border-t border-gray-50 flex flex-col gap-3">
+          <button 
+            onClick={() => {
+              if (confirm('TÜM görevleri silmek istediğinize emin misiniz? Bu işlem geri alınamaz.')) {
+                setTasks([]);
+              }
+            }} 
+            className="w-full py-3 border border-rose-100 bg-rose-50/30 rounded-xl text-[10px] font-black text-rose-400 uppercase tracking-[2px] hover:bg-rose-50 hover:text-rose-600 transition-all flex items-center justify-center gap-2"
+          >
+            <Trash2 size={14} /> Tümünü Temizle
+          </button>
+
+          <button onClick={() => setShowProjectForm(true)} className="w-full py-3 border border-dashed border-gray-200 rounded-xl text-[10px] font-black text-gray-400 uppercase tracking-[2px] hover:border-enba-orange hover:text-enba-orange transition-all flex items-center justify-center gap-2">
+            <PlusCircle size={14} /> Proje Ekle
+          </button>
+          
+          <div className="bg-gray-50 rounded-2xl p-4">
+            <div className={`flex items-center justify-between mb-3 ${msAccount ? 'text-emerald-600' : 'text-gray-400'}`}>
+              <div className="flex items-center gap-3">
+                <Share2 size={16} />
+                <span className="text-[10px] font-black uppercase tracking-widest">{msAccount ? 'Bulut Bağlı' : 'Bağlı Değil'}</span>
               </div>
+              {msAccount && <button onClick={() => microsoftService.logout()} className="text-[9px] font-black text-rose-500 hover:underline uppercase">Bağlantıyı Kes</button>}
+            </div>
+            {!msAccount ? (
+              <button onClick={() => microsoftService.login()} className="w-full py-2.5 bg-[#0078d4] text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-blue-900/10 active:scale-95 transition-all">
+                Microsoft To Do Bağla
+              </button>
+            ) : (
+              <div className="flex gap-2">
+                <button onClick={handleImportFromMs} disabled={isSyncing} className="flex-1 py-2.5 bg-enba-dark text-white rounded-xl flex items-center justify-center text-[10px] font-black uppercase tracking-widest gap-2 shadow-md hover:bg-black transition-all">
+                  <Download size={14} className={isSyncing ? 'animate-bounce' : ''} /> Görevleri Çek
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </aside>
+
+      {/* ─── MAIN CONTENT AREA ────────────────────────────── */}
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+        {/* Sub Header */}
+        <header className="h-20 bg-white border-b border-gray-100 flex items-center justify-between px-10 flex-shrink-0 shadow-sm relative z-0">
+          <div className="flex items-center gap-8">
+            <div className="flex flex-col">
+              <h1 className="text-xl font-black text-enba-dark tracking-tight leading-none uppercase italic">
+                {selectedProjectId === 'all' ? 'Tüm Operasyonlar' : projects.find(p => p.id === selectedProjectId)?.name}
+              </h1>
+              <div className="flex items-center gap-2 mt-1.5">
+                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest italic">{filteredTasks.length} Aktif Görev</span>
+                <div className="w-1 h-1 rounded-full bg-gray-200" />
+                <span className="text-[10px] text-enba-orange font-black uppercase tracking-widest italic">Matrix v2</span>
+              </div>
+            </div>
+
+            <div className="flex bg-gray-100 p-1 rounded-xl">
+              <button onClick={() => setViewMode('board')} className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'board' ? 'bg-white text-enba-dark shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>
+                <Kanban size={14} /> Matrix
+              </button>
+              <button onClick={() => setViewMode('list')} className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'list' ? 'bg-white text-enba-dark shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>
+                <ListIcon size={14} /> Sıralı
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <input 
+                type="text" 
+                placeholder="Görevlerde ara..." 
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                className="bg-gray-50 border-none rounded-xl px-10 py-2.5 text-[11px] font-medium text-enba-dark focus:ring-2 focus:ring-enba-orange/20 w-64 transition-all"
+              />
+              <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" />
+            </div>
+            <button onClick={() => setShowTaskForm(true)} className="px-6 py-2.5 bg-enba-orange text-white rounded-xl text-[10px] font-black uppercase tracking-[2px] shadow-lg shadow-orange-900/20 hover:brightness-110 active:scale-95 transition-all flex items-center gap-2">
+              <PlusCircle size={16} /> Yeni Atama
+            </button>
+          </div>
+        </header>
+
+        {/* Content View */}
+        <div className="flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar">
+          {viewMode === 'board' ? (
+            <div className="h-full flex gap-5 p-6 min-w-[1000px]">
+              {/* Kanban Columns */}
+              {['todo', 'doing', 'done'].map((status) => {
+                const columnTasks = filteredTasks.filter(t => t.status === status);
+                const statusInfo = {
+                  todo: { label: 'Yapılacak', icon: Clock, color: 'text-gray-400', bg: 'bg-gray-100' },
+                  doing: { label: 'İşlemde', icon: RotateCw, color: 'text-blue-500', bg: 'bg-blue-50' },
+                  done: { label: 'Bitti', icon: CheckCircle, color: 'text-emerald-500', bg: 'bg-emerald-50' }
+                }[status as 'todo' | 'doing' | 'done'];
+
+                return (
+                  <div key={status} className="flex-1 flex flex-col min-w-[260px] max-w-[320px]">
+                    <div className="flex items-center justify-between mb-4 px-2">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-7 h-7 rounded-lg ${statusInfo.bg} flex items-center justify-center ${statusInfo.color}`}>
+                          <statusInfo.icon size={14} className={status === 'doing' ? 'animate-spin-slow' : ''} />
+                        </div>
+                        <h3 className="text-[11px] font-black text-enba-dark font-uppercase tracking-widest">{statusInfo.label}</h3>
+                        <span className="bg-white border border-gray-100 px-2 py-0.5 rounded-full text-[9px] font-black text-gray-400 shadow-sm">{columnTasks.length}</span>
+                      </div>
+                    </div>
+                    <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar pb-20">
+                      {columnTasks.map(task => <TaskCard key={task.id} task={task} />)}
+                      {columnTasks.length === 0 && (
+                        <div className="py-20 border-2 border-dashed border-gray-100 rounded-[2rem] flex flex-col items-center justify-center text-gray-300">
+                          <Check size={24} className="opacity-20 mb-2" />
+                          <span className="text-[9px] font-black uppercase tracking-widest italic">Görev Bulunmuyor</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="p-10 pb-20">
+              <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-gray-50 bg-gray-50/30">
+                      <th className="p-6 text-[10px] font-black text-gray-400 uppercase tracking-widest italic">Operasyon Tanımı</th>
+                      <th className="p-6 text-[10px] font-black text-gray-400 uppercase tracking-widest italic text-center">Öncelik</th>
+                      <th className="p-6 text-[10px] font-black text-gray-400 uppercase tracking-widest italic">Bitiş</th>
+                      <th className="p-6 text-[10px] font-black text-gray-400 uppercase tracking-widest italic text-right">İşlem</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredTasks.map(task => (
+                      <tr key={task.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors group">
+                        <td className="p-6">
+                          <div className="flex items-center gap-4">
+                            <div className={`w-2 h-10 rounded-full ${task.status === 'done' ? 'bg-emerald-500' : task.status === 'doing' ? 'bg-blue-500' : 'bg-gray-200'}`} />
+                            <div>
+                              <div className="text-[13px] font-bold text-enba-dark tracking-tight">{task.title}</div>
+                              <div className="text-[10px] text-gray-400 font-medium truncate max-w-sm mt-0.5">{task.desc}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="p-6 text-center">
+                          <span className={`text-[9px] font-black px-3 py-1 rounded-lg uppercase tracking-wider italic ${
+                            task.priority === 'high' ? 'bg-rose-50 text-rose-600' : task.priority === 'medium' ? 'bg-amber-50 text-amber-600' : 'bg-blue-50 text-blue-600'
+                          }`}>
+                            {task.priority === 'high' ? 'Acil' : task.priority === 'medium' ? 'Orta' : 'Düşük'}
+                          </span>
+                        </td>
+                        <td className="p-6">
+                           <div className="text-[11px] font-bold text-enba-dark flex items-center gap-2 uppercase tracking-tight italic">
+                             <Calendar size={14} className="text-gray-300" />
+                             {task.deadline ? new Date(task.deadline).toLocaleDateString('tr-TR') : 'SÜRESİZ'}
+                           </div>
+                        </td>
+                        <td className="p-6">
+                          <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onClick={() => { setEditingTask(task); setFormData(task); setShowTaskForm(true); }} className="p-2 hover:bg-gray-100 rounded-xl text-gray-400 transition-all"><Pencil size={14} /></button>
+                            <button onClick={() => setTasks(prev => prev.filter(t => t.id !== task.id))} className="p-2 hover:bg-rose-50 rounded-xl text-rose-500 transition-all"><Trash2 size={14} /></button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                    {filteredTasks.length === 0 && (
+                      <tr>
+                        <td colSpan={4} className="p-20 text-center text-gray-300 text-[10px] font-black uppercase tracking-[4px]">
+                          Bu görünümde görev bulunmamaktadır
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           )}
-       </div>
+        </div>
+      </main>
 
-       {/* COMPLETED TASKS SECTION */}
-       {doneTasks.length > 0 && (
-         <div className="mt-10 space-y-4 opacity-70 hover:opacity-100 transition-opacity">
-            <div className="flex items-center gap-4 px-2">
-                <div className="w-1.5 h-6 bg-emerald-500 rounded-full"></div>
-                <h3 className="text-sm font-black text-gray-400 tracking-tighter uppercase italic">Tamamlanan Görevler</h3>
-                <span className="text-[9px] font-black bg-emerald-50 text-emerald-500 px-2 py-0.5 rounded-full">{doneTasks.length} BİTEN</span>
+      {/* ─── MODALS ───────────────────────────────────────── */}
+      {showTaskForm && (
+        <div className="fixed inset-0 bg-enba-dark/80 backdrop-blur-md z-50 flex items-center justify-center p-6 animate-fade-in">
+          <div className="bg-white rounded-[3rem] w-full max-w-lg shadow-2xl overflow-hidden relative">
+            <div className="h-2 bg-enba-orange" />
+            <div className="p-10 border-b border-gray-50 flex justify-between items-center bg-gray-50/30">
+              <div>
+                <h3 className="text-xl font-black text-enba-dark tracking-tight uppercase italic">{editingTask ? 'Görevi Düzenle' : 'Yeni Atama'}</h3>
+                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1 italic">Sisteme operasyonel kayıt girişi</p>
+              </div>
+              <button onClick={() => setShowTaskForm(false)} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition-all">✕</button>
             </div>
-            <div className="bg-white rounded-[2rem] shadow-lg border border-gray-50 overflow-hidden">
-               <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                     <TaskTableHeader />
-                     <tbody>
-                        {doneTasks.map(task => <TaskRow key={task.id} task={task} />)}
-                     </tbody>
-                  </table>
-               </div>
-            </div>
-         </div>
-       )}
+            <form onSubmit={handleAddTask} className="p-10 space-y-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 italic">Görev Tanımı</label>
+                <input required value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full bg-gray-50 border-none rounded-2xl p-5 text-sm font-bold text-enba-dark focus:ring-2 focus:ring-enba-orange/20 transition-all italic" placeholder="NE YAPILACAK?" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 italic">Detaylar</label>
+                <textarea value={formData.desc} onChange={e => setFormData({...formData, desc: e.target.value})} className="w-full bg-gray-50 border-none rounded-2xl p-5 text-sm font-bold text-enba-dark min-h-[100px] focus:ring-2 focus:ring-enba-orange/20 transition-all italic" placeholder="DETAYLI AÇIKLAMA..." />
+              </div>
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 italic">Öncelik</label>
+                  <select value={formData.priority} onChange={e => setFormData({...formData, priority: e.target.value as any})} className="w-full bg-gray-50 border-none rounded-2xl p-5 text-sm font-bold text-enba-dark focus:ring-2 focus:ring-enba-orange/20 transition-all italic appearance-none cursor-pointer">
+                    <option value="low">DÜŞÜK</option>
+                    <option value="medium">ORTA SEVİYE</option>
+                    <option value="high">YÜKSEK / ACİL</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 italic">Deadline</label>
+                  <input type="date" value={formData.deadline} onChange={e => setFormData({...formData, deadline: e.target.value})} className="w-full bg-gray-50 border-none rounded-2xl p-5 text-sm font-bold text-enba-dark focus:ring-2 focus:ring-enba-orange/20 transition-all" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 italic">Proje Bağlantısı</label>
+                <select value={formData.projectId} onChange={e => setFormData({...formData, projectId: e.target.value})} className="w-full bg-gray-50 border-none rounded-2xl p-5 text-sm font-bold text-enba-dark focus:ring-2 focus:ring-enba-orange/20 transition-all italic appearance-none cursor-pointer">
+                  {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              </div>
+              <button type="submit" className="w-full bg-enba-orange text-white rounded-2xl py-5 font-black text-[12px] uppercase tracking-[4px] shadow-xl shadow-orange-950/20 hover:brightness-110 active:scale-95 transition-all mt-4">
+                {editingTask ? 'GÜNCELLE' : 'SİSTEME KAYDET'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
-       {/* Task Form Modal */}
-
-       {/* Task Form Modal */}
-       {showTaskForm && (
-         <div className="fixed inset-0 bg-enba-dark/80 backdrop-blur-md z-50 flex items-center justify-center p-6">
-            <div className="bg-white rounded-[3.5rem] w-full max-w-xl shadow-2xl animate-in zoom-in duration-300 overflow-hidden relative group">
-               <div className="absolute top-0 left-0 w-full h-2 bg-enba-orange shadow-lg shadow-enba-orange/20"></div>
-               <div className="p-12 border-b border-gray-50 flex justify-between items-center bg-gray-50/20">
-                  <div className="flex items-center gap-6">
-                     <div className="w-16 h-16 bg-enba-dark rounded-2xl flex items-center justify-center text-enba-orange shadow-2xl">
-                        <PlusCircle size={32} />
-                     </div>
-                     <div>
-                        <h3 className="text-2xl font-black text-enba-dark tracking-tighter uppercase italic leading-none">Görev Matrix Girişi</h3>
-                        <p className="text-[10px] text-gray-400 font-black uppercase tracking-[3px] mt-2">Yeni Operasyonel Kayıt Formu</p>
-                     </div>
-                  </div>
-                  <button onClick={() => setShowTaskForm(false)} className="w-12 h-12 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-300 transition-all hover:rotate-90">
-                     <X size={32} />
-                  </button>
-               </div>
-               <form onSubmit={handleAddTask} className="p-12 space-y-8">
-                  <div className="space-y-6">
-                     <div className="space-y-3">
-                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-[4px] ml-1 italic">Görev Tanımı</label>
-                        <input required value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full bg-gray-50 border border-transparent rounded-[1.5rem] px-8 py-5 text-base font-black text-enba-dark focus:bg-white focus:ring-2 focus:ring-enba-orange/20 outline-none transition-all placeholder:italic" placeholder="NE YAPILACAK?" />
-                     </div>
-                     <div className="space-y-3">
-                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-[4px] ml-1 italic">Operasyonel Detarlar</label>
-                        <textarea value={formData.desc} onChange={e => setFormData({...formData, desc: e.target.value})} className="w-full bg-gray-50 border border-transparent rounded-[1.5rem] px-8 py-5 text-sm font-black text-enba-dark min-h-[120px] focus:bg-white focus:ring-2 focus:ring-enba-orange/20 outline-none transition-all placeholder:italic" placeholder="GÖREV DETAYLARINI BURAYA YAZINIZ..." />
-                     </div>
-                     <div className="grid grid-cols-2 gap-8">
-                        <div className="space-y-3">
-                           <label className="text-[10px] font-black text-gray-400 uppercase tracking-[4px] ml-1 italic">Öncelik Seviyesi</label>
-                           <select value={formData.priority} onChange={e => setFormData({...formData, priority: e.target.value as any})} className="w-full bg-gray-50 border border-transparent rounded-[1.5rem] px-8 py-5 text-sm font-black text-enba-dark focus:bg-white focus:ring-2 focus:ring-enba-orange/20 outline-none transition-all appearance-none italic">
-                              <option value="low">DÜŞÜK</option>
-                              <option value="medium">ORTA</option>
-                              <option value="high">YÜKSEK / ACİL</option>
-                           </select>
-                        </div>
-                        <div className="space-y-3">
-                           <label className="text-[10px] font-black text-gray-400 uppercase tracking-[4px] ml-1 italic">Deadline</label>
-                           <input type="date" value={formData.deadline} onChange={e => setFormData({...formData, deadline: e.target.value})} className="w-full bg-gray-50 border border-transparent rounded-[1.5rem] px-8 py-5 text-sm font-black text-enba-dark focus:bg-white focus:ring-2 focus:ring-enba-orange/20 outline-none transition-all" />
-                        </div>
-                     </div>
-                     <div className="grid grid-cols-2 gap-8">
-                        <div className="space-y-3">
-                           <label className="text-[10px] font-black text-gray-400 uppercase tracking-[4px] ml-1 italic">Proje Bağlantısı</label>
-                           <select value={formData.projectId} onChange={e => setFormData({...formData, projectId: e.target.value})} className="w-full bg-gray-50 border border-transparent rounded-[1.5rem] px-8 py-5 text-sm font-black text-enba-dark focus:bg-white focus:ring-2 focus:ring-enba-orange/20 outline-none transition-all appearance-none italic">
-                              {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                           </select>
-                        </div>
-                        <div className="space-y-3">
-                           <label className="text-[10px] font-black text-gray-400 uppercase tracking-[4px] ml-1 italic">Modül Referansı</label>
-                           <select value={formData.moduleRef} onChange={e => setFormData({...formData, moduleRef: e.target.value})} className="w-full bg-gray-50 border border-transparent rounded-[1.5rem] px-8 py-5 text-sm font-black text-enba-dark focus:bg-white focus:ring-2 focus:ring-enba-orange/20 outline-none transition-all appearance-none italic">
-                              {categories.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
-                           </select>
-                        </div>
-                     </div>
-                  </div>
-                  <button type="submit" className="w-full bg-enba-orange text-white rounded-[1.8rem] py-6 font-black text-xs uppercase tracking-[5px] shadow-2xl shadow-enba-orange/30 hover:brightness-110 transition-all mt-6 active:scale-95 group overflow-hidden relative">
-                    <div className="absolute inset-0 bg-white/10 -translate-x-full group-hover:translate-x-0 transition-transform duration-700"></div>
-                    SİSTEME KAYDET
-                  </button>
-               </form>
+      {showProjectForm && (
+        <div className="fixed inset-0 bg-enba-dark/80 backdrop-blur-md z-50 flex items-center justify-center p-6 animate-fade-in">
+          <div className="bg-white rounded-[2.5rem] w-full max-w-sm shadow-2xl p-10 overflow-hidden relative">
+            <div className="absolute top-0 left-0 w-full h-1.5 bg-enba-dark" />
+            <h3 className="text-xl font-black text-enba-dark tracking-tight uppercase italic mb-8">Yeni Proje</h3>
+            <div className="space-y-6">
+              <div>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest italic ml-1 mb-2 block">Proje Adı</label>
+                <input id="newProjName" className="w-full bg-gray-50 border-none rounded-xl p-4 text-sm font-bold text-enba-dark focus:ring-2 focus:ring-enba-orange/20 transition-all italic" placeholder="PROJE ADI..." />
+              </div>
+              <div>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest italic ml-1 mb-2 block">Grup</label>
+                <select id="newProjGroup" className="w-full bg-gray-50 border-none rounded-xl p-4 text-sm font-bold text-enba-dark focus:ring-2 focus:ring-enba-orange/20 transition-all italic appearance-none cursor-pointer">
+                  {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                </select>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button onClick={() => setShowProjectForm(false)} className="flex-1 py-4 bg-gray-100 text-gray-400 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-200 transition-all">İPTAL</button>
+                <button onClick={() => {
+                  const name = (document.getElementById('newProjName') as HTMLInputElement).value;
+                  const gId = (document.getElementById('newProjGroup') as HTMLSelectElement).value;
+                  if (name) {
+                    setProjects(prev => [...prev, { id: 'p-' + Date.now(), name, groupId: gId }]);
+                    setShowProjectForm(false);
+                  }
+                }} className="flex-1 py-4 bg-enba-dark text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black shadow-lg shadow-black/10 transition-all">EKLE</button>
+              </div>
             </div>
-         </div>
-       )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-interface XProps {
-  size: number;
-}
-const X: React.FC<XProps> = ({ size }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="18" y1="6" x2="6" y2="18"></line>
-    <line x1="6" y1="6" x2="18" y2="18"></line>
-  </svg>
-);
 export default Tasks;
