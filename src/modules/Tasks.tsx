@@ -210,6 +210,7 @@ export const Tasks: React.FC = () => {
           const msDesc = msTask.body?.content || '';
 
           if (localTask.status !== msStatus || localTask.title !== msTask.title || localTask.desc !== msDesc) {
+            updatedCount++;
             return { ...localTask, status: msStatus, title: msTask.title, desc: msDesc };
           }
           return localTask;
@@ -238,7 +239,17 @@ export const Tasks: React.FC = () => {
         return [...updatedTasks, ...newTasksFromMs];
       });
 
-      console.log(`Sync completed: ${updatedCount} updated, ${newCount} new.`);
+      console.group('Senkronizasyon Detayları');
+      console.log('Microsoft\'tan Gelen:', msTasks.length);
+      console.log('Güncellenen:', updatedCount);
+      console.log('Yeni Eklenen:', newCount);
+      console.groupEnd();
+
+      if (updatedCount > 0 || newCount > 0) {
+        alert(`Senkronizasyon Başarılı!\n${updatedCount} görev güncellendi, ${newCount} yeni görev eklendi.`);
+      } else {
+        console.log('Herhangi bir değişiklik bulunamadı.');
+      }
     } catch (err) {
       console.error('Sync error:', err);
     } finally {
@@ -249,6 +260,7 @@ export const Tasks: React.FC = () => {
   const handleImportFromMs = async () => {
     if (!msAccount) return;
     setIsSyncing(true);
+    console.log('Importing from Microsoft...');
     try {
       const lists = await microsoftService.getTodoLists();
       let importedCount = 0;

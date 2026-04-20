@@ -245,7 +245,9 @@ export const microsoftService = {
     const client = await this.getGraphClient();
     if (!client) return [];
     try {
-      const response = await client.api(`/me/todo/lists/${listId}/tasks`).get();
+      const response = await client.api(`/me/todo/lists/${listId}/tasks`)
+        .header('Cache-Control', 'no-cache')
+        .get();
       return response.value;
     } catch (err) {
       return [];
