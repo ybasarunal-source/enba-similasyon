@@ -6,7 +6,7 @@ import { Client } from '@microsoft/microsoft-graph-client';
  */
 
 const CLIENT_ID = import.meta.env.VITE_MICROSOFT_CLIENT_ID || 'e72321c9-1eaf-47b5-8722-17b32d50dd25';
-const TENANT_ID = import.meta.env.VITE_MICROSOFT_TENANT_ID || 'common';
+const TENANT_ID = import.meta.env.VITE_MICROSOFT_TENANT_ID || '2f458dd6-7ed0-4621-8a41-4462a2d585c1';
 
 const msalConfig: Configuration = {
   auth: {
