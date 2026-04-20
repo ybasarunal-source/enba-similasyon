@@ -67,18 +67,10 @@ const ensureInitialized = async (force = false) => {
   if (!initPromise || force) {
     initPromise = (async () => {
       try {
-        await Promise.race([
-          msalInstance.initialize(),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Init Timeout')), 3000))
-        ]);
-        
-        // Handle redirect only if we are forced or if it's the first time
-        await Promise.race([
-          msalInstance.handleRedirectPromise(),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Redirect Timeout')), 2000))
-        ]);
+        await msalInstance.initialize();
+        await msalInstance.handleRedirectPromise();
       } catch (err: any) {
-        console.warn('MSAL: Initialization warning (usually safe to ignore):', err);
+        console.warn('MSAL: Initialization warning:', err);
       } finally {
         isInitialized = true;
       }
