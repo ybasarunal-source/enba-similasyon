@@ -158,22 +158,7 @@ export const Tasks: React.FC = () => {
         }
       } catch (err) { console.error('MS Push Error:', err); }
     }
-  };
     setFormData({ title: '', desc: '', priority: 'medium', deadline: '', projectId: projects[0]?.id || 'p1', moduleRef: 'genel' });
-
-    if (msAccount) {
-      const sync = async () => {
-        const project = projects.find(p => p.id === newTask.projectId);
-        const list = await microsoftService.ensureTodoList(project?.name || 'Enba Tasks');
-        if (list) {
-          const result: any = await microsoftService.syncTask(list.id, newTask as any, newTask.msTodoId);
-          if (result?.id) {
-            setTasks(prev => prev.map(t => t.id === newTask.id ? { ...t, msTodoId: result.id, msListId: list.id } : t));
-          }
-        }
-      }
-      sync();
-    }
   };
 
   const toggleTask = async (id: string | number) => {
