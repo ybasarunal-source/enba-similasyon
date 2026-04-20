@@ -83,6 +83,7 @@ export const Tasks: React.FC = () => {
 
   const [msAccount, setMsAccount] = useState<any>(null);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
   const [viewMode, setViewMode] = useState<'board' | 'list'>('board');
   const [selectedProjectId, setSelectedProjectId] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -321,13 +322,20 @@ export const Tasks: React.FC = () => {
             {!msAccount ? (
               <button 
                 type="button"
+                disabled={isConnecting}
                 onClick={async () => {
-                  const account = await microsoftService.loginPopup();
-                  if (account) setMsAccount(account);
+                  setIsConnecting(true);
+                  try {
+                    const account = await microsoftService.loginPopup();
+                    if (account) setMsAccount(account);
+                  } finally {
+                    setIsConnecting(false);
+                  }
                 }} 
-                className="w-full py-2.5 bg-[#0078d4] text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-blue-900/10 active:scale-95 transition-all"
+                className={`w-full py-2.5 bg-[#0078d4] text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-blue-900/10 active:scale-95 transition-all ${isConnecting ? 'opacity-70 cursor-not-allowed' : 'hover:bg-blue-600'}`}
               >
-                Microsoft To Do Bağla
+                {isConnecting ? <RotateCw size={14} className="animate-spin" /> : null}
+                {isConnecting ? 'Bağlanıyor...' : 'Microsoft To Do Bağla'}
               </button>
             ) : (
               <div className="flex gap-2">

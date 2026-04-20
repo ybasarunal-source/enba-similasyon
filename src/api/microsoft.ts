@@ -118,7 +118,12 @@ export const microsoftService = {
     
     isInteractionInProgress = true;
     try {
-      const response = await msalInstance.loginPopup(loginRequest);
+      // Add a race condition to prevent the popup from hanging forever if blocked/closed non-standardly
+      const response = await Promise.race([
+        msalInstance.loginPopup(loginRequest),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Login Timeout')), 60000))
+      ]) as any;
+      
       return response.account;
     } catch (err: any) {
       if (err.errorCode === 'interaction_in_progress' && retryCount < 1) {
