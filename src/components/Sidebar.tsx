@@ -60,7 +60,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {sidebarAcik ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
       </button>
 
-      <div className="flex h-full flex-col p-6 overflow-y-auto">
+      <div className="flex h-full flex-col p-6 overflow-y-auto sidebar-scrollbar custom-scrollbar">
         {/* Quick Actions */}
         <div className="flex flex-col gap-3 mb-10">
           <button 

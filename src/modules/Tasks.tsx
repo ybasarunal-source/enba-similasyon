@@ -261,9 +261,9 @@ export const Tasks: React.FC = () => {
   };
 
   return (
-    <div className="flex h-full bg-[#FAFAFA] animate-fade-in">
+    <div className="flex h-screen bg-[#FAFAFA] animate-fade-in overflow-hidden">
       {/* ─── LEFT SIDEBAR ─────────────────────────────────── */}
-      <aside className="w-72 bg-white border-r border-gray-100 flex flex-col flex-shrink-0 relative z-10 shadow-sm">
+      <aside className="w-72 bg-white border-r border-gray-100 flex flex-col flex-shrink-0 relative z-10 shadow-sm overflow-hidden">
         <div className="p-8 pb-4">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 bg-enba-dark rounded-xl flex items-center justify-center text-enba-orange shadow-lg">
