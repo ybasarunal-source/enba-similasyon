@@ -208,33 +208,22 @@ export const Tasks: React.FC = () => {
   }, [tasks, selectedProjectId, searchTerm]);
 
   // ── Components ───────────────────────────────────────────
-  const TaskCard = ({ task }: { task: Task }) => (
-    <div className="group bg-white p-3.5 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all animate-fade-in relative overflow-hidden flex flex-col min-h-[110px]">
-      <div className={`absolute top-0 left-0 w-1 h-full ${task.priority === 'high' ? 'bg-rose-500' : task.priority === 'medium' ? 'bg-amber-500' : 'bg-blue-500'}`} />
-      
-      <div className="flex justify-between items-start mb-2">
-        <span className={`text-[8px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider ${
-          task.priority === 'high' ? 'bg-rose-50 text-rose-600' : task.priority === 'medium' ? 'bg-amber-50 text-amber-600' : 'bg-blue-50 text-blue-600'
-        }`}>
-          {task.priority === 'high' ? 'Acil' : task.priority === 'medium' ? 'Orta' : 'Düşük'}
-        </span>
-        <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button onClick={() => { setEditingTask(task); setFormData(task); setShowTaskForm(true); }} className="p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-enba-dark transition-colors"><Pencil size={12} /></button>
-          <button onClick={() => setTasks(prev => prev.filter(t => t.id !== task.id))} className="p-1 hover:bg-rose-50 rounded text-gray-400 hover:text-rose-600 transition-colors"><Trash2 size={12} /></button>
+          <button onClick={() => { setEditingTask(task); setFormData(task); setShowTaskForm(true); }} className="p-0.5 hover:bg-gray-100 rounded text-gray-400 hover:text-enba-dark transition-colors"><Pencil size={11} /></button>
+          <button onClick={() => setTasks(prev => prev.filter(t => t.id !== task.id))} className="p-0.5 hover:bg-rose-50 rounded text-gray-400 hover:text-rose-600 transition-colors"><Trash2 size={11} /></button>
         </div>
       </div>
 
-      <h4 className="text-[12px] font-bold text-enba-dark mb-0.5 line-clamp-1">{task.title}</h4>
-      <p className="text-[10px] text-gray-400 mb-2 line-clamp-2 leading-tight">{task.desc}</p>
+      <h4 className="text-[11px] font-bold text-enba-dark mb-0.5 line-clamp-1 leading-tight">{task.title}</h4>
+      {task.desc && <p className="text-[9px] text-gray-400 mb-1.5 line-clamp-1 leading-tight">{task.desc}</p>}
 
-      <div className="flex items-center justify-between pt-2 border-t border-gray-50 mt-auto">
-        <div className="flex items-center gap-1.5 text-[9px] text-gray-400 font-medium">
-          <Calendar size={10} className={new Date(task.deadline) < new Date() && task.status !== 'done' ? 'text-rose-500' : ''} />
-          {task.deadline ? new Date(task.deadline).toLocaleDateString('tr-TR') : 'Süresiz'}
+      <div className="flex items-center justify-between pt-1.5 border-t border-gray-50 mt-1">
+        <div className="flex items-center gap-1 text-[8px] text-gray-400 font-bold uppercase tracking-tighter">
+          <Calendar size={9} className={new Date(task.deadline) < new Date() && task.status !== 'done' ? 'text-rose-500' : ''} />
+          {task.deadline ? new Date(task.deadline).toLocaleDateString('tr-TR') : 'SÜRESİZ'}
         </div>
         <div className="flex gap-0.5">
-          {task.status !== 'todo' && <button onClick={() => moveTask(task.id, task.status === 'done' ? 'doing' : 'todo')} className="w-5 h-5 flex items-center justify-center rounded bg-gray-50 text-gray-400 hover:bg-gray-100 transition-colors"><ArrowLeft size={10} /></button>}
-          {task.status !== 'done' && <button onClick={() => moveTask(task.id, task.status === 'todo' ? 'doing' : 'done')} className="w-5 h-5 flex items-center justify-center rounded bg-enba-dark text-white hover:bg-black transition-colors"><ArrowRight size={10} /></button>}
+          {task.status !== 'todo' && <button onClick={() => moveTask(task.id, task.status === 'done' ? 'doing' : 'todo')} className="w-4 h-4 flex items-center justify-center rounded bg-gray-50 text-gray-400 hover:bg-gray-100 transition-colors"><ArrowLeft size={9} /></button>}
+          {task.status !== 'done' && <button onClick={() => moveTask(task.id, task.status === 'todo' ? 'doing' : 'done')} className="w-4 h-4 flex items-center justify-center rounded bg-enba-dark text-white hover:bg-black transition-colors"><ArrowRight size={9} /></button>}
         </div>
       </div>
     </div>
