@@ -54,7 +54,15 @@ const getProfileAvatar = () => {
 
 export const App: React.FC = () => {
   const { t, language, setLanguage, isLoading } = useTranslation();
-  const [activeModule, setActiveModule] = useState<ModuleType>('dashboard');
+  const [activeModule, setActiveModule] = useState<ModuleType>(() => {
+    // Redirect sonrası kalınan yerden devam etmek için kontrol
+    const saved = sessionStorage.getItem('enba_return_module');
+    if (saved) {
+      sessionStorage.removeItem('enba_return_module');
+      return saved as ModuleType;
+    }
+    return 'dashboard';
+  });
   // Sayfa geçmişi — geri/ileri navigasyon için
   const [history, setHistory] = useState<ModuleType[]>(['dashboard']);
   const [historyIndex, setHistoryIndex] = useState(0);

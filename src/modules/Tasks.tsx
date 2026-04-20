@@ -326,7 +326,13 @@ export const Tasks: React.FC = () => {
               {msAccount && <button onClick={() => microsoftService.logout()} className="text-[9px] font-black text-rose-500 hover:underline uppercase">Bağlantıyı Kes</button>}
             </div>
             {!msAccount ? (
-              <button onClick={() => microsoftService.login()} className="w-full py-2.5 bg-[#0078d4] text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-blue-900/10 active:scale-95 transition-all">
+              <button 
+                onClick={() => {
+                  sessionStorage.setItem('enba_return_module', 'tasks');
+                  microsoftService.login();
+                }} 
+                className="w-full py-2.5 bg-[#0078d4] text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-blue-900/10 active:scale-95 transition-all"
+              >
                 Microsoft To Do Bağla
               </button>
             ) : (
