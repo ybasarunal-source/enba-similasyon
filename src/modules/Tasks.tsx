@@ -235,21 +235,29 @@ export const Tasks: React.FC = () => {
           }
 
           const msStatus: 'todo' | 'done' = msTask.status === 'completed' ? 'done' : 'todo';
-          const msDesc = msTask.body?.content || '';
+          
+          // Resilient comparison (strip HTML and trim)
+          const cleanLocalDesc = (localTask.desc || '').replace(/<[^>]*>/g, '').trim();
+          const cleanMsDesc = (msTask.body?.content || '').replace(/<[^>]*>/g, '').trim();
+          const cleanLocalTitle = (localTask.title || '').trim();
+          const cleanMsTitle = (msTask.title || '').trim();
 
-          // Compare logic
           const hasStatusDiff = localTask.status !== msStatus;
-          const hasTitleDiff = localTask.title !== msTask.title;
-          const hasDescDiff = localTask.desc !== msDesc;
+          const hasTitleDiff = cleanLocalTitle !== cleanMsTitle;
+          const hasDescDiff = cleanLocalDesc !== cleanMsDesc;
 
           if (hasStatusDiff || hasTitleDiff || hasDescDiff) {
             updatedCount++;
-            console.log(`Güncelleme Tespit Edildi: [${localTask.title}]`, { status: msStatus, title: msTask.title });
+            console.log(`%c Sync UPDATE: [${localTask.title}]`, 'color: #0078d4; font-weight: bold', {
+              status: `${localTask.status} -> ${msStatus}`,
+              title: hasTitleDiff ? `${localTask.title} -> ${msTask.title}` : 'aynı',
+              desc: hasDescDiff ? 'açıklama değişti' : 'aynı'
+            });
             return {
               ...localTask,
               status: msStatus,
               title: msTask.title,
-              desc: msDesc
+              desc: msTask.body?.content || '' // Keep original formatting in storage but compare cleaned
             };
           }
           return localTask;
