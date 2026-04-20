@@ -56,11 +56,13 @@ window.GorevModulu = function({ navigate }) {
 
     // Microsoft Initializer
     React.useEffect(() => {
-        if (window.microsoftService) {
-            window.microsoftService.getAccount().then(acc => {
+        const checkAccount = async () => {
+            if (window.microsoftService) {
+                const acc = await window.microsoftService.getAccount();
                 if (acc) setMsAccount(acc);
-            });
-        }
+            }
+        };
+        checkAccount();
     }, []);
 
     const handleMsConnect = async () => {

@@ -15,8 +15,8 @@ const msalConfig: Configuration = {
     redirectUri: window.location.origin,
   },
   cache: {
-    // IMPORTANT: switched to sessionStorage to isolate interactions per tab
-    cacheLocation: 'sessionStorage',
+    cacheLocation: 'localStorage',
+    storeAuthStateInCookie: true,
   },
 };
 
@@ -51,10 +51,11 @@ const clearAllMsalStorage = () => {
 
 /**
  * Re-creates the MSAL instance to reset internal memory state.
+ * Only clears storage if explicitly requested to avoid losing sessions.
  */
-const resetMsalInstance = () => {
-    console.warn('MSAL: Resetting library instance to clear internal locks...');
-    clearAllMsalStorage();
+const resetMsalInstance = (clearStorage = false) => {
+    console.warn('MSAL: Resetting library instance...');
+    if (clearStorage) clearAllMsalStorage();
     msalInstance = new PublicClientApplication(msalConfig);
     isInitialized = false;
     initPromise = null;
@@ -149,7 +150,7 @@ export const microsoftService = {
 
   async getAccount() {
     try {
-      ensureInitialized();
+      await ensureInitialized();
       const accounts = msalInstance.getAllAccounts();
       if (accounts.length > 0) return accounts[0];
       return null;
@@ -160,9 +161,9 @@ export const microsoftService = {
 
   async getToken() {
     try {
+      await ensureInitialized();
       const account = await this.getAccount();
       if (!account) return null;
-      await new Promise(r => setTimeout(r, 100));
       const response = await msalInstance.acquireTokenSilent({
         ...loginRequest,
         account: account,
@@ -255,9 +256,11 @@ export const microsoftService = {
     if (!checkAndLockInteraction()) return;
     try {
       await ensureInitialized();
+      // Manual logout should also clear our local knowledge of this session
+      clearAllMsalStorage();
       await msalInstance.logoutRedirect();
     } catch (err) {
-      resetMsalInstance();
+      resetMsalInstance(true);
     } finally {
       unlockInteraction();
     }
