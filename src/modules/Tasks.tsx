@@ -447,47 +447,47 @@ export const Tasks: React.FC = () => {
       {/* ─── MAIN CONTENT AREA ────────────────────────────── */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
         {/* Sub Header */}
-        <header className="h-20 bg-white border-b border-gray-100 flex items-center justify-between px-10 flex-shrink-0 shadow-sm relative z-0">
-          <div className="flex items-center gap-8">
-            <div className="flex flex-col">
-              <h1 className="text-xl font-black text-enba-dark tracking-tight leading-none uppercase italic">
+        <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-6 flex-shrink-0 shadow-sm relative z-0">
+          <div className="flex items-center gap-4">
+            <div className="flex flex-col border-r border-gray-100 pr-4">
+              <h1 className="text-sm font-black text-enba-dark tracking-tight leading-none uppercase italic">
                 {selectedProjectId === 'all' ? 'Tüm Operasyonlar' : projects.find(p => p.id === selectedProjectId)?.name}
               </h1>
-              <div className="flex items-center gap-2 mt-1.5">
-                <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest italic">{filteredTasks.length} Aktif Görev</span>
-                <div className="w-1 h-1 rounded-full bg-gray-200" />
-                <span className="text-[10px] text-enba-orange font-black uppercase tracking-widest italic">Matrix v2</span>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest italic">{filteredTasks.length} Aktif</span>
+                <div className="w-0.5 h-0.5 rounded-full bg-gray-200" />
+                <span className="text-[9px] text-enba-orange/60 font-black uppercase tracking-widest italic">Matrix v2</span>
               </div>
             </div>
 
-            <div className="flex bg-gray-100 p-1 rounded-xl">
-              <button onClick={() => setViewMode('board')} className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'board' ? 'bg-white text-enba-dark shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>
-                <Kanban size={14} /> Matrix
+            <div className="flex bg-gray-100 p-0.5 rounded-lg">
+              <button onClick={() => setViewMode('board')} className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'board' ? 'bg-white text-enba-dark shadow-sm' : 'text-gray-400 hover:text-gray-600'}`} title="Board Görünümü">
+                <Kanban size={12} /> Matrix
               </button>
-              <button onClick={() => setViewMode('list')} className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'list' ? 'bg-white text-enba-dark shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>
-                <ListIcon size={14} /> Sıralı
+              <button onClick={() => setViewMode('list')} className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'list' ? 'bg-white text-enba-dark shadow-sm' : 'text-gray-400 hover:text-gray-600'}`} title="Liste Görünümü">
+                <ListIcon size={12} /> Sıralı
               </button>
             </div>
 
             <button 
               onClick={() => setIsCompact(!isCompact)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${isCompact ? 'bg-enba-orange/10 text-enba-orange border border-enba-orange/20' : 'bg-gray-100 text-gray-400 border border-transparent'}`}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${isCompact ? 'bg-enba-orange/10 text-enba-orange border border-enba-orange/20' : 'bg-gray-50 text-gray-400 border border-transparent hover:bg-gray-100'}`}
             >
-              {isCompact ? <Maximize size={14} /> : <Minimize size={14} />}
-              {isCompact ? 'Geniş Görünüm' : 'Kompakt'}
+              {isCompact ? <Maximize size={12} /> : <Minimize size={12} />}
+              {isCompact ? 'Geniş' : 'Dar'}
             </button>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <div className="relative">
               <input 
                 type="text" 
                 placeholder="Görevlerde ara..." 
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
-                className="bg-gray-50 border-none rounded-xl px-10 py-2.5 text-[11px] font-medium text-enba-dark focus:ring-2 focus:ring-enba-orange/20 w-64 transition-all"
+                className="bg-gray-50 border-none rounded-lg px-9 py-2 text-[10px] font-medium text-enba-dark focus:ring-2 focus:ring-enba-orange/20 w-48 focus:w-64 transition-all"
               />
-              <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" />
+              <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" />
             </div>
             <button 
               onClick={() => handleSyncAll()}
@@ -497,8 +497,8 @@ export const Tasks: React.FC = () => {
             >
               <RotateCw size={16} />
             </button>
-            <button onClick={() => setShowTaskForm(true)} className="bg-enba-dark text-white px-5 py-2.5 rounded-2xl font-black text-[10px] uppercase tracking-[2px] shadow-lg shadow-black/10 hover:bg-black hover:-translate-y-0.5 active:scale-95 transition-all flex items-center gap-2">
-              <PlusCircle size={16} /> Yeni Atama
+            <button onClick={() => setShowTaskForm(true)} className="bg-enba-dark text-white px-4 py-2 rounded-xl font-black text-[9px] uppercase tracking-[2px] shadow-lg shadow-black/10 hover:bg-black hover:-translate-y-0.5 active:scale-95 transition-all flex items-center gap-2">
+              <PlusCircle size={14} /> Yeni Atama
             </button>
           </div>
         </header>
