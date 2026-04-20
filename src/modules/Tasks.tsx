@@ -156,11 +156,20 @@ export const Tasks: React.FC = () => {
   };
 
   const moveTask = async (id: string | number, newStatus: 'todo' | 'doing' | 'done') => {
-    setTasks(prev => prev.map(t => t.id === id ? { ...t, status: newStatus } : t));
+    // Standardize 'doing' to 'todo' for the new binary view
+    const status: 'todo' | 'done' = newStatus === 'done' ? 'done' : 'todo';
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, status } : t));
     const task = tasks.find(t => t.id === id);
     if (msAccount && task?.msTodoId && task.msListId) {
-      await microsoftService.syncTask(task.msListId, { ...task, status: newStatus }, task.msTodoId);
+      await microsoftService.syncTask(task.msListId, { ...task, status }, task.msTodoId);
     }
+  };
+
+  const toggleTask = (id: string | number) => {
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
+    const newStatus = task.status === 'done' ? 'todo' : 'done';
+    moveTask(id, newStatus);
   };
 
   const handleImportFromMs = async () => {
@@ -203,76 +212,53 @@ export const Tasks: React.FC = () => {
     finally { setIsSyncing(false); }
   };
 
-  // ── Computed ─────────────────────────────────────────────
-  // Compact Mode Persist
-  useEffect(() => {
-    localStorage.setItem('enba_tasks_compact', isCompact.toString());
-  }, [isCompact]);
+  const filteredTasks = useMemo(() => {
+    return tasks
+      .filter(t => {
+        const matchesProject = selectedProjectId === 'all' || t.projectId === selectedProjectId;
+        const matchesSearch = t.title.toLowerCase().includes(searchTerm.toLowerCase()) || (t.desc || '').toLowerCase().includes(searchTerm.toLowerCase());
+        return matchesProject && matchesSearch;
+      })
+      .sort((a, b) => {
+        if (a.status === 'done' && b.status !== 'done') return 1;
+        if (a.status !== 'done' && b.status === 'done') return -1;
+        return 0;
+      });
+  }, [tasks, selectedProjectId, searchTerm]);
 
   const TaskCard = ({ task }: { task: Task }) => {
-    if (isCompact) {
-      return (
-        <div className="group bg-white p-2 rounded-lg border border-gray-100 shadow-sm hover:shadow-md transition-all animate-fade-in relative overflow-hidden flex flex-col gap-1">
-          <div className={`absolute top-0 left-0 w-1 h-full ${task.priority === 'high' ? 'bg-rose-500' : task.priority === 'medium' ? 'bg-amber-500' : 'bg-blue-500'}`} />
-          <div className="flex justify-between items-center pl-1.5">
-            <h4 className="text-[11px] font-bold text-enba-dark truncate flex-1 min-w-0 pr-2">{task.title}</h4>
+    const isDone = task.status === 'done';
+    
+    return (
+      <div className={`group bg-white p-2.5 rounded-xl border border-gray-100 shadow-sm transition-all animate-fade-in relative overflow-hidden flex items-center gap-3 ${isDone ? 'opacity-50 grayscale-[0.5]' : 'hover:shadow-md'}`}>
+        <div className={`absolute top-0 left-0 w-1 h-full ${task.priority === 'high' ? 'bg-rose-500' : task.priority === 'medium' ? 'bg-amber-500' : 'bg-blue-500'}`} />
+        
+        {/* Checkbox */}
+        <button 
+          onClick={() => toggleTask(task.id)}
+          className={`w-5 h-5 flex-shrink-0 rounded-full border-2 flex items-center justify-center transition-all ${isDone ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-gray-200 text-transparent hover:border-emerald-500'}`}
+        >
+          <Check size={12} strokeWidth={4} />
+        </button>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex justify-between items-center mb-0.5">
+            <h4 className={`text-[12px] font-bold text-enba-dark truncate pr-2 ${isDone ? 'line-through text-gray-400' : ''}`}>{task.title}</h4>
             <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
               <button onClick={() => { setEditingTask(task); setFormData(task); setShowTaskForm(true); }} className="p-0.5 hover:bg-gray-100 rounded text-gray-400 hover:text-enba-dark transition-colors"><Pencil size={11} /></button>
               <button onClick={() => setTasks(prev => prev.filter(t => t.id !== task.id))} className="p-0.5 hover:bg-rose-50 rounded text-gray-400 hover:text-rose-600 transition-colors"><Trash2 size={11} /></button>
             </div>
           </div>
-          <div className="flex items-center justify-between pl-1.5">
-            <div className="flex items-center gap-2 text-[8px] text-gray-400 font-bold uppercase tracking-tighter">
-              <Calendar size={9} className={new Date(task.deadline) < new Date() && task.status !== 'done' ? 'text-rose-500' : ''} />
-              <span>{task.deadline ? new Date(task.deadline).toLocaleDateString('tr-TR') : 'SÜRESİZ'}</span>
-              <div className={`w-1.5 h-1.5 rounded-full ${task.priority === 'high' ? 'bg-rose-500' : task.priority === 'medium' ? 'bg-amber-500' : 'bg-blue-500'}`} />
-            </div>
-            <div className="flex gap-0.5">
-              {task.status !== 'todo' && <button onClick={() => moveTask(task.id, task.status === 'done' ? 'doing' : 'todo')} className="w-4 h-4 flex items-center justify-center rounded bg-gray-50 text-gray-400 hover:bg-gray-100 transition-colors"><ArrowLeft size={9} /></button>}
-              {task.status !== 'done' && <button onClick={() => moveTask(task.id, task.status === 'todo' ? 'doing' : 'done')} className="w-4 h-4 flex items-center justify-center rounded bg-enba-dark text-white hover:bg-black transition-colors"><ArrowRight size={9} /></button>}
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div className="group bg-white p-3.5 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all animate-fade-in relative overflow-hidden flex flex-col min-h-[110px]">
-        <div className={`absolute top-0 left-0 w-1.5 h-full ${task.priority === 'high' ? 'bg-rose-500' : task.priority === 'medium' ? 'bg-amber-500' : 'bg-blue-500'}`} />
-        <div className="flex justify-between items-start mb-2">
-          <span className={`text-[9px] font-black px-2 py-0.5 rounded-lg uppercase tracking-wider ${
-            task.priority === 'high' ? 'bg-rose-50 text-rose-600' : task.priority === 'medium' ? 'bg-amber-50 text-amber-600' : 'bg-blue-50 text-blue-600'
-          }`}>
-            {task.priority === 'high' ? 'Acil' : task.priority === 'medium' ? 'Orta' : 'Düşük'}
-          </span>
-          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button onClick={() => { setEditingTask(task); setFormData(task); setShowTaskForm(true); }} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-enba-dark transition-colors"><Pencil size={14} /></button>
-            <button onClick={() => setTasks(prev => prev.filter(t => t.id !== task.id))} className="p-1.5 hover:bg-rose-50 rounded-lg text-gray-400 hover:text-rose-600 transition-colors"><Trash2 size={14} /></button>
-          </div>
-        </div>
-        <h4 className="text-[14px] font-bold text-enba-dark mb-1 line-clamp-1">{task.title}</h4>
-        {task.desc && <p className="text-[11px] text-gray-400 mb-3 line-clamp-2 leading-snug">{task.desc}</p>}
-        <div className="flex items-center justify-between pt-3 border-t border-gray-50 mt-auto">
-          <div className="flex items-center gap-2 text-[10px] text-gray-400 font-bold uppercase tracking-tight">
-            <Calendar size={12} className={new Date(task.deadline) < new Date() && task.status !== 'done' ? 'text-rose-500' : ''} />
-            {task.deadline ? new Date(task.deadline).toLocaleDateString('tr-TR') : 'Süresiz'}
-          </div>
-          <div className="flex gap-1">
-            {task.status !== 'todo' && <button onClick={() => moveTask(task.id, task.status === 'done' ? 'doing' : 'todo')} className="w-6 h-6 flex items-center justify-center rounded-lg bg-gray-50 text-gray-400 hover:bg-gray-100 transition-colors"><ArrowLeft size={12} /></button>}
-            {task.status !== 'done' && <button onClick={() => moveTask(task.id, task.status === 'todo' ? 'doing' : 'done')} className="w-6 h-6 flex items-center justify-center rounded-lg bg-enba-dark text-white hover:bg-black transition-colors"><ArrowRight size={12} /></button>}
+          
+          <div className="flex items-center gap-2 text-[9px] text-gray-400 font-bold uppercase tracking-tighter">
+            <Calendar size={10} className={new Date(task.deadline) < new Date() && task.status !== 'done' ? 'text-rose-500' : ''} />
+            <span>{task.deadline ? new Date(task.deadline).toLocaleDateString('tr-TR') : 'SÜRESİZ'}</span>
+            <div className={`w-1.5 h-1.5 rounded-full ${task.priority === 'high' ? 'bg-rose-500' : task.priority === 'medium' ? 'bg-amber-500' : 'bg-blue-500'}`} />
           </div>
         </div>
       </div>
     );
   };
-
-  const filteredTasks = useMemo(() => {
-    return tasks.filter(t => {
-      const matchesProject = selectedProjectId === 'all' || t.projectId === selectedProjectId;
-      const matchesSearch = t.title.toLowerCase().includes(searchTerm.toLowerCase()) || t.desc.toLowerCase().includes(searchTerm.toLowerCase());
-      return matchesProject && matchesSearch;
-    });
-  }, [tasks, selectedProjectId, searchTerm]);
 
   return (
     <div className="flex h-full bg-[#FAFAFA] animate-fade-in">
@@ -435,100 +421,29 @@ export const Tasks: React.FC = () => {
           </div>
         </header>
 
-        {/* Content View */}
-        <div className="flex-1 overflow-x-auto overflow-y-hidden custom-scrollbar">
-          {viewMode === 'board' ? (
-            <div className="h-full flex gap-5 p-6 min-w-[1000px]">
-              {/* Kanban Columns */}
-              {['todo', 'doing', 'done'].map((status) => {
-                const columnTasks = filteredTasks.filter(t => t.status === status);
-                const statusInfo = {
-                  todo: { label: 'Yapılacak', icon: Clock, color: 'text-gray-400', bg: 'bg-gray-100' },
-                  doing: { label: 'İşlemde', icon: RotateCw, color: 'text-blue-500', bg: 'bg-blue-50' },
-                  done: { label: 'Bitti', icon: CheckCircle, color: 'text-emerald-500', bg: 'bg-emerald-50' }
-                }[status as 'todo' | 'doing' | 'done'];
+        {/* Unitfed High-Density List View */}
+        <div className="flex-1 overflow-hidden h-full">
+            <div className="max-w-4xl mx-auto h-[calc(100vh-200px)] flex flex-col p-8">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex flex-col">
+                  <h3 className="text-sm font-black text-enba-dark uppercase tracking-widest italic">Operasyon Akışı</h3>
+                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-[2px] mt-0.5">Tüm Görevler (Sıralı)</p>
+                </div>
+                <div className="bg-white px-4 py-2 rounded-xl border border-gray-100 shadow-sm text-[10px] font-black text-enba-orange italic uppercase">
+                  {filteredTasks.filter(t => t.status !== 'done').length} Bekleyen Görev
+                </div>
+              </div>
 
-                return (
-                  <div key={status} className="flex-1 flex flex-col min-w-[260px] max-w-[320px]">
-                    <div className="flex items-center justify-between mb-4 px-2">
-                      <div className="flex items-center gap-2">
-                        <div className={`w-7 h-7 rounded-lg ${statusInfo.bg} flex items-center justify-center ${statusInfo.color}`}>
-                          <statusInfo.icon size={14} className={status === 'doing' ? 'animate-spin-slow' : ''} />
-                        </div>
-                        <h3 className="text-[11px] font-black text-enba-dark font-uppercase tracking-widest">{statusInfo.label}</h3>
-                        <span className="bg-white border border-gray-100 px-2 py-0.5 rounded-full text-[9px] font-black text-gray-400 shadow-sm">{columnTasks.length}</span>
-                      </div>
-                    </div>
-                    <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar pb-20">
-                      {columnTasks.map(task => <TaskCard key={task.id} task={task} />)}
-                      {columnTasks.length === 0 && (
-                        <div className="py-20 border-2 border-dashed border-gray-100 rounded-[2rem] flex flex-col items-center justify-center text-gray-300">
-                          <Check size={24} className="opacity-20 mb-2" />
-                          <span className="text-[9px] font-black uppercase tracking-widest italic">Görev Bulunmuyor</span>
-                        </div>
-                      )}
-                    </div>
+              <div className="flex-1 overflow-y-auto space-y-2 pr-4 custom-scrollbar pb-10">
+                {filteredTasks.map(task => <TaskCard key={task.id} task={task} />)}
+                {filteredTasks.length === 0 && (
+                  <div className="py-20 border-2 border-dashed border-gray-100 rounded-[3rem] flex flex-col items-center justify-center text-gray-300">
+                    <ClipboardList size={32} className="opacity-20 mb-4" />
+                    <span className="text-[10px] font-black uppercase tracking-[4px] italic">Kayıtlı Görev Bulunmuyor</span>
                   </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="p-10 pb-20">
-              <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-gray-50 bg-gray-50/30">
-                      <th className="p-6 text-[10px] font-black text-gray-400 uppercase tracking-widest italic">Operasyon Tanımı</th>
-                      <th className="p-6 text-[10px] font-black text-gray-400 uppercase tracking-widest italic text-center">Öncelik</th>
-                      <th className="p-6 text-[10px] font-black text-gray-400 uppercase tracking-widest italic">Bitiş</th>
-                      <th className="p-6 text-[10px] font-black text-gray-400 uppercase tracking-widest italic text-right">İşlem</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredTasks.map(task => (
-                      <tr key={task.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors group">
-                        <td className="p-6">
-                          <div className="flex items-center gap-4">
-                            <div className={`w-2 h-10 rounded-full ${task.status === 'done' ? 'bg-emerald-500' : task.status === 'doing' ? 'bg-blue-500' : 'bg-gray-200'}`} />
-                            <div>
-                              <div className="text-[13px] font-bold text-enba-dark tracking-tight">{task.title}</div>
-                              <div className="text-[10px] text-gray-400 font-medium truncate max-w-sm mt-0.5">{task.desc}</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="p-6 text-center">
-                          <span className={`text-[9px] font-black px-3 py-1 rounded-lg uppercase tracking-wider italic ${
-                            task.priority === 'high' ? 'bg-rose-50 text-rose-600' : task.priority === 'medium' ? 'bg-amber-50 text-amber-600' : 'bg-blue-50 text-blue-600'
-                          }`}>
-                            {task.priority === 'high' ? 'Acil' : task.priority === 'medium' ? 'Orta' : 'Düşük'}
-                          </span>
-                        </td>
-                        <td className="p-6">
-                           <div className="text-[11px] font-bold text-enba-dark flex items-center gap-2 uppercase tracking-tight italic">
-                             <Calendar size={14} className="text-gray-300" />
-                             {task.deadline ? new Date(task.deadline).toLocaleDateString('tr-TR') : 'SÜRESİZ'}
-                           </div>
-                        </td>
-                        <td className="p-6">
-                          <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onClick={() => { setEditingTask(task); setFormData(task); setShowTaskForm(true); }} className="p-2 hover:bg-gray-100 rounded-xl text-gray-400 transition-all"><Pencil size={14} /></button>
-                            <button onClick={() => setTasks(prev => prev.filter(t => t.id !== task.id))} className="p-2 hover:bg-rose-50 rounded-xl text-rose-500 transition-all"><Trash2 size={14} /></button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                    {filteredTasks.length === 0 && (
-                      <tr>
-                        <td colSpan={4} className="p-20 text-center text-gray-300 text-[10px] font-black uppercase tracking-[4px]">
-                          Bu görünümde görev bulunmamaktadır
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                )}
               </div>
             </div>
-          )}
         </div>
       </main>
 
