@@ -96,15 +96,8 @@ export const Tasks: React.FC = () => {
 
   useEffect(() => {
     const initMSAL = async () => {
-      try {
-        await msalInstance.initialize();
-        const response = await msalInstance.handleRedirectPromise();
-        if (response?.account) setMsAccount(response.account);
-        else {
-          const accounts = msalInstance.getAllAccounts();
-          if (accounts.length > 0) setMsAccount(accounts[0]);
-        }
-      } catch (err) { console.error("MSAL Init Error:", err); }
+      const account = await microsoftService.getAccount();
+      if (account) setMsAccount(account);
     };
     initMSAL();
   }, []);

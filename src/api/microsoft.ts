@@ -54,21 +54,36 @@ export const microsoftService = {
     }
   },
 
-  async getToken() {
+  async getAccount() {
     try {
       await msalInstance.initialize();
+      // Önce aktif redirect varsa onu tamamla
+      await msalInstance.handleRedirectPromise();
+      
       const accounts = msalInstance.getAllAccounts();
       if (accounts.length > 0) {
+        return accounts[0];
+      }
+      return null;
+    } catch (err) {
+      console.error('Get Account Error:', err);
+      return null;
+    }
+  },
+
+  async getToken() {
+    try {
+      const account = await this.getAccount();
+      if (account) {
         const response = await msalInstance.acquireTokenSilent({
           ...loginRequest,
-          account: accounts[0],
+          account: account,
         });
         return response.accessToken;
       }
       return null;
     } catch (err) {
-      console.warn('Silent token acquisition failed, trying popup...', err);
-      // Optional: fallback to popup or redirect if silent fails
+      console.warn('Silent token acquisition failed...', err);
       return null;
     }
   },
