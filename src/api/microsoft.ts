@@ -1,8 +1,9 @@
-import { PublicClientApplication, Configuration, RedirectRequest, PopupRequest } from '@azure/msal-browser';
+import { PublicClientApplication, Configuration, RedirectRequest, PopupRequest, AccountInfo } from '@azure/msal-browser';
 import { Client } from '@microsoft/microsoft-graph-client';
 
 /**
  * Microsoft Authentication & Graph API Service
+ * v2.0 - Robust Persistence & Sync Edition
  */
 
 const CLIENT_ID = import.meta.env.VITE_MICROSOFT_CLIENT_ID || 'e72321c9-1eaf-47b5-8722-17b32d50dd25';
@@ -16,19 +17,15 @@ const msalConfig: Configuration = {
   },
   cache: {
     cacheLocation: 'localStorage',
+    storeAuthStateInCookie: false, // LocalStorage is enough with initialize()
   },
 };
 
-// Instance managed by a factory to allow recreation
-export let msalInstance = new PublicClientApplication(msalConfig);
-
+let msalInstance: PublicClientApplication | null = null;
 let isInitialized = false;
 let initPromise: Promise<void> | null = null;
-let isInteractionInProgress = false;
+let lastInteractionTime = 0;
 
-/**
- * Wipes EVERY MSAL related key from the browser storage.
- */
 const clearAllMsalStorage = () => {
   try {
     const storages = [window.sessionStorage, window.localStorage];
@@ -48,49 +45,39 @@ const clearAllMsalStorage = () => {
   }
 };
 
-/**
- * Re-creates the MSAL instance to reset internal memory state.
- * Only clears storage if explicitly requested to avoid losing sessions.
- */
-const resetMsalInstance = (clearStorage = false) => {
-    console.warn('MSAL: Resetting library instance...');
-    if (clearStorage) clearAllMsalStorage();
+const ensureInitialized = async () => {
+  if (!msalInstance) {
     msalInstance = new PublicClientApplication(msalConfig);
-    isInitialized = false;
-    initPromise = null;
-    isInteractionInProgress = false;
-};
-
-const ensureInitialized = async (force = false) => {
-  if (isInitialized && !force) return;
-  
-  if (!initPromise || force) {
-    initPromise = (async () => {
-      try {
-        await msalInstance.initialize();
-        await msalInstance.handleRedirectPromise();
-      } catch (err: any) {
-        console.warn('MSAL: Initialization warning:', err);
-      } finally {
-        isInitialized = true;
-      }
-    })();
   }
-  
+
+  if (isInitialized) return;
+  if (initPromise) return initPromise;
+
+  initPromise = (async () => {
+    try {
+      if (!msalInstance) return;
+      await msalInstance.initialize();
+      await msalInstance.handleRedirectPromise();
+      
+      // Auto-set active account if exactly one account is present
+      const accounts = msalInstance.getAllAccounts();
+      if (accounts.length > 0 && !msalInstance.getActiveAccount()) {
+        msalInstance.setActiveAccount(accounts[0]);
+      }
+      
+      isInitialized = true;
+    } catch (err) {
+      console.warn('MSAL: Initialization failed:', err);
+      initPromise = null;
+    }
+  })();
+
   return initPromise;
 };
 
-const loginRequest: PopupRequest = {
-  scopes: ['User.Read', 'Tasks.ReadWrite'],
-};
-
-let lastInteractionTime = 0;
-
-const checkAndLockInteraction = (force = false) => {
+const checkAndLockInteraction = () => {
   const now = Date.now();
-  if (!force && lastInteractionTime > 0 && (now - lastInteractionTime) < 10000) {
-    return false;
-  }
+  if (lastInteractionTime > 0 && (now - lastInteractionTime) < 5000) return false;
   lastInteractionTime = now;
   return true;
 };
@@ -99,52 +86,45 @@ const unlockInteraction = () => {
   lastInteractionTime = 0;
 };
 
+const loginRequest: PopupRequest = {
+  scopes: ['User.Read', 'Tasks.ReadWrite'],
+};
+
 export const microsoftService = {
-  async login() {
-    if (!checkAndLockInteraction()) return;
+  async loginPopup() {
+    if (!checkAndLockInteraction()) return null;
     try {
       await ensureInitialized();
-      await msalInstance.loginRedirect(loginRequest as any);
-    } catch (err: any) {
-      console.error('MS Login Error:', err);
-      resetMsalInstance();
-    } finally {
-      unlockInteraction();
-    }
-  },
-
-  async loginPopup(): Promise<any> {
-    // Save current state so we can return here after redirect
-    if (typeof sessionStorage !== 'undefined') {
-      sessionStorage.setItem('enba_return_module', 'tasks');
-    }
-    
-    const canProceed = checkAndLockInteraction();
-    if (!canProceed) {
-      console.warn('MSAL: Interaction locked (safety clock).');
+      if (!msalInstance) return null;
+      
+      const result = await msalInstance.loginPopup(loginRequest);
+      if (result.account) {
+        msalInstance.setActiveAccount(result.account);
+        return result.account;
+      }
       return null;
-    }
-    
-    try {
-      await ensureInitialized();
-      // Directly using redirect for maximum reliability as requested
-      await msalInstance.loginRedirect(loginRequest as any);
-      return null; // Page will unload
     } catch (err: any) {
-      console.error('MS Redirect Login Error:', err);
-      resetMsalInstance();
+      console.error('MS Popup Login Error:', err);
       return null;
     } finally {
       unlockInteraction();
     }
   },
 
-  async getAccount() {
+  async getAccount(): Promise<AccountInfo | null> {
     try {
       await ensureInitialized();
-      const accounts = msalInstance.getAllAccounts();
-      if (accounts.length > 0) return accounts[0];
-      return null;
+      if (!msalInstance) return null;
+      
+      let account = msalInstance.getActiveAccount();
+      if (!account) {
+        const accounts = msalInstance.getAllAccounts();
+        if (accounts.length > 0) {
+          account = accounts[0];
+          msalInstance.setActiveAccount(account);
+        }
+      }
+      return account;
     } catch (err) {
       return null;
     }
@@ -154,14 +134,15 @@ export const microsoftService = {
     try {
       await ensureInitialized();
       const account = await this.getAccount();
-      if (!account) return null;
+      if (!account || !msalInstance) return null;
+      
       const response = await msalInstance.acquireTokenSilent({
         ...loginRequest,
         account: account,
       });
       return response.accessToken;
     } catch (err) {
-      console.warn('Silent token acquisition failed...', err);
+      console.warn('Silent token acquisition failed, re-auth might be needed.', err);
       return null;
     }
   },
@@ -170,9 +151,7 @@ export const microsoftService = {
     const token = await this.getToken();
     if (!token) return null;
     return Client.init({
-      authProvider: (done) => {
-        done(null, token);
-      },
+      authProvider: (done) => done(null, token),
     });
   },
 
@@ -247,16 +226,14 @@ export const microsoftService = {
   },
 
   async logout() {
-    if (!checkAndLockInteraction()) return;
     try {
       await ensureInitialized();
-      // Manual logout should also clear our local knowledge of this session
       clearAllMsalStorage();
-      await msalInstance.logoutRedirect();
+      if (msalInstance) {
+        await msalInstance.logoutRedirect();
+      }
     } catch (err) {
-      resetMsalInstance(true);
-    } finally {
-      unlockInteraction();
+      console.error('MS Logout Error:', err);
     }
   }
 };
@@ -264,5 +241,5 @@ export const microsoftService = {
 // Expose to window for legacy modules
 if (typeof window !== 'undefined') {
   (window as any).microsoftService = microsoftService;
-  (window as any).msalInstance = msalInstance;
+  // Note: We no longer expose msalInstance directly to prevent reference drift
 }

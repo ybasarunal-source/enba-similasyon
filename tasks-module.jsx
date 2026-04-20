@@ -56,50 +56,43 @@ window.GorevModulu = function({ navigate }) {
 
     // Microsoft Initializer
     React.useEffect(() => {
-        const checkAccount = async () => {
+        const recoverSession = async () => {
             if (window.microsoftService) {
-                const acc = await window.microsoftService.getAccount();
-                if (acc) {
-                    setMsAccount(acc);
-                    handleSyncAll(acc);
+                try {
+                    const acc = await window.microsoftService.getAccount();
+                    if (acc) {
+                        setMsAccount(acc);
+                        handleSyncAll(acc);
+                    }
+                } catch (err) {
+                    console.warn('MSAL Recovery failed:', err);
                 }
             }
         };
-        checkAccount();
+        recoverSession();
     }, []);
 
     const handleMsConnect = async () => {
         if (!window.microsoftService) return;
         setIsConnecting(true);
-        // Give React time to render the loading state
-        await new Promise(r => setTimeout(r, 100));
         try {
             const acc = await window.microsoftService.loginPopup();
-            if (acc) setMsAccount(acc);
+            if (acc) {
+                setMsAccount(acc);
+                handleSyncAll(acc);
+            }
+        } catch (err) {
+            console.error('MS Connect Error:', err);
+            alert('Microsoft To-Do bağlantısı başarısız oldu.');
         } finally {
             setIsConnecting(false);
         }
     };
 
-    const handleSync = async () => {
+    const handleSyncManual = async () => {
         if (!window.microsoftService || !msAccount) return;
-        setIsSyncing(true);
-        try {
-            const list = await window.microsoftService.ensureTodoList('Enba Tasks');
-            if (!list) throw new Error('List access failed');
-            
-            for (const task of tasks) {
-                if (task.status !== 'done') {
-                    await window.microsoftService.syncTask(list.id, task);
-                }
-            }
-            alert('Görevler Microsoft To Do ile senkronize edildi!');
-        } catch (err) {
-            console.error('Sync error:', err);
-            alert('Senkronizasyon hatası.');
-        } finally {
-            setIsSyncing(false);
-        }
+        await handleSyncAll(msAccount);
+        alert('Senkronizasyon tamamlandı.');
     };
 
     const handleAddTask = async (e) => {
@@ -164,7 +157,7 @@ window.GorevModulu = function({ navigate }) {
     };
 
     const handleSyncAll = async (accountInstance = msAccount) => {
-        if (!accountInstance || !window.microsoftService) return;
+        if (!window.microsoftService || !accountInstance) return;
         setIsSyncing(true);
         try {
             const list = await window.microsoftService.ensureTodoList('Enba Tasks');

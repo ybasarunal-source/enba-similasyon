@@ -85,6 +85,7 @@ export const Tasks: React.FC = () => {
 
   const [msAccount, setMsAccount] = useState<any>(null);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<string>('');
   const [isConnecting, setIsConnecting] = useState(false);
   const [viewMode, setViewMode] = useState<'board' | 'list'>('board');
   const [selectedProjectId, setSelectedProjectId] = useState<string>('all');
@@ -101,16 +102,36 @@ export const Tasks: React.FC = () => {
   }, [tasks, projects, groups]);
 
   useEffect(() => {
-    const initMSAL = async () => {
-      const account = await microsoftService.getAccount();
-      if (account) {
-        setMsAccount(account);
-        // Otomatik senkronizasyonu başlat
-        handleSyncAll(account);
+    const recoverSession = async () => {
+      try {
+        const account = await microsoftService.getAccount();
+        if (account) {
+          console.log('MSAL: Session recovered for', account.username);
+          setMsAccount(account);
+          handleSyncAll(account);
+        }
+      } catch (err) {
+        console.warn('MSAL: Recovery failed:', err);
       }
     };
-    initMSAL();
+    recoverSession();
   }, []);
+
+  const handleConnectMs = async () => {
+    setIsConnecting(true);
+    try {
+      const account = await microsoftService.loginPopup();
+      if (account) {
+        setMsAccount(account);
+        handleSyncAll(account);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Microsoft To-Do bağlantısı başarısız oldu.');
+    } finally {
+      setIsConnecting(false);
+    }
+  };
 
   // ── UI States ────────────────────────────────────────────
   const [showTaskForm, setShowTaskForm] = useState(false);
@@ -188,38 +209,58 @@ export const Tasks: React.FC = () => {
   const handleSyncAll = async (accountInstance = msAccount) => {
     if (!accountInstance) return;
     setIsSyncing(true);
+    setSyncStatus('Senkronize ediliyor...');
+    
     try {
       const list = await microsoftService.ensureTodoList('Enba Tasks');
-      if (!list) return;
+      if (!list) throw new Error('Task listesi bulunamadı.');
 
       const msTasks = await microsoftService.getTodoListTasks(list.id);
       let updatedCount = 0;
       let newCount = 0;
 
+      console.group('Microsoft To-Do Sync Logic');
+      console.log('MS Remote Tasks:', msTasks.length);
+      console.log('Local Current Tasks:', tasks.length);
+
       setTasks(current => {
-        const existingMsIds = new Set(msTasks.map((t: any) => t.id));
-        
-        // 1. Update/Keep existing tasks
+        // 1. Map existing tasks and check for external updates
         const updatedTasks = current.map(localTask => {
           if (!localTask.msTodoId) return localTask;
           
           const msTask = msTasks.find((t: any) => t.id === localTask.msTodoId);
-          if (!msTask) return localTask; // Task might be deleted in MS, keep local for now
+          if (!msTask) {
+             console.log(`Task [${localTask.title}] MS'de bulunamadı (silinmiş olabilir).`);
+             return localTask;
+          }
 
           const msStatus: 'todo' | 'done' = msTask.status === 'completed' ? 'done' : 'todo';
           const msDesc = msTask.body?.content || '';
 
-          if (localTask.status !== msStatus || localTask.title !== msTask.title || localTask.desc !== msDesc) {
+          // Compare logic
+          const hasStatusDiff = localTask.status !== msStatus;
+          const hasTitleDiff = localTask.title !== msTask.title;
+          const hasDescDiff = localTask.desc !== msDesc;
+
+          if (hasStatusDiff || hasTitleDiff || hasDescDiff) {
             updatedCount++;
-            return { ...localTask, status: msStatus, title: msTask.title, desc: msDesc };
+            console.log(`Güncelleme Tespit Edildi: [${localTask.title}]`, { status: msStatus, title: msTask.title });
+            return {
+              ...localTask,
+              status: msStatus,
+              title: msTask.title,
+              desc: msDesc
+            };
           }
           return localTask;
         });
 
-        const newTasksFromMs: Task[] = [];
+        // 2. Identify new tasks from MS
+        const newTasks: Task[] = [];
         msTasks.forEach((msTask: any) => {
-          if (!current.find(t => t.msTodoId === msTask.id)) {
-            newTasksFromMs.push({
+          const isKnown = current.some(t => t.msTodoId === msTask.id);
+          if (!isKnown) {
+            newTasks.push({
               id: 'ms-' + msTask.id,
               title: msTask.title,
               desc: msTask.body?.content || '',
@@ -233,25 +274,21 @@ export const Tasks: React.FC = () => {
               msListId: list.id
             });
             newCount++;
+            console.log(`Yeni Görev Bulundu: [${msTask.title}]`);
           }
         });
 
-        return [...updatedTasks, ...newTasksFromMs];
+        return [...updatedTasks, ...newTasks];
       });
 
-      console.group('Senkronizasyon Detayları');
-      console.log('Microsoft\'tan Gelen:', msTasks.length);
-      console.log('Güncellenen:', updatedCount);
-      console.log('Yeni Eklenen:', newCount);
       console.groupEnd();
-
-      if (updatedCount > 0 || newCount > 0) {
-        alert(`Senkronizasyon Başarılı!\n${updatedCount} görev güncellendi, ${newCount} yeni görev eklendi.`);
-      } else {
-        console.log('Herhangi bir değişiklik bulunamadı.');
-      }
+      const summary = `${updatedCount} güncellendi, ${newCount} eklendi.`;
+      setSyncStatus(summary);
+      setTimeout(() => setSyncStatus(''), 5000);
+      
     } catch (err) {
-      console.error('Sync error:', err);
+      console.error('Sync Error:', err);
+      setSyncStatus('Hata oluştu.');
     } finally {
       setIsSyncing(false);
     }
@@ -427,19 +464,8 @@ export const Tasks: React.FC = () => {
             </div>
             {!msAccount ? (
               <button 
-                type="button"
+                onClick={handleConnectMs} 
                 disabled={isConnecting}
-                onClick={async () => {
-                  setIsConnecting(true);
-                  // Give React a frame to show the "Bağlanıyor..." state
-                  await new Promise(r => setTimeout(r, 100));
-                  try {
-                    const account = await microsoftService.loginPopup();
-                    if (account) setMsAccount(account);
-                  } finally {
-                    setIsConnecting(false);
-                  }
-                }} 
                 className={`w-full py-2.5 bg-[#0078d4] text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-blue-900/10 active:scale-95 transition-all ${isConnecting ? 'opacity-70 cursor-not-allowed' : 'hover:bg-blue-600'}`}
               >
                 {isConnecting ? <RotateCw size={14} className="animate-spin" /> : null}
@@ -501,14 +527,17 @@ export const Tasks: React.FC = () => {
               />
               <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" />
             </div>
-            <button 
-              onClick={() => handleSyncAll()}
-              className={`p-2 rounded-xl border border-gray-100 text-gray-400 hover:text-enba-orange hover:bg-orange-50 transition-all ${isSyncing ? 'animate-spin border-enba-orange/20 text-enba-orange' : ''}`}
-              title="Senkronize Et"
-              disabled={!msAccount || isSyncing}
-            >
-              <RotateCw size={16} />
-            </button>
+            <div className="flex items-center gap-2">
+              {syncStatus && <span className="text-[8px] text-enba-orange font-black uppercase animate-pulse">{syncStatus}</span>}
+              <button 
+                onClick={() => handleSyncAll()}
+                className={`p-2 rounded-xl border border-gray-100 text-gray-400 hover:text-enba-orange hover:bg-orange-50 transition-all ${isSyncing ? 'animate-spin border-enba-orange/20 text-enba-orange' : ''}`}
+                title="Senkronize Et"
+                disabled={!msAccount || isSyncing}
+              >
+                <RotateCw size={16} />
+              </button>
+            </div>
             <button onClick={() => setShowTaskForm(true)} className="bg-enba-dark text-white px-4 py-2 rounded-xl font-black text-[9px] uppercase tracking-[2px] shadow-lg shadow-black/10 hover:bg-black hover:-translate-y-0.5 active:scale-95 transition-all flex items-center gap-2">
               <PlusCircle size={14} /> Yeni Atama
             </button>
