@@ -103,7 +103,11 @@ export const Tasks: React.FC = () => {
   useEffect(() => {
     const initMSAL = async () => {
       const account = await microsoftService.getAccount();
-      if (account) setMsAccount(account);
+      if (account) {
+        setMsAccount(account);
+        // Otomatik senkronizasyonu başlat
+        handleSyncAll(account);
+      }
     };
     initMSAL();
   }, []);
@@ -126,18 +130,35 @@ export const Tasks: React.FC = () => {
   ];
 
   // ── Handlers ─────────────────────────────────────────────
-  const handleAddTask = (e: React.FormEvent) => {
+  const handleAddTask = async (e: React.FormEvent) => {
     e.preventDefault();
+    const isNew = !editingTask;
     const newTask: Task = {
       ...formData as Task,
-      id: editingTask ? editingTask.id : Date.now(),
-      status: editingTask ? editingTask.status : 'todo',
-      createdAt: editingTask ? editingTask.createdAt : new Date().toISOString()
+      id: isNew ? Date.now() : editingTask!.id,
+      status: isNew ? 'todo' : editingTask!.status,
+      createdAt: isNew ? new Date().toISOString() : editingTask!.createdAt,
+      msTodoId: editingTask?.msTodoId,
+      msListId: editingTask?.msListId
     };
 
-    setTasks(prev => editingTask ? prev.map(t => t.id === editingTask.id ? newTask : t) : [...prev, newTask]);
+    setTasks(prev => isNew ? [...prev, newTask] : prev.map(t => t.id === newTask.id ? newTask : t));
     setShowTaskForm(false);
     setEditingTask(null);
+
+    // Microsoft Push
+    if (msAccount) {
+      try {
+        const list = await microsoftService.ensureTodoList('Enba Tasks');
+        if (list) {
+          const result = await microsoftService.syncTask(list.id, newTask, newTask.msTodoId);
+          if (result && result.id) {
+            setTasks(current => current.map(t => t.id === newTask.id ? { ...t, msTodoId: result.id, msListId: list.id } : t));
+          }
+        }
+      } catch (err) { console.error('MS Push Error:', err); }
+    }
+  };
     setFormData({ title: '', desc: '', priority: 'medium', deadline: '', projectId: projects[0]?.id || 'p1', moduleRef: 'genel' });
 
     if (msAccount) {
@@ -155,21 +176,89 @@ export const Tasks: React.FC = () => {
     }
   };
 
-  const moveTask = async (id: string | number, newStatus: 'todo' | 'doing' | 'done') => {
-    // Standardize 'doing' to 'todo' for the new binary view
-    const status: 'todo' | 'done' = newStatus === 'done' ? 'done' : 'todo';
-    setTasks(prev => prev.map(t => t.id === id ? { ...t, status } : t));
-    const task = tasks.find(t => t.id === id);
-    if (msAccount && task?.msTodoId && task.msListId) {
-      await microsoftService.syncTask(task.msListId, { ...task, status }, task.msTodoId);
-    }
-  };
-
-  const toggleTask = (id: string | number) => {
+  const toggleTask = async (id: string | number) => {
     const task = tasks.find(t => t.id === id);
     if (!task) return;
     const newStatus = task.status === 'done' ? 'todo' : 'done';
-    moveTask(id, newStatus);
+    
+    // Local update
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, status: newStatus } : t));
+
+    // Microsoft Update
+    if (msAccount && task.msTodoId && task.msListId) {
+      await microsoftService.syncTask(task.msListId, { ...task, status: newStatus }, task.msTodoId);
+    }
+  };
+
+  const handleDeleteTask = async (task: Task) => {
+    if (!confirm('Bu görev silinecek. Emin misiniz?')) return;
+    
+    setTasks(prev => prev.filter(t => t.id !== task.id));
+
+    if (msAccount && task.msTodoId && task.msListId) {
+      await microsoftService.deleteTask(task.msListId, task.msTodoId);
+    }
+  };
+
+  const handleSyncAll = async (accountInstance = msAccount) => {
+    if (!accountInstance) return;
+    setIsSyncing(true);
+    try {
+      const list = await microsoftService.ensureTodoList('Enba Tasks');
+      if (!list) return;
+
+      const msTasks = await microsoftService.getTodoListTasks(list.id);
+      let updatedCount = 0;
+      let newCount = 0;
+
+      setTasks(current => {
+        const merged = [...current];
+
+        // 1. Inbound Merge (MS -> Local)
+        msTasks.forEach((msTask: any) => {
+          const localMatch = merged.find(t => t.msTodoId === msTask.id);
+          const msStatus: 'todo' | 'done' = msTask.status === 'completed' ? 'done' : 'todo';
+          
+          if (localMatch) {
+            // Update if different
+            if (localMatch.status !== msStatus || localMatch.title !== msTask.title) {
+              localMatch.status = msStatus;
+              localMatch.title = msTask.title;
+              localMatch.desc = msTask.body?.content || '';
+              updatedCount++;
+            }
+          } else {
+            // New task from MS
+            merged.push({
+              id: 'ms-' + msTask.id,
+              title: msTask.title,
+              desc: msTask.body?.content || '',
+              priority: msTask.importance === 'high' ? 'high' : 'medium',
+              deadline: msTask.dueDateTime?.dateTime || '',
+              projectId: projects[0]?.id || 'p1',
+              moduleRef: 'genel',
+              status: msStatus,
+              createdAt: msTask.createdDateTime || new Date().toISOString(),
+              msTodoId: msTask.id,
+              msListId: list.id
+            });
+            newCount++;
+          }
+        });
+
+        // 2. Outbound Push (Local -> MS) - IDs that don't exist in MS yet
+        // This will be handled on next interaction or we could iterate here.
+        // For now, pulling is primary for "mutual work".
+        
+        return merged;
+      });
+
+      console.log(`Sync completed: ${updatedCount} updated, ${newCount} new.`);
+    } catch (err) {
+      console.error('Sync error:', err);
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   const handleImportFromMs = async () => {
@@ -246,7 +335,7 @@ export const Tasks: React.FC = () => {
             <h4 className={`text-[12px] font-bold text-enba-dark truncate pr-2 ${isDone ? 'line-through text-gray-400' : ''}`}>{task.title}</h4>
             <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
               <button onClick={() => { setEditingTask(task); setFormData(task); setShowTaskForm(true); }} className="p-0.5 hover:bg-gray-100 rounded text-gray-400 hover:text-enba-dark transition-colors"><Pencil size={11} /></button>
-              <button onClick={() => setTasks(prev => prev.filter(t => t.id !== task.id))} className="p-0.5 hover:bg-rose-50 rounded text-gray-400 hover:text-rose-600 transition-colors"><Trash2 size={11} /></button>
+              <button onClick={() => handleDeleteTask(task)} className="p-0.5 hover:bg-rose-50 rounded text-gray-400 hover:text-rose-600 transition-colors"><Trash2 size={11} /></button>
             </div>
           </div>
           
@@ -415,7 +504,15 @@ export const Tasks: React.FC = () => {
               />
               <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" />
             </div>
-            <button onClick={() => setShowTaskForm(true)} className="px-6 py-2.5 bg-enba-orange text-white rounded-xl text-[10px] font-black uppercase tracking-[2px] shadow-lg shadow-orange-900/20 hover:brightness-110 active:scale-95 transition-all flex items-center gap-2">
+            <button 
+              onClick={() => handleSyncAll()}
+              className={`p-2 rounded-xl border border-gray-100 text-gray-400 hover:text-enba-orange hover:bg-orange-50 transition-all ${isSyncing ? 'animate-spin border-enba-orange/20 text-enba-orange' : ''}`}
+              title="Senkronize Et"
+              disabled={!msAccount || isSyncing}
+            >
+              <RotateCw size={16} />
+            </button>
+            <button onClick={() => setShowTaskForm(true)} className="bg-enba-dark text-white px-5 py-2.5 rounded-2xl font-black text-[10px] uppercase tracking-[2px] shadow-lg shadow-black/10 hover:bg-black hover:-translate-y-0.5 active:scale-95 transition-all flex items-center gap-2">
               <PlusCircle size={16} /> Yeni Atama
             </button>
           </div>

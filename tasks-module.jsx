@@ -59,7 +59,10 @@ window.GorevModulu = function({ navigate }) {
         const checkAccount = async () => {
             if (window.microsoftService) {
                 const acc = await window.microsoftService.getAccount();
-                if (acc) setMsAccount(acc);
+                if (acc) {
+                    setMsAccount(acc);
+                    handleSyncAll(acc);
+                }
             }
         };
         checkAccount();
@@ -99,13 +102,16 @@ window.GorevModulu = function({ navigate }) {
         }
     };
 
-    const handleAddTask = (e) => {
+    const handleAddTask = async (e) => {
         e.preventDefault();
+        const isNew = !editingTask;
         const newTask = {
             ...formData,
-            id: editingTask ? editingTask.id : Date.now(),
-            status: editingTask ? editingTask.status : 'todo',
-            createdAt: editingTask ? editingTask.createdAt : new Date().toISOString()
+            id: isNew ? Date.now() : editingTask.id,
+            status: isNew ? 'todo' : editingTask.status,
+            createdAt: isNew ? new Date().toISOString() : editingTask.createdAt,
+            msTodoId: editingTask?.msTodoId,
+            msListId: editingTask?.msListId
         };
 
         if (editingTask) {
@@ -117,23 +123,90 @@ window.GorevModulu = function({ navigate }) {
         setShowTaskForm(false);
         setEditingTask(null);
         setFormData({ title: '', desc: '', priority: 'medium', deadline: '', projectId: 'p1', moduleRef: 'genel' });
-    };
 
-    const handleDeleteTask = (id) => {
-        if (confirm('Bu görevi silmek istediğinize emin misiniz?')) {
-            setTasks(tasks.filter(t => t.id !== id));
+        // Microsoft Push
+        if (msAccount && window.microsoftService) {
+            try {
+                const list = await window.microsoftService.ensureTodoList('Enba Tasks');
+                if (list) {
+                    const result = await window.microsoftService.syncTask(list.id, newTask, newTask.msTodoId);
+                    if (result && result.id) {
+                        setTasks(current => current.map(t => t.id === newTask.id ? { ...t, msTodoId: result.id, msListId: list.id } : t));
+                    }
+                }
+            } catch (err) { console.error('MS Push Error:', err); }
         }
     };
 
-    const moveTask = (id, newStatus) => {
-        const status = newStatus === 'done' ? 'done' : 'todo';
-        setTasks(tasks.map(t => t.id === id ? { ...t, status } : t));
+    const handleDeleteTask = async (id) => {
+        if (confirm('Bu görevi silmek istediğinize emin misiniz?')) {
+            const task = tasks.find(t => t.id === id);
+            setTasks(tasks.filter(t => t.id !== id));
+            
+            if (msAccount && task?.msTodoId && task?.msListId && window.microsoftService) {
+                await window.microsoftService.deleteTask(task.msListId, task.msTodoId);
+            }
+        }
     };
 
-    const toggleTask = (id) => {
+    const toggleTask = async (id) => {
         const task = tasks.find(t => t.id === id);
         if (!task) return;
-        moveTask(id, task.status === 'done' ? 'todo' : 'done');
+        const newStatus = task.status === 'done' ? 'todo' : 'done';
+        
+        // Local update
+        setTasks(tasks.map(t => t.id === id ? { ...t, status: newStatus } : t));
+
+        // Microsoft Update
+        if (msAccount && task.msTodoId && task.msListId && window.microsoftService) {
+            await window.microsoftService.syncTask(task.msListId, { ...task, status: newStatus }, task.msTodoId);
+        }
+    };
+
+    const handleSyncAll = async (accountInstance = msAccount) => {
+        if (!accountInstance || !window.microsoftService) return;
+        setIsSyncing(true);
+        try {
+            const list = await window.microsoftService.ensureTodoList('Enba Tasks');
+            if (!list) return;
+
+            const msTasks = await window.microsoftService.getTodoListTasks(list.id);
+            
+            setTasks(current => {
+                const merged = [...current];
+                msTasks.forEach(msTask => {
+                    const localMatch = merged.find(t => t.msTodoId === msTask.id);
+                    const msStatus = msTask.status === 'completed' ? 'done' : 'todo';
+                    
+                    if (localMatch) {
+                        if (localMatch.status !== msStatus || localMatch.title !== msTask.title) {
+                            localMatch.status = msStatus;
+                            localMatch.title = msTask.title;
+                            localMatch.desc = msTask.body?.content || '';
+                        }
+                    } else {
+                        merged.push({
+                            id: 'ms-' + msTask.id,
+                            title: msTask.title,
+                            desc: msTask.body?.content || '',
+                            priority: msTask.importance === 'high' ? 'high' : 'medium',
+                            deadline: msTask.dueDateTime?.dateTime || '',
+                            projectId: 'p1',
+                            moduleRef: 'genel',
+                            status: msStatus,
+                            createdAt: msTask.createdDateTime || new Date().toISOString(),
+                            msTodoId: msTask.id,
+                            msListId: list.id
+                        });
+                    }
+                });
+                return merged;
+            });
+        } catch (err) {
+            console.error('Sync error:', err);
+        } finally {
+            setIsSyncing(false);
+        }
     };
 
     const isOverdue = (date) => {
@@ -240,16 +313,16 @@ window.GorevModulu = function({ navigate }) {
                         </button>
                     ) : (
                         <button 
-                            onClick={handleSync}
-                            disabled={isSyncing}
-                            style={{ 
-                                padding: '10px 20px', borderRadius: '12px', fontWeight: 800, fontSize: '11px', 
-                                background: isSyncing ? '#ccc' : '#2ecc71', color: '#fff', border: 'none', 
-                                cursor: isSyncing ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '8px' 
-                            }}
-                        >
-                            {isSyncing ? '🔄  Senkronize Ediliyor...' : '✅  MS To Do Güncelle'}
-                        </button>
+                        onClick={() => handleSyncAll()}
+                        disabled={isSyncing}
+                        style={{ 
+                            padding: '10px 20px', borderRadius: '12px', fontWeight: 800, fontSize: '11px', 
+                            background: isSyncing ? '#ccc' : '#2ecc71', color: '#fff', border: 'none', 
+                            cursor: isSyncing ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '8px' 
+                        }}
+                    >
+                        {isSyncing ? '🔄  Senkronize Ediliyor...' : '✅  MS To Do Güncelle'}
+                    </button>
                     )}
                     <button
                         onClick={() => setShowTaskForm(true)}

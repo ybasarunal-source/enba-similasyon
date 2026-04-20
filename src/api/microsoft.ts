@@ -228,6 +228,7 @@ export const microsoftService = {
       if (msId) return await client.api(`/me/todo/lists/${listId}/tasks/${msId}`).patch(todoTask);
       return await client.api(`/me/todo/lists/${listId}/tasks`).post(todoTask);
     } catch (err) {
+      console.error('MS Sync Task Error:', err);
       return null;
     }
   },
