@@ -92,33 +92,45 @@ const loginRequest: PopupRequest = {
   scopes: ['User.Read', 'Tasks.ReadWrite'],
 };
 
+let lastInteractionTime = 0;
+
+const checkAndLockInteraction = (force = false) => {
+  const now = Date.now();
+  if (!force && lastInteractionTime > 0 && (now - lastInteractionTime) < 10000) {
+    return false;
+  }
+  lastInteractionTime = now;
+  return true;
+};
+
+const unlockInteraction = () => {
+  lastInteractionTime = 0;
+};
+
 export const microsoftService = {
   async login() {
-    if (isInteractionInProgress) return;
-    await ensureInitialized();
-    
-    isInteractionInProgress = true;
+    if (!checkAndLockInteraction()) return;
     try {
+      await ensureInitialized();
       await msalInstance.loginRedirect(loginRequest as any);
     } catch (err: any) {
       console.error('MS Login Error:', err);
       resetMsalInstance();
     } finally {
-      isInteractionInProgress = false;
+      unlockInteraction();
     }
   },
 
   async loginPopup(retryCount = 0): Promise<any> {
-    if (isInteractionInProgress && retryCount === 0) {
-      console.warn('MSAL: Interaction already in progress.');
+    const canProceed = checkAndLockInteraction(retryCount > 0);
+    if (!canProceed) {
+      console.warn('MSAL: Interaction locked (safety clock).');
       return null;
     }
     
-    await ensureInitialized(retryCount > 0);
-    
-    isInteractionInProgress = true;
     try {
-      // Add a race condition to prevent the popup from hanging forever if blocked/closed non-standardly
+      await ensureInitialized(retryCount > 0);
+      
       const response = await Promise.race([
         msalInstance.loginPopup(loginRequest),
         new Promise((_, reject) => setTimeout(() => reject(new Error('Login Timeout')), 60000))
@@ -126,28 +138,26 @@ export const microsoftService = {
       
       return response.account;
     } catch (err: any) {
-      if (err.errorCode === 'interaction_in_progress' && retryCount < 1) {
-        console.warn('MSAL: Interaction stuck. Implementing Hyper-Reset...');
-        resetMsalInstance();
-        await new Promise(r => setTimeout(r, 500));
-        return this.loginPopup(retryCount + 1);
-      } else if (err.errorCode === 'interaction_in_progress' || err.errorCode === 'popup_window_error') {
-        console.warn('MSAL: Popups persistently failing. Falling back to Redirect mode...');
+      if (err.errorCode === 'interaction_in_progress' || err.message === 'Login Timeout') {
+        if (retryCount < 1) {
+            console.warn('MSAL: Interaction stuck. Implementing Hyper-Reset...');
+            resetMsalInstance();
+            await new Promise(r => setTimeout(r, 800));
+            return this.loginPopup(retryCount + 1);
+        }
         return this.login();
       } else {
         console.error('MS Popup Login Error:', err);
         return null;
       }
     } finally {
-      isInteractionInProgress = false;
+      unlockInteraction();
     }
   },
 
   async getAccount() {
     try {
-      // Background init start, but don't wait indefinitely
       ensureInitialized();
-      
       const accounts = msalInstance.getAllAccounts();
       if (accounts.length > 0) return accounts[0];
       return null;
@@ -160,10 +170,7 @@ export const microsoftService = {
     try {
       const account = await this.getAccount();
       if (!account) return null;
-
-      // Small wait to ensure state stability
       await new Promise(r => setTimeout(r, 100));
-
       const response = await msalInstance.acquireTokenSilent({
         ...loginRequest,
         account: account,
@@ -178,7 +185,6 @@ export const microsoftService = {
   async getGraphClient() {
     const token = await this.getToken();
     if (!token) return null;
-
     return Client.init({
       authProvider: (done) => {
         done(null, token);
@@ -254,14 +260,14 @@ export const microsoftService = {
   },
 
   async logout() {
-    isInteractionInProgress = true;
+    if (!checkAndLockInteraction()) return;
     try {
       await ensureInitialized();
       await msalInstance.logoutRedirect();
     } catch (err) {
       resetMsalInstance();
     } finally {
-      isInteractionInProgress = false;
+      unlockInteraction();
     }
   }
 };

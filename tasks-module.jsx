@@ -62,6 +62,8 @@ window.GorevModulu = function({ navigate }) {
     const handleMsConnect = async () => {
         if (!window.microsoftService) return;
         setIsConnecting(true);
+        // Give React time to render the loading state
+        await new Promise(r => setTimeout(r, 100));
         try {
             const acc = await window.microsoftService.loginPopup();
             if (acc) setMsAccount(acc);

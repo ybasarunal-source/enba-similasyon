@@ -325,6 +325,8 @@ export const Tasks: React.FC = () => {
                 disabled={isConnecting}
                 onClick={async () => {
                   setIsConnecting(true);
+                  // Give React a frame to show the "Bağlanıyor..." state
+                  await new Promise(r => setTimeout(r, 100));
                   try {
                     const account = await microsoftService.loginPopup();
                     if (account) setMsAccount(account);
