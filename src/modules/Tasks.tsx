@@ -197,32 +197,36 @@ export const Tasks: React.FC = () => {
       let newCount = 0;
 
       setTasks(current => {
-        const merged = [...current];
-
-        // 1. Inbound Merge (MS -> Local)
-        msTasks.forEach((msTask: any) => {
-          const localMatch = merged.find(t => t.msTodoId === msTask.id);
-          const msStatus: 'todo' | 'done' = msTask.status === 'completed' ? 'done' : 'todo';
+        const existingMsIds = new Set(msTasks.map((t: any) => t.id));
+        
+        // 1. Update/Keep existing tasks
+        const updatedTasks = current.map(localTask => {
+          if (!localTask.msTodoId) return localTask;
           
-          if (localMatch) {
-            // Update if different
-            if (localMatch.status !== msStatus || localMatch.title !== msTask.title) {
-              localMatch.status = msStatus;
-              localMatch.title = msTask.title;
-              localMatch.desc = msTask.body?.content || '';
-              updatedCount++;
-            }
-          } else {
-            // New task from MS
-            merged.push({
+          const msTask = msTasks.find((t: any) => t.id === localTask.msTodoId);
+          if (!msTask) return localTask; // Task might be deleted in MS, keep local for now
+
+          const msStatus: 'todo' | 'done' = msTask.status === 'completed' ? 'done' : 'todo';
+          const msDesc = msTask.body?.content || '';
+
+          if (localTask.status !== msStatus || localTask.title !== msTask.title || localTask.desc !== msDesc) {
+            return { ...localTask, status: msStatus, title: msTask.title, desc: msDesc };
+          }
+          return localTask;
+        });
+
+        const newTasksFromMs: Task[] = [];
+        msTasks.forEach(msTask => {
+          if (!current.find(t => t.msTodoId === msTask.id)) {
+            newTasksFromMs.push({
               id: 'ms-' + msTask.id,
               title: msTask.title,
               desc: msTask.body?.content || '',
               priority: msTask.importance === 'high' ? 'high' : 'medium',
               deadline: msTask.dueDateTime?.dateTime || '',
-              projectId: projects[0]?.id || 'p1',
+              projectId: 'p1',
               moduleRef: 'genel',
-              status: msStatus,
+              status: msTask.status === 'completed' ? 'done' : 'todo',
               createdAt: msTask.createdDateTime || new Date().toISOString(),
               msTodoId: msTask.id,
               msListId: list.id
@@ -231,11 +235,7 @@ export const Tasks: React.FC = () => {
           }
         });
 
-        // 2. Outbound Push (Local -> MS) - IDs that don't exist in MS yet
-        // This will be handled on next interaction or we could iterate here.
-        // For now, pulling is primary for "mutual work".
-        
-        return merged;
+        return [...updatedTasks, ...newTasksFromMs];
       });
 
       console.log(`Sync completed: ${updatedCount} updated, ${newCount} new.`);

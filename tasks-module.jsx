@@ -173,19 +173,24 @@ window.GorevModulu = function({ navigate }) {
             const msTasks = await window.microsoftService.getTodoListTasks(list.id);
             
             setTasks(current => {
-                const merged = [...current];
-                msTasks.forEach(msTask => {
-                    const localMatch = merged.find(t => t.msTodoId === msTask.id);
+                const updatedTasks = current.map(localTask => {
+                    if (!localTask.msTodoId) return localTask;
+                    const msTask = msTasks.find(t => t.id === localTask.msTodoId);
+                    if (!msTask) return localTask;
+
                     const msStatus = msTask.status === 'completed' ? 'done' : 'todo';
-                    
-                    if (localMatch) {
-                        if (localMatch.status !== msStatus || localMatch.title !== msTask.title) {
-                            localMatch.status = msStatus;
-                            localMatch.title = msTask.title;
-                            localMatch.desc = msTask.body?.content || '';
-                        }
-                    } else {
-                        merged.push({
+                    const msDesc = msTask.body?.content || '';
+
+                    if (localTask.status !== msStatus || localTask.title !== msTask.title || localTask.desc !== msDesc) {
+                        return { ...localTask, status: msStatus, title: msTask.title, desc: msDesc };
+                    }
+                    return localTask;
+                });
+
+                const newTasksFromMs = [];
+                msTasks.forEach(msTask => {
+                    if (!current.find(t => t.msTodoId === msTask.id)) {
+                        newTasksFromMs.push({
                             id: 'ms-' + msTask.id,
                             title: msTask.title,
                             desc: msTask.body?.content || '',
@@ -193,14 +198,14 @@ window.GorevModulu = function({ navigate }) {
                             deadline: msTask.dueDateTime?.dateTime || '',
                             projectId: 'p1',
                             moduleRef: 'genel',
-                            status: msStatus,
+                            status: msTask.status === 'completed' ? 'done' : 'todo',
                             createdAt: msTask.createdDateTime || new Date().toISOString(),
                             msTodoId: msTask.id,
                             msListId: list.id
                         });
                     }
                 });
-                return merged;
+                return [...updatedTasks, ...newTasksFromMs];
             });
         } catch (err) {
             console.error('Sync error:', err);
