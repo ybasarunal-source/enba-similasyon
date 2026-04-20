@@ -216,7 +216,7 @@ export const Tasks: React.FC = () => {
         });
 
         const newTasksFromMs: Task[] = [];
-        msTasks.forEach(msTask => {
+        msTasks.forEach((msTask: any) => {
           if (!current.find(t => t.msTodoId === msTask.id)) {
             newTasksFromMs.push({
               id: 'ms-' + msTask.id,
