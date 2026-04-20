@@ -17,7 +17,6 @@ const msalConfig: Configuration = {
   },
   cache: {
     cacheLocation: 'localStorage',
-    storeAuthStateInCookie: false, // LocalStorage is enough with initialize()
   },
 };
 

@@ -31,7 +31,7 @@ import {
   Maximize,
   Minimize
 } from 'lucide-react';
-import { microsoftService, msalInstance } from '../api/microsoft';
+import { microsoftService } from '../api/microsoft';
 
 interface Task {
   id: string | number;
