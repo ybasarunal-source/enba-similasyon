@@ -265,3 +265,9 @@ export const microsoftService = {
     }
   }
 };
+
+// Expose to window for legacy modules
+if (typeof window !== 'undefined') {
+  (window as any).microsoftService = microsoftService;
+  (window as any).msalInstance = msalInstance;
+}

@@ -21,6 +21,11 @@ window.GorevModulu = function({ navigate }) {
     const [showProjectForm, setShowProjectForm] = React.useState(false);
     const [editingTask, setEditingTask] = React.useState(null);
 
+    // Microsoft States
+    const [msAccount, setMsAccount] = React.useState(null);
+    const [isConnecting, setIsConnecting] = React.useState(false);
+    const [isSyncing, setIsSyncing] = React.useState(false);
+
     // Form states
     const [formData, setFormData] = React.useState({
         title: '',
@@ -44,6 +49,47 @@ window.GorevModulu = function({ navigate }) {
         localStorage.setItem('enba_tasks', JSON.stringify(tasks));
         localStorage.setItem('enba_projects', JSON.stringify(projects));
     }, [tasks, projects]);
+
+    // Microsoft Initializer
+    React.useEffect(() => {
+        if (window.microsoftService) {
+            window.microsoftService.getAccount().then(acc => {
+                if (acc) setMsAccount(acc);
+            });
+        }
+    }, []);
+
+    const handleMsConnect = async () => {
+        if (!window.microsoftService) return;
+        setIsConnecting(true);
+        try {
+            const acc = await window.microsoftService.loginPopup();
+            if (acc) setMsAccount(acc);
+        } finally {
+            setIsConnecting(false);
+        }
+    };
+
+    const handleSync = async () => {
+        if (!window.microsoftService || !msAccount) return;
+        setIsSyncing(true);
+        try {
+            const list = await window.microsoftService.ensureTodoList('Enba Tasks');
+            if (!list) throw new Error('List access failed');
+            
+            for (const task of tasks) {
+                if (task.status !== 'done') {
+                    await window.microsoftService.syncTask(list.id, task);
+                }
+            }
+            alert('Görevler Microsoft To Do ile senkronize edildi!');
+        } catch (err) {
+            console.error('Sync error:', err);
+            alert('Senkronizasyon hatası.');
+        } finally {
+            setIsSyncing(false);
+        }
+    };
 
     const handleAddTask = (e) => {
         e.preventDefault();
@@ -177,7 +223,32 @@ window.GorevModulu = function({ navigate }) {
                     </div>
                     <h1 style={{ margin: 0, fontFamily: "'Manrope', sans-serif", fontWeight: 800, fontSize: '32px', color: 'var(--enba-dark)' }}>İş Takip Merkezi</h1>
                 </div>
-                <div style={{ display: 'flex', gap: '12px' }}>
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                    {!msAccount ? (
+                        <button 
+                            onClick={handleMsConnect}
+                            disabled={isConnecting}
+                            style={{ 
+                                padding: '10px 20px', borderRadius: '12px', fontWeight: 800, fontSize: '11px', 
+                                background: isConnecting ? '#ccc' : '#0078d4', color: '#fff', border: 'none', 
+                                cursor: isConnecting ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '8px' 
+                            }}
+                        >
+                            {isConnecting ? '⌛  Bağlanıyor...' : '🟦  Microsoft To Do Bağla'}
+                        </button>
+                    ) : (
+                        <button 
+                            onClick={handleSync}
+                            disabled={isSyncing}
+                            style={{ 
+                                padding: '10px 20px', borderRadius: '12px', fontWeight: 800, fontSize: '11px', 
+                                background: isSyncing ? '#ccc' : '#2ecc71', color: '#fff', border: 'none', 
+                                cursor: isSyncing ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '8px' 
+                            }}
+                        >
+                            {isSyncing ? '🔄  Senkronize Ediliyor...' : '✅  MS To Do Güncelle'}
+                        </button>
+                    )}
                     <button 
                         onClick={() => setShowProjectForm(true)}
                         className="btn btn-secondary"
