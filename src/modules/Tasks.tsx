@@ -103,6 +103,8 @@ export const Tasks: React.FC = () => {
 
   useEffect(() => {
     const recoverSession = async () => {
+      // Small delay to ensure library memory is stable
+      await new Promise(r => setTimeout(r, 250));
       try {
         const account = await microsoftService.getAccount();
         if (account) {

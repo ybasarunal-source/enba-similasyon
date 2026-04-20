@@ -56,7 +56,15 @@ const ensureInitialized = async () => {
     try {
       if (!msalInstance) return;
       await msalInstance.initialize();
-      await msalInstance.handleRedirectPromise();
+      
+      try {
+        await msalInstance.handleRedirectPromise();
+      } catch (redirectErr: any) {
+        // Ignore "no_token_request_cache_error" as it's common in popup-only flows
+        if (redirectErr.errorCode !== 'no_token_request_cache_error') {
+          console.warn('MSAL: Redirect error during init:', redirectErr);
+        }
+      }
       
       // Auto-set active account if exactly one account is present
       const accounts = msalInstance.getAllAccounts();
@@ -103,7 +111,13 @@ export const microsoftService = {
       }
       return null;
     } catch (err: any) {
-      console.error('MS Popup Login Error:', err);
+      if (err.errorCode === 'interaction_in_progress') {
+        alert('Şu an bir giriş penceresi zaten açık. Lütfen tarayıcınızdaki diğer pencereleri kontrol edin.');
+      } else if (err.errorCode === 'timed_out') {
+        alert('Giriş işlemi zaman aşımına uğradı. Lütfen tekrar deneyin.');
+      } else {
+        console.error('MS Popup Login Error:', err);
+      }
       return null;
     } finally {
       unlockInteraction();
