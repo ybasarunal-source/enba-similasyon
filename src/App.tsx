@@ -20,6 +20,7 @@ import { Profile } from './modules/Profile';
 import { DetailedPlanManager } from './modules/planning/DetailedPlanManager';
 import { FastPlan } from './modules/FastPlan';
 import { Calendar as CalendarModule } from './modules/Calendar';
+import { Parasut } from './modules/Parasut';
 import {
   Home,
   Package,
@@ -41,13 +42,14 @@ import {
   ChevronLeft,
   LogOut,
   SlidersHorizontal,
-  Calendar as CalendarIcon
+  Calendar as CalendarIcon,
+  Receipt
 } from 'lucide-react';
 
 type ModuleType =
   | 'dashboard' | 'stock' | 'production' | 'logistics' | 'hr'
   | 'archive' | 'cashflow' | 'planning' | 'fastplan' | 'machinery'
-  | 'tasks' | 'calendar' | 'licensing' | 'settings' | 'pnl' | 'profile';
+  | 'tasks' | 'calendar' | 'licensing' | 'settings' | 'pnl' | 'profile' | 'parasut';
 
 const getProfileAvatar = () => {
   try { return JSON.parse(localStorage.getItem('enba_profile_data') || '{}').avatar || ''; }
@@ -145,6 +147,7 @@ export const App: React.FC = () => {
     { id: 'archive',    label: t('modules.archive'),       icon: ArchiveIcon },
     { id: 'licensing',  label: t('modules.licensing'),     icon: FileBadge },
     { id: 'cashflow',   label: t('modules.cashflow'),      icon: Coins },
+    { id: 'parasut',    label: 'Paraşüt',                  icon: Receipt },
     { id: 'machinery',  label: t('modules.machinery'),     icon: Wrench },
     { id: 'tasks',      label: t('modules.tasks'),         icon: ClipboardList },
     { id: 'calendar',   label: 'Takvim',                   icon: CalendarIcon },
@@ -528,6 +531,7 @@ export const App: React.FC = () => {
             {activeModule === 'fastplan'   && <FastPlan />}
             {activeModule === 'planning'   && <DetailedPlanManager />}
             {activeModule === 'profile'    && <Profile />}
+            {activeModule === 'parasut'    && <Parasut />}
           </div>
         </div>
       </main>

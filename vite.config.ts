@@ -21,6 +21,18 @@ export default defineConfig({
       clientPort: 5173,
       protocol: 'ws'
     },
-    open: true
+    open: true,
+    proxy: {
+      '/parasut-oauth': {
+        target: 'https://api.parasut.com',
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/parasut-oauth/, '/oauth'),
+      },
+      '/parasut-api': {
+        target: 'https://api.parasut.com',
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/parasut-api/, ''),
+      },
+    },
   }
 })
