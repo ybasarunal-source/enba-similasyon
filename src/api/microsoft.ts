@@ -231,7 +231,7 @@ export const microsoftService = {
       }
       
       const response = await query.top(50).get();
-      return response.value || [];
+      return (response.value || []).map((ev: any) => ({ ...ev, source: 'outlook' }));
     } catch (err) {
       console.error('MS Get Calendar Events Error:', err);
       return [];
