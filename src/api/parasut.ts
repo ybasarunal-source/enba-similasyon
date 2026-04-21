@@ -112,10 +112,6 @@ export const parasutService = {
     return resp.json();
   },
 
-  async getMe(): Promise<any> {
-    return this.request('/me');
-  },
-
   async getSalesInvoices(companyId: string, dateFrom: string, dateTo: string): Promise<ParasutInvoice[]> {
     const raw = await this.request(`/${companyId}/sales_invoices`, {
       'page[size]': '100',

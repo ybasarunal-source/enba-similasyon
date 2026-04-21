@@ -129,35 +129,12 @@ const LoginView: React.FC<{ onLogin: () => void }> = ({ onLogin }) => {
 const CompanyView: React.FC<{ onSave: (c: ParasutCompany) => void }> = ({ onSave }) => {
   const [companyId, setCompanyId] = useState('');
   const [companyName, setCompanyName] = useState('');
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-
-  useEffect(() => {
-    parasutService.getMe()
-      .then((data: any) => {
-        const attrs = data?.data?.attributes || {};
-        const id = String(data?.data?.id || '');
-        if (id) {
-          setCompanyId(id);
-          setCompanyName(attrs.name || attrs.legal_name || '');
-        }
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
 
   const handleSave = () => {
     if (!companyId.trim()) { setError('Firma ID giriniz.'); return; }
     onSave({ id: companyId.trim(), name: companyName.trim() || companyId.trim() });
   };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 size={28} className="animate-spin text-enba-orange" />
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
