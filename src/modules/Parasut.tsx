@@ -162,6 +162,11 @@ export const Parasut: React.FC = () => {
       setLastSync(new Date());
     } catch (err: any) {
       console.error('[Parasut] loadData error:', err.message);
+      if (err.message === 'SESSION_EXPIRED') {
+        setReady(false);
+        setInvoices([]);
+        return;
+      }
       setError(err.message || 'Veriler alınamadı.');
     } finally {
       setLoading(false);

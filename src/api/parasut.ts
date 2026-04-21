@@ -107,12 +107,16 @@ export const parasutService = {
 
   async request(path: string, params: Record<string, string> = {}): Promise<any> {
     const token = await this.getToken();
-    if (!token) throw new Error('Oturum bulunamadı. Lütfen tekrar giriş yapın.');
+    if (!token) throw new Error('SESSION_EXPIRED');
     const url = new URL(API_BASE, window.location.origin);
     url.searchParams.set('path', `/v4${path}`);
     url.searchParams.set('_token', token);
     Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
     const resp = await fetch(url.toString());
+    if (resp.status === 401) {
+      this.logout();
+      throw new Error('SESSION_EXPIRED');
+    }
     if (!resp.ok) {
       const body = await resp.text().catch(() => '');
       throw new Error(`API hatası ${resp.status}: ${body.slice(0, 200)}`);
