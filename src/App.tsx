@@ -206,13 +206,13 @@ export const App: React.FC = () => {
           ${isSidebarOpen ? 'w-[240px]' : 'w-16'}
         `}
       >
-        {/* Logo row */}
-        <div className={`flex items-center flex-shrink-0 border-b border-white/5
-          ${isSidebarOpen ? 'px-5 py-5 gap-3' : 'px-0 py-5 justify-center'}`}
+        <div className={`flex items-center flex-shrink-0 border-b border-white/5 relative
+          ${isSidebarOpen ? 'px-5 py-5 gap-3' : 'px-0 py-5 justify-center flex-col gap-4'}`}
         >
           <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
             <img src="/icons/logo.png" className="w-full h-full object-contain filter drop-shadow-lg" alt="e" />
           </div>
+          
           {isSidebarOpen && (
             <div className="animate-in fade-in slide-in-from-left-2 duration-300">
               <div style={{ fontFamily: "'Nunito', sans-serif", fontWeight: 800, lineHeight: 1, letterSpacing: '-0.01em' }} className="text-[18px] leading-none">
@@ -223,6 +223,19 @@ export const App: React.FC = () => {
               </div>
             </div>
           )}
+
+          {/* Sidebar Toggle — Top Position */}
+          <button
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            title={isSidebarOpen ? 'Menüyü Gizle' : 'Menüyü Göster'}
+            className={`
+              flex items-center justify-center rounded-lg
+              text-white/40 hover:text-white transition-all duration-300
+              ${isSidebarOpen ? 'absolute right-3 p-1.5 hover:bg-white/10' : 'p-2 bg-white/5 hover:bg-white/10'}
+            `}
+          >
+            {isSidebarOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+          </button>
         </div>
 
         {/* Nav items */}
@@ -283,12 +296,12 @@ export const App: React.FC = () => {
         </nav>
 
         {/* Footer */}
-        <div className={`border-t border-white/5 py-3 px-2 flex flex-col gap-1`}>
+        <div className={`border-t border-white/5 py-4 px-3 flex flex-col gap-2`}>
           {isSidebarOpen && (
             <button
               onClick={() => setLanguage(language === 'TR' ? 'EN' : 'TR')}
               style={{ fontFamily: "'Poppins', sans-serif" }}
-              className="px-3 py-2 text-[10px] font-semibold text-gray-500 hover:text-gray-300 transition-colors text-left tracking-wider uppercase"
+              className="px-3 py-1 mb-1 text-[9px] font-bold text-white/30 hover:text-white/60 transition-colors text-left tracking-widest uppercase"
             >
               {language === 'TR' ? '🇹🇷 Türkçe' : '🇬🇧 English'}
             </button>
@@ -296,31 +309,15 @@ export const App: React.FC = () => {
           <button
             onClick={() => supabase.auth.signOut()}
             title="Çıkış Yap"
-            className={`flex items-center rounded-xl py-2.5 text-gray-500 hover:text-red-400 hover:bg-white/5 transition-all duration-200 ${isSidebarOpen ? 'px-3 gap-3' : 'px-0 justify-center'}`}
-          >
-            <LogOut size={16} />
-            {isSidebarOpen && <span style={{ fontFamily: "'Poppins', sans-serif" }} className="text-[11px] font-medium">Çıkış Yap</span>}
-          </button>
-          <button
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            title={isSidebarOpen ? 'Menüyü Gizle' : 'Menüyü Göster'}
             className={`
-              flex items-center justify-center rounded-xl py-2.5
-              text-gray-500 hover:text-gray-200 hover:bg-white/5
-              transition-all duration-200
-              ${isSidebarOpen ? 'px-3 gap-3' : 'px-0'}
+              flex items-center rounded-xl py-3 transition-all duration-300
+              ${isSidebarOpen ? 'px-4 gap-3 bg-red-500/5 hover:bg-red-500/10 text-red-500/70 hover:text-red-500' : 'px-0 justify-center text-gray-500 hover:text-red-500 hover:bg-red-500/10'}
             `}
           >
-            {isSidebarOpen
-              ? <PanelLeftClose size={18} />
-              : <PanelLeftOpen size={18} />
-            }
+            <LogOut size={16} />
             {isSidebarOpen && (
-              <span
-                style={{ fontFamily: "'Poppins', sans-serif" }}
-                className="text-[11px] font-medium"
-              >
-                Menüyü Gizle
+              <span style={{ fontFamily: "'Poppins', sans-serif" }} className="text-[12px] font-semibold">
+                Çıkış Yap
               </span>
             )}
           </button>
