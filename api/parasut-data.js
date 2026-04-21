@@ -24,6 +24,17 @@ export default async function handler(req, res) {
     });
 
     const data = await upstream.text();
+
+    if (upstream.status === 401) {
+      return res.status(401).json({
+        error: 'parasut_401',
+        token_length: token.length,
+        token_prefix: token.slice(0, 12),
+        upstream_url,
+        parasut_response: data.slice(0, 300),
+      });
+    }
+
     res.status(upstream.status)
       .setHeader('Content-Type', upstream.headers.get('content-type') || 'application/json')
       .end(data);

@@ -113,12 +113,15 @@ export const parasutService = {
     url.searchParams.set('_token', token);
     Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
     const resp = await fetch(url.toString());
-    if (resp.status === 401) {
-      this.logout();
-      throw new Error('SESSION_EXPIRED');
-    }
     if (!resp.ok) {
       const body = await resp.text().catch(() => '');
+      let parsed: any = {};
+      try { parsed = JSON.parse(body); } catch { /* ignore */ }
+      if (resp.status === 401) {
+        this.logout();
+        const detail = parsed.parasut_response || parsed.error || body.slice(0, 200);
+        throw new Error(`401_UNAUTHORIZED: token_prefix=${parsed.token_prefix} token_len=${parsed.token_length} | ${detail}`);
+      }
       throw new Error(`API hatası ${resp.status}: ${body.slice(0, 200)}`);
     }
     return resp.json();
