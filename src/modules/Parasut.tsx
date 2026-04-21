@@ -240,32 +240,40 @@ export const Parasut: React.FC = () => {
 
   if (!ready) return <LoginForm onReady={handleReady} />;
 
-  const filtered = invoices.filter(inv => {
-    if (typeFilter === 'income'  && inv.type !== 'sales_invoices')  return false;
-    if (typeFilter === 'expense' && inv.type === 'sales_invoices') return false;
-    if (categoryFilter !== 'all' && inv.category_name !== categoryFilter) return false;
-    if (search) {
-      const q = search.toLowerCase();
-      return inv.description.toLowerCase().includes(q)
-        || inv.contact_name.toLowerCase().includes(q)
-        || inv.invoice_no.toLowerCase().includes(q)
-        || inv.category_name?.toLowerCase().includes(q);
-    }
-    return true;
-  });
+  const filtered = React.useMemo(() => {
+    return invoices.filter(inv => {
+      if (typeFilter === 'income'  && inv.type !== 'sales_invoices')  return false;
+      if (typeFilter === 'expense' && inv.type === 'sales_invoices') return false;
+      if (categoryFilter !== 'all' && inv.category_name !== categoryFilter) return false;
+      if (search) {
+        const q = search.toLowerCase();
+        return inv.description.toLowerCase().includes(q)
+          || inv.contact_name.toLowerCase().includes(q)
+          || inv.invoice_no.toLowerCase().includes(q)
+          || inv.category_name?.toLowerCase().includes(q);
+      }
+      return true;
+    });
+  }, [invoices, typeFilter, categoryFilter, search]);
 
   const sorted = React.useMemo(() => {
+    const { key, direction } = sortConfig;
     return [...filtered].sort((a, b) => {
-      const aVal = a[sortConfig.key];
-      const bVal = b[sortConfig.key];
+      let aVal: any = a[key];
+      let bVal: any = b[key];
       
       if (aVal === bVal) return 0;
       if (aVal === undefined || aVal === null) return 1;
       if (bVal === undefined || bVal === null) return -1;
       
-      if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
-      if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
-      return 0;
+      let res = 0;
+      if (typeof aVal === 'string' && typeof bVal === 'string') {
+        res = aVal.localeCompare(bVal, 'tr');
+      } else {
+        res = aVal < bVal ? -1 : 1;
+      }
+      
+      return direction === 'asc' ? res : -res;
     });
   }, [filtered, sortConfig]);
 
