@@ -80,8 +80,14 @@ export const parasutService = {
       }),
     });
     if (!resp.ok) {
-      const err = await resp.json().catch(() => ({}));
-      throw new Error(err.error_description || 'Giriş başarısız. Bilgileri kontrol edin.');
+      const text = await resp.text().catch(() => '');
+      let errMsg = `HTTP ${resp.status}`;
+      try {
+        const j = JSON.parse(text);
+        errMsg = j.error_description || j.error || j.message || errMsg;
+      } catch { if (text) errMsg += ': ' + text.slice(0, 120); }
+      console.error('Paraşüt login error:', resp.status, text);
+      throw new Error(errMsg);
     }
     saveToken(await resp.json());
   },
