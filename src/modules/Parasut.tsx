@@ -46,6 +46,9 @@ const LoginForm: React.FC<{ onReady: (companyId: string) => void }> = ({ onReady
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!companyId.trim()) { setError('Firma ID zorunludur.'); return; }
+    setLoading(true);
+    setError('');
     try {
       await parasutService.login(email, password);
       parasutService.saveCompany({ id: companyId.trim(), name: companyId.trim() });
