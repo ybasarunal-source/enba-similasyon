@@ -9,15 +9,19 @@ export default async function handler(req, res) {
   try {
     const { grant_type, username, password, refresh_token } = req.body || {};
 
-    // Check both standard and VITE_ prefixed env vars
-    const clientId = process.env.PARASUT_CLIENT_ID || process.env.VITE_PARASUT_CLIENT_ID;
-    const clientSecret = process.env.PARASUT_CLIENT_SECRET || process.env.VITE_PARASUT_CLIENT_SECRET;
+    // 1. Get and normalize credentials (trimming prevents accidental spaces)
+    const rawClientId = process.env.PARASUT_CLIENT_ID || process.env.VITE_PARASUT_CLIENT_ID;
+    const rawClientSecret = process.env.PARASUT_CLIENT_SECRET || process.env.VITE_PARASUT_CLIENT_SECRET;
+    
+    const clientId = rawClientId?.trim();
+    const clientSecret = rawClientSecret?.trim();
 
     // Diagnostic info (safe to show prefixes)
     const diag = {
       has_client_id: !!clientId,
       has_client_secret: !!clientSecret,
       client_id_prefix: clientId ? clientId.slice(0, 6) : 'missing',
+      env_source: process.env.PARASUT_CLIENT_ID ? 'STANDARD' : (process.env.VITE_PARASUT_CLIENT_ID ? 'VITE_PREFIXED' : 'NONE'),
       env_keys: Object.keys(process.env).filter(k => k.includes('PARASUT')),
     };
 
@@ -39,7 +43,9 @@ export default async function handler(req, res) {
     } else {
       body.append('username', username);
       body.append('password', password);
-      body.append('redirect_uri', 'urn:ietf:wg:oauth:2.0:oob');
+      // Removed redirect_uri as it is usually not required for password grant and can cause mismatches
+      // Added standard scopes
+      body.append('scope', 'read write');
     }
 
     const upstream = await fetch('https://api.parasut.com/oauth/token', {
