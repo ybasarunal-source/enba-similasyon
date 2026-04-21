@@ -110,10 +110,9 @@ export const parasutService = {
     if (!token) throw new Error('Oturum bulunamadı. Lütfen tekrar giriş yapın.');
     const url = new URL(API_BASE, window.location.origin);
     url.searchParams.set('path', `/v4${path}`);
+    url.searchParams.set('_token', token);
     Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-    const resp = await fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
-    });
+    const resp = await fetch(url.toString());
     if (!resp.ok) {
       const body = await resp.text().catch(() => '');
       throw new Error(`API hatası ${resp.status}: ${body.slice(0, 200)}`);

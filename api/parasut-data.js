@@ -5,8 +5,12 @@ export default async function handler(req, res) {
 
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  const { path, ...rest } = req.query;
+  // Token can come from Authorization header OR _token query param (fallback for header stripping)
+  const { path, _token, ...rest } = req.query;
   if (!path) return res.status(400).json({ error: 'path_required' });
+
+  const token = _token || (req.headers.authorization || '').replace('Bearer ', '');
+  if (!token) return res.status(401).json({ error: 'no_token' });
 
   const qs = new URLSearchParams(rest).toString();
   const upstream_url = `https://api.parasut.com${path}${qs ? '?' + qs : ''}`;
@@ -14,7 +18,7 @@ export default async function handler(req, res) {
   try {
     const upstream = await fetch(upstream_url, {
       headers: {
-        Authorization: req.headers.authorization || '',
+        Authorization: `Bearer ${token}`,
         Accept: 'application/json',
       },
     });
