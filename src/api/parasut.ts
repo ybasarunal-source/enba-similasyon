@@ -156,7 +156,7 @@ export const parasutService = {
   async getExpenditures(companyId: string, dateFrom: string, dateTo: string): Promise<ParasutInvoice[]> {
     const raw = await this.request(`/${companyId}/expenditures`, {
       'page[size]': '25',
-      'include': 'supplier,category',
+      'include': 'contact,category',
       'filter[issue_date][gteq]': dateFrom,
       'filter[issue_date][lteq]': dateTo,
       'sort': '-issue_date',
