@@ -48,12 +48,20 @@ export default async function handler(req, res) {
       body.append('scope', 'read write');
     }
 
+    // 3. Make the request to Paraşüt
+    // Base64 encode for Basic Auth header fallback
+    const basicAuth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+
+    const headers = {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Accept': 'application/json',
+      'Authorization': `Basic ${basicAuth}`,
+      'User-Agent': 'EnbaPlatform/1.0.0 (https://uygulama.basarunal.com)',
+    };
+
     const upstream = await fetch('https://api.parasut.com/oauth/token', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Accept': 'application/json',
-      },
+      headers,
       body: body.toString(),
     });
 
@@ -69,8 +77,12 @@ export default async function handler(req, res) {
     if (!upstream.ok) {
       return res.status(upstream.status).json({
         ...data,
-        diagnostics: diag,
-        _hint: 'Client ID/Secret matching confirm and Vercel env vars check required.'
+        diagnostics: {
+          ...diag,
+          basic_auth_sent: true,
+          content_type: headers['Content-Type'],
+        },
+        _hint: 'Client ID/Secret still rejected. Please check Paraşüt Portal: 1. Status is Active? 2. Password Grant is enabled? 3. Redirect URI matches index origin?'
       });
     }
 
