@@ -133,7 +133,8 @@ export const parasutService = {
 
   async getSalesInvoices(companyId: string, dateFrom: string, dateTo: string): Promise<ParasutInvoice[]> {
     const raw = await this.request(`/${companyId}/sales_invoices`, {
-      'page[size]': '25',
+      'page[size]': '50',
+      'include': 'contact,category',
       'filter[issue_date][gteq]': dateFrom,
       'filter[issue_date][lteq]': dateTo,
       'sort': '-issue_date',
@@ -143,7 +144,8 @@ export const parasutService = {
 
   async getPurchaseBills(companyId: string, dateFrom: string, dateTo: string): Promise<ParasutInvoice[]> {
     const raw = await this.request(`/${companyId}/purchase_bills`, {
-      'page[size]': '25',
+      'page[size]': '50',
+      'include': 'contact,category',
       'filter[issue_date][gteq]': dateFrom,
       'filter[issue_date][lteq]': dateTo,
       'sort': '-issue_date',
@@ -153,7 +155,8 @@ export const parasutService = {
 
   async getExpenditures(companyId: string, dateFrom: string, dateTo: string): Promise<ParasutInvoice[]> {
     const raw = await this.request(`/${companyId}/expenditures`, {
-      'page[size]': '25',
+      'page[size]': '50',
+      'include': 'contact,category',
       'filter[issue_date][gteq]': dateFrom,
       'filter[issue_date][lteq]': dateTo,
       'sort': '-issue_date',

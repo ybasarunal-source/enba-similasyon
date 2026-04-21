@@ -187,7 +187,9 @@ export const Parasut: React.FC = () => {
         parasutService.getPurchaseBills(cid, from, to),
         parasutService.getExpenditures(cid, from, to),
       ]);
-      setInvoices([...sales, ...purchases, ...expenditures].sort((a, b) => b.issue_date.localeCompare(a.issue_date)));
+      const combined = [...sales, ...purchases, ...expenditures];
+      const unique = Array.from(new Map(combined.map(i => [i.id, i])).values());
+      setInvoices(unique.sort((a, b) => b.issue_date.localeCompare(a.issue_date)));
       setLastSync(new Date());
     } catch (err: any) {
       console.error('[Parasut] loadData error:', err.message);
