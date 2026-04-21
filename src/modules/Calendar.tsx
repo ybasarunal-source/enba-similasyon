@@ -1,4 +1,3 @@
-import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Calendar as CalendarIcon, 
   ChevronLeft, 
@@ -11,7 +10,8 @@ import {
   X,
   Share2,
   Mail,
-  Zap
+  Zap,
+  ClipboardList
 } from 'lucide-react';
 import { microsoftService } from '../api/microsoft';
 import { googleService } from '../api/google';
@@ -24,7 +24,9 @@ interface CalendarEvent {
   end: { dateTime: string; timeZone: string };
   location?: { displayName: string };
   isAllDay: boolean;
-  source: 'google' | 'outlook';
+  source: 'google' | 'outlook' | 'task';
+  priority?: string;
+  status?: string;
 }
 
 export const Calendar: React.FC = () => {
@@ -35,7 +37,7 @@ export const Calendar: React.FC = () => {
   const [isMSAuth, setIsMSAuth] = useState(false);
   const [isGAuth, setIsGAuth] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [sourceFilter, setSourceFilter] = useState<'all' | 'google' | 'outlook'>('all');
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'google' | 'outlook' | 'task'>('all');
   const [formData, setFormData] = useState({
     subject: '',
     body: '',
@@ -73,7 +75,26 @@ export const Calendar: React.FC = () => {
       if (googleToken) fetchers.push(googleService.getCalendarEvents(start.toISOString(), end.toISOString()));
 
       const results = await Promise.all(fetchers);
-      const allEvents = results.flat() as CalendarEvent[];
+      const apiEvents = results.flat() as CalendarEvent[];
+      
+      // Load Tasks from LocalStorage
+      const savedTasks = localStorage.getItem('enba_tasks');
+      const tasks: any[] = savedTasks ? JSON.parse(savedTasks) : [];
+      const taskEvents: CalendarEvent[] = tasks
+        .filter(t => t.deadline && t.status !== 'done')
+        .map(t => ({
+          id: 'task-' + t.id,
+          subject: '[GÖREV] ' + t.title,
+          bodyPreview: t.desc || '',
+          start: { dateTime: t.deadline + 'T09:00:00', timeZone: '' },
+          end: { dateTime: t.deadline + 'T10:00:00', timeZone: '' },
+          isAllDay: true,
+          source: 'task',
+          priority: t.priority,
+          status: t.status
+        }));
+
+      const allEvents = [...apiEvents, ...taskEvents];
       
       // Sort by time
       allEvents.sort((a, b) => new Date(a.start.dateTime).getTime() - new Date(b.start.dateTime).getTime());
@@ -119,7 +140,11 @@ export const Calendar: React.FC = () => {
     }
   };
 
-  const handleDeleteEvent = async (id: string, source: 'google' | 'outlook') => {
+  const handleDeleteEvent = async (id: string, source: 'google' | 'outlook' | 'task') => {
+    if (source === 'task') {
+      alert('Görevler Takvim üzerinden silinemez, lütfen Görevler modülünü kullanın.');
+      return;
+    }
     if (!confirm('Bu etkinliği silmek istediğinize emin misiniz?')) return;
     setIsLoading(true);
     try {
@@ -189,6 +214,12 @@ export const Calendar: React.FC = () => {
     <svg viewBox="0 0 23 23" width="14" height="14">
       <path fill="#f3f3f3" d="M0 0h23v23H0z"/><path fill="#f35325" d="M1 1h10v10H1z"/><path fill="#81bc06" d="M12 1h10v10H12z"/><path fill="#05a6f0" d="M1 12h10v10H1z"/><path fill="#ffba08" d="M12 12h10v10H12z"/>
     </svg>
+  );
+
+  const TaskLogo = () => (
+    <div className="w-3.5 h-3.5 bg-enba-dark rounded flex items-center justify-center text-enba-orange">
+      <ClipboardList size={10} strokeWidth={3} />
+    </div>
   );
 
   if (!isMSAuth && !isGAuth) {
@@ -309,8 +340,8 @@ export const Calendar: React.FC = () => {
                   
                   <div className="space-y-1 overflow-hidden">
                     {dayEvents.slice(0, 3).map((ev, idx) => (
-                      <div key={idx} className={`text-[9px] font-bold text-enba-dark px-2 py-0.5 rounded border-l-2 flex items-center gap-1.5 truncate ${ev.source === 'google' ? 'bg-blue-50/50 border-blue-400' : 'bg-orange-50/50 border-enba-orange'}`}>
-                        {ev.source === 'google' ? <GoogleLogo /> : <MicrosoftLogo />}
+                      <div key={idx} className={`text-[9px] font-bold text-enba-dark px-2 py-0.5 rounded border-l-2 flex items-center gap-1.5 truncate ${ev.source === 'google' ? 'bg-blue-50/50 border-blue-400' : ev.source === 'task' ? 'bg-orange-50/50 border-enba-orange' : 'bg-gray-50/50 border-orange-400'}`}>
+                        {ev.source === 'google' ? <GoogleLogo /> : ev.source === 'task' ? <TaskLogo /> : <MicrosoftLogo />}
                         <span className="truncate">{ev.subject}</span>
                       </div>
                     ))}
@@ -348,14 +379,15 @@ export const Calendar: React.FC = () => {
           {[
             { id: 'all', label: 'TÜMÜ', icon: Zap },
             { id: 'google', label: 'GOOGLE', icon: GoogleLogo },
-            { id: 'outlook', label: 'OUTLOOK', icon: MicrosoftLogo }
+            { id: 'outlook', label: 'OUTLOOK', icon: MicrosoftLogo },
+            { id: 'task', label: 'GÖREVLER', icon: TaskLogo }
           ].map(tab => (
             <button
               key={tab.id}
               onClick={() => setSourceFilter(tab.id as any)}
               className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-[9px] font-black tracking-widest transition-all ${sourceFilter === tab.id ? 'bg-white text-enba-dark shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
             >
-              {React.createElement(tab.icon, { size: 12 })}
+              {typeof tab.icon === 'function' ? <tab.icon /> : React.createElement(tab.icon, { size: 12 })}
               {tab.label}
             </button>
           ))}
@@ -368,11 +400,11 @@ export const Calendar: React.FC = () => {
               
               <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center gap-3">
-                  <div className={`flex items-center gap-2 text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-lg ${ev.source === 'google' ? 'bg-blue-50 text-blue-500' : 'bg-orange-50 text-enba-orange'}`}>
+                  <div className={`flex items-center gap-2 text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-lg ${ev.source === 'google' ? 'bg-blue-50 text-blue-500' : ev.source === 'task' ? 'bg-enba-dark text-enba-orange' : 'bg-orange-50 text-enba-orange'}`}>
                     <Clock size={12} />
                     {new Date(ev.start.dateTime).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
                   </div>
-                  {ev.source === 'google' ? <GoogleLogo /> : <MicrosoftLogo />}
+                  {ev.source === 'google' ? <GoogleLogo /> : ev.source === 'task' ? <TaskLogo /> : <MicrosoftLogo />}
                 </div>
                 <button 
                   onClick={() => handleDeleteEvent(ev.id, ev.source)}
