@@ -1,6 +1,3 @@
-const CLIENT_ID = import.meta.env.VITE_PARASUT_CLIENT_ID as string;
-const CLIENT_SECRET = import.meta.env.VITE_PARASUT_CLIENT_SECRET as string;
-
 const OAUTH_URL = '/api/parasut-oauth';
 const API_BASE = '/api/parasut-data';
 
@@ -70,14 +67,7 @@ export const parasutService = {
     const resp = await fetch(OAUTH_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        grant_type: 'password',
-        client_id: CLIENT_ID,
-        client_secret: CLIENT_SECRET,
-        username,
-        password,
-        redirect_uri: 'urn:ietf:wg:oauth:2.0:oob',
-      }),
+      body: new URLSearchParams({ grant_type: 'password', username, password }),
     });
     if (!resp.ok) {
       const text = await resp.text().catch(() => '');
@@ -103,8 +93,6 @@ export const parasutService = {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
           grant_type: 'refresh_token',
-          client_id: CLIENT_ID,
-          client_secret: CLIENT_SECRET,
           refresh_token: saved.refresh_token,
         }),
       });
