@@ -134,8 +134,8 @@ export const parasutService = {
     const raw = await this.request(`/${companyId}/sales_invoices`, {
       'page[size]': '25',
       'include': 'contact',
-      'filter[issue_date][gte]': dateFrom,
-      'filter[issue_date][lte]': dateTo,
+      'filter[issue_date][gteq]': dateFrom,
+      'filter[issue_date][lteq]': dateTo,
       'sort': '-issue_date',
     });
     return this._mapInvoices(raw, 'sales_invoices');
@@ -145,8 +145,8 @@ export const parasutService = {
     const raw = await this.request(`/${companyId}/purchase_bills`, {
       'page[size]': '25',
       'include': 'supplier',
-      'filter[issue_date][gte]': dateFrom,
-      'filter[issue_date][lte]': dateTo,
+      'filter[issue_date][gteq]': dateFrom,
+      'filter[issue_date][lteq]': dateTo,
       'sort': '-issue_date',
     });
     return this._mapInvoices(raw, 'purchase_bills');
