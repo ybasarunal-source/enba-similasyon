@@ -1,5 +1,3 @@
-export const config = { api: { bodyParser: false } };
-
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -9,28 +7,24 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
   try {
-    // Read raw body from stream (Vercel body parser disabled)
-    const chunks = [];
-    for await (const chunk of req) chunks.push(chunk);
-    const rawBody = Buffer.concat(chunks).toString();
+    const { grant_type, username, password, refresh_token } = req.body || {};
 
-    // Parse incoming fields (username + password from frontend)
-    const incoming = Object.fromEntries(new URLSearchParams(rawBody));
+    const clientId = process.env.PARASUT_CLIENT_ID;
+    const clientSecret = process.env.PARASUT_CLIENT_SECRET;
 
-    // Build full OAuth body with server-side client credentials
-    const body = new URLSearchParams({
-      grant_type: incoming.grant_type || 'password',
-      client_id: process.env.PARASUT_CLIENT_ID || '',
-      client_secret: process.env.PARASUT_CLIENT_SECRET || '',
-      username: incoming.username || '',
-      password: incoming.password || '',
-      redirect_uri: 'urn:ietf:wg:oauth:2.0:oob',
-    });
+    if (!clientId || !clientSecret) {
+      return res.status(500).json({ error: 'missing_env', error_description: 'PARASUT_CLIENT_ID veya PARASUT_CLIENT_SECRET eksik.' });
+    }
+
+    const params =
+      grant_type === 'refresh_token'
+        ? { grant_type: 'refresh_token', client_id: clientId, client_secret: clientSecret, refresh_token }
+        : { grant_type: 'password', client_id: clientId, client_secret: clientSecret, username, password, redirect_uri: 'urn:ietf:wg:oauth:2.0:oob' };
 
     const upstream = await fetch('https://api.parasut.com/oauth/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: body.toString(),
+      body: new URLSearchParams(params).toString(),
     });
 
     const data = await upstream.text();

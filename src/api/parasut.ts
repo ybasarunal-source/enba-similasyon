@@ -66,8 +66,8 @@ export const parasutService = {
   async login(username: string, password: string): Promise<void> {
     const resp = await fetch(OAUTH_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ grant_type: 'password', username, password }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ grant_type: 'password', username, password }),
     });
     if (!resp.ok) {
       const text = await resp.text().catch(() => '');
@@ -90,11 +90,8 @@ export const parasutService = {
     try {
       const resp = await fetch(OAUTH_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          grant_type: 'refresh_token',
-          refresh_token: saved.refresh_token,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ grant_type: 'refresh_token', refresh_token: saved.refresh_token }),
       });
       if (!resp.ok) { this.logout(); return null; }
       return saveToken(await resp.json()).access_token;
