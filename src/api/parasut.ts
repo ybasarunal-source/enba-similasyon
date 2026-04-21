@@ -29,19 +29,27 @@ export interface ParasutInvoice {
   invoice_no: string;
 }
 
+// In-memory cache so localStorage failures don't break the session
+let _memToken: StoredToken | null = null;
+
 function saveToken(raw: any): StoredToken {
   const data: StoredToken = {
     access_token: raw.access_token,
     refresh_token: raw.refresh_token,
     expires_at: Date.now() + (raw.expires_in - 120) * 1000,
   };
-  localStorage.setItem(TOKEN_KEY, JSON.stringify(data));
+  _memToken = data;
+  try { localStorage.setItem(TOKEN_KEY, JSON.stringify(data)); } catch { /* ignore */ }
   return data;
 }
 
 function loadToken(): StoredToken | null {
-  try { return JSON.parse(localStorage.getItem(TOKEN_KEY) || 'null'); }
-  catch { return null; }
+  if (_memToken) return _memToken;
+  try {
+    const t = JSON.parse(localStorage.getItem(TOKEN_KEY) || 'null');
+    if (t) _memToken = t;
+    return t;
+  } catch { return null; }
 }
 
 export const parasutService = {
@@ -50,12 +58,13 @@ export const parasutService = {
   },
 
   logout(): void {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(COMPANY_KEY);
+    _memToken = null;
+    try { localStorage.removeItem(TOKEN_KEY); } catch { /* ignore */ }
+    try { localStorage.removeItem(COMPANY_KEY); } catch { /* ignore */ }
   },
 
   saveCompany(company: ParasutCompany): void {
-    localStorage.setItem(COMPANY_KEY, JSON.stringify(company));
+    try { localStorage.setItem(COMPANY_KEY, JSON.stringify(company)); } catch { /* ignore */ }
   },
 
   getCompany(): ParasutCompany | null {
@@ -75,8 +84,7 @@ export const parasutService = {
       try {
         const j = JSON.parse(text);
         errMsg = j.error_description || j.error || j.message || errMsg;
-      } catch { if (text) errMsg += ': ' + text.slice(0, 120); }
-      console.error('Paraşüt login error:', resp.status, text);
+      } catch { if (text) errMsg += ': ' + text.slice(0, 200); }
       throw new Error(errMsg);
     }
     saveToken(await resp.json());
@@ -86,7 +94,6 @@ export const parasutService = {
     const saved = loadToken();
     if (!saved) return null;
     if (Date.now() < saved.expires_at) return saved.access_token;
-    // Token expired — refresh
     try {
       const resp = await fetch(OAUTH_URL, {
         method: 'POST',
@@ -100,15 +107,17 @@ export const parasutService = {
 
   async request(path: string, params: Record<string, string> = {}): Promise<any> {
     const token = await this.getToken();
-    if (!token) throw new Error('SESSION_EXPIRED');
+    if (!token) throw new Error('Oturum bulunamadı. Lütfen tekrar giriş yapın.');
     const url = new URL(API_BASE, window.location.origin);
     url.searchParams.set('path', `/v4${path}`);
     Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
     const resp = await fetch(url.toString(), {
       headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
     });
-    if (resp.status === 401) { this.logout(); throw new Error('SESSION_EXPIRED'); }
-    if (!resp.ok) throw new Error(`API hatası: ${resp.status}`);
+    if (!resp.ok) {
+      const body = await resp.text().catch(() => '');
+      throw new Error(`API hatası ${resp.status}: ${body.slice(0, 200)}`);
+    }
     return resp.json();
   },
 

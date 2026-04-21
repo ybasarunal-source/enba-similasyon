@@ -225,11 +225,7 @@ export const Parasut: React.FC = () => {
       setInvoices([...sales, ...purchases].sort((a, b) => b.issue_date.localeCompare(a.issue_date)));
       setLastSync(new Date());
     } catch (err: any) {
-      if (err.message === 'SESSION_EXPIRED') {
-        setAuthState('login');
-      } else {
-        setError(err.message || 'Veriler alınamadı.');
-      }
+      setError(err.message || 'Veriler alınamadı.');
     } finally {
       setLoading(false);
     }
