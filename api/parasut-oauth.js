@@ -13,19 +13,26 @@ export default async function handler(req, res) {
     const clientId = process.env.PARASUT_CLIENT_ID || process.env.VITE_PARASUT_CLIENT_ID;
     const clientSecret = process.env.PARASUT_CLIENT_SECRET || process.env.VITE_PARASUT_CLIENT_SECRET;
 
+    // Diagnostic info (safe to show prefixes)
+    const diag = {
+      has_client_id: !!clientId,
+      has_client_secret: !!clientSecret,
+      client_id_prefix: clientId ? clientId.slice(0, 6) : 'missing',
+      env_keys: Object.keys(process.env).filter(k => k.includes('PARASUT')),
+    };
+
     if (!clientId || !clientSecret) {
       return res.status(500).json({ 
         error: 'missing_env', 
         error_description: 'PARASUT_CLIENT_ID veya PARASUT_CLIENT_SECRET eksik.',
-        available_vars: Object.keys(process.env).filter(k => k.includes('PARASUT'))
+        diagnostics: diag
       });
     }
 
-    const body = new URLSearchParams({
-      grant_type: grant_type || 'password',
-      client_id: clientId,
-      client_secret: clientSecret,
-    });
+    const body = new URLSearchParams();
+    body.append('grant_type', grant_type || 'password');
+    body.append('client_id', clientId);
+    body.append('client_secret', clientSecret);
 
     if (grant_type === 'refresh_token') {
       body.append('refresh_token', refresh_token);
@@ -50,6 +57,15 @@ export default async function handler(req, res) {
       data = JSON.parse(text);
     } catch {
       data = { raw_response: text };
+    }
+
+    // Include diagnostics on failure to help debug "unknown client"
+    if (!upstream.ok) {
+      return res.status(upstream.status).json({
+        ...data,
+        diagnostics: diag,
+        _hint: 'Client ID/Secret matching confirm and Vercel env vars check required.'
+      });
     }
 
     res.status(upstream.status).json(data);
