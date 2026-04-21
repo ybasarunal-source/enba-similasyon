@@ -77,10 +77,8 @@ export const Tasks: React.FC = () => {
 
   const [groups, setGroups] = useState<ProjectGroup[]>(() => {
     const saved = localStorage.getItem('enba_project_groups');
-    return saved ? JSON.parse(saved) : [
-      { id: 'g1', name: 'KRİTİK PROJELER' },
-      { id: 'g2', name: 'RUTİN İŞLER' }
-    ];
+    const parsed: ProjectGroup[] = saved ? JSON.parse(saved) : [{ id: 'g2', name: 'RUTİN İŞLER' }];
+    return parsed.filter(g => g.id !== 'g1');
   });
 
   const [msAccount, setMsAccount] = useState<any>(null);
@@ -416,7 +414,7 @@ export const Tasks: React.FC = () => {
 
         <div className="flex-1 overflow-y-auto px-4 sidebar-scrollbar custom-scrollbar pb-10">
           {groups.map(group => {
-            const groupProjects = projects.filter(p => p.groupId === group.id || (!p.groupId && group.id === 'g1'));
+            const groupProjects = projects.filter(p => p.groupId === group.id || (!p.groupId && group.id === 'g2'));
             
             return (
               <div key={group.id} className="mb-8">
