@@ -227,96 +227,66 @@ export const Tasks: React.FC = () => {
   };
 
   const handleSyncAll = async (accountInstance = msAccount) => {
-    if (!accountInstance) return;
+    if (!accountInstance || (accountInstance as any).needsReconnect) return;
     setIsSyncing(true);
     setSyncStatus('Senkronize ediliyor...');
-    
+
     try {
       const list = await microsoftService.ensureTodoList('Enba Tasks');
       if (!list) throw new Error('Task listesi bulunamadı.');
 
       const msTasks = await microsoftService.getTodoListTasks(list.id);
-      let updatedCount = 0;
-      let newCount = 0;
 
-      console.group('Microsoft To-Do Sync Logic');
-      console.log('MS Remote Tasks:', msTasks.length);
-      console.log('Local Current Tasks:', tasks.length);
-
+      // Karşılaştırma & birleştirme — side effect'siz saf fonksiyon
       setTasks(current => {
-        // 1. Map existing tasks and check for external updates
+        const cleanText = (s: string) =>
+          s.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').trim();
+
+        const msStatusMap = (s: string): 'todo' | 'doing' | 'done' =>
+          s === 'completed' ? 'done' : s === 'inProgress' ? 'doing' : 'todo';
+
         const updatedTasks = current.map(localTask => {
           if (!localTask.msTodoId) return localTask;
-          
           const msTask = msTasks.find((t: any) => t.id === localTask.msTodoId);
-          if (!msTask) {
-             console.log(`Task [${localTask.title}] MS'de bulunamadı (silinmiş olabilir).`);
-             return localTask;
-          }
+          if (!msTask) return localTask;
 
-          const msStatus: 'todo' | 'done' = msTask.status === 'completed' ? 'done' : 'todo';
-          
-          // Resilient comparison (strip HTML and trim)
-          const cleanLocalDesc = (localTask.desc || '').replace(/<[^>]*>/g, '').trim();
-          const cleanMsDesc = (msTask.body?.content || '').replace(/<[^>]*>/g, '').trim();
-          const cleanLocalTitle = (localTask.title || '').trim();
-          const cleanMsTitle = (msTask.title || '').trim();
-
+          const msStatus = msStatusMap(msTask.status);
           const hasStatusDiff = localTask.status !== msStatus;
-          const hasTitleDiff = cleanLocalTitle !== cleanMsTitle;
-          const hasDescDiff = cleanLocalDesc !== cleanMsDesc;
+          const hasTitleDiff = cleanText(localTask.title) !== cleanText(msTask.title || '');
+          const hasDescDiff  = cleanText(localTask.desc || '') !== cleanText(msTask.body?.content || '');
 
           if (hasStatusDiff || hasTitleDiff || hasDescDiff) {
-            updatedCount++;
-            console.log(`%c Sync UPDATE: [${localTask.title}]`, 'color: #0078d4; font-weight: bold', {
-              status: `${localTask.status} -> ${msStatus}`,
-              title: hasTitleDiff ? `${localTask.title} -> ${msTask.title}` : 'aynı',
-              desc: hasDescDiff ? 'açıklama değişti' : 'aynı'
-            });
-            return {
-              ...localTask,
-              status: msStatus,
-              title: msTask.title,
-              desc: msTask.body?.content || '' // Keep original formatting in storage but compare cleaned
-            };
+            return { ...localTask, status: msStatus, title: msTask.title, desc: msTask.body?.content || '' };
           }
           return localTask;
         });
 
-        // 2. Identify new tasks from MS
-        const newTasks: Task[] = [];
-        msTasks.forEach((msTask: any) => {
-          const isKnown = current.some(t => t.msTodoId === msTask.id);
-          if (!isKnown) {
-            newTasks.push({
-              id: 'ms-' + msTask.id,
-              title: msTask.title,
-              desc: msTask.body?.content || '',
-              priority: msTask.importance === 'high' ? 'high' : 'medium',
-              deadline: msTask.dueDateTime?.dateTime || '',
-              projectId: 'p1',
-              moduleRef: 'genel',
-              status: msTask.status === 'completed' ? 'done' : 'todo',
-              createdAt: msTask.createdDateTime || new Date().toISOString(),
-              msTodoId: msTask.id,
-              msListId: list.id
-            });
-            newCount++;
-            console.log(`Yeni Görev Bulundu: [${msTask.title}]`);
-          }
-        });
+        const knownIds = new Set(current.map(t => t.msTodoId).filter(Boolean));
+        const newTasks: Task[] = msTasks
+          .filter((t: any) => !knownIds.has(t.id))
+          .map((t: any) => ({
+            id: 'ms-' + t.id,
+            title: t.title,
+            desc: t.body?.content || '',
+            priority: t.importance === 'high' ? 'high' : 'medium',
+            deadline: t.dueDateTime?.dateTime || '',
+            projectId: projects[0]?.id || 'p1',
+            moduleRef: 'genel',
+            status: msStatusMap(t.status),
+            createdAt: t.createdDateTime || new Date().toISOString(),
+            msTodoId: t.id,
+            msListId: list.id,
+          } as Task));
 
         return [...updatedTasks, ...newTasks];
       });
 
-      console.groupEnd();
-      const summary = `${updatedCount} güncellendi, ${newCount} eklendi.`;
-      setSyncStatus(summary);
-      setTimeout(() => setSyncStatus(''), 5000);
-      
-    } catch (err) {
+      setSyncStatus(`${msTasks.length} görev kontrol edildi.`);
+      setTimeout(() => setSyncStatus(''), 4000);
+
+    } catch (err: any) {
       console.error('Sync Error:', err);
-      setSyncStatus('Hata oluştu.');
+      setSyncStatus(err?.message || 'Senkronizasyon başarısız.');
     } finally {
       setIsSyncing(false);
     }

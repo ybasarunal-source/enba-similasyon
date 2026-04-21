@@ -188,12 +188,19 @@ export const microsoftService = {
 
   async getTodoListTasks(listId: string) {
     const client = await this.getGraphClient();
-    if (!client) return [];
-    try {
-      const response = await client.api(`/me/todo/lists/${listId}/tasks`)
-        .header('Cache-Control', 'no-cache').get();
-      return response.value;
-    } catch { return []; }
+    if (!client) throw new Error('Microsoft bağlantısı kurulamadı. Lütfen yeniden giriş yapın.');
+
+    const allTasks: any[] = [];
+    let nextUrl: string | null = `/me/todo/lists/${listId}/tasks?$top=500`;
+
+    while (nextUrl) {
+      const response: any = await client.api(nextUrl).header('Cache-Control', 'no-cache').get();
+      allTasks.push(...(response.value || []));
+      const next: string | undefined = response['@odata.nextLink'];
+      nextUrl = next ? next.replace('https://graph.microsoft.com/v1.0', '') : null;
+    }
+
+    return allTasks;
   },
 
   async logout() {
