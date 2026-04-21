@@ -25,13 +25,14 @@ export default async function handler(req, res) {
 
     const data = await upstream.text();
 
-    if (upstream.status === 401) {
-      return res.status(401).json({
-        error: 'parasut_401',
+    if (upstream.status === 401 || upstream.status === 403) {
+      return res.status(upstream.status).json({
+        error: `parasut_${upstream.status}`,
         token_length: token.length,
         token_prefix: token.slice(0, 12),
         upstream_url,
-        parasut_response: data.slice(0, 300),
+        parasut_response: data.slice(0, 500),
+        auth_header_present: !!req.headers.authorization,
       });
     }
 

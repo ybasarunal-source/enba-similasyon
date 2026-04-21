@@ -9,35 +9,50 @@ export default async function handler(req, res) {
   try {
     const { grant_type, username, password, refresh_token } = req.body || {};
 
-    const clientId = process.env.PARASUT_CLIENT_ID;
-    const clientSecret = process.env.PARASUT_CLIENT_SECRET;
+    // Check both standard and VITE_ prefixed env vars
+    const clientId = process.env.PARASUT_CLIENT_ID || process.env.VITE_PARASUT_CLIENT_ID;
+    const clientSecret = process.env.PARASUT_CLIENT_SECRET || process.env.VITE_PARASUT_CLIENT_SECRET;
 
     if (!clientId || !clientSecret) {
-      return res.status(500).json({ error: 'missing_env', error_description: 'PARASUT_CLIENT_ID veya PARASUT_CLIENT_SECRET eksik.' });
+      return res.status(500).json({ 
+        error: 'missing_env', 
+        error_description: 'PARASUT_CLIENT_ID veya PARASUT_CLIENT_SECRET eksik.',
+        available_vars: Object.keys(process.env).filter(k => k.includes('PARASUT'))
+      });
     }
 
-    // Try client_secret_basic: credentials in Authorization header
-    const basicAuth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+    const body = new URLSearchParams({
+      grant_type: grant_type || 'password',
+      client_id: clientId,
+      client_secret: clientSecret,
+    });
 
-    const body = new URLSearchParams(
-      grant_type === 'refresh_token'
-        ? { grant_type: 'refresh_token', refresh_token }
-        : { grant_type: 'password', username, password, redirect_uri: 'urn:ietf:wg:oauth:2.0:oob' }
-    );
+    if (grant_type === 'refresh_token') {
+      body.append('refresh_token', refresh_token);
+    } else {
+      body.append('username', username);
+      body.append('password', password);
+      body.append('redirect_uri', 'urn:ietf:wg:oauth:2.0:oob');
+    }
 
     const upstream = await fetch('https://api.parasut.com/oauth/token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': `Basic ${basicAuth}`,
+        'Accept': 'application/json',
       },
       body: body.toString(),
     });
 
-    const data = await upstream.text();
-    res.status(upstream.status)
-      .setHeader('Content-Type', 'application/json')
-      .end(data);
+    const text = await upstream.text();
+    let data = {};
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = { raw_response: text };
+    }
+
+    res.status(upstream.status).json(data);
   } catch (err) {
     res.status(502).json({ error: 'proxy_error', error_description: String(err.message) });
   }
