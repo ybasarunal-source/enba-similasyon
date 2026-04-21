@@ -1,16 +1,27 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-console.log("Main.tsx: Entry point loaded");
 import App from './App';
 import './index.css';
 import { I18nProvider } from './api/i18n.tsx';
 
-console.log("Main.tsx: Entry point loaded. Initializing ReactDOM...");
+// Popup redirect context: sadece MSAL redirect'i işle, tam uygulamayı yükleme
+const isPopupRedirect =
+  window.opener !== null &&
+  window.opener !== window &&
+  (window.location.search.includes('code=') ||
+   window.location.hash.includes('code=') ||
+   window.location.hash.includes('access_token='));
+
 const rootElement = document.getElementById('root');
 if (!rootElement) {
   console.error("Main.tsx ERROR: Root element not found!");
+} else if (isPopupRedirect) {
+  // Popup penceresi: MSAL'ın redirect'i işlemesi için bekle, sonra kapat
+  import('./api/microsoft').then(({ microsoftService }) => {
+    microsoftService.handlePopupRedirect().catch(() => {});
+  });
+  rootElement.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#666">Giriş tamamlanıyor...</div>';
 } else {
-  console.log("Main.tsx: Root element found. Starting render...");
   ReactDOM.createRoot(rootElement).render(
     <React.StrictMode>
       <I18nProvider>
@@ -18,5 +29,4 @@ if (!rootElement) {
       </I18nProvider>
     </React.StrictMode>
   );
-  console.log("Main.tsx: Render call completed.");
 }

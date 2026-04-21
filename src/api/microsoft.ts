@@ -293,6 +293,14 @@ export const microsoftService = {
     }
   },
 
+  async handlePopupRedirect() {
+    if (!msalInstance) {
+      msalInstance = new PublicClientApplication(msalConfig);
+    }
+    await msalInstance.initialize();
+    await msalInstance.handleRedirectPromise();
+  },
+
   async logout() {
     try {
       await ensureInitialized();
