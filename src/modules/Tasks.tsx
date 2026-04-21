@@ -232,15 +232,17 @@ export const Tasks: React.FC = () => {
     setSyncStatus('Senkronize ediliyor...');
 
     try {
-      const list = await microsoftService.ensureTodoList('Enba Tasks');
-      if (!list) throw new Error('Task listesi bulunamadı.');
+      const lists = await microsoftService.getTodoLists();
+      if (!lists.length) throw new Error('Microsoft Todo listeleri alınamadı.');
 
-      const msTasks: any[] = await microsoftService.getTodoListTasks(list.id);
-      if (msTasks.length === 0) {
-        setSyncStatus(`Liste: "${list.displayName}" · 0 görev — listede görev yok veya farklı hesap`);
-        setTimeout(() => setSyncStatus(''), 8000);
-        return;
+      // Tüm listelerden görev çek
+      const allMsTasks: any[] = [];
+      for (const list of lists) {
+        const tasks = await microsoftService.getTodoListTasks(list.id);
+        tasks.forEach((t: any) => { t._listId = list.id; });
+        allMsTasks.push(...tasks);
       }
+      const msTasks = allMsTasks;
 
       const cleanText = (s: string) =>
         s.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').trim();
@@ -282,7 +284,7 @@ export const Tasks: React.FC = () => {
           status: msStatusMap(t.status),
           createdAt: t.createdDateTime || new Date().toISOString(),
           msTodoId: t.id,
-          msListId: list.id,
+          msListId: t._listId,
         } as Task));
 
       const merged = [...updatedTasks, ...newTasks];
