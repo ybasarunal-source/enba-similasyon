@@ -22,6 +22,8 @@ const msalConfig: Configuration = {
 };
 
 const loginScopes = ['User.Read', 'Tasks.ReadWrite', 'Calendars.ReadWrite'];
+const taskScopes = ['User.Read', 'Tasks.ReadWrite'];
+const calendarScopes = ['User.Read', 'Calendars.ReadWrite'];
 
 let msalInstance: PublicClientApplication | null = null;
 let isInitialized = false;
@@ -121,20 +123,20 @@ export const microsoftService = {
     }
   },
 
-  async getToken(): Promise<string | null> {
+  async getToken(scopes = taskScopes): Promise<string | null> {
     try {
       await ensureInitialized();
       const account = await this.getAccount();
       if (!account || !msalInstance) return null;
-      const response = await msalInstance.acquireTokenSilent({ scopes: loginScopes, account });
+      const response = await msalInstance.acquireTokenSilent({ scopes, account });
       return response.accessToken;
     } catch {
       return null;
     }
   },
 
-  async getGraphClient() {
-    const token = await this.getToken();
+  async getGraphClient(scopes = taskScopes) {
+    const token = await this.getToken(scopes);
     if (!token) return null;
     return Client.init({ authProvider: (done) => done(null, token) });
   },
@@ -208,7 +210,7 @@ export const microsoftService = {
   },
 
   async getCalendarEvents(start?: string, end?: string) {
-    const client = await this.getGraphClient();
+    const client = await this.getGraphClient(calendarScopes);
     if (!client) return [];
     try {
       let query = client.api('/me/calendarview');
@@ -237,7 +239,7 @@ export const microsoftService = {
   },
 
   async createCalendarEvent(event: { subject: string, body: string, start: string, end: string, location?: string }) {
-    const client = await this.getGraphClient();
+    const client = await this.getGraphClient(calendarScopes);
     if (!client) return null;
     try {
       const msEvent = {
@@ -264,7 +266,7 @@ export const microsoftService = {
   },
 
   async deleteCalendarEvent(eventId: string) {
-    const client = await this.getGraphClient();
+    const client = await this.getGraphClient(calendarScopes);
     if (!client) return false;
     try {
       await client.api(`/me/events/${eventId}`).delete();

@@ -15,7 +15,6 @@ import {
   Ghost,
   Receipt,
   BadgeCheck,
-  PlusCircle,
   TrendingUp,
   Search,
   Calendar,
@@ -117,7 +116,8 @@ const Dashboard: React.FC<DashboardProps> = ({ navigate, user }) => {
         microsoftService.getAccount().then(acc => {
           if (acc) {
             const today = new Date().toISOString().split('T')[0];
-            microsoftService.getCalendarEvents(today, today).then(evs => {
+            const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+            microsoftService.getCalendarEvents(today, tomorrow).then(evs => {
               setStats(prev => ({ ...prev, appointments: evs }));
             });
           }
