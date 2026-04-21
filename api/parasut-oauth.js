@@ -7,23 +7,36 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
   try {
-    const { grant_type, username, password, refresh_token } = req.body || {};
+    // 1. Double-safeguard body parsing
+    let bodyData = req.body;
+    if (typeof bodyData === 'string') {
+      try { bodyData = JSON.parse(bodyData); } catch (e) { /* ignore */ }
+    }
+    const { grant_type, username, password, refresh_token } = bodyData || {};
 
-    const rawClientId = process.env.PARASUT_CLIENT_ID || process.env.VITE_PARASUT_CLIENT_ID;
-    const rawClientSecret = process.env.PARASUT_CLIENT_SECRET || process.env.VITE_PARASUT_CLIENT_SECRET;
+    // 2. Prioritize VITE_ prefixed variables (they are confirmed in .env)
+    const rawClientId = process.env.VITE_PARASUT_CLIENT_ID || process.env.PARASUT_CLIENT_ID;
+    const rawClientSecret = process.env.VITE_PARASUT_CLIENT_SECRET || process.env.PARASUT_CLIENT_SECRET;
     
-    const clientId = rawClientId?.trim();
-    const clientSecret = rawClientSecret?.trim();
+    // 3. AGGRESSIVE Trimming
+    const clientId = rawClientId?.toString().trim();
+    const clientSecret = rawClientSecret?.toString().trim();
+    const uName = username?.toString().trim();
+    const uPass = password?.toString().trim();
 
     if (!clientId || !clientSecret) {
-      return res.status(500).json({ error: 'missing_env' });
+      return res.status(500).json({ 
+        error: 'missing_credentials', 
+        message: 'Client ID veya Secret bulunamadı.' 
+      });
     }
 
+    // 4. Trial Loop for Connection Methods
     const attempts = [
       { name: 'OOB Redirect',  redirect: 'urn:ietf:wg:oauth:2.0:oob', useHeader: true },
       { name: 'No Redirect',   redirect: null,                       useHeader: true },
-      { name: 'Platform URL',  redirect: 'https://uygulama.basarunal.com', useHeader: true },
       { name: 'Body Only',     redirect: null,                       useHeader: false },
+      { name: 'Platform URL',  redirect: 'https://uygulama.basarunal.com', useHeader: true },
     ];
 
     let lastError = null;
@@ -31,17 +44,17 @@ export default async function handler(req, res) {
 
     for (const config of attempts) {
       try {
-        const body = new URLSearchParams();
-        body.append('grant_type', grant_type || 'password');
-        body.append('client_id', clientId);
-        body.append('client_secret', clientSecret);
+        const params = new URLSearchParams();
+        params.append('grant_type', grant_type || 'password');
+        params.append('client_id', clientId);
+        params.append('client_secret', clientSecret);
         
         if (grant_type === 'refresh_token') {
-          body.append('refresh_token', refresh_token);
+          params.append('refresh_token', refresh_token?.toString().trim());
         } else {
-          body.append('username', username);
-          body.append('password', password);
-          if (config.redirect) body.append('redirect_uri', config.redirect);
+          params.append('username', uName);
+          params.append('password', uPass);
+          if (config.redirect) params.append('redirect_uri', config.redirect);
         }
 
         const headers = {
@@ -58,7 +71,7 @@ export default async function handler(req, res) {
         const upstream = await fetch('https://api.parasut.com/oauth/token', {
           method: 'POST',
           headers,
-          body: body.toString(),
+          body: params.toString(),
         });
 
         const data = await upstream.json().catch(() => ({}));
@@ -66,11 +79,11 @@ export default async function handler(req, res) {
         if (upstream.ok) {
           return res.status(200).json({ 
             ...data, 
-            _diag: { attempt: config.name, success: true } 
+            _diag: { attempt: config.name, success: true, source: process.env.VITE_PARASUT_CLIENT_ID ? 'VITE' : 'STANDARD' } 
           });
         }
 
-        results.push({ attempt: config.name, status: upstream.status, error: data.error, desc: data.error_description });
+        results.push({ attempt: config.name, status: upstream.status, error: data.error });
         lastError = { status: upstream.status, data };
       } catch (err) {
         results.push({ attempt: config.name, error: 'exception', message: err.message });
@@ -81,13 +94,13 @@ export default async function handler(req, res) {
     const failSummary = results.map(r => `${r.attempt}: ${r.status || 'ERR'} ${r.error || ''}`).join(' | ');
     res.status(lastError?.status || 400).json({
       error: 'all_attempts_failed',
-      error_description: `Denenen tüm bağlantı yöntemleri başarısız oldu: ${failSummary}`,
+      error_description: `Denenen tüm bağlantı yöntemleri başarısız oldu: ${failSummary}. Lütfen bilgilerinizi (E-posta, Şifre, Firma ID ve Vercel Secret) kontrol edin.`,
       results,
       diagnostics: {
         has_client_id: !!clientId,
         has_client_secret: !!clientSecret,
         client_id_prefix: clientId ? clientId.slice(0, 6) : 'missing',
-        env_source: process.env.PARASUT_CLIENT_ID ? 'STANDARD' : (process.env.VITE_PARASUT_CLIENT_ID ? 'VITE' : 'NONE'),
+        env_source: process.env.VITE_PARASUT_CLIENT_ID ? 'VITE' : 'STANDARD',
         env_keys: Object.keys(process.env).filter(k => k.includes('PARASUT')),
         basic_auth_sent: true,
       }
