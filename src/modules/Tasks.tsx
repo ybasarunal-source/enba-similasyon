@@ -127,9 +127,9 @@ export const Tasks: React.FC = () => {
         setMsAccount(account);
         handleSyncAll(account);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert('Microsoft To-Do bağlantısı başarısız oldu.');
+      alert(err?.message || 'Microsoft To-Do bağlantısı başarısız oldu.');
     } finally {
       setIsConnecting(false);
     }

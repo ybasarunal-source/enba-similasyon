@@ -18,6 +18,12 @@ const msalConfig: Configuration = {
   cache: {
     cacheLocation: 'localStorage',
   },
+  system: {
+    loggerOptions: {
+      loggerCallback: () => {},
+      piiLoggingEnabled: false,
+    },
+  },
 };
 
 let msalInstance: PublicClientApplication | null = null;
@@ -44,6 +50,28 @@ const clearAllMsalStorage = () => {
   }
 };
 
+const clearInteractionLock = () => {
+  // MSAL stores its interaction lock in sessionStorage
+  try {
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const key = sessionStorage.key(i);
+      if (key && (
+        key.includes('interaction.status') ||
+        key.includes('request.origin') ||
+        key.includes('request.params') ||
+        key.includes('request.correlation') ||
+        key.includes('nonce.idtoken') ||
+        key.includes('state')
+      )) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(key => sessionStorage.removeItem(key));
+    lastInteractionTime = 0;
+  } catch (e) { /* ignore */ }
+};
+
 const ensureInitialized = async () => {
   if (!msalInstance) {
     msalInstance = new PublicClientApplication(msalConfig);
@@ -58,9 +86,18 @@ const ensureInitialized = async () => {
       await msalInstance.initialize();
       
       try {
-        await msalInstance.handleRedirectPromise();
+        // Popup'tan geri dönüşte (URL'de code= varsa) timeout uygulamıyoruz —
+        // handleRedirectPromise token'ı ana pencereye iletmeli
+        const hasAuthCode = window.location.search.includes('code=') ||
+                            window.location.hash.includes('code=') ||
+                            window.location.hash.includes('access_token=');
+        if (hasAuthCode) {
+          await msalInstance.handleRedirectPromise();
+        } else {
+          const redirectTimeout = new Promise<null>(resolve => setTimeout(() => resolve(null), 3000));
+          await Promise.race([msalInstance.handleRedirectPromise(), redirectTimeout]);
+        }
       } catch (redirectErr: any) {
-        // Ignore "no_token_request_cache_error" as it's common in popup-only flows
         if (redirectErr.errorCode !== 'no_token_request_cache_error') {
           console.warn('MSAL: Redirect error during init:', redirectErr);
         }
@@ -98,27 +135,48 @@ const loginRequest: PopupRequest = {
 };
 
 export const microsoftService = {
-  async loginPopup() {
-    if (!checkAndLockInteraction()) return null;
+  async loginPopup(): Promise<any> {
+    if (!checkAndLockInteraction()) {
+      throw new Error('Lütfen birkaç saniye bekleyip tekrar deneyin.');
+    }
     try {
       await ensureInitialized();
-      if (!msalInstance) return null;
-      
+      if (!msalInstance) throw new Error('MSAL başlatılamadı.');
+
       const result = await msalInstance.loginPopup(loginRequest);
-      if (result.account) {
+      if (result?.account) {
         msalInstance.setActiveAccount(result.account);
         return result.account;
       }
       return null;
     } catch (err: any) {
-      if (err.errorCode === 'interaction_in_progress') {
-        alert('Şu an bir giriş penceresi zaten açık. Lütfen tarayıcınızdaki diğer pencereleri kontrol edin.');
-      } else if (err.errorCode === 'timed_out') {
-        alert('Giriş işlemi zaman aşımına uğradı. Lütfen tekrar deneyin.');
-      } else {
-        console.error('MS Popup Login Error:', err);
+      const code = err?.errorCode || err?.name || '';
+      if (code === 'interaction_in_progress') {
+        // Kilit takılı kalmış — temizle ve bir kez daha dene
+        clearInteractionLock();
+        try {
+          if (!msalInstance) throw new Error('MSAL başlatılamadı.');
+          const retry = await msalInstance.loginPopup(loginRequest);
+          if (retry?.account) {
+            msalInstance.setActiveAccount(retry.account);
+            return retry.account;
+          }
+          return null;
+        } catch {
+          throw new Error('Giriş kilidi temizlendi ama tekrar deneme de başarısız oldu. Sayfayı yenileyip tekrar deneyin.');
+        }
       }
-      return null;
+      if (code === 'user_cancelled' || code === 'access_denied') {
+        return null; // Kullanıcı iptal etti, sessiz çık
+      }
+      if (code === 'popup_window_error' || code === 'empty_window_error') {
+        throw new Error('Popup penceresi açılamadı. Tarayıcı popup engelleyicisini kapatın ve tekrar deneyin.');
+      }
+      if (code === 'monitor_window_timeout' || code === 'timed_out') {
+        throw new Error('Giriş penceresi zaman aşımına uğradı. Lütfen tekrar deneyin.');
+      }
+      console.error('MS Popup Login Error:', err);
+      throw new Error(err?.message || 'Microsoft bağlantısı başarısız oldu.');
     } finally {
       unlockInteraction();
     }
