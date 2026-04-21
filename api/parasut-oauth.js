@@ -78,13 +78,18 @@ export default async function handler(req, res) {
     }
 
     // If all failed, return details
+    const failSummary = results.map(r => `${r.attempt}: ${r.status || 'ERR'} ${r.error || ''}`).join(' | ');
     res.status(lastError?.status || 400).json({
       error: 'all_attempts_failed',
-      message: 'Kimlik doğrulama denemelerinin tamamı başarısız oldu.',
+      error_description: `Denenen tüm bağlantı yöntemleri başarısız oldu: ${failSummary}`,
       results,
       diagnostics: {
-        id_prefix: clientId.slice(0, 6),
-        env_source: process.env.PARASUT_CLIENT_ID ? 'STANDARD' : 'VITE'
+        has_client_id: !!clientId,
+        has_client_secret: !!clientSecret,
+        client_id_prefix: clientId ? clientId.slice(0, 6) : 'missing',
+        env_source: process.env.PARASUT_CLIENT_ID ? 'STANDARD' : (process.env.VITE_PARASUT_CLIENT_ID ? 'VITE' : 'NONE'),
+        env_keys: Object.keys(process.env).filter(k => k.includes('PARASUT')),
+        basic_auth_sent: true,
       }
     });
 
