@@ -19,7 +19,7 @@ export default async function handler(req, res) {
     const upstream = await fetch(upstream_url, {
       headers: {
         Authorization: `Bearer ${token}`,
-        Accept: 'application/json',
+        Accept: 'application/vnd.api+json',
       },
     });
 
