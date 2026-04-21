@@ -4,17 +4,21 @@ export default async function handler(req, res) {
   const clientId = process.env.PARASUT_CLIENT_ID || '';
   const clientSecret = process.env.PARASUT_CLIENT_SECRET || '';
 
-  const form = new FormData();
-  form.append('grant_type', 'password');
-  form.append('client_id', clientId);
-  form.append('client_secret', clientSecret);
-  form.append('username', 'test@test.com');
-  form.append('password', 'wrongpassword');
-  form.append('redirect_uri', 'urn:ietf:wg:oauth:2.0:oob');
+  const basicAuth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+  const body = new URLSearchParams({
+    grant_type: 'password',
+    username: 'test@test.com',
+    password: 'wrongpassword',
+    redirect_uri: 'urn:ietf:wg:oauth:2.0:oob',
+  });
 
   const upstream = await fetch('https://api.parasut.com/oauth/token', {
     method: 'POST',
-    body: form,
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Authorization': `Basic ${basicAuth}`,
+    },
+    body: body.toString(),
   });
 
   const text = await upstream.text();

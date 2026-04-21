@@ -16,24 +16,22 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'missing_env', error_description: 'PARASUT_CLIENT_ID veya PARASUT_CLIENT_SECRET eksik.' });
     }
 
-    // Paraşüt requires multipart/form-data (curl -F style)
-    const form = new FormData();
-    form.append('client_id', clientId);
-    form.append('client_secret', clientSecret);
+    // Try client_secret_basic: credentials in Authorization header
+    const basicAuth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
 
-    if (grant_type === 'refresh_token') {
-      form.append('grant_type', 'refresh_token');
-      form.append('refresh_token', refresh_token);
-    } else {
-      form.append('grant_type', 'password');
-      form.append('username', username);
-      form.append('password', password);
-      form.append('redirect_uri', 'urn:ietf:wg:oauth:2.0:oob');
-    }
+    const body = new URLSearchParams(
+      grant_type === 'refresh_token'
+        ? { grant_type: 'refresh_token', refresh_token }
+        : { grant_type: 'password', username, password, redirect_uri: 'urn:ietf:wg:oauth:2.0:oob' }
+    );
 
     const upstream = await fetch('https://api.parasut.com/oauth/token', {
       method: 'POST',
-      body: form,
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': `Basic ${basicAuth}`,
+      },
+      body: body.toString(),
     });
 
     const data = await upstream.text();
