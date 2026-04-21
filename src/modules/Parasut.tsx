@@ -127,9 +127,13 @@ const LoginForm: React.FC<{ onReady: (companyId: string) => void }> = ({ onReady
                   {/* @ts-ignore */}
                   <p>ID Found: {String(window._lastParasutError.diagnostics.has_client_id)}</p>
                   {/* @ts-ignore */}
+                  <p>Source: {window._lastParasutError.diagnostics.env_source || 'LEGACY'}</p>
+                  {/* @ts-ignore */}
                   <p>ID Prefix: {window._lastParasutError.diagnostics.client_id_prefix}</p>
                   {/* @ts-ignore */}
-                  <p>Available Env Vars: {window._lastParasutError.diagnostics.env_keys.join(', ') || 'NONE'}</p>
+                  <p>Basic Auth Sent: {String(window._lastParasutError.diagnostics.basic_auth_sent || false)}</p>
+                  {/* @ts-ignore */}
+                  <p>Available Env Vars: {window._lastParasutError.diagnostics.env_keys?.join(', ') || 'NONE'}</p>
                   <p className="italic text-rose-400 mt-2">İpucu: Vercel Dashboard'da PARASUT_CLIENT_ID tanımlanmış mı kontrol edin.</p>
                 </div>
               )}
