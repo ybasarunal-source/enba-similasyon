@@ -88,6 +88,10 @@ export const Tasks: React.FC = () => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [viewMode, setViewMode] = useState<'board' | 'list'>('board');
   const [selectedProjectId, setSelectedProjectId] = useState<string>('all');
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [editingProjectName, setEditingProjectName] = useState('');
+  const [deletingProject, setDeletingProject] = useState<Project | null>(null);
+  const [deleteTargetId, setDeleteTargetId] = useState<string>('none');
   const [searchTerm, setSearchTerm] = useState('');
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     return localStorage.getItem('enba_tasks_compact') === 'true';
@@ -151,6 +155,45 @@ export const Tasks: React.FC = () => {
       setIsConnecting(false);
     }
     // redirect gerçekleşirse bu satıra ulaşılmaz, finally yerine sadece hata durumunda setIsConnecting(false)
+  };
+
+  // ── Proje Düzenle / Sil ──────────────────────────────────
+  const handleRenameProject = () => {
+    if (!editingProject || !editingProjectName.trim()) return;
+    const updated = projects.map(p =>
+      p.id === editingProject.id ? { ...p, name: editingProjectName.trim().toUpperCase() } : p
+    );
+    setProjects(updated);
+    localStorage.setItem('enba_projects', JSON.stringify(updated));
+    setEditingProject(null);
+  };
+
+  const handleDeleteProject = () => {
+    if (!deletingProject) return;
+    if (deleteTargetId === 'delete') {
+      const updatedTasks = tasks.filter(t => t.projectId !== deletingProject.id);
+      setTasks(updatedTasks);
+      localStorage.setItem('enba_tasks', JSON.stringify(updatedTasks));
+    } else if (deleteTargetId !== 'none') {
+      const updatedTasks = tasks.map(t =>
+        t.projectId === deletingProject.id ? { ...t, projectId: deleteTargetId } : t
+      );
+      setTasks(updatedTasks);
+      localStorage.setItem('enba_tasks', JSON.stringify(updatedTasks));
+    }
+    const updatedProjects = projects.filter(p => p.id !== deletingProject.id);
+    setProjects(updatedProjects);
+    localStorage.setItem('enba_projects', JSON.stringify(updatedProjects));
+    if (selectedProjectId === deletingProject.id) setSelectedProjectId('all');
+    setDeletingProject(null);
+    setDeleteTargetId('none');
+  };
+
+  // ── Görev Listesini Değiştir ─────────────────────────────
+  const handleMoveTask = (taskId: string | number, newProjectId: string) => {
+    const updated = tasks.map(t => t.id === taskId ? { ...t, projectId: newProjectId } : t);
+    setTasks(updated);
+    localStorage.setItem('enba_tasks', JSON.stringify(updated));
   };
 
   // ── UI States ────────────────────────────────────────────
@@ -389,7 +432,16 @@ export const Tasks: React.FC = () => {
         <div className="flex-1 min-w-0">
           <div className="flex justify-between items-center mb-0.5">
             <h4 className={`text-[12px] font-bold text-enba-dark truncate pr-2 ${isDone ? 'line-through text-gray-400' : ''}`}>{task.title}</h4>
-            <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+            <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 items-center">
+              <select
+                value={task.projectId}
+                onChange={e => handleMoveTask(task.id, e.target.value)}
+                onClick={e => e.stopPropagation()}
+                className="text-[9px] font-black text-gray-400 bg-transparent border-none outline-none cursor-pointer hover:text-enba-orange max-w-[80px] truncate"
+                title="Listeye taşı"
+              >
+                {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
               <button onClick={() => { setEditingTask(task); setFormData(task); setShowTaskForm(true); }} className="p-0.5 hover:bg-gray-100 rounded text-gray-400 hover:text-enba-dark transition-colors"><Pencil size={11} /></button>
               <button onClick={() => handleDeleteTask(task)} className="p-0.5 hover:bg-rose-50 rounded text-gray-400 hover:text-rose-600 transition-colors"><Trash2 size={11} /></button>
             </div>
@@ -440,19 +492,33 @@ export const Tasks: React.FC = () => {
                 </div>
                 <div className="space-y-1">
                   {groupProjects.map(project => (
-                    <button 
-                      key={project.id} 
-                      onClick={() => setSelectedProjectId(project.id)}
-                      className={`w-full flex items-center justify-between p-3.5 rounded-xl transition-all ${selectedProjectId === project.id ? 'bg-orange-50 text-enba-orange' : 'text-gray-500 hover:bg-gray-50'}`}
+                    <div
+                      key={project.id}
+                      className={`group/proj flex items-center rounded-xl transition-all ${selectedProjectId === project.id ? 'bg-orange-50' : 'hover:bg-gray-50'}`}
                     >
-                      <div className="flex items-center gap-3 overflow-hidden">
+                      <button
+                        onClick={() => setSelectedProjectId(project.id)}
+                        className={`flex-1 flex items-center gap-3 p-3.5 overflow-hidden ${selectedProjectId === project.id ? 'text-enba-orange' : 'text-gray-500'}`}
+                      >
                         <FolderPlus size={16} className="flex-shrink-0" />
                         <span className="text-[11px] font-bold uppercase truncate">{project.name}</span>
+                        <span className={`ml-auto text-[9px] font-black ${selectedProjectId === project.id ? 'text-enba-orange/50' : 'text-gray-300'}`}>
+                          {tasks.filter(t => t.projectId === project.id).length}
+                        </span>
+                      </button>
+                      <div className="flex gap-0.5 pr-2 opacity-0 group-hover/proj:opacity-100 transition-opacity flex-shrink-0">
+                        <button
+                          onClick={() => { setEditingProject(project); setEditingProjectName(project.name); }}
+                          className="p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-enba-dark"
+                          title="Yeniden adlandır"
+                        ><Pencil size={11} /></button>
+                        <button
+                          onClick={() => { setDeletingProject(project); setDeleteTargetId('none'); }}
+                          className="p-1 rounded hover:bg-rose-100 text-gray-400 hover:text-rose-500"
+                          title="Listeyi sil"
+                        ><Trash2 size={11} /></button>
                       </div>
-                      <span className={`text-[9px] font-black ${selectedProjectId === project.id ? 'text-enba-orange/50' : 'text-gray-300'}`}>
-                        {tasks.filter(t => t.projectId === project.id).length}
-                      </span>
-                    </button>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -675,6 +741,58 @@ export const Tasks: React.FC = () => {
                   }
                 }} className="flex-1 py-4 bg-enba-dark text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black shadow-lg shadow-black/10 transition-all">EKLE</button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ─── LİSTEYİ DÜZENLE MODALI ──────────────────────── */}
+      {editingProject && (
+        <div className="fixed inset-0 bg-enba-dark/80 backdrop-blur-md z-50 flex items-center justify-center p-6 animate-fade-in">
+          <div className="bg-white rounded-[2.5rem] w-full max-w-sm shadow-2xl p-10 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1.5 bg-enba-orange" />
+            <h3 className="text-xl font-black text-enba-dark tracking-tight uppercase italic mb-8">Listeyi Düzenle</h3>
+            <input
+              autoFocus
+              value={editingProjectName}
+              onChange={e => setEditingProjectName(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleRenameProject()}
+              className="w-full bg-gray-50 border-none rounded-xl p-4 text-sm font-bold text-enba-dark focus:ring-2 focus:ring-enba-orange/20 transition-all italic mb-6"
+              placeholder="LİSTE ADI..."
+            />
+            <div className="flex gap-3">
+              <button onClick={() => setEditingProject(null)} className="flex-1 py-4 bg-gray-100 text-gray-400 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-200 transition-all">İPTAL</button>
+              <button onClick={handleRenameProject} className="flex-1 py-4 bg-enba-orange text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg transition-all hover:brightness-110">KAYDET</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── LİSTEYİ SİL MODALI ──────────────────────────── */}
+      {deletingProject && (
+        <div className="fixed inset-0 bg-enba-dark/80 backdrop-blur-md z-50 flex items-center justify-center p-6 animate-fade-in">
+          <div className="bg-white rounded-[2.5rem] w-full max-w-sm shadow-2xl p-10 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1.5 bg-rose-500" />
+            <h3 className="text-xl font-black text-enba-dark tracking-tight uppercase italic mb-2">Listeyi Sil</h3>
+            <p className="text-[11px] text-gray-400 font-bold mb-6 italic">
+              <span className="text-enba-dark">{deletingProject.name}</span> listesinde {tasks.filter(t => t.projectId === deletingProject.id).length} görev var.
+            </p>
+            <div className="space-y-2 mb-6">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 block">Görevlere ne yapılsın?</label>
+              <select
+                value={deleteTargetId}
+                onChange={e => setDeleteTargetId(e.target.value)}
+                className="w-full bg-gray-50 border-none rounded-xl p-4 text-sm font-bold text-enba-dark focus:ring-2 focus:ring-rose-200 transition-all appearance-none cursor-pointer"
+              >
+                <option value="none">Görevleri koru (listesiz kalır)</option>
+                <option value="delete">Görevleri de sil</option>
+                {projects.filter(p => p.id !== deletingProject.id).map(p => (
+                  <option key={p.id} value={p.id}>{p.name} listesine taşı</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => { setDeletingProject(null); setDeleteTargetId('none'); }} className="flex-1 py-4 bg-gray-100 text-gray-400 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-200 transition-all">İPTAL</button>
+              <button onClick={handleDeleteProject} className="flex-1 py-4 bg-rose-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg transition-all hover:bg-rose-600">SİL</button>
             </div>
           </div>
         </div>
