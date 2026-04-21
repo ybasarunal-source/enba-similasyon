@@ -1,3 +1,4 @@
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Calendar as CalendarIcon, 
   ChevronLeft, 
@@ -71,28 +72,41 @@ export const Calendar: React.FC = () => {
       end.setDate(end.getDate() + 7);
 
       const fetchers = [];
-      if (msAccount) fetchers.push(microsoftService.getCalendarEvents(start.toISOString(), end.toISOString()));
-      if (googleToken) fetchers.push(googleService.getCalendarEvents(start.toISOString(), end.toISOString()));
+      if (msAccount) {
+        fetchers.push(
+          microsoftService.getCalendarEvents(start.toISOString(), end.toISOString())
+            .catch(err => { console.error('MS Event Load Error:', err); return []; })
+        );
+      }
+      if (googleToken) {
+        fetchers.push(
+          googleService.getCalendarEvents(start.toISOString(), end.toISOString())
+            .catch(err => { console.error('Google Event Load Error:', err); return []; })
+        );
+      }
 
       const results = await Promise.all(fetchers);
       const apiEvents = results.flat() as CalendarEvent[];
       
       // Load Tasks from LocalStorage
-      const savedTasks = localStorage.getItem('enba_tasks');
-      const tasks: any[] = savedTasks ? JSON.parse(savedTasks) : [];
-      const taskEvents: CalendarEvent[] = tasks
-        .filter(t => t.deadline && t.status !== 'done')
-        .map(t => ({
-          id: 'task-' + t.id,
-          subject: '[GÖREV] ' + t.title,
-          bodyPreview: t.desc || '',
-          start: { dateTime: t.deadline + 'T09:00:00', timeZone: '' },
-          end: { dateTime: t.deadline + 'T10:00:00', timeZone: '' },
-          isAllDay: true,
-          source: 'task',
-          priority: t.priority,
-          status: t.status
-        }));
+      let taskEvents: CalendarEvent[] = [];
+      try {
+        const savedTasks = localStorage.getItem('enba_tasks');
+        const tasks: any[] = savedTasks ? JSON.parse(savedTasks) : [];
+        taskEvents = tasks
+          .filter(t => t.deadline && t.status !== 'done')
+          .map(t => ({
+            id: 'task-' + t.id,
+            subject: '[GÖREV] ' + t.title,
+            bodyPreview: t.desc || '',
+            start: { dateTime: t.deadline + 'T09:00:00', timeZone: '' },
+            end: { dateTime: t.deadline + 'T10:00:00', timeZone: '' },
+            isAllDay: true,
+            source: 'task',
+            priority: t.priority,
+            status: t.status
+          }));
+      } catch (e) { console.error('Task Load Error:', e); }
 
       const allEvents = [...apiEvents, ...taskEvents];
       
@@ -186,7 +200,7 @@ export const Calendar: React.FC = () => {
   }, [currentDate]);
 
   const selectedDayEvents = useMemo(() => {
-    return events.filter(ev => {
+    return events.filter((ev: CalendarEvent) => {
       if (sourceFilter !== 'all' && ev.source !== sourceFilter) return false;
       const evDate = new Date(ev.start.dateTime);
       return evDate.getDate() === selectedDate.getDate() &&
@@ -196,7 +210,7 @@ export const Calendar: React.FC = () => {
   }, [events, selectedDate, sourceFilter]);
 
   const getEventsForDay = (date: Date) => {
-    return events.filter(ev => {
+    return events.filter((ev: CalendarEvent) => {
       const evDate = new Date(ev.start.dateTime);
       return evDate.getDate() === date.getDate() &&
              evDate.getMonth() === date.getMonth() &&
@@ -314,7 +328,7 @@ export const Calendar: React.FC = () => {
           </div>
 
           <div className="flex-1 grid grid-cols-7 gap-2 overflow-y-auto custom-scrollbar pr-2">
-            {calendarDays.map((item, i) => {
+            {calendarDays.map((item: any, i: number) => {
               const dayEvents = getEventsForDay(item.date);
               const isToday = new Date().toDateString() === item.date.toDateString();
               const isSelected = selectedDate.toDateString() === item.date.toDateString();
@@ -339,7 +353,7 @@ export const Calendar: React.FC = () => {
                   </div>
                   
                   <div className="space-y-1 overflow-hidden">
-                    {dayEvents.slice(0, 3).map((ev, idx) => (
+                    {dayEvents.slice(0, 3).map((ev: CalendarEvent, idx: number) => (
                       <div key={idx} className={`text-[9px] font-bold text-enba-dark px-2 py-0.5 rounded border-l-2 flex items-center gap-1.5 truncate ${ev.source === 'google' ? 'bg-blue-50/50 border-blue-400' : ev.source === 'task' ? 'bg-orange-50/50 border-enba-orange' : 'bg-gray-50/50 border-orange-400'}`}>
                         {ev.source === 'google' ? <GoogleLogo /> : ev.source === 'task' ? <TaskLogo /> : <MicrosoftLogo />}
                         <span className="truncate">{ev.subject}</span>
@@ -394,7 +408,7 @@ export const Calendar: React.FC = () => {
         </div>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-4">
-          {selectedDayEvents.length > 0 ? selectedDayEvents.map(ev => (
+          {selectedDayEvents.length > 0 ? selectedDayEvents.map((ev: CalendarEvent) => (
             <div key={ev.id} className="group bg-gray-50/50 p-5 rounded-3xl border border-transparent hover:border-gray-100 hover:bg-white transition-all relative overflow-hidden">
               <div className={`absolute top-0 left-0 w-1.5 h-full ${ev.source === 'google' ? 'bg-blue-400/20 group-hover:bg-blue-400' : 'bg-enba-orange/20 group-hover:bg-enba-orange'} transition-colors`} />
               

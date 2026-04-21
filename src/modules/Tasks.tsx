@@ -707,7 +707,7 @@ export const Tasks: React.FC = () => {
         <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-6 flex-shrink-0 shadow-sm relative z-0">
           <div className="flex items-center gap-4">
             <div className="flex flex-col border-r border-gray-100 pr-4">
-              <h1 className="text-sm font-black text-enba-dark tracking-tight leading-none uppercase italic">
+              <h1 className="text-[11px] font-black text-enba-dark tracking-tight leading-none uppercase italic truncate max-w-[120px]">
                 {selectedProjectId === 'all' ? 'Tüm Operasyonlar' : projects.find(p => p.id === selectedProjectId)?.name}
               </h1>
               <div className="flex items-center gap-2 mt-1">
@@ -744,26 +744,26 @@ export const Tasks: React.FC = () => {
 
             <button 
               onClick={() => setIsCompact(!isCompact)}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${isCompact ? 'bg-enba-orange/10 text-enba-orange border border-enba-orange/20' : 'bg-gray-50 text-gray-400 border border-transparent hover:bg-gray-100'}`}
+              className={`flex items-center justify-center w-10 h-9 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${isCompact ? 'bg-enba-orange/10 text-enba-orange border border-enba-orange/20' : 'bg-gray-50 text-gray-400 border border-transparent hover:bg-gray-100'}`}
+              title={isCompact ? 'Geniş Görünüm' : 'Dar Görünüm'}
             >
-              {isCompact ? <Maximize size={12} /> : <Minimize size={12} />}
-              {isCompact ? 'Geniş' : 'Dar'}
+              {isCompact ? <Maximize size={14} /> : <Minimize size={14} />}
             </button>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="relative">
+          <div className="flex items-center gap-2 flex-shrink-0 overflow-visible ml-2">
+            <div className="relative hidden sm:block">
               <input 
                 type="text" 
-                placeholder="Görevlerde ara..." 
+                placeholder="Ara..." 
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
-                className="bg-gray-50 border-none rounded-lg px-9 py-2 text-[10px] font-medium text-enba-dark focus:ring-2 focus:ring-enba-orange/20 w-48 focus:w-64 transition-all"
+                className="bg-gray-50 border-none rounded-lg px-8 py-2 text-[10px] font-medium text-enba-dark focus:ring-2 focus:ring-enba-orange/20 w-28 focus:w-40 transition-all"
               />
-              <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" />
+              <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-300" />
             </div>
-            <div className="flex items-center gap-2">
-              {syncStatus && <span className="text-[8px] text-enba-orange font-black uppercase animate-pulse">{syncStatus}</span>}
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              {syncStatus && <span className="text-[7px] text-enba-orange font-black uppercase animate-pulse hidden md:inline ml-1">{syncStatus}</span>}
               <button 
                 onClick={() => handleSyncAll()}
                 className={`p-2 rounded-xl border border-gray-100 text-gray-400 hover:text-enba-orange hover:bg-orange-50 transition-all ${isSyncing ? 'animate-spin border-enba-orange/20 text-enba-orange' : ''}`}

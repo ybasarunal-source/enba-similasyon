@@ -78,8 +78,11 @@ export const googleService = {
         }
       });
 
-      if (response.status === 401) {
-        localStorage.removeItem('google_access_token');
+      if (!response.ok) {
+        if (response.status === 401) {
+          localStorage.removeItem('google_access_token');
+        }
+        console.warn(`Google API Error: ${response.status} ${response.statusText}`);
         return [];
       }
 
