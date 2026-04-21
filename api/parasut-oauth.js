@@ -13,17 +13,13 @@ export default async function handler(req, res) {
     }
     const { grant_type, username, password, refresh_token } = bodyData || {};
 
-    // 1. Get raw values
     const rawId = process.env.VITE_PARASUT_CLIENT_ID || process.env.PARASUT_CLIENT_ID;
     const rawSecret = process.env.VITE_PARASUT_CLIENT_SECRET || process.env.PARASUT_CLIENT_SECRET;
 
-    // 2. Aggressive Quote Stripping for IDs and Secrets
     const clean = (s) => s?.toString().replace(/['"]/g, '').trim() || '';
     
     const clientId = clean(rawId);
     const clientSecret = clean(rawSecret);
-
-    // 3. NO TRIMMING on Username/Password (intentional spaces might exist)
     const uName = username?.toString() || '';
     const uPass = password?.toString() || '';
 
@@ -35,7 +31,6 @@ export default async function handler(req, res) {
       { name: 'OOB Redirect',  redirect: 'urn:ietf:wg:oauth:2.0:oob', useHeader: true },
       { name: 'No Redirect',   redirect: null,                       useHeader: true },
       { name: 'Body Only',     redirect: null,                       useHeader: false },
-      { name: 'Platform URL',  redirect: 'https://uygulama.basarunal.com', useHeader: true },
     ];
 
     let lastError = null;
@@ -76,10 +71,7 @@ export default async function handler(req, res) {
         const data = await upstream.json().catch(() => ({}));
         
         if (upstream.ok) {
-          return res.status(200).json({ 
-            ...data, 
-            _diag: { attempt: config.name, success: true } 
-          });
+          return res.status(200).json({ ...data, _diag: { attempt: config.name, success: true } });
         }
 
         results.push({ attempt: config.name, status: upstream.status, error: data.error, desc: data.error_description });
@@ -89,23 +81,27 @@ export default async function handler(req, res) {
       }
     }
 
-    // Report final failure with verbose diagnostics
-    const failSummary = results.map(r => `${r.attempt}: ${r.status || 'ERR'} ${r.error || ''}`).join(' | ');
+    // Masked secret for verification (First 4 and Last 3)
+    const maskedSecret = clientSecret.length > 10 
+      ? `${clientSecret.slice(0, 4)}...${clientSecret.slice(-3)}` 
+      : 'too_short_to_mask';
+
     res.status(lastError?.status || 400).json({
-      error: 'all_attempts_failed',
-      error_description: `Hata: ${failSummary}`,
-      results,
+      error: 'diagnostic_failure',
+      message: `Giris Denemesi Sonucu: ${results.map(r => `${r.attempt}: ${r.status}`).join(' | ')}`,
       diagnostics: {
         has_client_id: !!clientId,
         has_client_secret: !!clientSecret,
-        client_id_prefix: clientId.slice(0, 6),
+        client_id_prefix: clientId.slice(0, 6) || 'none',
+        client_secret_masked: maskedSecret,
         client_secret_len: clientSecret.length,
         env_source: process.env.VITE_PARASUT_CLIENT_ID ? 'VITE' : 'STANDARD',
         env_keys: Object.keys(process.env).filter(k => k.includes('PARASUT')),
         username_len: uName.length,
         password_len: uPass.length,
+        basic_auth_sent: true
       },
-      _hint: 'Lütfen Vercel Paneli -> Environment Variables kısmındaki şifreleri kontrol edin. Tırnak işaretleri (\' veya ") olmadığından emin olun.'
+      _hint: 'Lütfen Client Secret maskesini portal ile karsilastirin.'
     });
 
   } catch (err) {

@@ -132,10 +132,12 @@ const LoginForm: React.FC<{ onReady: (companyId: string) => void }> = ({ onReady
                   {/* @ts-ignore */}
                   <p>ID Prefix: {window._lastParasutError.diagnostics.client_id_prefix}</p>
                   {/* @ts-ignore */}
-                  <p>Basic Auth Sent: {String(window._lastParasutError.diagnostics.basic_auth_sent || false)}</p>
+                  <p>Secret Mask: <span className="text-enba-orange">{window._lastParasutError.diagnostics.client_secret_masked}</span> ({window._lastParasutError.diagnostics.client_secret_len || 0} ch)</p>
+                  {/* @ts-ignore */}
+                  <p>Account: {window._lastParasutError.diagnostics.username_len || 0} ch email, {window._lastParasutError.diagnostics.password_len || 0} ch pass</p>
                   {/* @ts-ignore */}
                   <p>Available Env Vars: {window._lastParasutError.diagnostics.env_keys?.join(', ') || 'NONE'}</p>
-                  <p className="italic text-rose-400 mt-2">İpucu: Vercel Dashboard'da PARASUT_CLIENT_ID tanımlanmış mı kontrol edin.</p>
+                  <p className="italic text-rose-400 mt-2 font-bold underline">İpucu: Secret Mask'ı Paraşüt portaldaki şifrenizle karşılaştırın.</p>
                 </div>
               )}
             </div>
