@@ -26,13 +26,15 @@ export default async function handler(req, res) {
     const data = await upstream.text();
 
     if (upstream.status === 401 || upstream.status === 403) {
+      console.error(`[Paraşüt Proxy Error] Status: ${upstream.status}`, {
+        token_length: token.length,
+        token_prefix: token.slice(0, 10) + '...',
+        upstream_url,
+        parasut_response: data.slice(0, 500)
+      });
       return res.status(upstream.status).json({
         error: `parasut_${upstream.status}`,
-        token_length: token.length,
-        token_prefix: token.slice(0, 12),
-        upstream_url,
-        parasut_response: data.slice(0, 500),
-        auth_header_present: !!req.headers.authorization,
+        message: 'Paraşüt API yetkilendirme hatası.',
       });
     }
 

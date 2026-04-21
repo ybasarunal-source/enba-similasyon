@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { parasutService, type ParasutInvoice } from '../api/parasut';
 
-type DatePreset = 'this_month' | 'last_3' | 'this_year';
+type DatePreset = 'this_month' | 'last_3' | 'this_year' | 'custom';
 type TypeFilter = 'all' | 'income' | 'expense';
 
 const STATUS: Record<string, { label: string; cls: string }> = {
@@ -46,20 +46,12 @@ const LoginForm: React.FC<{ onReady: (companyId: string) => void }> = ({ onReady
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('ADIM 1: handleSubmit çalıştı');
-    if (!companyId.trim()) { setError('Firma ID zorunludur.'); return; }
-    setLoading(true);
     try {
-      setError('ADIM 1.5: login çağrılıyor...');
       await parasutService.login(email, password);
-      setError('ADIM 2: Login başarılı, token alındı');
       parasutService.saveCompany({ id: companyId.trim(), name: companyId.trim() });
-      setError('ADIM 3: Firma kaydedildi, ready tetikleniyor');
       onReady(companyId.trim());
     } catch (err: any) {
-      // Capture detailed error data for the diagnostic UI
-      (window as any)._lastParasutError = err.data || { error: err.message };
-      setError('HATA: ' + (err.message || 'Giriş başarısız.'));
+      setError(err.message || 'Giriş başarısız.');
     } finally {
       setLoading(false);
     }
@@ -115,28 +107,9 @@ const LoginForm: React.FC<{ onReady: (companyId: string) => void }> = ({ onReady
           </div>
 
           {error && (
-            <div className="flex flex-col gap-2 p-3 bg-rose-50 border border-rose-100 rounded-xl text-xs text-rose-600">
-              <div className="flex items-center gap-2">
-                <AlertCircle size={14} className="flex-shrink-0" />
-                {error}
-              </div>
-              {/* @ts-ignore - diagnostics from backend */}
-              {window._lastParasutError?.diagnostics && (
-                <div className="mt-2 pt-2 border-t border-rose-100 space-y-1 font-mono text-[10px] opacity-80">
-                  <p>DEBUG BILGISI:</p>
-                  {/* @ts-ignore */}
-                  <p>ID Found: {String(window._lastParasutError.diagnostics.has_client_id)}</p>
-                  {/* @ts-ignore */}
-                  <p>Source: {window._lastParasutError.diagnostics.env_source || 'LEGACY'}</p>
-                  {/* @ts-ignore */}
-                  <p>ID Prefix: {window._lastParasutError.diagnostics.client_id_prefix}</p>
-                  {/* @ts-ignore */}
-                  <p>Basic Auth Sent: {String(window._lastParasutError.diagnostics.basic_auth_sent || false)}</p>
-                  {/* @ts-ignore */}
-                  <p>Available Env Vars: {window._lastParasutError.diagnostics.env_keys?.join(', ') || 'NONE'}</p>
-                  <p className="italic text-rose-400 mt-2">İpucu: Vercel Dashboard'da PARASUT_CLIENT_ID tanımlanmış mı kontrol edin.</p>
-                </div>
-              )}
+            <div className="flex items-center gap-2 p-3 bg-rose-50 border border-rose-100 rounded-xl text-xs text-rose-600">
+              <AlertCircle size={14} className="flex-shrink-0" />
+              {error}
             </div>
           )}
 
@@ -167,13 +140,16 @@ export const Parasut: React.FC = () => {
   const [search, setSearch]       = useState('');
   const [lastSync, setLastSync]   = useState<Date | null>(null);
 
-  const loadData = useCallback(async (cid: string, preset: DatePreset) => {
-    console.log('[Parasut] loadData called, cid:', cid, 'preset:', preset);
+  // Custom Dates
+  const [dateFrom, setDateFrom] = useState(() => getRange('this_month').from);
+  const [dateTo,   setDateTo]   = useState(() => getRange('this_month').to);
+
+  const loadData = useCallback(async (cid: string, from: string, to: string) => {
+    console.log('[Parasut] loadData called, cid:', cid, 'from:', from, 'to:', to);
     if (!cid) return;
     setLoading(true);
     setError('');
     try {
-      const { from, to } = getRange(preset);
       const [sales, purchases] = await Promise.all([
         parasutService.getSalesInvoices(cid, from, to),
         parasutService.getPurchaseBills(cid, from, to),
@@ -189,8 +165,15 @@ export const Parasut: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (ready && companyId) loadData(companyId, datePreset);
-  }, [ready, companyId, datePreset, loadData]);
+    if (ready && companyId) loadData(companyId, dateFrom, dateTo);
+  }, [ready, companyId, dateFrom, dateTo, loadData]);
+
+  const handlePresetChange = (p: DatePreset) => {
+    setDatePreset(p);
+    const range = getRange(p);
+    setDateFrom(range.from);
+    setDateTo(range.to);
+  };
 
   const handleReady = (cid: string) => {
     console.log('[Parasut] handleReady called, cid:', cid);
@@ -205,18 +188,6 @@ export const Parasut: React.FC = () => {
     setReady(false);
     setInvoices([]);
     setError('');
-  };
-
-  const handleDebug = async () => {
-    const token = await parasutService.getToken();
-    if (!token) { setError('DEBUG: Token yok!'); return; }
-    try {
-      const r = await fetch(`/api/parasut-debug?token=${token}&company=${companyId}`);
-      const j = await r.json();
-      setError(`DEBUG: status=${j.header_auth?.status} | token_prefix=${j.token_prefix} | body=${j.header_auth?.body?.slice(0, 150)}`);
-    } catch (e: any) {
-      setError('DEBUG hata: ' + e.message);
-    }
   };
 
   if (!ready) return <LoginForm onReady={handleReady} />;
@@ -253,21 +224,23 @@ export const Parasut: React.FC = () => {
             <Receipt size={18} className="text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-semibold text-gray-800">Gelir / Gider</h1>
-            <p className="text-xs text-gray-400">
-              Firma: {companyId}
-              {lastSync && <span className="ml-2 text-gray-300">· {lastSync.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })} güncellendi</span>}
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-bold text-gray-800 tracking-tight">Finansal Takip</h1>
+              <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-full border border-emerald-100/50">
+                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                <span className="text-[10px] font-bold uppercase tracking-wider">Bağlı</span>
+              </div>
+            </div>
+            <p className="text-xs text-gray-400 mt-0.5">
+              Firma ID: <span className="font-medium text-gray-500">{companyId}</span>
+              {lastSync && <span className="ml-2 text-gray-300">· Güncelleme: {lastSync.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</span>}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => loadData(companyId, datePreset)} disabled={loading}
+          <button onClick={() => loadData(companyId, dateFrom, dateTo)} disabled={loading}
             className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-600 rounded-xl text-xs font-medium hover:bg-gray-200 transition-all">
             <RefreshCw size={13} className={loading ? 'animate-spin' : ''} /> Yenile
-          </button>
-          <button onClick={handleDebug}
-            className="flex items-center gap-2 px-4 py-2 bg-yellow-100 text-yellow-700 rounded-xl text-xs font-medium hover:bg-yellow-200 transition-all">
-            Debug
           </button>
           <button onClick={handleLogout}
             className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-500 rounded-xl text-xs font-medium hover:bg-red-50 hover:text-red-500 transition-all">
@@ -301,12 +274,29 @@ export const Parasut: React.FC = () => {
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex items-center gap-4 flex-wrap">
         <div className="flex items-center gap-1 bg-gray-50 rounded-xl p-1">
           {PRESETS.map(p => (
-            <button key={p.id} onClick={() => setDatePreset(p.id)}
+            <button key={p.id} onClick={() => handlePresetChange(p.id)}
               className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-all ${datePreset === p.id ? 'bg-white text-enba-dark shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>
               {p.label}
             </button>
           ))}
         </div>
+
+        <div className="flex items-center gap-2 bg-gray-50 rounded-xl p-1 px-2 border border-gray-100/50">
+          <input 
+            type="date" 
+            value={dateFrom} 
+            onChange={e => { setDateFrom(e.target.value); setDatePreset('custom' as any); }}
+            className="bg-transparent text-[11px] font-semibold text-gray-600 outline-none p-1 cursor-pointer"
+          />
+          <span className="text-gray-300">—</span>
+          <input 
+            type="date" 
+            value={dateTo} 
+            onChange={e => { setDateTo(e.target.value); setDatePreset('custom' as any); }}
+            className="bg-transparent text-[11px] font-semibold text-gray-600 outline-none p-1 cursor-pointer"
+          />
+        </div>
+
         <div className="flex items-center gap-1 bg-gray-50 rounded-xl p-1">
           {([['all', 'Tümü'], ['income', 'Gelir'], ['expense', 'Gider']] as const).map(([id, label]) => (
             <button key={id} onClick={() => setTypeFilter(id)}
