@@ -170,6 +170,7 @@ export const Parasut: React.FC = () => {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [search, setSearch]       = useState('');
   const [lastSync, setLastSync]   = useState<Date | null>(null);
+  const [sortConfig, setSortConfig] = useState<{ key: keyof ParasutInvoice; direction: 'asc' | 'desc' }>({ key: 'issue_date', direction: 'desc' });
 
   // Custom Dates (New Feature Kept)
   const [dateFrom, setDateFrom] = useState(() => getRange('this_month').from);
@@ -252,6 +253,17 @@ export const Parasut: React.FC = () => {
     }
     return true;
   });
+
+  const sorted = React.useMemo(() => {
+    return [...filtered].sort((a, b) => {
+      const aVal = a[sortConfig.key] || '';
+      const bVal = b[sortConfig.key] || '';
+      
+      if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [filtered, sortConfig]);
 
   const categories = React.useMemo(() => {
     const set = new Set<string>();
@@ -409,13 +421,38 @@ export const Parasut: React.FC = () => {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100">
-                {['Tarih', 'Tür / Kategori', 'Cari / Açıklama', 'Fatura No', 'Tutar (KDV\'li)', 'Durum'].map(h => (
-                  <th key={h} className={`px-5 py-3.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider ${h === 'Tutar (KDV\'li)' ? 'text-right' : 'text-left'}`}>{h}</th>
+                {[
+                  { id: 'issue_date', label: 'Tarih' },
+                  { id: 'type', label: 'Tür / Kategori' },
+                  { id: 'contact_name', label: 'Cari / Açıklama' },
+                  { id: 'invoice_no', label: 'Fatura No' },
+                  { id: 'gross_total', label: 'Tutar (KDV\'li)' },
+                  { id: 'payment_status', label: 'Durum' },
+                ].map(h => (
+                  <th 
+                    key={h.id} 
+                    onClick={() => {
+                      setSortConfig(prev => ({
+                        key: h.id as keyof ParasutInvoice,
+                        direction: prev.key === h.id && prev.direction === 'asc' ? 'desc' : 'asc'
+                      }));
+                    }}
+                    className={`px-5 py-3.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-50 transition-colors ${h.id === 'gross_total' ? 'text-right' : 'text-left'}`}
+                  >
+                    <div className={`flex items-center gap-1 ${h.id === 'gross_total' ? 'justify-end' : ''}`}>
+                      {h.label}
+                      {sortConfig.key === h.id && (
+                        <span className="text-enba-orange">
+                          {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                        </span>
+                      )}
+                    </div>
+                  </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {filtered.map((inv, i) => {
+              {sorted.map((inv, i) => {
                 const isIncome = inv.type === 'sales_invoices';
                 const st = STATUS[inv.payment_status] || { label: inv.payment_status, cls: 'bg-gray-100 text-gray-500' };
                 return (
