@@ -80,12 +80,15 @@ export const parasutService = {
     });
     if (!resp.ok) {
       const text = await resp.text().catch(() => '');
-      let errMsg = `HTTP ${resp.status}`;
-      try {
-        const j = JSON.parse(text);
-        errMsg = j.error_description || j.error || j.message || errMsg;
-      } catch { if (text) errMsg += ': ' + text.slice(0, 200); }
-      throw new Error(errMsg);
+      let data: any = {};
+      try { data = JSON.parse(text); } catch { /* ignore */ }
+      
+      const errMsg = data.error_description || data.error || data.message || `HTTP ${resp.status}: ${text.slice(0, 200)}`;
+      
+      // Attach the full data to the error so the UI can use it
+      const error = new Error(errMsg);
+      (error as any).data = data;
+      throw error;
     }
     saveToken(await resp.json());
   },

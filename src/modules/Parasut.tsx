@@ -58,12 +58,7 @@ const LoginForm: React.FC<{ onReady: (companyId: string) => void }> = ({ onReady
       onReady(companyId.trim());
     } catch (err: any) {
       // Capture detailed error data for the diagnostic UI
-      try {
-        const errorData = JSON.parse(err.message.split('HTTP ')[1]?.split(': ')[1] || '{}');
-        (window as any)._lastParasutError = errorData;
-      } catch {
-        (window as any)._lastParasutError = { error: err.message };
-      }
+      (window as any)._lastParasutError = err.data || { error: err.message };
       setError('HATA: ' + (err.message || 'Giriş başarısız.'));
     } finally {
       setLoading(false);
