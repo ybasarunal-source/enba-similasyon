@@ -131,9 +131,26 @@ export const parasutService = {
     return resp.json();
   },
 
+  async requestAll(path: string, params: Record<string, string> = {}): Promise<any> {
+    let allData: any[] = [];
+    let allIncluded: any[] = [];
+    let page = 1;
+    const pageSize = '50';
+
+    while (page <= 20) { // Safety limit: max 1000 records (20 pages * 50)
+      const resp = await this.request(path, { ...params, 'page[size]': pageSize, 'page[number]': String(page) });
+      allData = [...allData, ...(resp.data || [])];
+      allIncluded = [...allIncluded, ...(resp.included || [])];
+      
+      if (!resp.links?.next) break;
+      page++;
+    }
+
+    return { data: allData, included: allIncluded };
+  },
+
   async getSalesInvoices(companyId: string, dateFrom: string, dateTo: string): Promise<ParasutInvoice[]> {
-    const raw = await this.request(`/${companyId}/sales_invoices`, {
-      'page[size]': '50',
+    const raw = await this.requestAll(`/${companyId}/sales_invoices`, {
       'include': 'contact,category',
       'filter[issue_date][gteq]': dateFrom,
       'filter[issue_date][lteq]': dateTo,
@@ -143,8 +160,7 @@ export const parasutService = {
   },
 
   async getPurchaseBills(companyId: string, dateFrom: string, dateTo: string): Promise<ParasutInvoice[]> {
-    const raw = await this.request(`/${companyId}/purchase_bills`, {
-      'page[size]': '50',
+    const raw = await this.requestAll(`/${companyId}/purchase_bills`, {
       'include': 'contact,category',
       'filter[issue_date][gteq]': dateFrom,
       'filter[issue_date][lteq]': dateTo,
@@ -154,8 +170,7 @@ export const parasutService = {
   },
 
   async getExpenditures(companyId: string, dateFrom: string, dateTo: string): Promise<ParasutInvoice[]> {
-    const raw = await this.request(`/${companyId}/expenditures`, {
-      'page[size]': '50',
+    const raw = await this.requestAll(`/${companyId}/expenditures`, {
       'include': 'contact,category',
       'filter[issue_date][gteq]': dateFrom,
       'filter[issue_date][lteq]': dateTo,
