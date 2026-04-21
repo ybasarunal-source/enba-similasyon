@@ -51,10 +51,12 @@ const LoginForm: React.FC<{ onReady: (companyId: string) => void }> = ({ onReady
     setError('');
     try {
       await parasutService.login(email, password);
+      setError('✓ Giriş OK — token alındı, data yükleniyor...');
       parasutService.saveCompany({ id: companyId.trim(), name: companyId.trim() });
+      setError('✓ Firma kaydedildi — ready tetikleniyor...');
       onReady(companyId.trim());
     } catch (err: any) {
-      setError(err.message || 'Giriş başarısız.');
+      setError('HATA: ' + (err.message || 'Giriş başarısız.'));
     } finally {
       setLoading(false);
     }
