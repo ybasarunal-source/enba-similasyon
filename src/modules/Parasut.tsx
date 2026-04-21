@@ -46,18 +46,17 @@ const LoginForm: React.FC<{ onReady: (companyId: string) => void }> = ({ onReady
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert('ADIM 1: handleSubmit çalıştı');
+    setError('ADIM 1: handleSubmit çalıştı');
     if (!companyId.trim()) { setError('Firma ID zorunludur.'); return; }
     setLoading(true);
-    setError('');
     try {
+      setError('ADIM 1.5: login çağrılıyor...');
       await parasutService.login(email, password);
-      alert('ADIM 2: Login başarılı, token alındı');
+      setError('ADIM 2: Login başarılı, token alındı');
       parasutService.saveCompany({ id: companyId.trim(), name: companyId.trim() });
-      alert('ADIM 3: Firma kaydedildi, ready tetikleniyor');
+      setError('ADIM 3: Firma kaydedildi, ready tetikleniyor');
       onReady(companyId.trim());
     } catch (err: any) {
-      alert('HATA: ' + (err.message || 'Giriş başarısız.'));
       setError('HATA: ' + (err.message || 'Giriş başarısız.'));
     } finally {
       setLoading(false);
