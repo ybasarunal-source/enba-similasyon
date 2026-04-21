@@ -122,9 +122,10 @@ export const parasutService = {
       try { parsed = JSON.parse(body); } catch { /* ignore */ }
       if (resp.status === 401) {
         this.logout();
-        throw new Error('Oturumun süresi dolmuş veya yetkisiz erişim. Lütfen tekrar giriş yapın.');
+        const detail = parsed.parasut_response || parsed.error || body.slice(0, 200);
+        throw new Error(`401_UNAUTHORIZED: token_prefix=${parsed.token_prefix} token_len=${parsed.token_length} | ${detail}`);
       }
-      throw new Error(`API hatası ${resp.status}`);
+      throw new Error(`API hatası ${resp.status}: ${body.slice(0, 200)}`);
     }
     return resp.json();
   },
@@ -172,8 +173,8 @@ export const parasutService = {
         net_total: parseFloat(a.net_total || '0'),
         gross_total: parseFloat(a.gross_total || a.total_gross || '0'),
         currency: a.currency || 'TRL',
-        payment_status: a.payment_status || 'unscheduled',
-        invoice_no: a.invoice_series && a.invoice_id ? `${a.invoice_series}-${a.invoice_id}` : (a.invoice_id || a.invoice_series || item.id),
+        payment_status: a.payment_status || '',
+        invoice_no: [a.invoice_series, a.invoice_id].filter(Boolean).join('-') || item.id,
       } as ParasutInvoice;
     });
   },

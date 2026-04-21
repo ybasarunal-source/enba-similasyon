@@ -43,8 +43,8 @@ export default async function handler(req, res) {
     } else {
       body.append('username', username);
       body.append('password', password);
-      // Removed hardcoded redirect_uri to resolve "does not match the redirection URI" error.
-      // body.append('redirect_uri', 'urn:ietf:wg:oauth:2.0:oob');
+      // Re-added redirect_uri to match portal settings exactly
+      body.append('redirect_uri', 'urn:ietf:wg:oauth:2.0:oob');
     }
 
     // 3. Make the request to Paraşüt
