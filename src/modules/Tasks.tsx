@@ -78,7 +78,7 @@ export const Tasks: React.FC = () => {
   const [groups, setGroups] = useState<ProjectGroup[]>(() => {
     const saved = localStorage.getItem('enba_project_groups');
     const parsed: ProjectGroup[] = saved ? JSON.parse(saved) : [{ id: 'g2', name: 'RUTİN İŞLER' }];
-    return parsed.filter(g => g.id !== 'g1');
+    return parsed.filter(g => g.id !== 'g1').map(g => g.id === 'g2' ? { ...g, name: 'LİSTELER' } : g);
   });
 
   const [msAccount, setMsAccount] = useState<any>(null);
