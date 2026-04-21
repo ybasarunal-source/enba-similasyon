@@ -16,9 +16,13 @@ import {
   ArrowUpCircle,
   ArrowDownCircle,
   Gem,
-  Info
+  Info,
+  RefreshCw,
+  Calendar as CalendarIcon,
+  Link as LinkIcon
 } from 'lucide-react';
 import { fmt } from '../utils/formatters';
+import { parasutService, ParasutInvoice } from '../api/parasut';
 
 interface PnLData {
   aylar: string[];
@@ -51,11 +55,28 @@ export const PnL: React.FC = () => {
     const [modelDetayAcik, setModelDetayAcik] = useState(false);
     const [isPdfGenerating, setIsPdfGenerating] = useState(false);
     
+    // Paraşüt Sync States
+    const [isSyncing, setIsSyncing] = useState(false);
+    const [syncError, setSyncError] = useState<string | null>(null);
+    const [startDate, setStartDate] = useState(() => {
+        const d = new Date();
+        d.setMonth(d.getMonth() - 1);
+        return d.toISOString().split('T')[0];
+    });
+    const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0]);
+    const [parasutConnected, setParasutConnected] = useState(parasutService.isLoggedIn());
+    const [companyId, setCompanyId] = useState(parasutService.getCompany()?.id || '');
+    
     const [grupAcik, setGrupAcik] = useState<Record<string, boolean>>({});
 
     const toggleGrup = (grupAd: string) => {
         setGrupAcik(prev => ({...prev, [grupAd]: prev[grupAd] === undefined ? true : !prev[grupAd]}));
     };
+
+    useEffect(() => {
+        setParasutConnected(parasutService.isLoggedIn());
+        setCompanyId(parasutService.getCompany()?.id || '');
+    }, []);
 
     useEffect(() => {
         const saved = localStorage.getItem('enba_pnl_reports');
@@ -216,6 +237,94 @@ export const PnL: React.FC = () => {
             else setGiderData(parsed);
         };
         reader.readAsBinaryString(file);
+    };
+
+    const handleParasutSync = async () => {
+        if (!companyId) {
+            alert("Lütfen önce Paraşüt modülünden bir firma seçin.");
+            return;
+        }
+        
+        setIsSyncing(true);
+        setSyncError(null);
+        
+        try {
+            // "Taze Başlangıç" - Clear everything
+            setGelirData(null);
+            setGiderData(null);
+            setGelirDosya(`Paraşüt: ${startDate} - ${endDate}`);
+            setGiderDosya(`Paraşüt: ${startDate} - ${endDate}`);
+
+            // Fetch Sales (Income) and Purchase Bills (Expense)
+            const [sales, purchases] = await Promise.all([
+                parasutService.getSalesInvoices(companyId, startDate, endDate),
+                parasutService.getPurchaseBills(companyId, startDate, endDate)
+            ]);
+
+            // Map and Save
+            setGelirData(mapParasutInvoicesToPnL(sales));
+            setGiderData(mapParasutInvoicesToPnL(purchases));
+        } catch (err: any) {
+            setSyncError(err.message || 'Senkronizasyon hatası');
+            alert("Paraşüt verisi çekilemedi: " + (err.message || 'Bilinmeyen hata'));
+        } finally {
+            setIsSyncing(false);
+        }
+    };
+
+    const mapParasutInvoicesToPnL = (invoices: ParasutInvoice[]): PnLData => {
+        let aylarSet = new Set<string>();
+        let modellerSet = new Set<string>();
+        let kategoriMap: Record<string, Record<string, Record<string, number>>> = {}; 
+        let aylikToplam: Record<string, Record<string, number>> = {}; 
+
+        invoices.forEach(inv => {
+            const rawAy = inv.issue_date.substring(0, 7); 
+            aylarSet.add(rawAy);
+
+            // Use description as category base
+            let rawKat = inv.description.trim() || 'Genel/Diğer';
+            let tutar = inv.net_total || 0;
+            
+            let model = "Ortak";
+            let baseKat = rawKat;
+            
+            // Re-use existing regex for model extraction
+            const match = rawKat.match(/^([A-Za-z]+)[-_ \.]?(\d+.*)$/);
+            if (match) {
+                let prefix = match[1].toUpperCase();
+                baseKat = match[2].trim();
+                model = (prefix === 'YM') ? "Ortak" : prefix;
+            } else {
+                // If contact name contains model info
+                const contactMatch = inv.contact_name.match(/^([A-Za-z]+)[-_ \.]?(\d+.*)$/);
+                if (contactMatch) {
+                    let prefix = contactMatch[1].toUpperCase();
+                    model = (prefix === 'YM') ? "Ortak" : prefix;
+                }
+            }
+            
+            modellerSet.add(model);
+            
+            if(!kategoriMap[baseKat]) kategoriMap[baseKat] = {};
+            if(!kategoriMap[baseKat][rawAy]) kategoriMap[baseKat][rawAy] = {};
+            if(!kategoriMap[baseKat][rawAy][model]) kategoriMap[baseKat][rawAy][model] = 0;
+            
+            kategoriMap[baseKat][rawAy][model] += tutar;
+            
+            if(!aylikToplam[rawAy]) aylikToplam[rawAy] = { Toplam: 0 };
+            if(!aylikToplam[rawAy][model]) aylikToplam[rawAy][model] = 0;
+            
+            aylikToplam[rawAy][model] += tutar;
+            aylikToplam[rawAy].Toplam += tutar;
+        });
+
+        return {
+            aylar: Array.from(aylarSet).sort(),
+            modeller: Array.from(modellerSet),
+            kategoriler: kategoriMap,
+            aylikToplam: aylikToplam
+        };
     };
 
     const pGiderData = useMemo(() => {
@@ -643,6 +752,65 @@ export const PnL: React.FC = () => {
                             <p className="text-[10px] text-gray-400 font-black uppercase tracking-[4px] mt-2">Excel Tablosu Yükle · Model Bazlı P&L</p>
                         </div>
                     </div>
+                </div>
+            </div>
+            
+            {/* Paraşüt Sync Panel */}
+            <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-card overflow-hidden relative">
+                <div className="absolute top-0 right-0 p-10 opacity-[0.03] pointer-events-none">
+                    <RefreshCw size={120} />
+                </div>
+                
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 relative z-10">
+                    <div className="flex items-start gap-4">
+                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg ${parasutConnected ? 'bg-emerald-50 text-emerald-500' : 'bg-gray-50 text-gray-400'}`}>
+                            <LinkIcon size={24} />
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-black text-enba-dark tracking-tight">Paraşüt Veri Senkronizasyonu</h3>
+                            <p className="text-xs text-gray-400 font-medium mt-1">
+                                {parasutConnected 
+                                    ? "Seçilen tarih aralığındaki faturaları otomatik olarak analiz et." 
+                                    : "Bu özelliği kullanmak için önce Paraşüt modülünden giriş yapmalısınız."}
+                            </p>
+                        </div>
+                    </div>
+
+                    {parasutConnected && (
+                        <div className="flex flex-wrap items-center gap-4 bg-gray-50/50 p-2 rounded-2xl border border-gray-100">
+                            <div className="flex items-center gap-2 px-3">
+                                <CalendarIcon size={14} className="text-gray-400" />
+                                <input 
+                                    type="date" 
+                                    value={startDate} 
+                                    onChange={(e) => setStartDate(e.target.value)}
+                                    className="bg-transparent border-none text-xs font-bold text-enba-dark outline-none cursor-pointer"
+                                />
+                                <span className="text-gray-300 mx-1">-</span>
+                                <input 
+                                    type="date" 
+                                    value={endDate} 
+                                    onChange={(e) => setEndDate(e.target.value)}
+                                    className="bg-transparent border-none text-xs font-bold text-enba-dark outline-none cursor-pointer"
+                                />
+                            </div>
+
+                            <button
+                                onClick={handleParasutSync}
+                                disabled={isSyncing}
+                                className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${isSyncing ? 'bg-gray-100 text-gray-400' : 'bg-enba-orange text-white hover:bg-enba-dark shadow-lg shadow-enba-orange/20'}`}
+                            >
+                                {isSyncing ? <RefreshCw size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+                                {isSyncing ? 'Veriler Çekiliyor...' : 'Senkronize Et'}
+                            </button>
+                        </div>
+                    )}
+
+                    {!parasutConnected && (
+                        <button className="px-6 py-3 bg-gray-100 text-gray-500 rounded-xl text-[10px] font-black uppercase tracking-widest opacity-50 cursor-not-allowed">
+                            Bağlantı Bekleniyor
+                        </button>
+                    )}
                 </div>
             </div>
             
