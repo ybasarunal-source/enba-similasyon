@@ -32,6 +32,7 @@ import {
   Minimize
 } from 'lucide-react';
 import { microsoftService } from '../api/microsoft';
+import { profileAPI } from '../api/supabase';
 
 interface Task {
   id: string | number;
@@ -102,13 +103,35 @@ export const Tasks: React.FC = () => {
   useEffect(() => {
     const recoverSession = async () => {
       try {
-        // Redirect flow geri dönüşü: msal_redirect_origin işareti varsa sync yap
+        // 1. Redirect flow geri dönüşü kontrol et
         const redirectOrigin = localStorage.getItem('msal_redirect_origin');
-        const account = await microsoftService.getRedirectAccount();
-        if (account) {
+        const redirectAccount = await microsoftService.getRedirectAccount();
+        if (redirectAccount) {
           if (redirectOrigin) localStorage.removeItem('msal_redirect_origin');
-          setMsAccount(account);
-          handleSyncAll(account);
+          // Bağlı hesabı Supabase profile'a kaydet
+          const profile = await profileAPI.getMyProfile();
+          if (profile) {
+            await profileAPI.updateProfile(profile.id, {
+              ms_account_id: redirectAccount.homeAccountId,
+              ms_account_username: redirectAccount.username,
+            });
+          }
+          setMsAccount(redirectAccount);
+          handleSyncAll(redirectAccount);
+          return;
+        }
+
+        // 2. Supabase profile'dan kayıtlı MS hesabını oku, sessiz bağlantı dene
+        const profile = await profileAPI.getMyProfile();
+        if (profile?.ms_account_username) {
+          const silentAccount = await microsoftService.trySilentLogin(profile.ms_account_username);
+          if (silentAccount) {
+            setMsAccount(silentAccount);
+            handleSyncAll(silentAccount);
+            return;
+          }
+          // SSO başarısız — kullanıcıya bağlı hesap bilgisini göster, yeniden bağlanmasını bekle
+          setMsAccount({ username: profile.ms_account_username, needsReconnect: true });
         }
       } catch (err) {
         console.warn('MSAL: Session recovery failed:', err);
@@ -460,21 +483,28 @@ export const Tasks: React.FC = () => {
           </button>
           
           <div className="bg-gray-50 rounded-2xl p-4">
-            <div className={`flex items-center justify-between mb-3 ${msAccount ? 'text-emerald-600' : 'text-gray-400'}`}>
+            <div className={`flex items-center justify-between mb-3 ${msAccount && !msAccount.needsReconnect ? 'text-emerald-600' : msAccount?.needsReconnect ? 'text-amber-500' : 'text-gray-400'}`}>
               <div className="flex items-center gap-3">
                 <Share2 size={16} />
-                <span className="text-[10px] font-black uppercase tracking-widest">{msAccount ? 'Bulut Bağlı' : 'Bağlı Değil'}</span>
+                <span className="text-[10px] font-black uppercase tracking-widest">
+                  {msAccount && !msAccount.needsReconnect ? 'Bulut Bağlı' : msAccount?.needsReconnect ? 'Yeniden Bağlan' : 'Bağlı Değil'}
+                </span>
               </div>
-              {msAccount && <button onClick={() => microsoftService.logout()} className="text-[9px] font-black text-rose-500 hover:underline uppercase">Bağlantıyı Kes</button>}
+              {msAccount && !msAccount.needsReconnect && (
+                <button onClick={() => microsoftService.logout()} className="text-[9px] font-black text-rose-500 hover:underline uppercase">Kes</button>
+              )}
             </div>
-            {!msAccount ? (
-              <button 
-                onClick={handleConnectMs} 
+            {msAccount?.username && (
+              <p className="text-[9px] text-gray-400 font-bold truncate mb-2">{msAccount.username}</p>
+            )}
+            {(!msAccount || msAccount.needsReconnect) ? (
+              <button
+                onClick={handleConnectMs}
                 disabled={isConnecting}
                 className={`w-full py-2.5 bg-[#0078d4] text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-blue-900/10 active:scale-95 transition-all ${isConnecting ? 'opacity-70 cursor-not-allowed' : 'hover:bg-blue-600'}`}
               >
                 {isConnecting ? <RotateCw size={14} className="animate-spin" /> : null}
-                {isConnecting ? 'Bağlanıyor...' : 'Microsoft To Do Bağla'}
+                {isConnecting ? 'Bağlanıyor...' : msAccount?.needsReconnect ? 'Yeniden Bağlan' : 'Microsoft To Do Bağla'}
               </button>
             ) : (
               <div className="flex gap-2">

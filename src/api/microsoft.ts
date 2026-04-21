@@ -74,9 +74,27 @@ export const microsoftService = {
   async loginRedirect(): Promise<void> {
     await ensureInitialized();
     if (!msalInstance) throw new Error('MSAL başlatılamadı.');
-    // Giriş sonrası Tasks sayfasına dönmesi için işaret koy
     localStorage.setItem('msal_redirect_origin', 'tasks');
     await msalInstance.loginRedirect({ scopes: loginScopes });
+  },
+
+  // Kaydedilmiş Microsoft hesabıyla sessiz bağlantı dene (SSO cookies üzerinden)
+  async trySilentLogin(accountHint: string): Promise<AccountInfo | null> {
+    try {
+      await ensureInitialized();
+      if (!msalInstance) return null;
+      const result = await msalInstance.ssoSilent({
+        scopes: loginScopes,
+        loginHint: accountHint,
+      });
+      if (result?.account) {
+        msalInstance.setActiveAccount(result.account);
+        return result.account;
+      }
+      return null;
+    } catch {
+      return null; // SSO mevcut değil, kullanıcı yeniden giriş yapmalı
+    }
   },
 
   // Redirect geri dönüşünde account'u döndürür (handleRedirectPromise zaten ensureInitialized içinde çalışıyor)

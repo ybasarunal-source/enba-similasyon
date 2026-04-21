@@ -45,6 +45,8 @@ export interface UserProfile {
   role: UserRole;
   permissions: ModulePermissions;
   created_at: string;
+  ms_account_id?: string;
+  ms_account_username?: string;
 }
 
 // ── Yardımcı Fonksiyonlar ──────────────────────────────────
