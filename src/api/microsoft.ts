@@ -1,10 +1,5 @@
-import { PublicClientApplication, Configuration, RedirectRequest, PopupRequest, AccountInfo } from '@azure/msal-browser';
+import { PublicClientApplication, Configuration, AccountInfo } from '@azure/msal-browser';
 import { Client } from '@microsoft/microsoft-graph-client';
-
-/**
- * Microsoft Authentication & Graph API Service
- * v2.0 - Robust Persistence & Sync Edition
- */
 
 const CLIENT_ID = import.meta.env.VITE_MICROSOFT_CLIENT_ID || 'e72321c9-1eaf-47b5-8722-17b32d50dd25';
 const TENANT_ID = import.meta.env.VITE_MICROSOFT_TENANT_ID || '2f458dd6-7ed0-4621-8a41-4462a2d585c1';
@@ -26,86 +21,45 @@ const msalConfig: Configuration = {
   },
 };
 
+const loginScopes = ['User.Read', 'Tasks.ReadWrite'];
+
 let msalInstance: PublicClientApplication | null = null;
 let isInitialized = false;
 let initPromise: Promise<void> | null = null;
-let lastInteractionTime = 0;
 
 const clearAllMsalStorage = () => {
   try {
-    const storages = [window.sessionStorage, window.localStorage];
-    storages.forEach(storage => {
-      const keysToRemove: string[] = [];
+    [window.sessionStorage, window.localStorage].forEach(storage => {
+      const keys: string[] = [];
       for (let i = 0; i < storage.length; i++) {
-        const key = storage.key(i);
-        if (key && (key.includes('msal.') || key.includes('login.microsoft'))) {
-          keysToRemove.push(key);
-        }
+        const k = storage.key(i);
+        if (k && (k.includes('msal.') || k.includes('login.microsoft'))) keys.push(k);
       }
-      keysToRemove.forEach(key => storage.removeItem(key));
+      keys.forEach(k => storage.removeItem(k));
     });
-    console.log('MSAL: Global storage cleanup completed.');
-  } catch (e) {
-    console.error('MSAL: Error during storage cleanup:', e);
-  }
-};
-
-const resetMsalInstance = async () => {
-  // Full reset: clear storage + destroy in-memory instance
-  try {
-    const keysToRemove: string[] = [];
-    for (let i = 0; i < sessionStorage.length; i++) {
-      const key = sessionStorage.key(i);
-      if (key && key.startsWith('msal.')) keysToRemove.push(key);
-    }
-    keysToRemove.forEach(key => sessionStorage.removeItem(key));
   } catch { /* ignore */ }
-
-  msalInstance = null;
-  isInitialized = false;
-  initPromise = null;
-  lastInteractionTime = 0;
-
-  await ensureInitialized();
 };
 
 const ensureInitialized = async () => {
-  if (!msalInstance) {
-    msalInstance = new PublicClientApplication(msalConfig);
-  }
-
+  if (!msalInstance) msalInstance = new PublicClientApplication(msalConfig);
   if (isInitialized) return;
   if (initPromise) return initPromise;
 
   initPromise = (async () => {
     try {
-      if (!msalInstance) return;
-      await msalInstance.initialize();
-      
-      try {
-        // Popup'tan geri dönüşte (URL'de code= varsa) timeout uygulamıyoruz —
-        // handleRedirectPromise token'ı ana pencereye iletmeli
-        const hasAuthCode = window.location.search.includes('code=') ||
-                            window.location.hash.includes('code=') ||
-                            window.location.hash.includes('access_token=');
-        if (hasAuthCode) {
-          await msalInstance.handleRedirectPromise();
-        } else {
-          const redirectTimeout = new Promise<null>(resolve => setTimeout(() => resolve(null), 3000));
-          await Promise.race([msalInstance.handleRedirectPromise(), redirectTimeout]);
-        }
-      } catch (redirectErr: any) {
-        if (redirectErr.errorCode !== 'no_token_request_cache_error') {
-          console.warn('MSAL: Redirect error during init:', redirectErr);
-        }
+      await msalInstance!.initialize();
+
+      // Redirect flow geri dönüşünde auth code'u işle
+      const result = await msalInstance!.handleRedirectPromise();
+      if (result?.account) {
+        msalInstance!.setActiveAccount(result.account);
       }
-      
-      // Auto-set active account if exactly one account is present
-      const accounts = msalInstance.getAllAccounts();
-      if (accounts.length > 0 && !msalInstance.getActiveAccount()) {
-        msalInstance.setActiveAccount(accounts[0]);
+
+      const accounts = msalInstance!.getAllAccounts();
+      if (accounts.length > 0 && !msalInstance!.getActiveAccount()) {
+        msalInstance!.setActiveAccount(accounts[0]);
       }
-      
+
       isInitialized = true;
     } catch (err) {
       console.warn('MSAL: Initialization failed:', err);
@@ -116,74 +70,25 @@ const ensureInitialized = async () => {
   return initPromise;
 };
 
-const checkAndLockInteraction = () => {
-  const now = Date.now();
-  if (lastInteractionTime > 0 && (now - lastInteractionTime) < 5000) return false;
-  lastInteractionTime = now;
-  return true;
-};
-
-const unlockInteraction = () => {
-  lastInteractionTime = 0;
-};
-
-const loginRequest: PopupRequest = {
-  scopes: ['User.Read', 'Tasks.ReadWrite'],
-};
-
 export const microsoftService = {
-  async loginPopup(): Promise<any> {
-    if (!checkAndLockInteraction()) {
-      throw new Error('Lütfen birkaç saniye bekleyip tekrar deneyin.');
-    }
-    try {
-      await ensureInitialized();
-      if (!msalInstance) throw new Error('MSAL başlatılamadı.');
+  async loginRedirect(): Promise<void> {
+    await ensureInitialized();
+    if (!msalInstance) throw new Error('MSAL başlatılamadı.');
+    // Giriş sonrası Tasks sayfasına dönmesi için işaret koy
+    localStorage.setItem('msal_redirect_origin', 'tasks');
+    await msalInstance.loginRedirect({ scopes: loginScopes });
+  },
 
-      const result = await msalInstance.loginPopup(loginRequest);
-      if (result?.account) {
-        msalInstance.setActiveAccount(result.account);
-        return result.account;
-      }
-      return null;
-    } catch (err: any) {
-      const code = err?.errorCode || err?.name || '';
-      if (code === 'interaction_in_progress') {
-        // MSAL instance'ı bellekte de kilitli — tamamen sıfırla ve yeniden dene
-        await resetMsalInstance();
-        try {
-          if (!msalInstance) throw new Error('MSAL başlatılamadı.');
-          const retry = await msalInstance.loginPopup(loginRequest);
-          if (retry?.account) {
-            msalInstance.setActiveAccount(retry.account);
-            return retry.account;
-          }
-          return null;
-        } catch {
-          throw new Error('Oturum kilidi temizlenemedi. Sayfayı yenileyip tekrar deneyin.');
-        }
-      }
-      if (code === 'user_cancelled' || code === 'access_denied') {
-        return null; // Kullanıcı iptal etti, sessiz çık
-      }
-      if (code === 'popup_window_error' || code === 'empty_window_error') {
-        throw new Error('Popup penceresi açılamadı. Tarayıcı popup engelleyicisini kapatın ve tekrar deneyin.');
-      }
-      if (code === 'monitor_window_timeout' || code === 'timed_out') {
-        throw new Error('Giriş penceresi zaman aşımına uğradı. Lütfen tekrar deneyin.');
-      }
-      console.error('MS Popup Login Error:', err);
-      throw new Error(err?.message || 'Microsoft bağlantısı başarısız oldu.');
-    } finally {
-      unlockInteraction();
-    }
+  // Redirect geri dönüşünde account'u döndürür (handleRedirectPromise zaten ensureInitialized içinde çalışıyor)
+  async getRedirectAccount(): Promise<AccountInfo | null> {
+    await ensureInitialized();
+    return msalInstance?.getActiveAccount() ?? null;
   },
 
   async getAccount(): Promise<AccountInfo | null> {
     try {
       await ensureInitialized();
       if (!msalInstance) return null;
-      
       let account = msalInstance.getActiveAccount();
       if (!account) {
         const accounts = msalInstance.getAllAccounts();
@@ -193,24 +98,19 @@ export const microsoftService = {
         }
       }
       return account;
-    } catch (err) {
+    } catch {
       return null;
     }
   },
 
-  async getToken() {
+  async getToken(): Promise<string | null> {
     try {
       await ensureInitialized();
       const account = await this.getAccount();
       if (!account || !msalInstance) return null;
-      
-      const response = await msalInstance.acquireTokenSilent({
-        ...loginRequest,
-        account: account,
-      });
+      const response = await msalInstance.acquireTokenSilent({ scopes: loginScopes, account });
       return response.accessToken;
-    } catch (err) {
-      console.warn('Silent token acquisition failed, re-auth might be needed.', err);
+    } catch {
       return null;
     }
   },
@@ -218,12 +118,8 @@ export const microsoftService = {
   async getGraphClient() {
     const token = await this.getToken();
     if (!token) return null;
-    return Client.init({
-      authProvider: (done) => done(null, token),
-    });
+    return Client.init({ authProvider: (done) => done(null, token) });
   },
-
-  // ── To Do Operations ──────────────────────────────────────
 
   async getTodoLists() {
     const client = await this.getGraphClient();
@@ -231,9 +127,7 @@ export const microsoftService = {
     try {
       const response = await client.api('/me/todo/lists').get();
       return response.value;
-    } catch (err) {
-      return [];
-    }
+    } catch { return []; }
   },
 
   async ensureTodoList(name: string) {
@@ -242,13 +136,9 @@ export const microsoftService = {
     try {
       const lists = await this.getTodoLists();
       let list = lists.find((l: any) => l.displayName.toLowerCase() === name.toLowerCase());
-      if (!list) {
-        list = await client.api('/me/todo/lists').post({ displayName: name });
-      }
+      if (!list) list = await client.api('/me/todo/lists').post({ displayName: name });
       return list;
-    } catch (err) {
-      return null;
-    }
+    } catch { return null; }
   },
 
   async syncTask(listId: string, task: { title: string; desc: string; deadline?: string; status: 'todo' | 'doing' | 'done' }, msId?: string) {
@@ -275,9 +165,7 @@ export const microsoftService = {
   async deleteTask(listId: string, msId: string) {
     const client = await this.getGraphClient();
     if (!client) return;
-    try {
-      await client.api(`/me/todo/lists/${listId}/tasks/${msId}`).delete();
-    } catch (err) {}
+    try { await client.api(`/me/todo/lists/${listId}/tasks/${msId}`).delete(); } catch { /* ignore */ }
   },
 
   async getTodoListTasks(listId: string) {
@@ -285,29 +173,22 @@ export const microsoftService = {
     if (!client) return [];
     try {
       const response = await client.api(`/me/todo/lists/${listId}/tasks`)
-        .header('Cache-Control', 'no-cache')
-        .get();
+        .header('Cache-Control', 'no-cache').get();
       return response.value;
-    } catch (err) {
-      return [];
-    }
+    } catch { return []; }
   },
 
   async logout() {
     try {
       await ensureInitialized();
       clearAllMsalStorage();
-      if (msalInstance) {
-        await msalInstance.logoutRedirect();
-      }
+      if (msalInstance) await msalInstance.logoutRedirect();
     } catch (err) {
       console.error('MS Logout Error:', err);
     }
   }
 };
 
-// Expose to window for legacy modules
 if (typeof window !== 'undefined') {
   (window as any).microsoftService = microsoftService;
-  // Note: We no longer expose msalInstance directly to prevent reference drift
 }

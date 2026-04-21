@@ -103,17 +103,17 @@ export const Tasks: React.FC = () => {
 
   useEffect(() => {
     const recoverSession = async () => {
-      // Small delay to ensure library memory is stable
-      await new Promise(r => setTimeout(r, 250));
       try {
-        const account = await microsoftService.getAccount();
+        // Redirect flow geri dönüşü: msal_redirect_origin işareti varsa sync yap
+        const redirectOrigin = localStorage.getItem('msal_redirect_origin');
+        const account = await microsoftService.getRedirectAccount();
         if (account) {
-          console.log('MSAL: Session recovered for', account.username);
+          if (redirectOrigin) localStorage.removeItem('msal_redirect_origin');
           setMsAccount(account);
           handleSyncAll(account);
         }
       } catch (err) {
-        console.warn('MSAL: Recovery failed:', err);
+        console.warn('MSAL: Session recovery failed:', err);
       }
     };
     recoverSession();
@@ -122,17 +122,14 @@ export const Tasks: React.FC = () => {
   const handleConnectMs = async () => {
     setIsConnecting(true);
     try {
-      const account = await microsoftService.loginPopup();
-      if (account) {
-        setMsAccount(account);
-        handleSyncAll(account);
-      }
+      // loginRedirect sayfayı Azure AD'ye yönlendirir, geri döndüğünde useEffect hesabı yakalar
+      await microsoftService.loginRedirect();
     } catch (err: any) {
       console.error(err);
       alert(err?.message || 'Microsoft To-Do bağlantısı başarısız oldu.');
-    } finally {
       setIsConnecting(false);
     }
+    // redirect gerçekleşirse bu satıra ulaşılmaz, finally yerine sadece hata durumunda setIsConnecting(false)
   };
 
   // ── UI States ────────────────────────────────────────────
