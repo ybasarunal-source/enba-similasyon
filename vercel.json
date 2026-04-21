@@ -1,9 +1,6 @@
 {
   "version": 2,
   "outputDirectory": "dist",
-  "functions": {
-    "api/*.js": { "runtime": "nodejs20.x" }
-  },
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ],
