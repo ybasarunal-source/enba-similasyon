@@ -167,6 +167,7 @@ export const Parasut: React.FC = () => {
   const [error, setError]         = useState('');
   const [datePreset, setDatePreset] = useState<DatePreset>('this_month');
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [search, setSearch]       = useState('');
   const [lastSync, setLastSync]   = useState<Date | null>(null);
 
@@ -180,11 +181,12 @@ export const Parasut: React.FC = () => {
     setLoading(true);
     setError('');
     try {
-      const [sales, purchases] = await Promise.all([
+      const [sales, purchases, expenditures] = await Promise.all([
         parasutService.getSalesInvoices(cid, from, to),
         parasutService.getPurchaseBills(cid, from, to),
+        parasutService.getExpenditures(cid, from, to),
       ]);
-      setInvoices([...sales, ...purchases].sort((a, b) => b.issue_date.localeCompare(a.issue_date)));
+      setInvoices([...sales, ...purchases, ...expenditures].sort((a, b) => b.issue_date.localeCompare(a.issue_date)));
       setLastSync(new Date());
     } catch (err: any) {
       console.error('[Parasut] loadData error:', err.message);
@@ -239,18 +241,26 @@ export const Parasut: React.FC = () => {
 
   const filtered = invoices.filter(inv => {
     if (typeFilter === 'income'  && inv.type !== 'sales_invoices')  return false;
-    if (typeFilter === 'expense' && inv.type !== 'purchase_bills') return false;
+    if (typeFilter === 'expense' && inv.type === 'sales_invoices') return false;
+    if (categoryFilter !== 'all' && inv.category_name !== categoryFilter) return false;
     if (search) {
       const q = search.toLowerCase();
       return inv.description.toLowerCase().includes(q)
         || inv.contact_name.toLowerCase().includes(q)
-        || inv.invoice_no.toLowerCase().includes(q);
+        || inv.invoice_no.toLowerCase().includes(q)
+        || inv.category_name?.toLowerCase().includes(q);
     }
     return true;
   });
 
+  const categories = React.useMemo(() => {
+    const set = new Set<string>();
+    invoices.forEach(inv => { if (inv.category_name) set.add(inv.category_name); });
+    return Array.from(set).sort();
+  }, [invoices]);
+
   const totalIncome  = invoices.filter(i => i.type === 'sales_invoices').reduce((s, i) => s + i.gross_total, 0);
-  const totalExpense = invoices.filter(i => i.type === 'purchase_bills').reduce((s, i) => s + i.gross_total, 0);
+  const totalExpense = invoices.filter(i => i.type !== 'sales_invoices').reduce((s, i) => s + i.gross_total, 0);
   const netBalance   = totalIncome - totalExpense;
 
   const PRESETS: { id: DatePreset; label: string }[] = [
@@ -348,11 +358,25 @@ export const Parasut: React.FC = () => {
 
         <div className="flex items-center gap-1 bg-gray-50 rounded-xl p-1">
           {([['all', 'Tümü'], ['income', 'Gelir'], ['expense', 'Gider']] as const).map(([id, label]) => (
-            <button key={id} onClick={() => setTypeFilter(id)}
+            <button key={id} onClick={() => { setTypeFilter(id); setCategoryFilter('all'); }}
               className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-all ${typeFilter === id ? 'bg-white text-enba-dark shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>
               {label}
             </button>
           ))}
+        </div>
+
+        <div className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-xl px-3 py-2">
+          <span className="text-[10px] font-bold text-gray-400 uppercase">Kategori:</span>
+          <select 
+            value={categoryFilter} 
+            onChange={e => setCategoryFilter(e.target.value)}
+            className="bg-transparent text-xs font-semibold text-gray-600 outline-none cursor-pointer min-w-[100px]"
+          >
+            <option value="all">Tümü</option>
+            {categories.map(cat => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
         </div>
         <div className="flex-1 min-w-[180px] flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-xl px-3 py-2">
           <Search size={14} className="text-gray-400 flex-shrink-0" />
@@ -385,7 +409,7 @@ export const Parasut: React.FC = () => {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-100">
-                {['Tarih', 'Tür', 'Cari / Açıklama', 'Fatura No', 'Tutar (KDV\'li)', 'Durum'].map(h => (
+                {['Tarih', 'Tür / Kategori', 'Cari / Açıklama', 'Fatura No', 'Tutar (KDV\'li)', 'Durum'].map(h => (
                   <th key={h} className={`px-5 py-3.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider ${h === 'Tutar (KDV\'li)' ? 'text-right' : 'text-left'}`}>{h}</th>
                 ))}
               </tr>
@@ -402,6 +426,9 @@ export const Parasut: React.FC = () => {
                         {isIncome ? <ArrowUpRight size={11} /> : <ArrowDownRight size={11} />}
                         {isIncome ? 'Gelir' : 'Gider'}
                       </div>
+                      {inv.category_name && (
+                        <div className="text-[10px] text-gray-400 mt-1 font-medium">{inv.category_name}</div>
+                      )}
                     </td>
                     <td className="px-5 py-3.5 max-w-[200px]">
                       <div className="text-xs font-medium text-gray-800 truncate">{inv.contact_name}</div>

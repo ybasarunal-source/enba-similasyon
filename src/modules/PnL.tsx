@@ -255,15 +255,16 @@ export const PnL: React.FC = () => {
             setGelirDosya(`Paraşüt: ${startDate} - ${endDate}`);
             setGiderDosya(`Paraşüt: ${startDate} - ${endDate}`);
 
-            // Fetch Sales (Income) and Purchase Bills (Expense)
-            const [sales, purchases] = await Promise.all([
+            // Fetch Sales (Income), Purchase Bills and Expenditures (Expense)
+            const [sales, purchases, expenditures] = await Promise.all([
                 parasutService.getSalesInvoices(companyId, startDate, endDate),
-                parasutService.getPurchaseBills(companyId, startDate, endDate)
+                parasutService.getPurchaseBills(companyId, startDate, endDate),
+                parasutService.getExpenditures(companyId, startDate, endDate)
             ]);
 
             // Map and Save
             setGelirData(mapParasutInvoicesToPnL(sales));
-            setGiderData(mapParasutInvoicesToPnL(purchases));
+            setGiderData(mapParasutInvoicesToPnL([...purchases, ...expenditures]));
         } catch (err: any) {
             setSyncError(err.message || 'Senkronizasyon hatası');
             alert("Paraşüt verisi çekilemedi: " + (err.message || 'Bilinmeyen hata'));
@@ -282,8 +283,8 @@ export const PnL: React.FC = () => {
             const rawAy = inv.issue_date.substring(0, 7); 
             aylarSet.add(rawAy);
 
-            // Use description as category base
-            let rawKat = inv.description.trim() || 'Genel/Diğer';
+            // Use category_name from Paraşüt
+            let rawKat = inv.category_name || 'Genel';
             let tutar = inv.net_total || 0;
             
             let model = "Ortak";

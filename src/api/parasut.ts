@@ -17,7 +17,8 @@ export interface ParasutCompany {
 
 export interface ParasutInvoice {
   id: string;
-  type: 'sales_invoices' | 'purchase_bills';
+  type: 'sales_invoices' | 'purchase_bills' | 'expenditures';
+  category_name?: string;
   issue_date: string;
   due_date: string;
   description: string;
@@ -133,7 +134,7 @@ export const parasutService = {
   async getSalesInvoices(companyId: string, dateFrom: string, dateTo: string): Promise<ParasutInvoice[]> {
     const raw = await this.request(`/${companyId}/sales_invoices`, {
       'page[size]': '25',
-      'include': 'contact',
+      'include': 'contact,category',
       'filter[issue_date][gteq]': dateFrom,
       'filter[issue_date][lteq]': dateTo,
       'sort': '-issue_date',
@@ -144,7 +145,7 @@ export const parasutService = {
   async getPurchaseBills(companyId: string, dateFrom: string, dateTo: string): Promise<ParasutInvoice[]> {
     const raw = await this.request(`/${companyId}/purchase_bills`, {
       'page[size]': '25',
-      'include': 'supplier',
+      'include': 'supplier,category',
       'filter[issue_date][gteq]': dateFrom,
       'filter[issue_date][lteq]': dateTo,
       'sort': '-issue_date',
@@ -152,17 +153,35 @@ export const parasutService = {
     return this._mapInvoices(raw, 'purchase_bills');
   },
 
-  _mapInvoices(raw: any, type: 'sales_invoices' | 'purchase_bills'): ParasutInvoice[] {
+  async getExpenditures(companyId: string, dateFrom: string, dateTo: string): Promise<ParasutInvoice[]> {
+    const raw = await this.request(`/${companyId}/expenditures`, {
+      'page[size]': '25',
+      'include': 'supplier,category',
+      'filter[issue_date][gteq]': dateFrom,
+      'filter[issue_date][lteq]': dateTo,
+      'sort': '-issue_date',
+    });
+    return this._mapInvoices(raw, 'expenditures');
+  },
+
+  _mapInvoices(raw: any, type: 'sales_invoices' | 'purchase_bills' | 'expenditures'): ParasutInvoice[] {
     const included: any[] = raw.included || [];
     const findContact = (id: string) => {
-      const c = included.find((i: any) => i.id === id && (i.type === 'contacts' || i.type === 'suppliers'));
+      const c = included.find((i: any) => i.id === id && (i.type === 'contacts' || i.type === 'suppliers' || i.type === 'employees'));
       return c?.attributes?.name || c?.attributes?.email || '—';
+    };
+    const findCategory = (id: string) => {
+      const c = included.find((i: any) => i.id === id && i.type === 'item_categories');
+      return c?.attributes?.name || '';
     };
     return (raw.data || []).map((item: any) => {
       const a = item.attributes || {};
       const contactId =
         item.relationships?.contact?.data?.id ||
-        item.relationships?.supplier?.data?.id;
+        item.relationships?.supplier?.data?.id ||
+        item.relationships?.employee?.data?.id;
+      const categoryId = item.relationships?.category?.data?.id;
+      
       return {
         id: item.id,
         type,
@@ -170,6 +189,7 @@ export const parasutService = {
         due_date: a.due_date || '',
         description: a.description || a.invoice_series || '—',
         contact_name: contactId ? findContact(contactId) : '—',
+        category_name: categoryId ? findCategory(categoryId) : 'Genel',
         net_total: parseFloat(a.net_total || '0'),
         gross_total: parseFloat(a.gross_total || a.total_gross || '0'),
         currency: a.currency || 'TRL',
