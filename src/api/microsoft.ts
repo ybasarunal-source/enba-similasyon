@@ -50,26 +50,23 @@ const clearAllMsalStorage = () => {
   }
 };
 
-const clearInteractionLock = () => {
-  // MSAL stores its interaction lock in sessionStorage
+const resetMsalInstance = async () => {
+  // Full reset: clear storage + destroy in-memory instance
   try {
     const keysToRemove: string[] = [];
     for (let i = 0; i < sessionStorage.length; i++) {
       const key = sessionStorage.key(i);
-      if (key && (
-        key.includes('interaction.status') ||
-        key.includes('request.origin') ||
-        key.includes('request.params') ||
-        key.includes('request.correlation') ||
-        key.includes('nonce.idtoken') ||
-        key.includes('state')
-      )) {
-        keysToRemove.push(key);
-      }
+      if (key && key.startsWith('msal.')) keysToRemove.push(key);
     }
     keysToRemove.forEach(key => sessionStorage.removeItem(key));
-    lastInteractionTime = 0;
-  } catch (e) { /* ignore */ }
+  } catch { /* ignore */ }
+
+  msalInstance = null;
+  isInitialized = false;
+  initPromise = null;
+  lastInteractionTime = 0;
+
+  await ensureInitialized();
 };
 
 const ensureInitialized = async () => {
@@ -152,8 +149,8 @@ export const microsoftService = {
     } catch (err: any) {
       const code = err?.errorCode || err?.name || '';
       if (code === 'interaction_in_progress') {
-        // Kilit takılı kalmış — temizle ve bir kez daha dene
-        clearInteractionLock();
+        // MSAL instance'ı bellekte de kilitli — tamamen sıfırla ve yeniden dene
+        await resetMsalInstance();
         try {
           if (!msalInstance) throw new Error('MSAL başlatılamadı.');
           const retry = await msalInstance.loginPopup(loginRequest);
@@ -163,7 +160,7 @@ export const microsoftService = {
           }
           return null;
         } catch {
-          throw new Error('Giriş kilidi temizlendi ama tekrar deneme de başarısız oldu. Sayfayı yenileyip tekrar deneyin.');
+          throw new Error('Oturum kilidi temizlenemedi. Sayfayı yenileyip tekrar deneyin.');
         }
       }
       if (code === 'user_cancelled' || code === 'access_denied') {
