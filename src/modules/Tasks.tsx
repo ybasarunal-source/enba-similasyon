@@ -235,21 +235,35 @@ export const Tasks: React.FC = () => {
       const lists = await microsoftService.getTodoLists();
       if (!lists.length) throw new Error('Microsoft Todo listeleri alınamadı.');
 
-      // Tüm listelerden görev çek
+      // Tüm listelerden görev çek, her task'a liste bilgisini ekle
       const allMsTasks: any[] = [];
       for (const list of lists) {
-        const tasks = await microsoftService.getTodoListTasks(list.id);
-        tasks.forEach((t: any) => { t._listId = list.id; });
-        allMsTasks.push(...tasks);
+        const listTasks = await microsoftService.getTodoListTasks(list.id);
+        listTasks.forEach((t: any) => {
+          t._listId = list.id;
+          t._listName = list.displayName;
+        });
+        allMsTasks.push(...listTasks);
       }
       const msTasks = allMsTasks;
+
+      // Eksik projeleri oluştur (MS liste → Enba proje eşleşmesi)
+      const updatedProjects = [...projects];
+      for (const list of lists) {
+        if (!updatedProjects.find(p => p.id === list.id)) {
+          updatedProjects.push({ id: list.id, name: list.displayName.toUpperCase(), groupId: 'g2' });
+        }
+      }
+      if (updatedProjects.length !== projects.length) {
+        setProjects(updatedProjects);
+        localStorage.setItem('enba_projects', JSON.stringify(updatedProjects));
+      }
 
       const cleanText = (s: string) =>
         s.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').trim();
       const msStatusMap = (s: string): 'todo' | 'doing' | 'done' =>
         s === 'completed' ? 'done' : s === 'inProgress' ? 'doing' : 'todo';
 
-      // snapshot kullan — state updater yerine doğrudan tasks üzerinden hesapla
       const snapshot = tasks;
       let updatedCount = 0;
 
@@ -279,7 +293,7 @@ export const Tasks: React.FC = () => {
           desc: t.body?.content || '',
           priority: t.importance === 'high' ? 'high' : ('medium' as const),
           deadline: t.dueDateTime?.dateTime || '',
-          projectId: projects[0]?.id || 'p1',
+          projectId: t._listId,           // MS liste ID = Enba proje ID
           moduleRef: 'genel',
           status: msStatusMap(t.status),
           createdAt: t.createdDateTime || new Date().toISOString(),
