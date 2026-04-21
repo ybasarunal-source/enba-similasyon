@@ -43,9 +43,8 @@ export default async function handler(req, res) {
     } else {
       body.append('username', username);
       body.append('password', password);
-      // Removed redirect_uri as it is usually not required for password grant and can cause mismatches
-      // Added standard scopes
-      body.append('scope', 'read write');
+      // Re-added redirect_uri to match portal settings exactly
+      body.append('redirect_uri', 'urn:ietf:wg:oauth:2.0:oob');
     }
 
     // 3. Make the request to Paraşüt
