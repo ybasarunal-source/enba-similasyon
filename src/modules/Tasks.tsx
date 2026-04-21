@@ -236,6 +236,11 @@ export const Tasks: React.FC = () => {
       if (!list) throw new Error('Task listesi bulunamadı.');
 
       const msTasks: any[] = await microsoftService.getTodoListTasks(list.id);
+      if (msTasks.length === 0) {
+        setSyncStatus(`Liste: "${list.displayName}" · 0 görev — listede görev yok veya farklı hesap`);
+        setTimeout(() => setSyncStatus(''), 8000);
+        return;
+      }
 
       const cleanText = (s: string) =>
         s.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').trim();

@@ -191,13 +191,17 @@ export const microsoftService = {
     if (!client) throw new Error('Microsoft bağlantısı kurulamadı. Lütfen yeniden giriş yapın.');
 
     const allTasks: any[] = [];
-    let nextUrl: string | null = `/me/todo/lists/${listId}/tasks?$top=500`;
+    let response: any = await client
+      .api(`/me/todo/lists/${listId}/tasks`)
+      .top(100)
+      .header('Cache-Control', 'no-cache')
+      .get();
 
-    while (nextUrl) {
-      const response: any = await client.api(nextUrl).header('Cache-Control', 'no-cache').get();
+    allTasks.push(...(response.value || []));
+
+    while (response['@odata.nextLink']) {
+      response = await client.api(response['@odata.nextLink']).get();
       allTasks.push(...(response.value || []));
-      const next: string | undefined = response['@odata.nextLink'];
-      nextUrl = next ? next.replace('https://graph.microsoft.com/v1.0', '') : null;
     }
 
     return allTasks;
