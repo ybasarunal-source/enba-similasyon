@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from '../api/i18n';
+import { microsoftService } from '../api/microsoft';
 import {
   PieChart,
   Zap,
@@ -15,7 +16,11 @@ import {
   Receipt,
   BadgeCheck,
   PlusCircle,
-  TrendingUp
+  TrendingUp,
+  Search,
+  Calendar,
+  MapPin,
+  Clock
 } from 'lucide-react';
 
 interface DashboardProps {
@@ -25,7 +30,7 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ navigate, user }) => {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState<'tasks' | 'payments' | 'licenses'>('tasks');
+  const [activeTab, setActiveTab] = useState<'tasks' | 'payments' | 'licenses' | 'appointments'>('tasks');
   const [stats, setStats] = useState({
     totalStock: 0,
     rawStock: 0,
@@ -39,6 +44,7 @@ const Dashboard: React.FC<DashboardProps> = ({ navigate, user }) => {
     totalPendingOutgoing: 0,
     activePlanTitle: '',
     hasData: false,
+    appointments: [] as any[],
   });
 
   useEffect(() => {
@@ -104,6 +110,17 @@ const Dashboard: React.FC<DashboardProps> = ({ navigate, user }) => {
           totalPendingOutgoing: pendingOut.reduce((s: number, p: any) => s + (parseFloat(p.amount) || 0), 0),
           activePlanTitle: activeTitle,
           hasData: true,
+          appointments: [], // Will be loaded separately for auth reasons
+        });
+
+        // Load appointments if connected
+        microsoftService.getAccount().then(acc => {
+          if (acc) {
+            const today = new Date().toISOString().split('T')[0];
+            microsoftService.getCalendarEvents(today, today).then(evs => {
+              setStats(prev => ({ ...prev, appointments: evs }));
+            });
+          }
         });
       } catch (e) {
         console.error('Stats load error', e);
@@ -130,14 +147,38 @@ const Dashboard: React.FC<DashboardProps> = ({ navigate, user }) => {
 
       {/* ── Header ───────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
-        <div>
+        <div className="flex-1">
           <p className="text-xs font-medium text-gray-400 uppercase tracking-widest mb-1">
             {new Date().toLocaleDateString('tr-TR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
           </p>
-          <h1 className="text-2xl font-semibold text-gray-800">
-            {t('landing.welcome')}{' '}
-            <span className="text-enba-orange font-semibold">{user?.name || 'Administrator'}</span>
-          </h1>
+          <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-8">
+            <h1 className="text-2xl font-semibold text-gray-800">
+              {t('landing.welcome')}{' '}
+              <span className="text-enba-orange font-semibold">{user?.name || 'Administrator'}</span>
+            </h1>
+            
+            <form 
+              action="https://www.google.com/search" 
+              method="GET" 
+              target="_blank"
+              className="group flex items-center bg-white border-2 border-gray-50 rounded-2xl px-4 py-2 hover:border-enba-orange/20 focus-within:border-enba-orange/50 shadow-sm hover:shadow-md focus-within:shadow-lg transition-all duration-300 w-full max-w-[360px]"
+            >
+              <Search size={18} className="text-gray-400 group-focus-within:text-enba-orange transition-colors" />
+              <input 
+                type="text" 
+                name="q" 
+                placeholder="Google'da bir şeyler ara..." 
+                className="bg-transparent border-none outline-none text-sm font-medium text-gray-700 placeholder-gray-400 ml-3 w-full"
+              />
+              <button 
+                type="submit" 
+                className="ml-2 p-2 bg-gray-50 group-focus-within:bg-enba-orange group-focus-within:text-white rounded-xl text-gray-400 transition-all duration-300 flex items-center justify-center hover:brightness-110 shadow-sm"
+                title="Google'da Ara"
+              >
+                <ArrowRight size={16} />
+              </button>
+            </form>
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -250,6 +291,7 @@ const Dashboard: React.FC<DashboardProps> = ({ navigate, user }) => {
             <div className="flex gap-6">
               {[
                 { id: 'tasks',    label: t('landing.tasks'),    icon: CheckSquare, count: stats.activeTasksCount },
+                { id: 'appointments', label: 'Randevular', icon: Calendar, count: stats.appointments.length },
                 { id: 'payments', label: t('landing.payments'), icon: CreditCard,  count: stats.upcomingPayments.length },
                 { id: 'licenses', label: t('landing.licenses'), icon: ShieldCheck, count: stats.licenseAlerts },
               ].map(tab => (
@@ -304,6 +346,33 @@ const Dashboard: React.FC<DashboardProps> = ({ navigate, user }) => {
                   <div className="col-span-2 flex flex-col items-center justify-center py-16 text-gray-300">
                     <Ghost size={36} className="mb-3 opacity-40" />
                     <span className="text-xs font-medium text-gray-400">{t('landing.no_tasks')}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'appointments' && (
+              <div className="space-y-3">
+                {stats.appointments.length > 0 ? stats.appointments.map(ev => (
+                  <div key={ev.id} className="p-4 bg-gray-50 border border-gray-100 rounded-xl hover:bg-white hover:shadow-md transition-all">
+                    <div className="flex items-center justify-between mb-2">
+                       <div className="flex items-center gap-2 text-[9px] font-black text-enba-orange uppercase tracking-widest bg-orange-50 px-2 py-1 rounded-lg">
+                        <Clock size={12} />
+                        {new Date(ev.start.dateTime).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                      {ev.location?.displayName && (
+                        <div className="flex items-center gap-1.5 text-[9px] text-gray-400 font-bold italic">
+                          <MapPin size={10} />
+                          {ev.location.displayName}
+                        </div>
+                      )}
+                    </div>
+                    <h4 className="text-sm font-semibold text-gray-800 leading-tight">{ev.subject}</h4>
+                  </div>
+                )) : (
+                  <div className="flex flex-col items-center justify-center py-16 text-gray-300">
+                    <Calendar size={36} className="mb-3 opacity-40" />
+                    <span className="text-xs font-medium text-gray-400">Bugün için randevu bulunmuyor</span>
                   </div>
                 )}
               </div>
@@ -364,7 +433,7 @@ const Dashboard: React.FC<DashboardProps> = ({ navigate, user }) => {
           </div>
 
           <button
-            onClick={() => navigate(activeTab === 'tasks' ? 'tasks' : activeTab === 'payments' ? 'cashflow' : 'licensing')}
+            onClick={() => navigate(activeTab === 'tasks' ? 'tasks' : activeTab === 'payments' ? 'cashflow' : activeTab === 'appointments' ? 'calendar' : 'licensing')}
             className="py-4 border-t border-gray-100 text-xs font-medium text-gray-400 hover:text-enba-orange transition-colors flex items-center justify-center gap-2"
           >
             {t('common.view_all')}

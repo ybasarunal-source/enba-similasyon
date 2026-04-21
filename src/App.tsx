@@ -19,6 +19,7 @@ import { Settings } from './modules/Settings';
 import { Profile } from './modules/Profile';
 import { DetailedPlanManager } from './modules/planning/DetailedPlanManager';
 import { FastPlan } from './modules/FastPlan';
+import { Calendar as CalendarModule } from './modules/Calendar';
 import {
   Home,
   Package,
@@ -39,13 +40,14 @@ import {
   ChevronRight,
   ChevronLeft,
   LogOut,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Calendar as CalendarIcon
 } from 'lucide-react';
 
 type ModuleType =
   | 'dashboard' | 'stock' | 'production' | 'logistics' | 'hr'
   | 'archive' | 'cashflow' | 'planning' | 'fastplan' | 'machinery'
-  | 'tasks' | 'licensing' | 'settings' | 'pnl' | 'profile';
+  | 'tasks' | 'calendar' | 'licensing' | 'settings' | 'pnl' | 'profile';
 
 const getProfileAvatar = () => {
   try { return JSON.parse(localStorage.getItem('enba_profile_data') || '{}').avatar || ''; }
@@ -145,6 +147,7 @@ export const App: React.FC = () => {
     { id: 'cashflow',   label: t('modules.cashflow'),      icon: Coins },
     { id: 'machinery',  label: t('modules.machinery'),     icon: Wrench },
     { id: 'tasks',      label: t('modules.tasks'),         icon: ClipboardList },
+    { id: 'calendar',   label: 'Takvim',                   icon: CalendarIcon },
     { id: 'logistics',  label: t('modules.logistics'),     icon: Truck },
     { id: 'settings',   label: t('nav.sistem'),            icon: SettingsIcon },
     { id: 'profile',    label: 'Profilim',                 icon: User },
@@ -154,7 +157,7 @@ export const App: React.FC = () => {
     // FALLBACK: Veritabanı hatası (RLS) durumunda oturum varsa tam erişim sağla
     if (!userProfile && session?.user) return true;
     // Core modules always visible, others depend on permissions
-    if (item.id === 'profile' || item.id === 'dashboard' || item.id === 'tasks') return true;
+    if (item.id === 'profile' || item.id === 'dashboard' || item.id === 'tasks' || item.id === 'calendar') return true;
     // Others depend on permissions
     return userProfile?.permissions?.[item.id] === true;
   });
@@ -518,6 +521,7 @@ export const App: React.FC = () => {
             {activeModule === 'cashflow'   && <Cashflow aktifPlanlar={JSON.parse(localStorage.getItem('enba_detailed_plans') || '[]')} />}
             {activeModule === 'machinery'  && <Machinery />}
             {activeModule === 'tasks'      && <Tasks />}
+            {activeModule === 'calendar'   && <CalendarModule />}
             {activeModule === 'licensing'  && <Licensing />}
             {activeModule === 'pnl'        && <PnL />}
             {activeModule === 'settings'   && <Settings profile={userProfile ? { ...userProfile, role: user.role as any } : { role: user.role } as any} />}

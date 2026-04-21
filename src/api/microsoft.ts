@@ -21,7 +21,7 @@ const msalConfig: Configuration = {
   },
 };
 
-const loginScopes = ['User.Read', 'Tasks.ReadWrite'];
+const loginScopes = ['User.Read', 'Tasks.ReadWrite', 'Calendars.ReadWrite'];
 
 let msalInstance: PublicClientApplication | null = null;
 let isInitialized = false;
@@ -205,6 +205,74 @@ export const microsoftService = {
     }
 
     return allTasks;
+  },
+
+  async getCalendarEvents(start?: string, end?: string) {
+    const client = await this.getGraphClient();
+    if (!client) return [];
+    try {
+      let query = client.api('/me/calendarview');
+      if (start && end) {
+        query = query.query({
+          startDateTime: new Date(start).toISOString(),
+          endDateTime: new Date(end).toISOString()
+        });
+      } else {
+        // Default: next 30 days
+        const now = new Date();
+        const future = new Date();
+        future.setDate(now.getDate() + 30);
+        query = query.query({
+          startDateTime: now.toISOString(),
+          endDateTime: future.toISOString()
+        });
+      }
+      
+      const response = await query.top(50).get();
+      return response.value || [];
+    } catch (err) {
+      console.error('MS Get Calendar Events Error:', err);
+      return [];
+    }
+  },
+
+  async createCalendarEvent(event: { subject: string, body: string, start: string, end: string, location?: string }) {
+    const client = await this.getGraphClient();
+    if (!client) return null;
+    try {
+      const msEvent = {
+        subject: event.subject,
+        body: {
+          contentType: 'text',
+          content: event.body
+        },
+        start: {
+          dateTime: new Date(event.start).toISOString(),
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        },
+        end: {
+          dateTime: new Date(event.end).toISOString(),
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        },
+        location: event.location ? { displayName: event.location } : undefined
+      };
+      return await client.api('/me/events').post(msEvent);
+    } catch (err) {
+      console.error('MS Create Event Error:', err);
+      return null;
+    }
+  },
+
+  async deleteCalendarEvent(eventId: string) {
+    const client = await this.getGraphClient();
+    if (!client) return false;
+    try {
+      await client.api(`/me/events/${eventId}`).delete();
+      return true;
+    } catch (err) {
+      console.error('MS Delete Event Error:', err);
+      return false;
+    }
   },
 
   async logout() {
