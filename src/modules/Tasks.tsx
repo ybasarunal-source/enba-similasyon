@@ -235,58 +235,61 @@ export const Tasks: React.FC = () => {
       const list = await microsoftService.ensureTodoList('Enba Tasks');
       if (!list) throw new Error('Task listesi bulunamadı.');
 
-      const msTasks = await microsoftService.getTodoListTasks(list.id);
+      const msTasks: any[] = await microsoftService.getTodoListTasks(list.id);
 
-      // Karşılaştırma & birleştirme — side effect'siz saf fonksiyon
-      setTasks(current => {
-        const cleanText = (s: string) =>
-          s.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').trim();
+      const cleanText = (s: string) =>
+        s.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').trim();
+      const msStatusMap = (s: string): 'todo' | 'doing' | 'done' =>
+        s === 'completed' ? 'done' : s === 'inProgress' ? 'doing' : 'todo';
 
-        const msStatusMap = (s: string): 'todo' | 'doing' | 'done' =>
-          s === 'completed' ? 'done' : s === 'inProgress' ? 'doing' : 'todo';
+      // snapshot kullan — state updater yerine doğrudan tasks üzerinden hesapla
+      const snapshot = tasks;
+      let updatedCount = 0;
 
-        const updatedTasks = current.map(localTask => {
-          if (!localTask.msTodoId) return localTask;
-          const msTask = msTasks.find((t: any) => t.id === localTask.msTodoId);
-          if (!msTask) return localTask;
+      const updatedTasks = snapshot.map(localTask => {
+        if (!localTask.msTodoId) return localTask;
+        const msTask = msTasks.find(t => t.id === localTask.msTodoId);
+        if (!msTask) return localTask;
 
-          const msStatus = msStatusMap(msTask.status);
-          const hasStatusDiff = localTask.status !== msStatus;
-          const hasTitleDiff = cleanText(localTask.title) !== cleanText(msTask.title || '');
-          const hasDescDiff  = cleanText(localTask.desc || '') !== cleanText(msTask.body?.content || '');
+        const msStatus = msStatusMap(msTask.status);
+        const hasStatusDiff = localTask.status !== msStatus;
+        const hasTitleDiff  = cleanText(localTask.title) !== cleanText(msTask.title || '');
+        const hasDescDiff   = cleanText(localTask.desc || '') !== cleanText(msTask.body?.content || '');
 
-          if (hasStatusDiff || hasTitleDiff || hasDescDiff) {
-            return { ...localTask, status: msStatus, title: msTask.title, desc: msTask.body?.content || '' };
-          }
-          return localTask;
-        });
-
-        const knownIds = new Set(current.map(t => t.msTodoId).filter(Boolean));
-        const newTasks: Task[] = msTasks
-          .filter((t: any) => !knownIds.has(t.id))
-          .map((t: any) => ({
-            id: 'ms-' + t.id,
-            title: t.title,
-            desc: t.body?.content || '',
-            priority: t.importance === 'high' ? 'high' : 'medium',
-            deadline: t.dueDateTime?.dateTime || '',
-            projectId: projects[0]?.id || 'p1',
-            moduleRef: 'genel',
-            status: msStatusMap(t.status),
-            createdAt: t.createdDateTime || new Date().toISOString(),
-            msTodoId: t.id,
-            msListId: list.id,
-          } as Task));
-
-        return [...updatedTasks, ...newTasks];
+        if (hasStatusDiff || hasTitleDiff || hasDescDiff) {
+          updatedCount++;
+          return { ...localTask, status: msStatus, title: msTask.title, desc: msTask.body?.content || '' };
+        }
+        return localTask;
       });
 
-      setSyncStatus(`${msTasks.length} görev kontrol edildi.`);
-      setTimeout(() => setSyncStatus(''), 4000);
+      const knownIds = new Set(snapshot.map(t => t.msTodoId).filter(Boolean));
+      const newTasks: Task[] = msTasks
+        .filter(t => !knownIds.has(t.id))
+        .map(t => ({
+          id: 'ms-' + t.id,
+          title: t.title,
+          desc: t.body?.content || '',
+          priority: t.importance === 'high' ? 'high' : ('medium' as const),
+          deadline: t.dueDateTime?.dateTime || '',
+          projectId: projects[0]?.id || 'p1',
+          moduleRef: 'genel',
+          status: msStatusMap(t.status),
+          createdAt: t.createdDateTime || new Date().toISOString(),
+          msTodoId: t.id,
+          msListId: list.id,
+        } as Task));
+
+      const merged = [...updatedTasks, ...newTasks];
+      setTasks(merged);
+      localStorage.setItem('enba_tasks', JSON.stringify(merged));
+
+      setSyncStatus(`✓ ${msTasks.length} çekildi · ${updatedCount} güncellendi · ${newTasks.length} yeni`);
+      setTimeout(() => setSyncStatus(''), 5000);
 
     } catch (err: any) {
       console.error('Sync Error:', err);
-      setSyncStatus(err?.message || 'Senkronizasyon başarısız.');
+      setSyncStatus('Hata: ' + (err?.message || 'Senkronizasyon başarısız.'));
     } finally {
       setIsSyncing(false);
     }
