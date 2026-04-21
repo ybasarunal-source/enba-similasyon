@@ -1,8 +1,8 @@
 const CLIENT_ID = import.meta.env.VITE_PARASUT_CLIENT_ID as string;
 const CLIENT_SECRET = import.meta.env.VITE_PARASUT_CLIENT_SECRET as string;
 
-const OAUTH_URL = 'https://api.parasut.com/oauth/token';
-const API_BASE = 'https://api.parasut.com/v4';
+const OAUTH_URL = '/api/parasut-oauth';
+const API_BASE = '/api/parasut-data';
 
 const TOKEN_KEY = 'enba_parasut_token';
 const COMPANY_KEY = 'enba_parasut_company';
@@ -116,7 +116,8 @@ export const parasutService = {
   async request(path: string, params: Record<string, string> = {}): Promise<any> {
     const token = await this.getToken();
     if (!token) throw new Error('SESSION_EXPIRED');
-    const url = new URL(`${API_BASE}${path}`);
+    const url = new URL(API_BASE, window.location.origin);
+    url.searchParams.set('path', `/v4${path}`);
     Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
     const resp = await fetch(url.toString(), {
       headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
