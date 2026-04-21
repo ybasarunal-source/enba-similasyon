@@ -144,6 +144,7 @@ export const Parasut: React.FC = () => {
   const [lastSync, setLastSync]   = useState<Date | null>(null);
 
   const loadData = useCallback(async (cid: string, preset: DatePreset) => {
+    console.log('[Parasut] loadData called, cid:', cid, 'preset:', preset);
     if (!cid) return;
     setLoading(true);
     setError('');
@@ -156,6 +157,7 @@ export const Parasut: React.FC = () => {
       setInvoices([...sales, ...purchases].sort((a, b) => b.issue_date.localeCompare(a.issue_date)));
       setLastSync(new Date());
     } catch (err: any) {
+      console.error('[Parasut] loadData error:', err.message);
       setError(err.message || 'Veriler alınamadı.');
     } finally {
       setLoading(false);
@@ -167,8 +169,11 @@ export const Parasut: React.FC = () => {
   }, [ready, companyId, datePreset, loadData]);
 
   const handleReady = (cid: string) => {
+    console.log('[Parasut] handleReady called, cid:', cid);
+    console.log('[Parasut] isLoggedIn:', parasutService.isLoggedIn());
     setCompanyId(cid);
     setReady(true);
+    console.log('[Parasut] setReady(true) called');
   };
 
   const handleLogout = () => {
