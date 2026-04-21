@@ -183,6 +183,18 @@ export const Parasut: React.FC = () => {
     setError('');
   };
 
+  const handleDebug = async () => {
+    const token = await parasutService.getToken();
+    if (!token) { setError('DEBUG: Token yok!'); return; }
+    try {
+      const r = await fetch(`/api/parasut-debug?token=${token}&company=${companyId}`);
+      const j = await r.json();
+      setError(`DEBUG: status=${j.header_auth?.status} | token_prefix=${j.token_prefix} | body=${j.header_auth?.body?.slice(0, 150)}`);
+    } catch (e: any) {
+      setError('DEBUG hata: ' + e.message);
+    }
+  };
+
   if (!ready) return <LoginForm onReady={handleReady} />;
 
   const filtered = invoices.filter(inv => {
@@ -228,6 +240,10 @@ export const Parasut: React.FC = () => {
           <button onClick={() => loadData(companyId, datePreset)} disabled={loading}
             className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-600 rounded-xl text-xs font-medium hover:bg-gray-200 transition-all">
             <RefreshCw size={13} className={loading ? 'animate-spin' : ''} /> Yenile
+          </button>
+          <button onClick={handleDebug}
+            className="flex items-center gap-2 px-4 py-2 bg-yellow-100 text-yellow-700 rounded-xl text-xs font-medium hover:bg-yellow-200 transition-all">
+            Debug
           </button>
           <button onClick={handleLogout}
             className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-500 rounded-xl text-xs font-medium hover:bg-red-50 hover:text-red-500 transition-all">
