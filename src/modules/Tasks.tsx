@@ -103,6 +103,7 @@ export const Tasks: React.FC = () => {
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     return localStorage.getItem('enba_tasks_compact') === 'true';
   });
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'google' | 'outlook' | 'local'>('all');
 
   // ── Sync with LocalStorage ───────────────────────────────
   useEffect(() => {
@@ -492,8 +493,9 @@ export const Tasks: React.FC = () => {
     return tasks
       .filter(t => {
         const matchesProject = selectedProjectId === 'all' || t.projectId === selectedProjectId;
+        const matchesSource = sourceFilter === 'all' || t.source === sourceFilter;
         const matchesSearch = t.title.toLowerCase().includes(searchTerm.toLowerCase()) || (t.desc || '').toLowerCase().includes(searchTerm.toLowerCase());
-        return matchesProject && matchesSearch;
+        return matchesProject && matchesSource && matchesSearch;
       })
       .sort((a, b) => {
         if (a.status === 'done' && b.status !== 'done') return 1;
@@ -715,14 +717,30 @@ export const Tasks: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex bg-gray-100 p-0.5 rounded-lg">
-              <button onClick={() => setViewMode('board')} className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'board' ? 'bg-white text-enba-dark shadow-sm' : 'text-gray-400 hover:text-gray-600'}`} title="Board Görünümü">
-                <Kanban size={12} /> Matrix
-              </button>
-              <button onClick={() => setViewMode('list')} className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'list' ? 'bg-white text-enba-dark shadow-sm' : 'text-gray-400 hover:text-gray-600'}`} title="Liste Görünümü">
-                <ListIcon size={12} /> Sıralı
-              </button>
-            </div>
+              <div className="flex bg-gray-100 p-0.5 rounded-lg">
+                <button onClick={() => setViewMode('board')} className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'board' ? 'bg-white text-enba-dark shadow-sm' : 'text-gray-400 hover:text-gray-600'}`} title="Board Görünümü">
+                  <Kanban size={12} /> Matrix
+                </button>
+                <button onClick={() => setViewMode('list')} className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'list' ? 'bg-white text-enba-dark shadow-sm' : 'text-gray-400 hover:text-gray-600'}`} title="Liste Görünümü">
+                  <ListIcon size={12} /> Sıralı
+                </button>
+              </div>
+
+              <div className="flex bg-gray-100 p-0.5 rounded-lg ml-2">
+                {[
+                  { id: 'all', label: 'TÜMÜ' },
+                  { id: 'google', label: 'GOOGLE' },
+                  { id: 'outlook', label: 'OUTLOOK' }
+                ].map(tab => (
+                  <button 
+                    key={tab.id}
+                    onClick={() => setSourceFilter(tab.id as any)}
+                    className={`px-3 py-1 rounded-md text-[9px] font-black uppercase tracking-widest transition-all ${sourceFilter === tab.id ? 'bg-white text-enba-dark shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
 
             <button 
               onClick={() => setIsCompact(!isCompact)}
