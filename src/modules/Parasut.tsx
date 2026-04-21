@@ -57,6 +57,13 @@ const LoginForm: React.FC<{ onReady: (companyId: string) => void }> = ({ onReady
       setError('ADIM 3: Firma kaydedildi, ready tetikleniyor');
       onReady(companyId.trim());
     } catch (err: any) {
+      // Capture detailed error data for the diagnostic UI
+      try {
+        const errorData = JSON.parse(err.message.split('HTTP ')[1]?.split(': ')[1] || '{}');
+        (window as any)._lastParasutError = errorData;
+      } catch {
+        (window as any)._lastParasutError = { error: err.message };
+      }
       setError('HATA: ' + (err.message || 'Giriş başarısız.'));
     } finally {
       setLoading(false);
@@ -113,9 +120,24 @@ const LoginForm: React.FC<{ onReady: (companyId: string) => void }> = ({ onReady
           </div>
 
           {error && (
-            <div className="flex items-center gap-2 p-3 bg-rose-50 border border-rose-100 rounded-xl text-xs text-rose-600">
-              <AlertCircle size={14} className="flex-shrink-0" />
-              {error}
+            <div className="flex flex-col gap-2 p-3 bg-rose-50 border border-rose-100 rounded-xl text-xs text-rose-600">
+              <div className="flex items-center gap-2">
+                <AlertCircle size={14} className="flex-shrink-0" />
+                {error}
+              </div>
+              {/* @ts-ignore - diagnostics from backend */}
+              {window._lastParasutError?.diagnostics && (
+                <div className="mt-2 pt-2 border-t border-rose-100 space-y-1 font-mono text-[10px] opacity-80">
+                  <p>DEBUG BILGISI:</p>
+                  {/* @ts-ignore */}
+                  <p>ID Found: {String(window._lastParasutError.diagnostics.has_client_id)}</p>
+                  {/* @ts-ignore */}
+                  <p>ID Prefix: {window._lastParasutError.diagnostics.client_id_prefix}</p>
+                  {/* @ts-ignore */}
+                  <p>Available Env Vars: {window._lastParasutError.diagnostics.env_keys.join(', ') || 'NONE'}</p>
+                  <p className="italic text-rose-400 mt-2">İpucu: Vercel Dashboard'da PARASUT_CLIENT_ID tanımlanmış mı kontrol edin.</p>
+                </div>
+              )}
             </div>
           )}
 
