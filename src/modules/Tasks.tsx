@@ -32,6 +32,7 @@ import {
   Minimize
 } from 'lucide-react';
 import { microsoftService } from '../api/microsoft';
+import { googleService } from '../api/google';
 import { profileAPI } from '../api/supabase';
 
 interface Task {
@@ -44,8 +45,11 @@ interface Task {
   moduleRef: string;
   status: 'todo' | 'doing' | 'done';
   createdAt: string;
+  source: 'local' | 'outlook' | 'google';
   msTodoId?: string;
   msListId?: string;
+  gTaskId?: string;
+  gListId?: string;
 }
 
 interface Project {
@@ -65,7 +69,9 @@ export const Tasks: React.FC = () => {
   // ── Data States ──────────────────────────────────────────
   const [tasks, setTasks] = useState<Task[]>(() => {
     const saved = localStorage.getItem('enba_tasks');
-    return saved ? JSON.parse(saved) : [];
+    const parsed: Task[] = saved ? JSON.parse(saved) : [];
+    // Ensure all existing tasks have a source
+    return parsed.map(t => ({ ...t, source: t.source || 'local' }));
   });
 
   const [projects, setProjects] = useState<Project[]>(() => {
@@ -83,6 +89,7 @@ export const Tasks: React.FC = () => {
   });
 
   const [msAccount, setMsAccount] = useState<any>(null);
+  const [googleAccount, setGoogleAccount] = useState<any>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState<string>('');
   const [isConnecting, setIsConnecting] = useState(false);
@@ -142,7 +149,20 @@ export const Tasks: React.FC = () => {
       }
     };
     recoverSession();
+
+    // Check Google Auth return
+    if (googleService.handleAuthReturn()) {
+      setGoogleAccount({ name: 'Google Kullanıcısı' });
+    }
+    const gToken = googleService.getAccessToken();
+    if (gToken) {
+      setGoogleAccount({ name: 'Google Kullanıcısı' });
+    }
   }, []);
+
+  const handleConnectGoogle = () => {
+    googleService.loginRedirect();
+  };
 
   const handleConnectMs = async () => {
     setIsConnecting(true);
@@ -222,8 +242,11 @@ export const Tasks: React.FC = () => {
       id: isNew ? Date.now() : editingTask!.id,
       status: isNew ? 'todo' : editingTask!.status,
       createdAt: isNew ? new Date().toISOString() : editingTask!.createdAt,
+      source: isNew ? 'local' : editingTask!.source,
       msTodoId: editingTask?.msTodoId,
-      msListId: editingTask?.msListId
+      msListId: editingTask?.msListId,
+      gTaskId: editingTask?.gTaskId,
+      gListId: editingTask?.gListId
     };
 
     setTasks(prev => isNew ? [...prev, newTask] : prev.map(t => t.id === newTask.id ? newTask : t));
@@ -340,6 +363,7 @@ export const Tasks: React.FC = () => {
           moduleRef: 'genel',
           status: msStatusMap(t.status),
           createdAt: t.createdDateTime || new Date().toISOString(),
+          source: 'outlook',
           msTodoId: t.id,
           msListId: t._listId,
         } as Task));
@@ -354,6 +378,69 @@ export const Tasks: React.FC = () => {
     } catch (err: any) {
       console.error('Sync Error:', err);
       setSyncStatus('Hata: ' + (err?.message || 'Senkronizasyon başarısız.'));
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleSyncGoogle = async () => {
+    if (!googleAccount) return;
+    setIsSyncing(true);
+    setSyncStatus('Google Tasks senkronize ediliyor...');
+
+    try {
+      const taskLists = await googleService.getTaskLists();
+      let newCount = 0;
+      let updatedCount = 0;
+      const snapshot = [...tasks];
+      const newProjects = [...projects];
+
+      for (const list of taskLists) {
+        // Ensure project exists for this list
+        if (!newProjects.find(p => p.id === list.id)) {
+          newProjects.push({ id: list.id, name: list.title.toUpperCase(), groupId: 'g2' });
+        }
+
+        const gTasks = await googleService.getTasksFromList(list.id);
+        for (const gt of gTasks) {
+          const existing = snapshot.find(t => t.gTaskId === gt.id);
+          const gStatus: 'todo' | 'done' = gt.status === 'completed' ? 'done' : 'todo';
+          
+          if (existing) {
+            if (existing.status !== gStatus || existing.title !== gt.title) {
+              const idx = snapshot.findIndex(t => t.id === existing.id);
+              snapshot[idx] = { ...existing, status: gStatus, title: gt.title, desc: gt.notes || '' };
+              updatedCount++;
+            }
+          } else {
+            snapshot.push({
+              id: 'gt-' + gt.id,
+              title: gt.title,
+              desc: gt.notes || '',
+              priority: 'medium',
+              deadline: gt.due || '',
+              projectId: list.id,
+              moduleRef: 'genel',
+              status: gStatus,
+              createdAt: gt.updated || new Date().toISOString(),
+              source: 'google',
+              gTaskId: gt.id,
+              gListId: list.id
+            });
+            newCount++;
+          }
+        }
+      }
+
+      setProjects(newProjects);
+      setTasks(snapshot);
+      localStorage.setItem('enba_tasks', JSON.stringify(snapshot));
+      localStorage.setItem('enba_projects', JSON.stringify(newProjects));
+      setSyncStatus(`✓ Google: ${newCount} yeni · ${updatedCount} güncellendi`);
+      setTimeout(() => setSyncStatus(''), 5000);
+    } catch (err) {
+      console.error('Google Sync Error:', err);
+      setSyncStatus('Google senkronizasyon hatası.');
     } finally {
       setIsSyncing(false);
     }
@@ -386,6 +473,7 @@ export const Tasks: React.FC = () => {
               moduleRef: 'genel',
               status: msTask.status === 'completed' ? 'done' : (msTask.status === 'inProgress' ? 'doing' : 'todo'),
               createdAt: msTask.createdDateTime || new Date().toISOString(),
+              source: 'outlook',
               msTodoId: msTask.id,
               msListId: list.id
             });
@@ -451,6 +539,12 @@ export const Tasks: React.FC = () => {
             <Calendar size={10} className={new Date(task.deadline) < new Date() && task.status !== 'done' ? 'text-rose-500' : ''} />
             <span>{task.deadline ? new Date(task.deadline).toLocaleDateString('tr-TR') : 'SÜRESİZ'}</span>
             <div className={`w-1.5 h-1.5 rounded-full ${task.priority === 'high' ? 'bg-rose-500' : task.priority === 'medium' ? 'bg-amber-500' : 'bg-blue-500'}`} />
+            {task.source === 'outlook' && (
+              <svg className="w-2.5 h-2.5 ml-auto" viewBox="0 0 24 24" fill="none"><path d="M22.5 12C22.5 6.2 17.8 1.5 12 1.5 6.2 1.5 1.5 6.2 1.5 12 1.5 17.8 6.2 22.5 12 22.5 17.8 22.5 22.5 17.8 22.5 12" fill="#0078D4"/><path d="M14.2 15.6l2.1-7.1h1.7l-3 10H13.4l-3-10h1.7l2.1 7.1" fill="#fff"/></svg>
+            )}
+            {task.source === 'google' && (
+              <svg className="w-2.5 h-2.5 ml-auto" viewBox="0 0 48 48"><path fill="#4285F4" d="M24 48c6.48 0 12.35-2.4 16.89-6.35L33.31 35.8C30.69 37.64 27.56 38.67 24 38.67c-6.19 0-11.45-4.14-13.33-9.74l-7.78 6.03C7.3 40.54 15.02 48 24 48z"/><path fill="#34A853" d="M40.89 41.65l-7.58-5.85C35.63 34.05 37.33 31.25 38 28.16L24 28.16v8.62h8.56c-.37 1.89-1.44 3.51-2.92 4.67l7.58 5.85c4.43-4.09 7.15-10.12 7.15-17.3 0-1.51-.14-3-.41-4.45H24v8.62h13.91c-.62 3.12-2.39 5.8-5.02 7.55z"/><path fill="#FBBC05" d="M10.67 28.93c-.48-1.42-.75-2.94-.75-4.53s.27-3.11.75-4.53l-7.78-6.03C1.04 17.34 0 20.55 0 24s1.04 6.66 2.89 10.15l7.78-6.22z"/><path fill="#EA4335" d="M24 9.33c3.54 0 6.72 1.22 9.21 3.22l6.89-6.89C35.83 2.1 30.34 0 24 0 15.02 0 7.3 7.46 2.89 13.85l7.78 6.03C12.55 13.47 17.81 9.33 24 9.33z"/></svg>
+            )}
           </div>
         </div>
       </div>
@@ -573,6 +667,34 @@ export const Tasks: React.FC = () => {
                 </button>
               </div>
             )}
+
+            {/* Google Tasks Section */}
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <div className={`flex items-center justify-between mb-3 ${googleAccount ? 'text-blue-600' : 'text-gray-400'}`}>
+                <div className="flex items-center gap-3">
+                  <RefreshCw size={16} className={isSyncing ? 'animate-spin' : ''} />
+                  <span className="text-[10px] font-black uppercase tracking-widest">
+                    {googleAccount ? 'Google Bağlı' : 'Google Boşta'}
+                  </span>
+                </div>
+                {googleAccount && (
+                  <button onClick={() => { googleService.logout(); setGoogleAccount(null); }} className="text-[9px] font-black text-rose-500 hover:underline uppercase">Kes</button>
+                )}
+              </div>
+              {!googleAccount ? (
+                <button
+                  onClick={handleConnectGoogle}
+                  className="w-full py-2.5 bg-[#4285F4] text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-blue-900/10 hover:bg-blue-600 active:scale-95 transition-all"
+                >
+                  <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.66l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+                  Google Tasks Bağla
+                </button>
+              ) : (
+                <button onClick={handleSyncGoogle} disabled={isSyncing} className="w-full py-2.5 bg-enba-dark text-white rounded-xl flex items-center justify-center text-[10px] font-black uppercase tracking-widest gap-2 shadow-md hover:bg-black transition-all">
+                  <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} /> Görevleri Eşleştir
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </aside>

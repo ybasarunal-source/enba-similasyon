@@ -1,6 +1,6 @@
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '785162351683-5ncn1udcqp6558nr3a86hgkt53imuubq.apps.googleusercontent.com';
 const REDIRECT_URI = window.location.origin;
-const SCOPES = 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly';
+const SCOPES = 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/tasks';
 
 interface GoogleCalendarEvent {
   id: string;
@@ -9,6 +9,23 @@ interface GoogleCalendarEvent {
   start: { dateTime?: string; date?: string; timeZone?: string };
   end: { dateTime?: string; date?: string; timeZone?: string };
   location?: string;
+}
+
+interface GoogleTaskList {
+  id: string;
+  title: string;
+  updated: string;
+  selfLink: string;
+}
+
+interface GoogleTask {
+  id: string;
+  title: string;
+  updated: string;
+  selfLink: string;
+  notes?: string;
+  status: 'needsAction' | 'completed';
+  due?: string;
 }
 
 export const googleService = {
@@ -67,7 +84,6 @@ export const googleService = {
       }
 
       const data = await response.json();
-      // Normalize Google format to match our internal App interface
       return (data.items || []).map((item: GoogleCalendarEvent) => ({
         id: item.id,
         subject: item.summary,
@@ -86,6 +102,36 @@ export const googleService = {
       }));
     } catch (err) {
       console.error('Google Calendar API Error:', err);
+      return [];
+    }
+  },
+
+  async getTaskLists(): Promise<GoogleTaskList[]> {
+    const token = this.getAccessToken();
+    if (!token) return [];
+    try {
+      const response = await fetch('https://www.googleapis.com/tasks/v1/users/@me/tasklists', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      return data.items || [];
+    } catch (err) {
+      console.error('Google TaskLists Error:', err);
+      return [];
+    }
+  },
+
+  async getTasksFromList(listId: string): Promise<GoogleTask[]> {
+    const token = this.getAccessToken();
+    if (!token) return [];
+    try {
+      const response = await fetch(`https://www.googleapis.com/tasks/v1/lists/${listId}/tasks`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      return data.items || [];
+    } catch (err) {
+      console.error('Google Tasks Error:', err);
       return [];
     }
   },
