@@ -355,7 +355,7 @@ export const Calendar: React.FC = () => {
               onClick={() => setSourceFilter(tab.id as any)}
               className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-[9px] font-black tracking-widest transition-all ${sourceFilter === tab.id ? 'bg-white text-enba-dark shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
             >
-              {typeof tab.icon === 'function' ? <tab.icon /> : <tab.icon size={12} />}
+              {React.createElement(tab.icon, { size: 12 })}
               {tab.label}
             </button>
           ))}

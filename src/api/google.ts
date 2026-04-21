@@ -2,13 +2,22 @@ const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'BURAYA_CLIENT
 const REDIRECT_URI = window.location.origin;
 const SCOPES = 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly';
 
+interface GoogleCalendarEvent {
+  id: string;
+  summary: string;
+  description?: string;
+  start: { dateTime?: string; date?: string; timeZone?: string };
+  end: { dateTime?: string; date?: string; timeZone?: string };
+  location?: string;
+}
+
 export const googleService = {
   loginRedirect() {
     const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token&scope=${encodeURIComponent(SCOPES)}&include_granted_scopes=true&state=google_auth`;
     window.location.href = authUrl;
   },
 
-  handleAuthReturn() {
+  handleAuthReturn(): boolean {
     const hash = window.location.hash;
     if (hash && hash.includes('access_token')) {
       const params = new URLSearchParams(hash.substring(1));
@@ -25,7 +34,7 @@ export const googleService = {
     return false;
   },
 
-  getAccessToken() {
+  getAccessToken(): string | null {
     const token = localStorage.getItem('google_access_token');
     const expiry = localStorage.getItem('google_token_expiry');
     
@@ -59,16 +68,16 @@ export const googleService = {
 
       const data = await response.json();
       // Normalize Google format to match our internal App interface
-      return (data.items || []).map((item: any) => ({
+      return (data.items || []).map((item: GoogleCalendarEvent) => ({
         id: item.id,
         subject: item.summary,
         bodyPreview: item.description || '',
         start: { 
-          dateTime: item.start.dateTime || item.start.date, 
+          dateTime: item.start.dateTime || item.start.date || '', 
           timeZone: item.start.timeZone 
         },
         end: { 
-          dateTime: item.end.dateTime || item.end.date, 
+          dateTime: item.end.dateTime || item.end.date || '', 
           timeZone: item.end.timeZone 
         },
         location: item.location ? { displayName: item.location } : undefined,
