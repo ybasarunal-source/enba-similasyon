@@ -30,3 +30,5 @@ fix_jsx.ps1
 fix_pdf.py
 generate-icons.html
 ai-assistant.jsx
+
+.vercel
