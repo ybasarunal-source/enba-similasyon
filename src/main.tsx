@@ -16,10 +16,8 @@ const rootElement = document.getElementById('root');
 if (!rootElement) {
   console.error("Main.tsx ERROR: Root element not found!");
 } else if (isPopupRedirect) {
-  // Popup penceresi: MSAL'ın redirect'i işlemesi için bekle, sonra kapat
-  import('./api/microsoft').then(({ microsoftService }) => {
-    microsoftService.handlePopupRedirect().catch(() => {});
-  });
+  // Popup penceresi: ana penceredeki MSAL auth code'u URL'den okuyacak.
+  // Sadece bekle — handleRedirectPromise çağırma, auth code'u tüketir.
   rootElement.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#666">Giriş tamamlanıyor...</div>';
 } else {
   ReactDOM.createRoot(rootElement).render(
