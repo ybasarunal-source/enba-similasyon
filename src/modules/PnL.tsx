@@ -255,14 +255,13 @@ export const PnL: React.FC = () => {
             setGelirDosya(`Paraşüt: ${startDate} - ${endDate}`);
             setGiderDosya(`Paraşüt: ${startDate} - ${endDate}`);
 
-            // Fetch all document types that affect P&L
-            const [sales, purchases, expenditures, salaries, taxes] = await Promise.all([
-                parasutService.getSalesInvoices(companyId, startDate, endDate),
-                parasutService.getPurchaseBills(companyId, startDate, endDate),
-                parasutService.getExpenditures(companyId, startDate, endDate),
-                parasutService.getSalaries(companyId, startDate, endDate),
-                parasutService.getTaxes(companyId, startDate, endDate)
-            ]);
+            // Sequential fetching to avoid rate limit (429)
+            // Paraşüt API can be sensitive to simultaneous bulk requests
+            const sales = await parasutService.getSalesInvoices(companyId, startDate, endDate);
+            const purchases = await parasutService.getPurchaseBills(companyId, startDate, endDate);
+            const expenditures = await parasutService.getExpenditures(companyId, startDate, endDate);
+            const salaries = await parasutService.getSalaries(companyId, startDate, endDate);
+            const taxes = await parasutService.getTaxes(companyId, startDate, endDate);
 
             // Combine all expense types
             const allExpenses = [...purchases, ...expenditures, ...salaries, ...taxes];

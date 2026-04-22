@@ -109,14 +109,27 @@ export const parasutService = {
     } catch { this.logout(); return null; }
   },
 
-  async request(path: string, params: Record<string, string> = {}): Promise<any> {
+  async _sleep(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  },
+
+  async request(path: string, params: Record<string, string> = {}, retryCount = 0): Promise<any> {
     const token = await this.getToken();
     if (!token) throw new Error('SESSION_EXPIRED');
     const url = new URL(API_BASE, window.location.origin);
     url.searchParams.set('path', `/v4${path}`);
     url.searchParams.set('_token', token);
     Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+    
     const resp = await fetch(url.toString());
+    
+    if (resp.status === 429 && retryCount < 3) {
+      const wait = (retryCount + 1) * 3000; // 3s, 6s, 9s
+      console.warn(`Rate limited (429). Retrying in ${wait/1000}s...`);
+      await this._sleep(wait);
+      return this.request(path, params, retryCount + 1);
+    }
+
     if (!resp.ok) {
       const body = await resp.text().catch(() => '');
       let parsed: any = {};
