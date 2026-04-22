@@ -462,10 +462,10 @@ export const PnL: React.FC = () => {
 
                     return (
                         <tr key={kat} className={`border-b border-gray-100 transition-colors hover:bg-gray-50/50 ${isAmort ? 'bg-enba-orange/5' : ''}`}>
-                            <td className="p-4 border-r border-gray-50">
-                                <span className="text-[9px] font-black px-2 py-0.5 bg-gray-100 text-gray-500 rounded uppercase tracking-wider">{tipLabel}</span>
+                            <td className="p-4 border-r border-gray-100 bg-gray-50/30 text-center w-[80px] min-w-[80px]">
+                                <span className="text-[9px] font-black px-2 py-0.5 bg-white border border-gray-200 text-gray-500 rounded uppercase tracking-wider shadow-sm">{tipLabel}</span>
                             </td>
-                            <td className="p-4">
+                            <td className="p-4 w-[220px] min-w-[220px]">
                                 <span className={`text-xs font-bold ${isAmort ? 'text-enba-orange' : 'text-enba-dark'}`}>
                                   {isAmort ? <Gem size={14} className="inline mr-1" /> : null} {kat}
                                 </span>
@@ -533,10 +533,10 @@ export const PnL: React.FC = () => {
                     return (
                         <React.Fragment key={grupAdi}>
                             <tr className="bg-gray-50/50 cursor-pointer border-b border-gray-200" onClick={() => toggleGrup(grupAdi)}>
-                                <td className="p-4 border-r border-gray-50">
-                                   <span className="text-[9px] font-black px-2 py-0.5 bg-gray-800 text-gray-400 rounded uppercase tracking-wider">{tipLabel}</span>
+                                <td className="p-4 border-r border-gray-100 bg-gray-100/30 text-center w-[80px] min-w-[80px]">
+                                   <span className="text-[9px] font-black px-2 py-0.5 bg-gray-800 text-gray-400 rounded uppercase tracking-wider shadow-sm">{tipLabel}</span>
                                 </td>
-                                <td className="p-4 flex items-center gap-2">
+                                <td className="p-4 flex items-center gap-2 w-[220px] min-w-[220px]">
                                    <span className={`transition-transform duration-300 ${isOpen ? 'rotate-90' : ''}`}>
                                       <Eye className="text-gray-400" size={14} /> 
                                    </span>
@@ -571,8 +571,8 @@ export const PnL: React.FC = () => {
 
                                     return (
                                         <tr key={kat} className={`border-b border-gray-50 transition-colors hover:bg-gray-100/20 ${isAmort ? 'bg-enba-orange/5' : ''}`}>
-                                            <td className="p-3 border-r border-gray-50 opacity-30"></td>
-                                            <td className="p-3 pl-10 text-[11px] font-bold text-gray-500 flex items-center gap-2">
+                                            <td className="p-3 border-r border-gray-100 bg-gray-50/10 w-[80px] min-w-[80px]"></td>
+                                            <td className="p-3 pl-10 text-[11px] font-bold text-gray-500 flex items-center gap-2 w-[220px] min-w-[220px]">
                                                 <span className="text-gray-200">└</span>
                                                 {kat}
                                             </td>
