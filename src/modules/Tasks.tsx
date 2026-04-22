@@ -793,7 +793,6 @@ export const Tasks: React.FC = () => {
               </button>
             </div>
             </div>
-          </div>
         </header>
 
         {/* Unitfed High-Density List View */}
