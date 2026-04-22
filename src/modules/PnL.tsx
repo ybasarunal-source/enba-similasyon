@@ -142,6 +142,7 @@ export const PnL: React.FC = () => {
     const [companyId, setCompanyId] = useState(parasutService.getCompany()?.id || '');
     
     const [grupAcik, setGrupAcik] = useState<Record<string, boolean>>({});
+    const [insightAcik, setInsightAcik] = useState(false);
     const [sectionAcik, setSectionAcik] = useState<Record<string, boolean>>({
         "I. HASILAT": true,
         "II. MAL MALİYETLERİ": true,
@@ -857,73 +858,77 @@ export const PnL: React.FC = () => {
                 </div>
             )}
 
-            {/* Upload Area */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-4">
+            {/* Compact Upload Area */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
                 {/* Gelir Upload */}
-                <div className={`relative overflow-hidden bg-white p-10 rounded-[2.5rem] border-2 border-dashed transition-all group ${gelirData ? 'border-emerald-200 bg-emerald-50/10' : 'border-emerald-400/30 hover:border-emerald-500/50'}`}>
+                <div className={`relative overflow-hidden bg-white p-6 rounded-[1.5rem] border-2 border-dashed transition-all group ${gelirData ? 'border-emerald-200 bg-emerald-50/10' : 'border-emerald-400/30 hover:border-emerald-500/50'}`}>
                     <input type="file" accept=".xlsx, .xls, .csv" onChange={(e) => dosyaSecildi(e, 'gelir')} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
-                    <div className="flex flex-col items-center text-center gap-4 relative z-0">
-                        <div className={`w-16 h-16 rounded-3xl flex items-center justify-center transition-all ${gelirData ? 'bg-emerald-500 text-white shadow-xl shadow-emerald-500/20' : 'bg-emerald-50 text-emerald-500'}`}>
-                            <ArrowUpCircle size={32} />
+                    <div className="flex items-center gap-4 relative z-0">
+                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${gelirData ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-emerald-50 text-emerald-500'}`}>
+                            <ArrowUpCircle size={24} />
                         </div>
-                        <div>
-                            <h3 className="text-xl font-black text-enba-dark tracking-tight">{gelirDosya ? gelirDosya : "Satış Verisi Yükle"}</h3>
-                            <p className="text-gray-400 text-sm font-medium mt-1">Muhasebeden aldığınız Satış/Gelir tablosu</p>
+                        <div className="flex-1">
+                            <h3 className="text-sm font-black text-enba-dark tracking-tight">{gelirDosya ? gelirDosya : "Satış Verisi Yükle"}</h3>
+                            <p className="text-[10px] text-gray-400 font-medium italic">Gelir tablosunu buraya sürükleyin</p>
                         </div>
-                        {gelirData && <div className="mt-2 px-3 py-1 bg-emerald-100 text-emerald-600 rounded-lg text-[10px] font-black uppercase tracking-widest">Veri Hazır</div>}
+                        {gelirData && <div className="px-2 py-1 bg-emerald-100 text-emerald-600 rounded-lg text-[9px] font-black uppercase tracking-widest">Hazır</div>}
                     </div>
                 </div>
 
                 {/* Gider Upload */}
-                <div className={`relative overflow-hidden bg-white p-10 rounded-[2.5rem] border-2 border-dashed transition-all group ${giderData ? 'border-red-200 bg-red-50/10' : 'border-red-400/30 hover:border-red-500/50'}`}>
+                <div className={`relative overflow-hidden bg-white p-6 rounded-[1.5rem] border-2 border-dashed transition-all group ${giderData ? 'border-red-200 bg-red-50/10' : 'border-red-400/30 hover:border-red-500/50'}`}>
                     <input type="file" accept=".xlsx, .xls, .csv" onChange={(e) => dosyaSecildi(e, 'gider')} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
-                    <div className="flex flex-col items-center text-center gap-4 relative z-0">
-                        <div className={`w-16 h-16 rounded-3xl flex items-center justify-center transition-all ${giderData ? 'bg-red-500 text-white shadow-xl shadow-red-500/20' : 'bg-red-50 text-red-500'}`}>
-                            <ArrowDownCircle size={32} />
+                    <div className="flex items-center gap-4 relative z-0">
+                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${giderData ? 'bg-red-500 text-white shadow-lg shadow-red-500/20' : 'bg-red-50 text-red-500'}`}>
+                            <ArrowDownCircle size={24} />
                         </div>
-                        <div>
-                            <h3 className="text-xl font-black text-enba-dark tracking-tight">{giderDosya ? giderDosya : "Gider Verisi Yükle"}</h3>
-                            <p className="text-gray-400 text-sm font-medium mt-1">Harcamalar, Personel ve Yatırım tablosu</p>
+                        <div className="flex-1">
+                            <h3 className="text-sm font-black text-enba-dark tracking-tight">{giderDosya ? giderDosya : "Gider Verisi Yükle"}</h3>
+                            <p className="text-[10px] text-gray-400 font-medium italic">Harcama tablosunu buraya sürükleyin</p>
                         </div>
-                        {giderData && <div className="mt-2 px-3 py-1 bg-red-100 text-red-600 rounded-lg text-[10px] font-black uppercase tracking-widest">Veri Hazır</div>}
+                        {giderData && <div className="px-2 py-1 bg-red-100 text-red-600 rounded-lg text-[9px] font-black uppercase tracking-widest">Hazır</div>}
                     </div>
                 </div>
             </div>
             
-            {/* Top Expenses Insight */}
+            {/* Top Expenses Insight (Collapsible) */}
             {pGiderData && topExpenses.length > 0 && (
-                <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-card">
-                    <div className="flex items-center justify-between mb-6">
+                <div className="bg-white rounded-[1.5rem] border border-gray-100 shadow-sm overflow-hidden">
+                    <button 
+                        onClick={() => setInsightAcik(!insightAcik)}
+                        className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-all"
+                    >
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-red-50 text-red-500 rounded-xl flex items-center justify-center">
-                                <TrendingDown size={20} />
+                            <div className="w-8 h-8 bg-red-50 text-red-500 rounded-lg flex items-center justify-center">
+                                <TrendingDown size={16} />
                             </div>
-                            <div>
-                                <h3 className="text-lg font-black text-enba-dark tracking-tight">En Yüksek 10 Gider Kalemi</h3>
-                                <p className="text-xs text-gray-400 font-medium italic">Seçili dönem için toplam tutara göre sıralanmıştır</p>
+                            <h3 className="text-sm font-black text-enba-dark tracking-tight">Gider Analiz Özeti</h3>
+                        </div>
+                        {insightAcik ? <ChevronDown size={16} className="text-gray-400" /> : <ChevronRight size={16} className="text-gray-400" />}
+                    </button>
+                    
+                    {insightAcik && (
+                        <div className="p-6 pt-0 animate-in slide-in-from-top-2 duration-300">
+                            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                                {topExpenses.map((exp, idx) => (
+                                    <div key={exp.kat} className="bg-gray-50/50 p-3 rounded-xl border border-gray-100 flex flex-col gap-1">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-[8px] font-black text-gray-400">#{idx + 1}</span>
+                                            <span className="text-[9px] font-black text-red-500 bg-red-50 px-1.5 py-0.5 rounded">
+                                                %{Math.round((exp.total / (pGiderData?.aylikToplam[aylar[aylar.length-1]]?.Toplam || 1)) * 100) || '-'}
+                                            </span>
+                                        </div>
+                                        <div className="text-[10px] font-bold text-gray-800 truncate">
+                                            {exp.kat}
+                                        </div>
+                                        <div className="text-xs font-black text-enba-dark">
+                                            {fmt(exp.total)} ₺
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         </div>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                        {topExpenses.map((exp, idx) => (
-                            <div key={exp.kat} className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100 flex flex-col gap-2 group hover:bg-white hover:border-red-100 transition-all">
-                                <div className="flex items-center justify-between">
-                                    <span className="w-6 h-6 rounded-lg bg-gray-200 text-gray-500 text-[10px] font-black flex items-center justify-center group-hover:bg-red-500 group-hover:text-white transition-all">
-                                        {idx + 1}
-                                    </span>
-                                    <span className="text-[10px] font-black text-red-500 bg-red-50 px-2 py-0.5 rounded-md">
-                                        %{Math.round((exp.total / (pGiderData?.aylikToplam[aylar[aylar.length-1]]?.Toplam || 1)) * 100) || '-'}
-                                    </span>
-                                </div>
-                                <div className="text-xs font-bold text-gray-800 line-clamp-2 min-h-[2rem]">
-                                    {exp.kat}
-                                </div>
-                                <div className="text-sm font-black text-enba-dark mt-1">
-                                    {fmt(exp.total)} ₺
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+                    )}
                 </div>
             )}
             
