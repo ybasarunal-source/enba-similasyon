@@ -290,6 +290,12 @@ export const PnL: React.FC = () => {
             const tutarKeyGenel = Object.keys(row).find(k => k.toLowerCase().includes('toplam') && !k.toLowerCase().includes('kdv'));
             
             let tutarKey = tutarKeyHariç || tutarKeyNet || tutarKeyTL || tutarKeyGenel;
+
+            if (json.indexOf(row) === 0) {
+                console.log("PnL Debug - Detected Keys:", { tarihKey, kategoriKey, tutarKey, cariKey });
+                console.log("PnL Debug - First Row:", row);
+            }
+
             if(!tutarKey) return; 
             
             let tarihVal = tarihKey ? row[tarihKey] : null;
@@ -340,9 +346,16 @@ export const PnL: React.FC = () => {
             if (codeMatch) {
                 baseKat = codeMatch[1];
             } else {
-                // Try to find code by label matching
-                const configItem = PNL_CONFIG.flatMap(s => s.items).find(i => rawKat.toLowerCase().includes(i.label.toLowerCase()));
+                // Try to find code by label matching (Smarter bidirectional match)
+                const configItem = PNL_CONFIG.flatMap(s => s.items).find(i => 
+                    rawKat.toLowerCase().includes(i.label.toLowerCase()) || 
+                    i.label.toLowerCase().includes(rawKat.toLowerCase())
+                );
                 if (configItem) baseKat = configItem.id;
+            }
+
+            if (baseKat === 'M109') {
+                console.log("PnL Debug - M109 (Sales) Match Found:", { rawKat, tutar, rawAy: row.rawAy });
             }
 
             let model = "Ortak";
