@@ -277,10 +277,11 @@ export const PnL: React.FC = () => {
             const tarihKey = Object.keys(row).find(k => k.toLowerCase().includes('tarih'));
             const kategoriKey = Object.keys(row).find(k => k.toLowerCase().includes('kategori'));
             const cariKey = Object.keys(row).find(k => k.toLowerCase().includes('cari') || k.toLowerCase().includes('müşteri') || k.toLowerCase().includes('açıklama'));
+            const tutarKeyHariç = Object.keys(row).find(k => k.toLowerCase().includes('toplam') && k.toLowerCase().includes('hariç'));
             const tutarKeyTL = Object.keys(row).find(k => k.toLowerCase().includes('genel toplam (tl)'));
             const tutarKeyGenel = Object.keys(row).find(k => k.toLowerCase().includes('toplam') && !k.toLowerCase().includes('kdv'));
             
-            let tutarKey = tutarKeyTL || tutarKeyGenel;
+            let tutarKey = tutarKeyHariç || tutarKeyTL || tutarKeyGenel;
             if(!tutarKey) return; 
             
             let tarihVal = tarihKey ? row[tarihKey] : null;
