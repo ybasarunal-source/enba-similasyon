@@ -169,7 +169,44 @@ export const PnL: React.FC = () => {
         if(saved) {
             try { setSavedReports(JSON.parse(saved)); } catch(e){}
         }
+        
+        // Auto-restore active state
+        const active = localStorage.getItem('enba_pnl_active_state');
+        if (active) {
+            try {
+                const state = JSON.parse(active);
+                setGelirData(state.gelirData);
+                setGiderData(state.giderData);
+                setGelirDosya(state.gelirDosya || "");
+                setGiderDosya(state.giderDosya || "");
+                setCapexActive(state.capexActive || false);
+                setCapexVade(state.capexVade || 18);
+                setModelDetayAcik(state.modelDetayAcik || false);
+                if (state.sectionAcik) setSectionAcik(state.sectionAcik);
+            } catch (e) {}
+        }
     }, []);
+
+    // Auto-save active state
+    useEffect(() => {
+        if (gelirData || giderData) {
+            const state = {
+                gelirData,
+                giderData,
+                gelirDosya,
+                giderDosya,
+                capexActive,
+                capexVade,
+                modelDetayAcik,
+                sectionAcik
+            };
+            try {
+                localStorage.setItem('enba_pnl_active_state', JSON.stringify(state));
+            } catch (e) {
+                console.warn("Storage quota exceeded");
+            }
+        }
+    }, [gelirData, giderData, gelirDosya, giderDosya, capexActive, capexVade, modelDetayAcik, sectionAcik]);
 
     const raporuKaydet = () => {
         if(!raporAdi.trim()) {
