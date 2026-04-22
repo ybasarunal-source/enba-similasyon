@@ -346,18 +346,25 @@ export const PnL: React.FC = () => {
                 tutar = parseFloat(s) || 0;
             }
             
-            // Extract Code (Mxxx)
+            // Extract Code (Mxxx, Kxxx, Vxxx)
             let baseKat = rawKat;
-            const codeMatch = rawKat.match(/(M\d{3})/);
+            const codeMatch = rawKat.match(/([MKV])(\d{3})/i);
             if (codeMatch) {
-                baseKat = codeMatch[1];
+                // Map Kxxx and Vxxx to Mxxx for internal config lookup
+                baseKat = 'M' + codeMatch[2];
             } else {
-                // Try to find code by label matching (Smarter bidirectional match)
-                const configItem = PNL_CONFIG.flatMap(s => s.items).find(i => 
-                    rawKat.toLowerCase().includes(i.label.toLowerCase()) || 
-                    i.label.toLowerCase().includes(rawKat.toLowerCase())
-                );
-                if (configItem) baseKat = configItem.id;
+                // Specific common Paraşüt mappings
+                if (rawKat.includes('600')) baseKat = 'M109';
+                else if (rawKat.includes('150')) baseKat = 'M149';
+                else if (rawKat.toLowerCase().includes('yönetim gider')) baseKat = 'M670';
+                else {
+                    // Try to find code by label matching (Smarter bidirectional match)
+                    const configItem = PNL_CONFIG.flatMap(s => s.items).find(i => 
+                        rawKat.toLowerCase().includes(i.label.toLowerCase()) || 
+                        i.label.toLowerCase().includes(rawKat.toLowerCase())
+                    );
+                    if (configItem) baseKat = configItem.id;
+                }
             }
 
             if (baseKat === 'M109') {
@@ -493,18 +500,25 @@ export const PnL: React.FC = () => {
                 });
             }
             
-            // Extract Code (Mxxx)
+            // Extract Code (Mxxx, Kxxx, Vxxx)
             let baseKat = rawKat;
-            const codeMatch = rawKat.match(/(M\d{3})/);
+            const codeMatch = rawKat.match(/([MKV])(\d{3})/i);
             if (codeMatch) {
-                baseKat = codeMatch[1];
+                // Map Kxxx and Vxxx to Mxxx for internal config lookup
+                baseKat = 'M' + codeMatch[2];
             } else {
-                // Try to find code by label matching (Smarter bidirectional match)
-                const configItem = PNL_CONFIG.flatMap(s => s.items).find(i => 
-                    rawKat.toLowerCase().includes(i.label.toLowerCase()) || 
-                    i.label.toLowerCase().includes(rawKat.toLowerCase())
-                );
-                if (configItem) baseKat = configItem.id;
+                // Specific common Paraşüt mappings
+                if (rawKat.includes('600')) baseKat = 'M109';
+                else if (rawKat.includes('150')) baseKat = 'M149';
+                else if (rawKat.toLowerCase().includes('yönetim gider')) baseKat = 'M670';
+                else {
+                    // Try to find code by label matching (Smarter bidirectional match)
+                    const configItem = PNL_CONFIG.flatMap(s => s.items).find(i => 
+                        rawKat.toLowerCase().includes(i.label.toLowerCase()) || 
+                        i.label.toLowerCase().includes(rawKat.toLowerCase())
+                    );
+                    if (configItem) baseKat = configItem.id;
+                }
             }
 
             if (baseKat === 'M109') {
