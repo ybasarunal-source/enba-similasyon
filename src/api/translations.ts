@@ -42,7 +42,7 @@ export const LANG_DATA = {
             error_invalid: "Kullanıcı adı veya şifre hatalı."
         },
         nav: {
-            home: "Ana Sayfa",
+            home: "Dashboard",
             planlama: "Planlama",
             operasyon: "Operasyon",
             varliklar: "Varlıklar",
