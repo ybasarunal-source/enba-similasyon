@@ -482,6 +482,8 @@ export const PnL: React.FC = () => {
             let rawKat = inv.category_name || 'Genel';
             let tutar = inv.net_total || 0;
 
+            console.log(`PnL Debug (Paraşüt) - Invoice [${inv.contact_name}] Category: [${rawKat}] Tutar: ${tutar}`);
+
             if (invoices.indexOf(inv) < 5) {
                 console.log("PnL Debug (Paraşüt) - Sample Invoice:", { 
                     contact: inv.contact_name, 
