@@ -168,7 +168,8 @@ export const Parasut: React.FC = () => {
   const [datePreset, setDatePreset] = useState<DatePreset>('this_month');
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  const [search, setSearch]       = useState('');
+  const [catSearch, setCatSearch]           = useState('');
+  const [search, setSearch]                 = useState('');
   const [lastSync, setLastSync]   = useState<Date | null>(null);
   const [sortConfig, setSortConfig] = useState<{ key: keyof ParasutInvoice; direction: 'asc' | 'desc' }>({ key: 'issue_date', direction: 'desc' });
 
@@ -182,12 +183,14 @@ export const Parasut: React.FC = () => {
     setLoading(true);
     setError('');
     try {
-      const [sales, purchases, expenditures] = await Promise.all([
-        parasutService.getSalesInvoices(cid, from, to),
-        parasutService.getPurchaseBills(cid, from, to),
-        parasutService.getExpenditures(cid, from, to),
-      ]);
-      const combined = [...sales, ...purchases, ...expenditures];
+      // Sequential fetching to avoid rate limit (429)
+      const sales = await parasutService.getSalesInvoices(cid, from, to);
+      const purchases = await parasutService.getPurchaseBills(cid, from, to);
+      const expenditures = await parasutService.getExpenditures(cid, from, to);
+      const salaries = await parasutService.getSalaries(cid, from, to);
+      const taxes = await parasutService.getTaxes(cid, from, to);
+      
+      const combined = [...sales, ...purchases, ...expenditures, ...salaries, ...taxes];
       const unique = Array.from(new Map(combined.map(i => [i.id, i])).values());
       setInvoices(unique.sort((a, b) => b.issue_date.localeCompare(a.issue_date)));
       setLastSync(new Date());
@@ -246,7 +249,13 @@ export const Parasut: React.FC = () => {
     return invoices.filter(inv => {
       if (typeFilter === 'income'  && inv.type !== 'sales_invoices')  return false;
       if (typeFilter === 'expense' && inv.type === 'sales_invoices') return false;
+      
+      // Category selection filter
       if (categoryFilter !== 'all' && inv.category_name !== categoryFilter) return false;
+      
+      // Dedicated category search filter
+      if (catSearch && !inv.category_name?.toLowerCase().includes(catSearch.toLowerCase())) return false;
+      
       if (search) {
         const q = search.toLowerCase();
         return inv.description.toLowerCase().includes(q)
@@ -256,7 +265,7 @@ export const Parasut: React.FC = () => {
       }
       return true;
     });
-  }, [invoices, typeFilter, categoryFilter, search]);
+  }, [invoices, typeFilter, categoryFilter, catSearch, search]);
 
   const sorted = React.useMemo(() => {
     const { key, direction } = sortConfig;
@@ -397,13 +406,21 @@ export const Parasut: React.FC = () => {
           <select 
             value={categoryFilter} 
             onChange={e => setCategoryFilter(e.target.value)}
-            className="bg-transparent text-xs font-semibold text-gray-600 outline-none cursor-pointer min-w-[100px]"
+            className="bg-transparent text-xs font-semibold text-gray-600 outline-none cursor-pointer min-w-[80px]"
           >
             <option value="all">Tümü</option>
             {categories.map(cat => (
               <option key={cat} value={cat}>{cat}</option>
             ))}
           </select>
+          <div className="h-4 w-px bg-gray-200 mx-1" />
+          <input 
+            type="text" 
+            placeholder="Ara..." 
+            value={catSearch}
+            onChange={e => setCatSearch(e.target.value)}
+            className="bg-transparent text-xs text-gray-600 outline-none w-20 focus:w-32 transition-all placeholder:text-gray-300"
+          />
         </div>
         <div className="flex-1 min-w-[180px] flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-xl px-3 py-2">
           <Search size={14} className="text-gray-400 flex-shrink-0" />
