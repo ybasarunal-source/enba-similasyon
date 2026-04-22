@@ -217,9 +217,9 @@ export const parasutService = {
       const c = included.find((i: any) => i.id === id && i.type === 'item_categories');
       return c?.attributes?.name || '';
     };
-    return (raw.data || []).map((item: any) => {
+    return (raw.data || []).filter((item: any) => item.attributes?.status !== 'cancelled' && item.attributes?.status !== 'void').map((item: any) => {
       const a = item.attributes || {};
-      const itemType = item.type; // 'sales_invoices', 'purchase_bills', 'expenditures', 'salaries', 'taxes'
+      const itemType = item.type;
       const contactId =
         item.relationships?.contact?.data?.id ||
         item.relationships?.supplier?.data?.id ||
@@ -228,7 +228,6 @@ export const parasutService = {
       
       let catName = categoryId ? findCategory(categoryId) : '';
       
-      // Better default categories if missing in Parasut
       if (!catName) {
         if (itemType === 'sales_invoices') catName = '600 Genel Satış Gelirleri';
         else if (itemType === 'purchase_bills') catName = '150 Genel Alış Maliyetleri';
@@ -238,9 +237,26 @@ export const parasutService = {
         else catName = 'Genel';
       }
       
-      const netTotal = parseFloat(a.net_total || a.total_net || '0');
-      const grossTotal = parseFloat(a.gross_total || a.total_gross || a.total_amount || a.amount || '0');
+      const rawNet = parseFloat(a.net_total || a.total_net || '0');
+      const rawGross = parseFloat(a.gross_total || a.total_gross || a.total_amount || a.amount || '0');
+      const trlRate = parseFloat(a.exchange_rate || '1');
       
+      // Calculate TL amount
+      // If the currency is not TRL, we should use total_trl or multiply by rate
+      let netTL = rawNet;
+      if (a.currency && a.currency !== 'TRL' && a.currency !== 'TRY') {
+          if (a.total_trl) {
+              // total_trl is gross. We need net_trl.
+              const ratio = rawGross > 0 ? (rawNet / rawGross) : 1;
+              netTL = parseFloat(a.total_trl) * ratio;
+          } else {
+              netTL = rawNet * trlRate;
+          }
+      } else {
+          // It's already TL
+          netTL = rawNet;
+      }
+
       return {
         id: item.id,
         type,
@@ -249,8 +265,8 @@ export const parasutService = {
         description: a.description || a.invoice_series || '—',
         contact_name: contactId ? findContact(contactId) : '—',
         category_name: catName,
-        net_total: netTotal > 0 ? netTotal : grossTotal, // Fallback to gross if net is 0 (common for receipts)
-        gross_total: grossTotal,
+        net_total: netTL > 0 ? netTL : rawGross * trlRate, 
+        gross_total: rawGross * trlRate,
         currency: a.currency || 'TRL',
         payment_status: a.payment_status || '',
         invoice_no: [a.invoice_series, a.invoice_id].filter(Boolean).join('-') || item.id,
