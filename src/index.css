@@ -116,7 +116,6 @@
     color: var(--text-primary);
     @apply shadow-lg hover:-translate-y-0.5;
   }
-}
 
   .custom-scrollbar::-webkit-scrollbar {
     width: 6px;
