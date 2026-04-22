@@ -275,13 +275,21 @@ export const PnL: React.FC = () => {
         
         json.forEach(row => {
             const tarihKey = Object.keys(row).find(k => k.toLowerCase().includes('tarih'));
-            const kategoriKey = Object.keys(row).find(k => k.toLowerCase().includes('kategori'));
-            const cariKey = Object.keys(row).find(k => k.toLowerCase().includes('cari') || k.toLowerCase().includes('müşteri') || k.toLowerCase().includes('açıklama'));
+            const kategoriKey = Object.keys(row).find(k => {
+                const low = k.toLowerCase();
+                return low.includes('kategori') || low.includes('hizmet') || low.includes('ürün') || low.includes('açıklama');
+            });
+            const cariKey = Object.keys(row).find(k => {
+                const low = k.toLowerCase();
+                return low.includes('cari') || low.includes('müşteri') || low.includes('unvan') || low.includes('ünvan');
+            });
+            
             const tutarKeyHariç = Object.keys(row).find(k => k.toLowerCase().includes('toplam') && k.toLowerCase().includes('hariç'));
-            const tutarKeyTL = Object.keys(row).find(k => k.toLowerCase().includes('genel toplam (tl)'));
+            const tutarKeyTL = Object.keys(row).find(k => k.toLowerCase().includes('toplam') && k.toLowerCase().includes('(tl)'));
+            const tutarKeyNet = Object.keys(row).find(k => k.toLowerCase().includes('net') && k.toLowerCase().includes('tutar'));
             const tutarKeyGenel = Object.keys(row).find(k => k.toLowerCase().includes('toplam') && !k.toLowerCase().includes('kdv'));
             
-            let tutarKey = tutarKeyHariç || tutarKeyTL || tutarKeyGenel;
+            let tutarKey = tutarKeyHariç || tutarKeyNet || tutarKeyTL || tutarKeyGenel;
             if(!tutarKey) return; 
             
             let tarihVal = tarihKey ? row[tarihKey] : null;
@@ -310,7 +318,21 @@ export const PnL: React.FC = () => {
             aylarSet.add(rawAy);
             
             let rawKat = (kategoriKey && row[kategoriKey]) ? row[kategoriKey].toString().trim() : "Genel/Diğer";
-            let tutar = Number(row[tutarKey]) || 0;
+            
+            // Robust Amount Parsing
+            let rawTutar = row[tutarKey];
+            let tutar = 0;
+            if (typeof rawTutar === 'number') {
+                tutar = rawTutar;
+            } else if (rawTutar) {
+                let s = rawTutar.toString().replace(/[^\d,\.-]/g, ''); 
+                if (s.includes(',') && s.includes('.')) {
+                    s = s.replace(/\./g, '').replace(',', '.');
+                } else if (s.includes(',')) {
+                    s = s.replace(',', '.');
+                }
+                tutar = parseFloat(s) || 0;
+            }
             
             // Extract Code (Mxxx)
             let baseKat = rawKat;
