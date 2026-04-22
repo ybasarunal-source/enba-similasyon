@@ -77,8 +77,7 @@ export const Tasks: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>(() => {
     const saved = localStorage.getItem('enba_projects');
     return saved ? JSON.parse(saved) : [
-      { id: 'p1', name: 'GENEL OPERASYON' },
-      { id: 'p2', name: '2024 MODERNİZASYON' }
+      { id: 'p1', name: 'GENEL' }
     ];
   });
 
@@ -567,6 +566,13 @@ export const Tasks: React.FC = () => {
               <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">Matrix v2.0</p>
             </div>
           </div>
+
+          <button 
+            onClick={() => setShowTaskForm(true)} 
+            className="w-full py-4 bg-enba-orange text-white rounded-2xl font-black text-[10px] uppercase tracking-[2px] shadow-lg shadow-enba-orange/20 hover:brightness-110 hover:-translate-y-0.5 active:scale-95 transition-all flex items-center justify-center gap-2 mb-6"
+          >
+            <PlusCircle size={16} /> Yeni Atama
+          </button>
           
           <button onClick={() => setSelectedProjectId('all')} className={`w-full flex items-center justify-between p-3.5 rounded-2xl transition-all mb-4 ${selectedProjectId === 'all' ? 'bg-enba-dark text-white shadow-xl shadow-gray-200' : 'text-gray-400 hover:bg-gray-50'}`}>
             <div className="flex items-center gap-3">
@@ -598,7 +604,7 @@ export const Tasks: React.FC = () => {
                       >
                         <FolderPlus size={16} className="flex-shrink-0" />
                         <span className="text-[11px] font-bold uppercase truncate">{project.name}</span>
-                        <span className={`ml-auto text-[9px] font-black ${selectedProjectId === project.id ? 'text-enba-orange/50' : 'text-gray-300'}`}>
+                        <span className={`ml-auto text-[9px] font-black ${selectedProjectId === project.id ? 'text-enba-orange/50' : 'text-gray-600'}`}>
                           {tasks.filter(t => t.projectId === project.id).length}
                         </span>
                       </button>
@@ -707,7 +713,7 @@ export const Tasks: React.FC = () => {
         <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-6 flex-shrink-0 shadow-sm relative z-0">
           <div className="flex items-center gap-4">
             <div className="flex flex-col border-r border-gray-100 pr-4">
-              <h1 className="text-[11px] font-black text-enba-dark tracking-tight leading-none uppercase italic truncate max-w-[120px]">
+              <h1 className="text-[9px] font-black text-enba-dark tracking-tight leading-none uppercase italic truncate max-w-[150px]">
                 {selectedProjectId === 'all' ? 'Tüm Operasyonlar' : projects.find(p => p.id === selectedProjectId)?.name}
               </h1>
               <div className="flex items-center gap-2 mt-1">
@@ -773,9 +779,7 @@ export const Tasks: React.FC = () => {
                 <RotateCw size={16} />
               </button>
             </div>
-            <button onClick={() => setShowTaskForm(true)} className="bg-enba-dark text-white px-4 py-2 rounded-xl font-black text-[9px] uppercase tracking-[2px] shadow-lg shadow-black/10 hover:bg-black hover:-translate-y-0.5 active:scale-95 transition-all flex items-center gap-2">
-              <PlusCircle size={14} /> Yeni Atama
-            </button>
+            </div>
           </div>
         </header>
 
