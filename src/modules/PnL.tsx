@@ -27,6 +27,8 @@ import {
 import { fmt } from '../utils/formatters';
 import { parasutService, ParasutInvoice } from '../api/parasut';
 
+console.log("PnL Debug - PnL.tsx file loaded");
+
 interface PnLData {
   aylar: string[];
   modeller: string[];
@@ -167,6 +169,7 @@ export const PnL: React.FC = () => {
     };
 
     useEffect(() => {
+        console.log("PnL Debug - PnL Component Mounted");
         setParasutConnected(parasutService.isLoggedIn());
         setCompanyId(parasutService.getCompany()?.id || '');
     }, []);
@@ -988,7 +991,13 @@ export const PnL: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
                 {/* Gelir Upload */}
                 <div className={`relative overflow-hidden bg-white p-6 rounded-[1.5rem] border-2 border-dashed transition-all group ${gelirData ? 'border-emerald-200 bg-emerald-50/10' : 'border-emerald-400/30 hover:border-emerald-500/50'}`}>
-                    <input type="file" accept=".xlsx, .xls, .csv" onChange={(e) => dosyaSecildi(e, 'gelir')} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
+                    <input 
+                        type="file" 
+                        accept=".xlsx, .xls, .csv" 
+                        onClick={() => console.log("PnL Debug - Gelir Input Clicked")}
+                        onChange={(e) => dosyaSecildi(e, 'gelir')} 
+                        className="absolute inset-0 opacity-0 cursor-pointer z-10" 
+                    />
                     <div className="flex items-center gap-4 relative z-0">
                         <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${gelirData ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-emerald-50 text-emerald-500'}`}>
                             <ArrowUpCircle size={24} />
@@ -1003,7 +1012,13 @@ export const PnL: React.FC = () => {
 
                 {/* Gider Upload */}
                 <div className={`relative overflow-hidden bg-white p-6 rounded-[1.5rem] border-2 border-dashed transition-all group ${giderData ? 'border-red-200 bg-red-50/10' : 'border-red-400/30 hover:border-red-500/50'}`}>
-                    <input type="file" accept=".xlsx, .xls, .csv" onChange={(e) => dosyaSecildi(e, 'gider')} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
+                    <input 
+                        type="file" 
+                        accept=".xlsx, .xls, .csv" 
+                        onClick={() => console.log("PnL Debug - Gider Input Clicked")}
+                        onChange={(e) => dosyaSecildi(e, 'gider')} 
+                        className="absolute inset-0 opacity-0 cursor-pointer z-10" 
+                    />
                     <div className="flex items-center gap-4 relative z-0">
                         <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${giderData ? 'bg-red-500 text-white shadow-lg shadow-red-500/20' : 'bg-red-50 text-red-500'}`}>
                             <ArrowDownCircle size={24} />
