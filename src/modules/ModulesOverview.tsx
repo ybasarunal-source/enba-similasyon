@@ -18,7 +18,7 @@ export const ModulesOverview: React.FC<ModulesOverviewProps> = ({ navigate, menu
   return (
     <div className="p-8 animate-fade-in bg-[var(--enba-bg)] min-h-full">
       <div className="mb-10">
-        <h1 className="text-3xl font-black text-[var(--enba-dark)] mb-2 uppercase tracking-tight">Modüller</h1>
+        <h1 className="text-3xl font-black text-[var(--enba-dark)] mb-2 uppercase tracking-tight">Ana Sayfa</h1>
         <p className="text-gray-500 font-medium">Platformdaki tüm uygulama ve araçlara hızlı erişim sağlayın.</p>
       </div>
 

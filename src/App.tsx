@@ -139,7 +139,7 @@ export const App: React.FC = () => {
   if (!session) return <Login />;
 
   const menuItems = [
-    { id: 'modules',    label: 'Modüller',                 icon: LayoutGrid },
+    { id: 'modules',    label: 'Ana Sayfa',                 icon: LayoutGrid },
     { id: 'dashboard',  label: t('nav.home'),              icon: Home },
     { id: 'fastplan',   label: 'Hızlı İş Planı',           icon: Zap },
     { id: 'planning',   label: 'Detaylı İş Planı',          icon: BarChart3 },
