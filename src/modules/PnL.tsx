@@ -789,15 +789,56 @@ export const PnL: React.FC = () => {
                           return (
                               <React.Fragment key={section.section}>
                                   <tr 
-                                      className="bg-gray-50/80 cursor-pointer hover:bg-gray-100 transition-colors border-b border-gray-200"
+                                      className={`cursor-pointer transition-colors border-b border-gray-200 ${isOpen ? 'bg-gray-50/80 hover:bg-gray-100' : 'bg-enba-dark text-white hover:bg-gray-900'}`}
                                       onClick={() => toggleSection(section.section)}
                                   >
-                                      <td colSpan={2 + sAylar.length * (modelDetayAcik ? modeller.length + 1 : 1) + (showTotalCol ? 1 : 0)} className="p-4 font-black text-[11px] text-enba-orange-dark uppercase tracking-[2px]">
-                                          <div className="flex items-center gap-2">
-                                              {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                                              {section.section}
-                                          </div>
+                                      <td className="p-4 text-center border-r border-white/10">
+                                          {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                                       </td>
+                                      <td className="p-4 font-black text-[11px] uppercase tracking-[2px]">
+                                          {section.section}
+                                      </td>
+                                      {sAylar.map(ay => {
+                                          const summaryId = {
+                                              "I. HASILAT": "M299",
+                                              "II. MAL MALİYETLERİ": "M339",
+                                              "III. ENERJİ MALİYETLERİ": "M419",
+                                              "IV. PERSONEL MALİYETLERİ": "M489",
+                                              "V. DİĞER GİDERLER": "M689",
+                                              "SONUÇ": "M769"
+                                          }[section.section] || "";
+
+                                          let ayTop = 0;
+                                          modeller.forEach(mod => {
+                                              ayTop += getHucreselTutar(unifiedData, summaryId, ay, mod);
+                                          });
+
+                                          if (modelDetayAcik) {
+                                              return (
+                                                  <React.Fragment key={`section-ay-${ay}`}>
+                                                      {modeller.map(mod => (
+                                                          <td key={`sec-${ay}-${mod}`} className="p-4 text-right text-[10px] font-bold border-l border-white/5 opacity-50">
+                                                              {!isOpen && ayTop !== 0 ? fmt(getHucreselTutar(unifiedData, summaryId, ay, mod)) : ''}
+                                                          </td>
+                                                      ))}
+                                                      <td className="p-4 text-right text-xs font-black border-l border-white/20 bg-white/5">
+                                                          {!isOpen && ayTop !== 0 ? fmt(ayTop) : ''}
+                                                      </td>
+                                                  </React.Fragment>
+                                              );
+                                          } else {
+                                              return (
+                                                  <td key={`section-ay-top-${ay}`} className="p-4 text-right text-xs font-black border-l border-white/20 bg-white/5">
+                                                      {!isOpen && ayTop !== 0 ? fmt(ayTop) : ''}
+                                                  </td>
+                                              );
+                                          }
+                                      })}
+                                      {showTotalCol && (
+                                          <td className="p-4 text-right text-xs font-black border-l border-white/20 bg-white/5">
+                                              {/* Total section total if needed */}
+                                          </td>
+                                      )}
                                   </tr>
                                   {isOpen && section.items.map(item => {
                                       let rowTotal = 0;
