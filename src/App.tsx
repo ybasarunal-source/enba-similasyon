@@ -21,8 +21,10 @@ import { DetailedPlanManager } from './modules/planning/DetailedPlanManager';
 import { FastPlan } from './modules/FastPlan';
 import { Calendar as CalendarModule } from './modules/Calendar';
 import { Parasut } from './modules/Parasut';
+import { ModulesOverview } from './modules/ModulesOverview';
 import {
   Home,
+  LayoutGrid,
   Package,
   Factory,
   Truck,
@@ -49,7 +51,7 @@ import {
 type ModuleType =
   | 'dashboard' | 'stock' | 'production' | 'logistics' | 'hr'
   | 'archive' | 'cashflow' | 'planning' | 'fastplan' | 'machinery'
-  | 'tasks' | 'calendar' | 'licensing' | 'settings' | 'pnl' | 'profile' | 'parasut';
+  | 'tasks' | 'calendar' | 'licensing' | 'settings' | 'pnl' | 'profile' | 'parasut' | 'modules';
 
 const getProfileAvatar = () => {
   try { return JSON.parse(localStorage.getItem('enba_profile_data') || '{}').avatar || ''; }
@@ -137,6 +139,7 @@ export const App: React.FC = () => {
   if (!session) return <Login />;
 
   const menuItems = [
+    { id: 'modules',    label: 'Modüller',                 icon: LayoutGrid },
     { id: 'dashboard',  label: t('nav.home'),              icon: Home },
     { id: 'fastplan',   label: 'Hızlı İş Planı',           icon: Zap },
     { id: 'planning',   label: 'Detaylı İş Planı',          icon: BarChart3 },
@@ -512,6 +515,7 @@ export const App: React.FC = () => {
         {/* ─── Module Content ──────────────────────────────── */}
         <div className="flex-1 overflow-y-auto custom-scrollbar">
           <div className="max-w-[1200px] mx-auto min-h-full">
+            {activeModule === 'modules'    && <ModulesOverview navigate={navigate} menuItems={menuItems} />}
             {activeModule === 'dashboard'  && <Dashboard navigate={navigate} user={{ name: 'Admin' }} />}
             {activeModule === 'stock'      && <Stock />}
             {activeModule === 'production' && <Production />}
