@@ -399,7 +399,7 @@ function TopNav({ aktifSayfa, navigate, user, onLogout, currentLang, onLangChang
                 <div style={{ width:'1px', height:'24px', background:'rgba(255,255,255,0.12)', margin:'0 6px', flexShrink:0 }} />
 
                 {/* Masaüstü: Ana Sayfa + Gruplar */}
-                <div className="nav-desktop-links" style={{ gap:'2px', flex:1, alignItems:'center' }}>
+                <div className="nav-desktop-links" style={{ display:'flex', gap:'2px', flex:1, alignItems:'center' }}>
 
                     {/* Ana Sayfa — direkt link */}
                     <button style={navItemStyle(aktifSayfa === 'landing')}
@@ -476,11 +476,11 @@ function TopNav({ aktifSayfa, navigate, user, onLogout, currentLang, onLangChang
                     }}
                     title={theme === 'light' ? 'Karanlık Mod' : 'Aydınlık Mod'}
                 >
-                    <i className={`ph ${theme === 'light' ? 'ph-moon' : 'ph-sun-dim'}`} style={{ fontSize: '16px' }}></i>
+                    <i className={`ph ${theme === 'light' ? 'ph-moon' : 'ph-sun'} ph-bold`} style={{ fontSize: '18px' }}></i>
                 </button>
 
                 {/* Kullanıcı Profili (Avatar + Dropdown) */}
-                <div className="nav-dd-wrap" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div className="nav-dd-wrap" style={{ position: 'relative', marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column' }} className="nav-user-info-text">
                         <span style={{ color: '#fff', fontSize: '13px', fontWeight: 700 }}>{user.name}</span>
                         <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px', textTransform: 'uppercase' }}>{user.role}</span>
