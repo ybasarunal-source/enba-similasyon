@@ -32,6 +32,7 @@ interface PnLData {
   modeller: string[];
   kategoriler: Record<string, Record<string, Record<string, number>>>;
   aylikToplam: Record<string, Record<string, number>>;
+  rawDetails?: Record<string, Record<string, Record<string, any[]>>>;
 }
 
 interface SavedReport {
@@ -142,6 +143,7 @@ export const PnL: React.FC = () => {
     const [companyId, setCompanyId] = useState(parasutService.getCompany()?.id || '');
     
     const [grupAcik, setGrupAcik] = useState<Record<string, boolean>>({});
+    const [rowDetayAcik, setRowDetayAcik] = useState<Record<string, boolean>>({});
     const [insightAcik, setInsightAcik] = useState(false);
     const [sectionAcik, setSectionAcik] = useState<Record<string, boolean>>({
         "I. HASILAT": true,
@@ -158,6 +160,10 @@ export const PnL: React.FC = () => {
 
     const toggleSection = (sectionName: string) => {
         setSectionAcik(prev => ({...prev, [sectionName]: !prev[sectionName]}));
+    };
+
+    const toggleRowDetay = (rowId: string) => {
+        setRowDetayAcik(prev => ({...prev, [rowId]: !prev[rowId]}));
     };
 
     useEffect(() => {
@@ -265,10 +271,12 @@ export const PnL: React.FC = () => {
         let modellerSet = new Set<string>();
         let kategoriMap: Record<string, Record<string, Record<string, number>>> = {}; 
         let aylikToplam: Record<string, Record<string, number>> = {}; 
+        let rawDetailsMap: Record<string, Record<string, Record<string, any[]>>> = {};
         
         json.forEach(row => {
             const tarihKey = Object.keys(row).find(k => k.toLowerCase().includes('tarih'));
             const kategoriKey = Object.keys(row).find(k => k.toLowerCase().includes('kategori'));
+            const cariKey = Object.keys(row).find(k => k.toLowerCase().includes('cari') || k.toLowerCase().includes('müşteri') || k.toLowerCase().includes('açıklama'));
             const tutarKeyTL = Object.keys(row).find(k => k.toLowerCase().includes('genel toplam (tl)'));
             const tutarKeyGenel = Object.keys(row).find(k => k.toLowerCase().includes('toplam') && !k.toLowerCase().includes('kdv'));
             
@@ -328,6 +336,16 @@ export const PnL: React.FC = () => {
             if(!kategoriMap[baseKat][rawAy][model]) kategoriMap[baseKat][rawAy][model] = 0;
             
             kategoriMap[baseKat][rawAy][model] += tutar;
+
+            if(!rawDetailsMap[baseKat]) rawDetailsMap[baseKat] = {};
+            if(!rawDetailsMap[baseKat][rawAy]) rawDetailsMap[baseKat][rawAy] = {};
+            if(!rawDetailsMap[baseKat][rawAy][model]) rawDetailsMap[baseKat][rawAy][model] = [];
+            
+            rawDetailsMap[baseKat][rawAy][model].push({
+                desc: (cariKey && row[cariKey]) ? row[cariKey].toString() : "Detaysız Harcama",
+                amount: tutar,
+                date: rawAy
+            });
             
             if(!aylikToplam[rawAy]) aylikToplam[rawAy] = { Toplam: 0 };
             if(!aylikToplam[rawAy][model]) aylikToplam[rawAy][model] = 0;
@@ -340,7 +358,8 @@ export const PnL: React.FC = () => {
             aylar: Array.from(aylarSet),
             modeller: Array.from(modellerSet),
             kategoriler: kategoriMap,
-            aylikToplam: aylikToplam
+            aylikToplam: aylikToplam,
+            rawDetails: rawDetailsMap
         };
     };
 
@@ -409,6 +428,7 @@ export const PnL: React.FC = () => {
         let modellerSet = new Set<string>();
         let kategoriMap: Record<string, Record<string, Record<string, number>>> = {}; 
         let aylikToplam: Record<string, Record<string, number>> = {}; 
+        let rawDetailsMap: Record<string, Record<string, Record<string, any[]>>> = {};
 
         invoices.forEach(inv => {
             const rawAy = inv.issue_date.substring(0, 7); 
@@ -444,6 +464,16 @@ export const PnL: React.FC = () => {
             if(!kategoriMap[baseKat][rawAy][model]) kategoriMap[baseKat][rawAy][model] = 0;
             
             kategoriMap[baseKat][rawAy][model] += tutar;
+
+            if(!rawDetailsMap[baseKat]) rawDetailsMap[baseKat] = {};
+            if(!rawDetailsMap[baseKat][rawAy]) rawDetailsMap[baseKat][rawAy] = {};
+            if(!rawDetailsMap[baseKat][rawAy][model]) rawDetailsMap[baseKat][rawAy][model] = [];
+            
+            rawDetailsMap[baseKat][rawAy][model].push({
+                desc: inv.contact_name || inv.description || "Paraşüt İşlemi",
+                amount: tutar,
+                date: inv.issue_date
+            });
             
             if(!aylikToplam[rawAy]) aylikToplam[rawAy] = { Toplam: 0 };
             if(!aylikToplam[rawAy][model]) aylikToplam[rawAy][model] = 0;
@@ -456,7 +486,8 @@ export const PnL: React.FC = () => {
             aylar: Array.from(aylarSet).sort(),
             modeller: Array.from(modellerSet),
             kategoriler: kategoriMap,
-            aylikToplam: aylikToplam
+            aylikToplam: aylikToplam,
+            rawDetails: rawDetailsMap
         };
     };
 
@@ -551,10 +582,15 @@ export const PnL: React.FC = () => {
     const unifiedData = useMemo(() => {
         if(!gelirData && !pGiderData) return null;
         
-        // Merge Kategoriler from both
+        // Merge Kategoriler and rawDetails from both
         const mergedKats = { 
             ...(gelirData?.kategoriler || {}), 
             ...(pGiderData?.kategoriler || {}) 
+        };
+
+        const mergedRaw = {
+            ...(gelirData?.rawDetails || {}),
+            ...(pGiderData?.rawDetails || {})
         };
 
         const getVal = (code: string, ay: string, mod: string): number => {
@@ -596,7 +632,8 @@ export const PnL: React.FC = () => {
         return {
             aylar,
             modeller,
-            kategoriler: mergedKats
+            kategoriler: mergedKats,
+            rawDetails: mergedRaw
         };
     }, [gelirData, pGiderData, aylar, modeller]);
 
@@ -688,52 +725,101 @@ export const PnL: React.FC = () => {
                                   {isOpen && section.items.map(item => {
                                       let rowTotal = 0;
                                       oAylarFull.forEach(ay => modeller.forEach(m => { rowTotal += getHucreselTutar(unifiedData, item.id, ay, m) }));
+                                      const isRowOpen = rowDetayAcik[item.id];
 
                                       return (
-                                          <tr key={item.id} className={`border-b border-gray-100 transition-colors hover:bg-gray-50/50 ${item.isTotal ? 'bg-gray-50 font-bold' : ''}`}>
-                                              <td className="p-4 border-r border-gray-100 bg-gray-50/30 text-center w-[80px] min-w-[80px]">
-                                                  <span className="text-[9px] font-black px-2 py-0.5 bg-white border border-gray-200 text-gray-500 rounded uppercase tracking-wider shadow-sm">{item.id}</span>
-                                              </td>
-                                              <td className="p-4 w-[220px] min-w-[220px]">
-                                                  <span className={`text-xs ${item.isTotal ? 'font-black text-enba-dark' : 'font-bold text-gray-600'}`}>
-                                                      {item.label}
-                                                  </span>
-                                              </td>
-                                              {sAylar.map(ay => {
-                                                  let ayTop = 0;
-                                                  const modCells = modeller.map(mod => {
-                                                      const val = getHucreselTutar(unifiedData, item.id, ay, mod);
-                                                      ayTop += val;
-                                                      return (
-                                                          <td key={`${ay}-${mod}`} className={`p-4 text-right text-xs font-medium border-l border-gray-50 ${mod === modeller[0] ? 'border-l-gray-200' : ''}`}>
-                                                              {val !== 0 ? fmt(val) : '-'}
-                                                          </td>
-                                                      );
-                                                  });
+                                          <React.Fragment key={item.id}>
+                                            <tr 
+                                                className={`border-b border-gray-100 transition-colors hover:bg-gray-50/50 cursor-pointer ${item.isTotal ? 'bg-gray-50 font-bold' : ''}`}
+                                                onClick={() => !item.isTotal && toggleRowDetay(item.id)}
+                                            >
+                                                <td className="p-4 border-r border-gray-100 bg-gray-50/30 text-center w-[80px] min-w-[80px]">
+                                                    <span className="text-[9px] font-black px-2 py-0.5 bg-white border border-gray-200 text-gray-500 rounded uppercase tracking-wider shadow-sm">{item.id}</span>
+                                                </td>
+                                                <td className="p-4 w-[220px] min-w-[220px]">
+                                                    <div className="flex items-center gap-2">
+                                                        {!item.isTotal && (isRowOpen ? <ChevronDown size={12} className="text-enba-orange" /> : <ChevronRight size={12} className="text-gray-300" />)}
+                                                        <span className={`text-xs ${item.isTotal ? 'font-black text-enba-dark' : 'font-bold text-gray-600'}`}>
+                                                            {item.label}
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                                {sAylar.map(ay => {
+                                                    let ayTop = 0;
+                                                    const modCells = modeller.map(mod => {
+                                                        const val = getHucreselTutar(unifiedData, item.id, ay, mod);
+                                                        ayTop += val;
+                                                        return (
+                                                            <td key={`${ay}-${mod}`} className={`p-4 text-right text-xs font-medium border-l border-gray-50 ${mod === modeller[0] ? 'border-l-gray-200' : ''}`}>
+                                                                {val !== 0 ? fmt(val) : '-'}
+                                                            </td>
+                                                        );
+                                                    });
 
-                                                  if (modelDetayAcik) {
-                                                      return (
-                                                          <React.Fragment key={`frag-${item.id}-${ay}`}>
-                                                              {modCells}
-                                                              <td className={`p-4 text-right text-xs font-black border-l border-gray-200 ${item.isRevenue ? 'text-emerald-700' : 'text-red-700'} ${item.isTotal ? 'bg-gray-100/50' : 'bg-gray-50/30'}`}>
-                                                                  {ayTop !== 0 ? fmt(ayTop) : '-'}
-                                                              </td>
-                                                          </React.Fragment>
-                                                      );
-                                                  } else {
-                                                      return (
-                                                          <td key={`top-${item.id}-${ay}`} className={`p-4 text-right text-xs font-black border-l-2 border-gray-100 ${item.isRevenue ? 'text-emerald-700' : 'text-red-700'} ${item.isTotal ? 'bg-gray-100/50' : 'bg-gray-50/30'}`}>
-                                                              {ayTop !== 0 ? fmt(ayTop) : '-'}
-                                                          </td>
-                                                      );
-                                                  }
-                                              })}
-                                              {showTotalCol && (
-                                                  <td className={`p-4 text-right text-xs font-black border-l-2 border-gray-200 ${item.isRevenue ? 'text-emerald-800 bg-emerald-50/30' : 'text-red-800 bg-red-50/30'}`}>
-                                                      {fmt(rowTotal)} ₺
-                                                  </td>
-                                              )}
-                                          </tr>
+                                                    if (modelDetayAcik) {
+                                                        return (
+                                                            <React.Fragment key={`frag-${item.id}-${ay}`}>
+                                                                {modCells}
+                                                                <td className={`p-4 text-right text-xs font-black border-l border-gray-200 ${item.isRevenue ? 'text-emerald-700' : 'text-red-700'} ${item.isTotal ? 'bg-gray-100/50' : 'bg-gray-50/30'}`}>
+                                                                    {ayTop !== 0 ? fmt(ayTop) : '-'}
+                                                                </td>
+                                                            </React.Fragment>
+                                                        );
+                                                    } else {
+                                                        return (
+                                                            <td key={`top-${item.id}-${ay}`} className={`p-4 text-right text-xs font-black border-l-2 border-gray-100 ${item.isRevenue ? 'text-emerald-700' : 'text-red-700'} ${item.isTotal ? 'bg-gray-100/50' : 'bg-gray-50/30'}`}>
+                                                                {ayTop !== 0 ? fmt(ayTop) : '-'}
+                                                            </td>
+                                                        );
+                                                    }
+                                                })}
+                                                {showTotalCol && (
+                                                    <td className={`p-4 text-right text-xs font-black border-l-2 border-gray-200 ${item.isRevenue ? 'text-emerald-800 bg-emerald-50/30' : 'text-red-800 bg-red-50/30'}`}>
+                                                        {fmt(rowTotal)} ₺
+                                                    </td>
+                                                )}
+                                            </tr>
+                                            {isRowOpen && !isPdfGenerating && (
+                                                <tr>
+                                                    <td colSpan={2 + sAylar.length * (modelDetayAcik ? modeller.length + 1 : 1) + (showTotalCol ? 1 : 0)} className="p-0 bg-gray-50/30">
+                                                        <div className="max-h-[300px] overflow-y-auto custom-scrollbar p-6">
+                                                            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                                                                <table className="w-full text-left border-collapse">
+                                                                    <thead className="bg-gray-50">
+                                                                        <tr>
+                                                                            <th className="p-3 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">Açıklama / Cari</th>
+                                                                            <th className="p-3 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 text-center">Tarih / Ay</th>
+                                                                            <th className="p-3 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 text-right">Tutar</th>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody>
+                                                                        {(() => {
+                                                                            let items: any[] = [];
+                                                                            oAylarFull.forEach(ay => {
+                                                                                modeller.forEach(mod => {
+                                                                                    if (unifiedData.rawDetails?.[item.id]?.[ay]?.[mod]) {
+                                                                                        items.push(...unifiedData.rawDetails[item.id][ay][mod]);
+                                                                                    }
+                                                                                });
+                                                                            });
+                                                                            if (items.length === 0) return <tr><td colSpan={3} className="p-6 text-center text-xs text-gray-400 italic">Bu kategori için işlem detayı bulunamadı.</td></tr>;
+                                                                            
+                                                                            return items.map((raw, rIdx) => (
+                                                                                <tr key={rIdx} className="border-b border-gray-50 hover:bg-gray-50/50">
+                                                                                    <td className="p-3 text-xs font-bold text-enba-dark">{raw.desc}</td>
+                                                                                    <td className="p-3 text-xs text-gray-500 text-center">{raw.date}</td>
+                                                                                    <td className="p-3 text-xs font-black text-enba-dark text-right">{fmt(raw.amount)} ₺</td>
+                                                                                </tr>
+                                                                            ));
+                                                                        })()}
+                                                                    </tbody>
+                                                                </table>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            )}
+                                          </React.Fragment>
                                       );
                                   })}
                               </React.Fragment>
