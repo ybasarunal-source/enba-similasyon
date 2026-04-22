@@ -537,7 +537,8 @@ export const App: React.FC = () => {
               </div>
             )}
           </div>
-        </header>
+        </div>
+      </header>
 
         {/* ─── Module Content ──────────────────────────────── */}
         <div className="flex-1 overflow-y-auto custom-scrollbar">
