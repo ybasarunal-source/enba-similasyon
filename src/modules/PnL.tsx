@@ -58,6 +58,7 @@ export const PnL: React.FC = () => {
     // Paraşüt Sync States
     const [isSyncing, setIsSyncing] = useState(false);
     const [syncError, setSyncError] = useState<string | null>(null);
+    const [katFiltre, setKatFiltre] = useState("");
     const [startDate, setStartDate] = useState(() => {
         const d = new Date();
         d.setMonth(d.getMonth() - 1);
@@ -454,15 +455,17 @@ export const PnL: React.FC = () => {
             let kats = Object.keys(data.kategoriler).sort();
             
             if (!isGrupEnabled) {
-                return kats.map(kat => {
+                return kats.filter(k => k.toLowerCase().includes(katFiltre.toLowerCase())).map(kat => {
                     const isAmort = kat.includes("Amortisman");
                     let rowGenelGlobal = 0;
                     oAylarFull.forEach(ga => modeller.forEach(gm => { rowGenelGlobal += getHucreselTutar(data, kat, ga, gm) }));
 
                     return (
                         <tr key={kat} className={`border-b border-gray-100 transition-colors hover:bg-gray-50/50 ${isAmort ? 'bg-enba-orange/5' : ''}`}>
-                            <td className="p-4 flex items-center gap-3">
+                            <td className="p-4 border-r border-gray-50">
                                 <span className="text-[9px] font-black px-2 py-0.5 bg-gray-100 text-gray-500 rounded uppercase tracking-wider">{tipLabel}</span>
+                            </td>
+                            <td className="p-4">
                                 <span className={`text-xs font-bold ${isAmort ? 'text-enba-orange' : 'text-enba-dark'}`}>
                                   {isAmort ? <Gem size={14} className="inline mr-1" /> : null} {kat}
                                 </span>
@@ -530,6 +533,9 @@ export const PnL: React.FC = () => {
                     return (
                         <React.Fragment key={grupAdi}>
                             <tr className="bg-gray-50/50 cursor-pointer border-b border-gray-200" onClick={() => toggleGrup(grupAdi)}>
+                                <td className="p-4 border-r border-gray-50">
+                                   <span className="text-[9px] font-black px-2 py-0.5 bg-gray-800 text-gray-400 rounded uppercase tracking-wider">{tipLabel}</span>
+                                </td>
                                 <td className="p-4 flex items-center gap-2">
                                    <span className={`transition-transform duration-300 ${isOpen ? 'rotate-90' : ''}`}>
                                       <Eye className="text-gray-400" size={14} /> 
@@ -558,13 +564,14 @@ export const PnL: React.FC = () => {
                                 {showTotalCol && <td className="p-4 text-right text-xs font-black bg-gray-100 text-enba-dark border-l-2 border-gray-300">{fmt(grupGloGenel)} ₺</td>}
                             </tr>
 
-                            {isOpen && gruplar[grupAdi].map(kat => {
+                            {isOpen && gruplar[grupAdi].filter(k => k.toLowerCase().includes(katFiltre.toLowerCase())).map(kat => {
                                     const isAmort = kat.includes("Amortisman");
                                     let cGloGenel = 0;
                                     oAylarFull.forEach(ga => modeller.forEach(gm => cGloGenel += getHucreselTutar(data, kat, ga, gm)));
 
                                     return (
                                         <tr key={kat} className={`border-b border-gray-50 transition-colors hover:bg-gray-100/20 ${isAmort ? 'bg-enba-orange/5' : ''}`}>
+                                            <td className="p-3 border-r border-gray-50 opacity-30"></td>
                                             <td className="p-3 pl-10 text-[11px] font-bold text-gray-500 flex items-center gap-2">
                                                 <span className="text-gray-200">└</span>
                                                 {kat}
@@ -602,7 +609,8 @@ export const PnL: React.FC = () => {
               <table id={`pnl-table-report-${tableIndex}`} className="w-full border-collapse border border-gray-200 bg-white">
                   <thead>
                       <tr className="bg-enba-dark text-white">
-                          <th rowSpan={2} className="p-6 text-left text-[10px] font-black uppercase tracking-[3px] w-[300px] border-b-4 border-enba-orange">Kategori</th>
+                          <th rowSpan={2} className="p-4 text-center text-[10px] font-black uppercase tracking-widest w-[80px] border-b-4 border-enba-orange border-r border-white/10">Tür</th>
+                          <th rowSpan={2} className="p-6 text-left text-[10px] font-black uppercase tracking-[3px] w-[220px] border-b-4 border-enba-orange">Kategori</th>
                           {sAylar.map(ay => (
                               <th key={ay} colSpan={modelDetayAcik ? modeller.length + 1 : 1} className="p-4 text-center text-[11px] font-black uppercase tracking-widest border-l border-white/10">{ay}</th>
                           ))}
@@ -630,7 +638,7 @@ export const PnL: React.FC = () => {
                       {gelirData && (
                           <>
                               <tr className="bg-emerald-50 text-emerald-700 cursor-pointer" onClick={() => setGelirAcik(!gelirAcik)}>
-                                  <td colSpan={1 + sAylar.length * (modelDetayAcik ? modeller.length + 1 : 1) + (showTotalCol ? 1 : 0)} className="p-5 font-black text-sm border-b-2 border-emerald-500 flex items-center gap-3">
+                                  <td colSpan={2 + sAylar.length * (modelDetayAcik ? modeller.length + 1 : 1) + (showTotalCol ? 1 : 0)} className="p-5 font-black text-sm border-b-2 border-emerald-500 flex items-center gap-3">
                                       {gelirAcik ? <Eye size={18} /> : <EyeOff size={18} />}
                                       I. GELİRLER (SATIŞLAR)
                                   </td>
@@ -638,7 +646,7 @@ export const PnL: React.FC = () => {
                               {(gelirAcik || isPdfGenerating) && renderKategoriSatirlari(gelirData, 'GELİR', 'text-emerald-600')}
                               
                               <tr className="bg-emerald-100/50">
-                                  <td className="p-5 font-black text-sm text-emerald-800">GELİR TOPLAMI</td>
+                                  <td colSpan={2} className="p-5 font-black text-sm text-emerald-800">GELİR TOPLAMI</td>
                                   {sAylar.map(ay => {
                                       let ayTop = getAylikToplam(gelirData, ay, 'Toplam');
                                       const modCells = modeller.map(mod => (
@@ -666,7 +674,7 @@ export const PnL: React.FC = () => {
                       {pGiderData && (
                           <>
                               <tr className="bg-red-50 text-red-700 cursor-pointer" onClick={() => setGiderAcik(!giderAcik)}>
-                                  <td colSpan={1 + sAylar.length * (modelDetayAcik ? modeller.length + 1 : 1) + (showTotalCol ? 1 : 0)} className="p-5 font-black text-sm border-b-2 border-red-500 mt-4 flex items-center gap-3">
+                                  <td colSpan={2 + sAylar.length * (modelDetayAcik ? modeller.length + 1 : 1) + (showTotalCol ? 1 : 0)} className="p-5 font-black text-sm border-b-2 border-red-500 mt-4 flex items-center gap-3">
                                       {giderAcik ? <Eye size={18} /> : <EyeOff size={18} />}
                                       II. GİDERLER (OPEX & YATIRIM)
                                   </td>
@@ -674,7 +682,7 @@ export const PnL: React.FC = () => {
                               {(giderAcik || isPdfGenerating) && renderKategoriSatirlari(pGiderData, 'GİDER', 'text-red-600', true)}
                               
                               <tr className="bg-red-100/50">
-                                  <td className="p-5 font-black text-sm text-red-800">GİDER TOPLAMI</td>
+                                  <td colSpan={2} className="p-5 font-black text-sm text-red-800">GİDER TOPLAMI</td>
                                   {sAylar.map(ay => {
                                       let ayTop = getAylikToplam(pGiderData, ay, 'Toplam');
                                       const modCells = modeller.map(mod => (
@@ -702,7 +710,7 @@ export const PnL: React.FC = () => {
                       {(gelirData && pGiderData) && (
                           <>
                               <tr className="bg-enba-dark text-white border-t-8 border-white">
-                                  <td className="p-8 text-lg font-black tracking-tighter uppercase italic">EBITDA Net Kâr/Zarar</td>
+                                  <td colSpan={2} className="p-8 text-lg font-black tracking-tighter uppercase italic">EBITDA Net Kâr/Zarar</td>
                                   {sAylar.map(ay => {
                                       const gTot = getAylikToplam(gelirData, ay, 'Toplam');
                                       const cTot = getAylikToplam(pGiderData, ay, 'Toplam');
@@ -808,6 +816,15 @@ export const PnL: React.FC = () => {
                                 {isSyncing ? <RefreshCw size={14} className="animate-spin" /> : <RefreshCw size={14} />}
                                 {isSyncing ? 'Veriler Çekiliyor...' : 'Senkronize Et'}
                             </button>
+                            <div className="flex items-center gap-3 ml-4 border-l border-gray-200 pl-4">
+                                <input 
+                                    type="text" 
+                                    placeholder="Kategori filtrele..."
+                                    value={katFiltre}
+                                    onChange={(e) => setKatFiltre(e.target.value)}
+                                    className="bg-white border border-gray-200 rounded-xl px-4 py-2 text-xs font-bold text-enba-dark outline-none focus:ring-2 focus:ring-enba-orange/20 transition-all w-48"
+                                />
+                            </div>
                         </div>
                     )}
 
