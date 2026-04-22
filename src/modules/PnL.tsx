@@ -267,6 +267,7 @@ export const PnL: React.FC = () => {
     };
 
     const parseExcel = (json: any[]): PnLData => {
+        console.log("PnL Debug - parseExcel started with rows:", json.length);
         let aylarSet = new Set<string>();
         let modellerSet = new Set<string>();
         let kategoriMap: Record<string, Record<string, Record<string, number>>> = {}; 
@@ -294,6 +295,8 @@ export const PnL: React.FC = () => {
             if (json.indexOf(row) === 0) {
                 console.log("PnL Debug - Detected Keys:", { tarihKey, kategoriKey, tutarKey, cariKey });
                 console.log("PnL Debug - First Row:", row);
+                if (!tutarKey) alert("UYARI: Excel'de tutar sütunu (Toplam, Tutar vb.) bulunamadı. Lütfen sütun isimlerini kontrol edin.");
+                if (!kategoriKey) alert("UYARI: Excel'de kategori sütunu bulunamadı.");
             }
 
             if(!tutarKey) return; 
@@ -401,6 +404,7 @@ export const PnL: React.FC = () => {
 
     const dosyaSecildi = (e: React.ChangeEvent<HTMLInputElement>, tip: 'gelir' | 'gider') => {
         const file = e.target.files?.[0];
+        console.log("PnL Debug - File Selected:", file?.name, "Type:", tip);
         if(!file) return;
         
         if(tip === 'gelir') setGelirDosya(file.name);
