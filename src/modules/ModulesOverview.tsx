@@ -23,15 +23,15 @@ export const ModulesOverview: React.FC<ModulesOverviewProps> = ({ navigate, menu
       </div>
 
       {/* Search Bar */}
-      <div className="relative mb-12 max-w-xl">
+      <div className="relative mb-10 max-w-md">
         <input 
           type="text" 
           placeholder="Modül ara..." 
           value={searchTerm}
           onChange={e => setSearchTerm(e.target.value)}
-          className="w-full bg-white border border-gray-100 rounded-2xl px-14 py-5 shadow-sm focus:ring-4 focus:ring-[var(--enba-orange)]/10 focus:border-[var(--enba-orange)]/30 transition-all outline-none text-lg font-semibold text-[var(--enba-dark)]"
+          className="w-full bg-white border border-gray-100 rounded-2xl px-12 py-3.5 shadow-sm focus:ring-4 focus:ring-[var(--enba-orange)]/10 focus:border-[var(--enba-orange)]/30 transition-all outline-none text-base font-semibold text-[var(--enba-dark)]"
         />
-        <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-300" size={24} strokeWidth={2.5} />
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={20} strokeWidth={2.5} />
       </div>
 
       {/* Grid */}
