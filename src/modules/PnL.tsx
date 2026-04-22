@@ -467,6 +467,7 @@ export const PnL: React.FC = () => {
     };
 
     const mapParasutInvoicesToPnL = (invoices: ParasutInvoice[]): PnLData => {
+        console.log("PnL Debug (Paraşüt) - Mapping started for invoices:", invoices.length);
         let aylarSet = new Set<string>();
         let modellerSet = new Set<string>();
         let kategoriMap: Record<string, Record<string, Record<string, number>>> = {}; 
@@ -480,6 +481,15 @@ export const PnL: React.FC = () => {
             // Use category_name from Paraşüt
             let rawKat = inv.category_name || 'Genel';
             let tutar = inv.net_total || 0;
+
+            if (invoices.indexOf(inv) < 5) {
+                console.log("PnL Debug (Paraşüt) - Sample Invoice:", { 
+                    contact: inv.contact_name, 
+                    category: inv.category_name, 
+                    total: inv.net_total,
+                    date: inv.issue_date
+                });
+            }
             
             // Extract Code (Mxxx)
             let baseKat = rawKat;
@@ -487,9 +497,16 @@ export const PnL: React.FC = () => {
             if (codeMatch) {
                 baseKat = codeMatch[1];
             } else {
-                // Try to find code by label matching
-                const configItem = PNL_CONFIG.flatMap(s => s.items).find(i => rawKat.toLowerCase().includes(i.label.toLowerCase()));
+                // Try to find code by label matching (Smarter bidirectional match)
+                const configItem = PNL_CONFIG.flatMap(s => s.items).find(i => 
+                    rawKat.toLowerCase().includes(i.label.toLowerCase()) || 
+                    i.label.toLowerCase().includes(rawKat.toLowerCase())
+                );
                 if (configItem) baseKat = configItem.id;
+            }
+
+            if (baseKat === 'M109') {
+                console.log("PnL Debug (Paraşüt) - M109 Match Found:", { rawKat, tutar, rawAy });
             }
 
             let model = "Ortak";
