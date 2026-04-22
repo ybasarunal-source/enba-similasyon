@@ -112,21 +112,20 @@
 }
 
 /* ── Global Typography Refinement ──────────────────────────────
-   Modules use aggressive italic/uppercase/tracking combinations.
-   These rules gently override the most extreme styles globally.
+   Ensuring system-wide consistency based on Dashboard scales.
    ──────────────────────────────────────────────────────────── */
 
-/* font-black (900) → already reduced to 700 via tailwind.config.js
-   font-bold (700) → reduced to 600 via tailwind.config.js */
-
-/* Soften italic on headings — Poppins looks cleaner upright */
-h1, h2, h3 {
-  font-style: normal !important;
+h1 {
+  @apply text-2xl font-semibold text-gray-800 !important;
+  letter-spacing: -0.02em;
 }
 
-/* Slightly reduce extreme tracking values that look too spaced */
-[class*="tracking-["] {
-  letter-spacing: 0.04em !important;
+h2 {
+  @apply text-xl font-semibold text-gray-800 !important;
+}
+
+h3 {
+  @apply text-lg font-semibold text-gray-800 !important;
 }
 
 /* Constrain uppercase heading size */
@@ -135,9 +134,9 @@ h1, h2, h3 {
 h1[class*="uppercase"],
 h2[class*="uppercase"],
 h3[class*="uppercase"] {
-  font-size: 0.95em;
-  letter-spacing: 0.04em;
-  font-style: normal;
+  font-size: 0.9em;
+  letter-spacing: 0.05em;
+  font-weight: 700;
 }
 
 /* Refined section label utility class */
