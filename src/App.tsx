@@ -163,18 +163,24 @@ export const App: React.FC = () => {
     // FALLBACK: Veritabanı hatası (RLS) durumunda oturum varsa tam erişim sağla
     if (!userProfile && session?.user) return true;
     // Core modules always visible, others depend on permissions
-    if (item.id === 'profile' || item.id === 'dashboard' || item.id === 'tasks' || item.id === 'calendar') return true;
+    if (item.id === 'profile' || item.id === 'dashboard' || item.id === 'tasks' || item.id === 'calendar' || item.id === 'modules') return true;
     // Others depend on permissions
     return userProfile?.permissions?.[item.id] === true;
   });
 
   const navigate = (view: string) => {
     const mod = view as ModuleType;
-    // Mevcut konumun ilerisindeki geçmişi sil, yeni sayfayı ekle
-    setHistory(prev => [...prev.slice(0, historyIndex + 1), mod]);
-    setHistoryIndex(prev => prev + 1);
+    if (!mod || mod === activeModule) return;
+    
     setActiveModule(mod);
     setProfileAvatar(getProfileAvatar());
+    
+    // Geçmişi güvenli bir şekilde güncelle
+    setHistory(prev => {
+      const newHistory = [...prev.slice(0, historyIndex + 1), mod];
+      setHistoryIndex(newHistory.length - 1);
+      return newHistory;
+    });
   };
 
   const goBack = () => {
