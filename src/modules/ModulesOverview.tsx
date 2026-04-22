@@ -45,8 +45,8 @@ export const ModulesOverview: React.FC<ModulesOverviewProps> = ({ navigate, menu
             {/* Decorative element */}
             <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-gray-50 rounded-full group-hover:bg-[var(--enba-orange)]/10 transition-colors duration-500" />
             
-            <div className="w-14 h-14 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 group-hover:bg-[var(--enba-orange)] group-hover:text-white transition-all duration-500 shadow-sm group-hover:shadow-lg group-hover:shadow-[var(--enba-orange)]/30 group-hover:scale-110">
-              <item.icon size={28} strokeWidth={2} />
+            <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 group-hover:bg-[var(--enba-orange)] group-hover:text-white transition-all duration-500 shadow-sm group-hover:shadow-lg group-hover:shadow-[var(--enba-orange)]/30 group-hover:scale-110">
+              <item.icon size={22} strokeWidth={2} />
             </div>
             
             <div className="relative z-10">
