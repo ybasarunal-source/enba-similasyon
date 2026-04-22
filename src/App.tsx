@@ -522,7 +522,7 @@ export const App: React.FC = () => {
         {/* ─── Module Content ──────────────────────────────── */}
         <div className="flex-1 overflow-y-auto custom-scrollbar">
           <div className="max-w-[1200px] mx-auto min-h-full">
-            {activeModule === 'modules'    && <ModulesOverview navigate={navigate} menuItems={menuItems} />}
+            {activeModule === 'modules'    && <ModulesOverview key="v1.3" navigate={navigate} menuItems={menuItems} />}
             {activeModule === 'dashboard'  && <Dashboard navigate={navigate} user={{ name: 'Admin' }} />}
             {activeModule === 'stock'      && <Stock />}
             {activeModule === 'production' && <Production />}
