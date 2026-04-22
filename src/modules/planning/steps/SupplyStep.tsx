@@ -190,67 +190,125 @@ const SupplyStep: React.FC<SupplyStepProps> = ({ planData, onUpdate, next, back 
                 </tr>
               </thead>
               <tbody>
-                {planData.suppliers.map((s: Supplier) => (
-                  <React.Fragment key={s.id}>
-                    {/* Miktar Row */}
-                    <tr className="border-t border-gray-100 group">
-                      <td rowSpan={3} className="sticky left-0 bg-white p-6 border-r border-gray-100 z-10 font-black text-enba-dark text-sm uppercase tracking-tighter italic group-hover:bg-gray-50/50 transition-colors">
-                        {s.ad}
-                      </td>
-                      <td className="sticky left-56 bg-white p-3 border-r border-gray-100 z-10 text-[9px] font-black text-blue-500 uppercase tracking-widest text-center group-hover:bg-gray-50/50">Miktar (T)</td>
-                      {Array.from({ length: 12 }).map((_, i) => (
-                        <td key={i} className="p-3 bg-white group-hover:bg-gray-50/20 transition-colors">
-                          <input 
-                            type="number" 
-                            value={planData.monthlyData[i].tedarikler?.[s.id]?.miktar || ''}
-                            onChange={e => updateTedarik(i, s.id, 'miktar', e.target.value)}
-                            className="w-full text-center py-3 bg-blue-50/30 border-none rounded-xl text-xs font-black text-blue-800 focus:bg-white focus:ring-2 focus:ring-blue-100 outline-none transition-all"
-                            placeholder="0"
-                          />
-                        </td>
-                      ))}
-                    </tr>
-                    {/* Fiyat Row */}
-                    <tr className="border-t border-gray-50 group">
-                      <td className="sticky left-56 bg-white p-3 border-r border-gray-100 z-10 text-[9px] font-black text-emerald-600 uppercase tracking-widest text-center group-hover:bg-gray-50/50">Fiyat (₺)</td>
-                      {Array.from({ length: 12 }).map((_, i) => (
-                        <td key={i} className="p-3 bg-white group-hover:bg-gray-50/20 transition-colors">
-                          <input 
-                            type="number" 
-                            value={planData.monthlyData[i].tedarikler?.[s.id]?.fiyat || ''}
-                            onChange={e => updateTedarik(i, s.id, 'fiyat', e.target.value)}
-                            className="w-full text-center py-3 bg-emerald-50/30 border-none rounded-xl text-xs font-black text-emerald-700 focus:bg-white focus:ring-2 focus:ring-emerald-100 outline-none transition-all"
-                            placeholder="0"
-                          />
-                        </td>
-                      ))}
-                    </tr>
-                    {/* Nakliye Row */}
-                    <tr className="border-t border-gray-50 border-b border-gray-100 group">
-                      <td className="sticky left-56 bg-white p-3 border-r border-gray-100 z-10 text-[9px] font-black text-enba-orange uppercase tracking-widest text-center whitespace-nowrap group-hover:bg-gray-50/50">Nakliye (₺)</td>
-                      {Array.from({ length: 12 }).map((_, i) => (
-                        <td key={i} className="p-3 bg-white group-hover:bg-gray-50/20 transition-colors">
-                          <div className="flex items-center gap-2">
-                            <input 
-                                type="number" 
-                                value={planData.monthlyData[i].tedarikler?.[s.id]?.nakliye || ''}
-                                onChange={e => updateTedarik(i, s.id, 'nakliye', e.target.value)}
-                                className="w-full text-center py-3 bg-orange-50/30 border-none rounded-xl text-xs font-black text-enba-orange focus:bg-white focus:ring-2 focus:ring-orange-100 outline-none transition-all"
-                                placeholder="0"
-                            />
-                            <button 
-                                onClick={() => copyForward(i, s.id)}
-                                className="w-9 h-9 shrink-0 flex items-center justify-center bg-enba-dark text-white rounded-xl shadow-sm hover:bg-black transition-all active:scale-90" 
-                                title="Sonraki aylara kopyala"
-                            >
-                                <Copy size={14} />
-                            </button>
+                {planData.suppliers.map((s: Supplier) => {
+                  const startMonth = planData.monthlyData[0]?.tedarikler?.[s.id]?.startMonth || 0;
+                  return (
+                    <React.Fragment key={s.id}>
+                      {/* Miktar Row */}
+                      <tr className="border-t border-gray-100 group">
+                        <td rowSpan={3} className="sticky left-0 bg-white p-6 border-r border-gray-100 z-10 group-hover:bg-gray-50/50 transition-colors border-b border-gray-100">
+                          <div className="flex flex-col gap-3">
+                            <div className="font-black text-enba-dark text-sm uppercase tracking-tighter italic">{s.ad}</div>
+                            <div className="space-y-1">
+                              <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Hammadde Cinsi</span>
+                              <input 
+                                type="text"
+                                placeholder="Örn: Hurda Kağıt"
+                                value={planData.monthlyData[0]?.tedarikler?.[s.id]?.urun || ''}
+                                onChange={e => {
+                                  const newMonthly = [...planData.monthlyData];
+                                  for (let i = 0; i < 12; i++) {
+                                    if (!newMonthly[i].tedarikler) newMonthly[i].tedarikler = {};
+                                    if (!newMonthly[i].tedarikler[s.id]) newMonthly[i].tedarikler[s.id] = {};
+                                    newMonthly[i].tedarikler[s.id].urun = e.target.value;
+                                  }
+                                  onUpdate({ ...planData, monthlyData: newMonthly });
+                                }}
+                                className="w-full bg-gray-50 border-none rounded-lg px-3 py-2 text-[11px] font-bold text-enba-dark focus:bg-white focus:ring-2 focus:ring-blue-100 outline-none transition-all"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Başlangıç Ayı</span>
+                              <select 
+                                value={startMonth}
+                                onChange={e => {
+                                  const val = Number(e.target.value);
+                                  const newMonthly = [...planData.monthlyData];
+                                  for (let i = 0; i < 12; i++) {
+                                    if (!newMonthly[i].tedarikler) newMonthly[i].tedarikler = {};
+                                    if (!newMonthly[i].tedarikler[s.id]) newMonthly[i].tedarikler[s.id] = {};
+                                    newMonthly[i].tedarikler[s.id].startMonth = val;
+                                  }
+                                  onUpdate({ ...planData, monthlyData: newMonthly });
+                                }}
+                                className="w-full bg-gray-50 border-none rounded-lg px-3 py-2 text-[11px] font-bold text-enba-dark focus:bg-white focus:ring-2 focus:ring-blue-100 outline-none transition-all cursor-pointer"
+                              >
+                                {ayBasliklari.map((a, i) => (
+                                  <option key={i} value={i}>{a.label}</option>
+                                ))}
+                              </select>
+                            </div>
                           </div>
                         </td>
-                      ))}
-                    </tr>
-                  </React.Fragment>
-                ))}
+                        <td className="sticky left-56 bg-white p-3 border-r border-gray-100 z-10 text-[9px] font-black text-blue-500 uppercase tracking-widest text-center group-hover:bg-gray-50/50">Miktar (T)</td>
+                        {Array.from({ length: 12 }).map((_, i) => {
+                          const isDisabled = i < startMonth;
+                          return (
+                            <td key={i} className={`p-3 bg-white group-hover:bg-gray-50/20 transition-colors ${isDisabled ? 'opacity-30' : ''}`}>
+                              <input 
+                                type="number" 
+                                disabled={isDisabled}
+                                value={planData.monthlyData[i].tedarikler?.[s.id]?.miktar || ''}
+                                onChange={e => updateTedarik(i, s.id, 'miktar', e.target.value)}
+                                className="w-full text-center py-3 bg-blue-50/30 border-none rounded-xl text-xs font-black text-blue-800 focus:bg-white focus:ring-2 focus:ring-blue-100 outline-none transition-all disabled:cursor-not-allowed"
+                                placeholder="0"
+                              />
+                            </td>
+                          );
+                        })}
+                      </tr>
+                      {/* Fiyat Row */}
+                      <tr className="border-t border-gray-50 group">
+                        <td className="sticky left-56 bg-white p-3 border-r border-gray-100 z-10 text-[9px] font-black text-emerald-600 uppercase tracking-widest text-center group-hover:bg-gray-50/50">Fiyat (₺)</td>
+                        {Array.from({ length: 12 }).map((_, i) => {
+                          const isDisabled = i < startMonth;
+                          return (
+                            <td key={i} className={`p-3 bg-white group-hover:bg-gray-50/20 transition-colors ${isDisabled ? 'opacity-30' : ''}`}>
+                              <input 
+                                type="number" 
+                                disabled={isDisabled}
+                                value={planData.monthlyData[i].tedarikler?.[s.id]?.fiyat || ''}
+                                onChange={e => updateTedarik(i, s.id, 'fiyat', e.target.value)}
+                                className="w-full text-center py-3 bg-emerald-50/30 border-none rounded-xl text-xs font-black text-emerald-700 focus:bg-white focus:ring-2 focus:ring-emerald-100 outline-none transition-all disabled:cursor-not-allowed"
+                                placeholder="0"
+                              />
+                            </td>
+                          );
+                        })}
+                      </tr>
+                      {/* Nakliye Row */}
+                      <tr className="border-t border-gray-50 border-b border-gray-100 group">
+                        <td className="sticky left-56 bg-white p-3 border-r border-gray-100 z-10 text-[9px] font-black text-enba-orange uppercase tracking-widest text-center whitespace-nowrap group-hover:bg-gray-50/50">Nakliye (₺)</td>
+                        {Array.from({ length: 12 }).map((_, i) => {
+                          const isDisabled = i < startMonth;
+                          return (
+                            <td key={i} className={`p-3 bg-white group-hover:bg-gray-50/20 transition-colors ${isDisabled ? 'opacity-30' : ''}`}>
+                              <div className="flex items-center gap-2">
+                                <input 
+                                    type="number" 
+                                    disabled={isDisabled}
+                                    value={planData.monthlyData[i].tedarikler?.[s.id]?.nakliye || ''}
+                                    onChange={e => updateTedarik(i, s.id, 'nakliye', e.target.value)}
+                                    className="w-full text-center py-3 bg-orange-50/30 border-none rounded-xl text-xs font-black text-enba-orange focus:bg-white focus:ring-2 focus:ring-orange-100 outline-none transition-all disabled:cursor-not-allowed"
+                                    placeholder="0"
+                                />
+                                {!isDisabled && (
+                                  <button 
+                                      onClick={() => copyForward(i, s.id)}
+                                      className="w-9 h-9 shrink-0 flex items-center justify-center bg-enba-dark text-white rounded-xl shadow-sm hover:bg-black transition-all active:scale-90" 
+                                      title="Sonraki aylara kopyala"
+                                  >
+                                      <Copy size={14} />
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    </React.Fragment>
+                  );
+                })}
                 {planData.suppliers.length === 0 && (
                    <tr>
                      <td colSpan={14} className="py-20 text-center text-gray-300 italic font-medium">Lütfen önce tedarikçi ekleyiniz.</td>
