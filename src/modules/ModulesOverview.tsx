@@ -63,6 +63,7 @@ export const ModulesOverview: React.FC<ModulesOverviewProps> = ({ navigate, menu
             </div>
           </button>
         ))}
+      </div>
     </div>
   );
 };
