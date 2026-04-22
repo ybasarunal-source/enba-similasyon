@@ -248,7 +248,7 @@ export const App: React.FC = () => {
             return (
               <button
                 key={item.id}
-                onClick={() => { setActiveModule(item.id as ModuleType); setProfileAvatar(getProfileAvatar()); }}
+                onClick={() => navigate(item.id)}
                 title={!isSidebarOpen ? item.label : ''}
                 className={`
                   group relative flex items-center rounded-xl transition-all duration-200
@@ -377,20 +377,21 @@ export const App: React.FC = () => {
             <div style={{ width: '1px', height: '16px', background: '#e5e7eb' }} />
 
             {/* Breadcrumb */}
-            <div className="flex items-center gap-2 text-gray-400">
-              <span
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => navigate('modules')}
                 style={{ fontFamily: "'Poppins', sans-serif" }}
-                className="text-[11px] font-medium text-gray-400 uppercase tracking-widest"
+                className="text-[11px] font-medium text-gray-400 hover:text-[var(--enba-orange)] transition-colors uppercase tracking-widest"
               >
                 Enba
-              </span>
+              </button>
               <ChevronRight size={12} className="text-gray-300" />
-              <span
+              <button
                 style={{ fontFamily: "'Poppins', sans-serif" }}
-                className="text-[12px] font-semibold text-[var(--enba-dark)]"
+                className="text-[12px] font-bold text-[var(--enba-dark)] cursor-default"
               >
                 {activeLabel}
-              </span>
+              </button>
             </div>
           </div>
 
