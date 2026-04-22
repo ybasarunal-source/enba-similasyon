@@ -226,11 +226,20 @@ export const parasutService = {
         item.relationships?.employee?.data?.id;
       const categoryId = item.relationships?.category?.data?.id;
       
-      let catName = categoryId ? findCategory(categoryId) : 'Genel';
+      let catName = categoryId ? findCategory(categoryId) : '';
       
-      // Explicitly set category for salaries and taxes if they don't have one
-      if (itemType === 'salaries') catName = '770 Personel Maaş ve Giderleri';
-      if (itemType === 'taxes') catName = '770 Vergi ve Fonlar';
+      // Better default categories if missing in Parasut
+      if (!catName) {
+        if (itemType === 'sales_invoices') catName = '600 Genel Satış Gelirleri';
+        else if (itemType === 'purchase_bills') catName = '150 Genel Alış Maliyetleri';
+        else if (itemType === 'expenditures') catName = '770 Genel İşletme Giderleri';
+        else if (itemType === 'salaries') catName = '770 Personel Maaş ve Giderleri';
+        else if (itemType === 'taxes') catName = '770 Vergi ve Fonlar';
+        else catName = 'Genel';
+      }
+      
+      const netTotal = parseFloat(a.net_total || a.total_net || '0');
+      const grossTotal = parseFloat(a.gross_total || a.total_gross || a.total_amount || a.amount || '0');
       
       return {
         id: item.id,
@@ -240,8 +249,8 @@ export const parasutService = {
         description: a.description || a.invoice_series || '—',
         contact_name: contactId ? findContact(contactId) : '—',
         category_name: catName,
-        net_total: parseFloat(a.net_total || '0'),
-        gross_total: parseFloat(a.gross_total || a.total_gross || '0'),
+        net_total: netTotal > 0 ? netTotal : grossTotal, // Fallback to gross if net is 0 (common for receipts)
+        gross_total: grossTotal,
         currency: a.currency || 'TRL',
         payment_status: a.payment_status || '',
         invoice_no: [a.invoice_series, a.invoice_id].filter(Boolean).join('-') || item.id,

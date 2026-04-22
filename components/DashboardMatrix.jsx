@@ -94,16 +94,16 @@ window.DashboardMatrix = function DashboardMatrix({
 
                             return (
                                 <React.Fragment key={grup.id}>
-                                    <tr className="row-header group-row" style={{color: '#92400E', backgroundColor: '#FEF3C7', cursor: 'pointer', transition: 'background 0.2s', borderBottom:'1px solid #FDE68A'}} onClick={() => setGrupGosterim(prev => ({...prev, [grup.id]: !prev[grup.id]}))} title="Detayları Gizle/Göster">
+                                    <tr className="row-header group-row" style={{color: 'var(--highlight-warning-text)', backgroundColor: 'var(--highlight-warning-bg)', cursor: 'pointer', transition: 'background 0.2s', borderBottom:'1px solid var(--border-strong)'}} onClick={() => setGrupGosterim(prev => ({...prev, [grup.id]: !prev[grup.id]}))} title="Detayları Gizle/Göster">
                                         <td style={{paddingLeft: '10px', whiteSpace: 'nowrap'}}>
                                             <i className={`ph ${isExpanded ? 'ph-caret-down' : 'ph-caret-right'}`} style={{fontSize: '12px', marginRight:'8px', display:'inline-block'}}></i>
                                             <span style={{fontWeight: 800}}>{grup.ad.toUpperCase()}</span>
                                         </td>
                                         {aktifPlanlar.map(p => {
                                             const subTutar = grubunKoduListesi.reduce((sum, kodu) => sum + (Number(p.giderler[kodu]) || 0), 0);
-                                            return <td key={p.id} style={{color: '#92400E', fontWeight: 800}}>{subTutar > 0 ? window.fmt(subTutar) : '-'}</td>;
+                                            return <td key={p.id} style={{color: 'var(--highlight-warning-text)', fontWeight: 800}}>{subTutar > 0 ? window.fmt(subTutar) : '-'}</td>;
                                         })}
-                                        <td className="total-col" style={{color: '#92400E', fontWeight:800}}>
+                                        <td className="total-col" style={{color: 'var(--highlight-warning-text)', fontWeight:800}}>
                                             {window.fmt(grubunKoduListesi.reduce((sum, kodu) => sum + (Number(sonuc.giderDetaylari[kodu]?.tutar) || 0), 0))} ₺
                                         </td>
                                     </tr>
@@ -146,10 +146,10 @@ window.DashboardMatrix = function DashboardMatrix({
                             <td className="total-col" style={{color: 'var(--error)', fontWeight:700}}>{window.fmt(sonuc.amortisman)} ₺</td>
                         </tr>
 
-                        <tr style={{ background: '#FFF7ED', borderTop: '2px solid #FED7AA' }}>
-                            <td style={{ padding: '18px 10px', fontWeight: 900, fontSize: '16px', color:'var(--enba-dark)' }}>NET DURUM (KÂR / ZARAR)</td>
-                            {aktifPlanlar.map(p => <td key={p.id} style={{ padding: '18px 10px', fontWeight: 900, fontSize: '16px', color: p.netKar>=0?'#16A34A':'var(--error)' }}>{window.fmt(p.netKar)}</td>)}
-                            <td className="total-col" style={{ padding: '18px 10px', fontWeight: 900, fontSize: '20px', color: sonuc.net>=0?'#15803D':'var(--error)' }}>{window.fmt(sonuc.net)} ₺</td>
+                        <tr style={{ background: 'var(--highlight-warning-bg)', borderTop: '2px solid var(--border-strong)' }}>
+                            <td style={{ padding: '18px 10px', fontWeight: 900, fontSize: '16px', color:'var(--text-primary)' }}>NET DURUM (KÂR / ZARAR)</td>
+                            {aktifPlanlar.map(p => <td key={p.id} style={{ padding: '18px 10px', fontWeight: 900, fontSize: '16px', color: p.netKar>=0?'var(--highlight-success-text)':'var(--highlight-error-text)' }}>{window.fmt(p.netKar)}</td>)}
+                            <td className="total-col" style={{ padding: '18px 10px', fontWeight: 900, fontSize: '20px', color: sonuc.net>=0?'var(--highlight-success-text)':'var(--highlight-error-text)' }}>{window.fmt(sonuc.net)} ₺</td>
                         </tr>
                     </tbody>
                 </table>

@@ -96,47 +96,96 @@
 }
 
 :root {
-    /* === Design Token Palette (Enba Official: Orange & Industrial Dark) === */
-    --primary:              #1A1A1A;
-    --primary-container:    #262626;
-    --secondary:            #E35205; /* Official Enba Orange */
-    --secondary-container:  #FFF2EB;
-    --on-secondary:         #ffffff;
-    --on-secondary-container: #4D1B00;
-
-    --surface:              #F7F7F7; /* Minimalist Background */
-    --surface-dim:          #EAEAEA;
-    --surface-container-lowest: #ffffff;
-    --surface-container-low:    #F2F2F2;
-    --surface-container:        #EBEBEB;
-    --surface-container-high:   #E0E0E0;
-    --surface-variant:      rgba(26, 26, 26, 0.70);
-    --on-surface:           #1A1A1A;
-    --on-surface-variant:   #333333;
-    --outline-variant:      rgba(26, 26, 26, 0.10);
-
-    /* Enba Official Variables */
+    /* --- Core Brand Tokens --- */
     --enba-orange:      #E35205;
     --enba-orange-dark: #C24604;
     --enba-dark:        #1A1A1A;
     --enba-dark-light:  #333333;
+    --enba-orange-soft: rgba(227, 82, 5, 0.15);
 
-    /* Aliases for backward compatibility during brand refresh */
-    --color-primary:    var(--enba-dark);
-    --color-accent:     var(--enba-orange);
+    /* --- Semantic Tokens (Light Mode Default) --- */
+    --bg-main:          #F8F9FA;
+    --bg-surface:       #ffffff;
+    --bg-surface-low:   #F1F5F9;
+    --bg-surface-high:  #E2E8F0;
+    
+    --text-primary:     #0F172A;
+    --text-secondary:   #64748B;
+    --text-muted:       #94A3B8;
+    --text-on-accent:   #ffffff;
+    
+    --border-subtle:    #F1F5F9;
+    --border-strong:    #E2E8F0;
+    --outline-accent:   rgba(227, 82, 5, 0.3);
+    
+    --shadow-sm:        0 1px 3px rgba(0,0,0,0.05);
+    --shadow-md:        0 10px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.05);
+    --shadow-lg:        0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
 
-    /* Semantic */
-    --error:            #C0392B;
-    --error-container:  #FDECEA;
-    --warning:          #FFB800;
-    --info:             #2980B9;
-    --success:          #27AE60;
-    --capex-purple:     #6C5CE7;
+    /* --- Design System Standards --- */
+    --card-radius:      1.25rem;
+    --button-radius:    0.75rem;
+    --input-radius:     0.6rem;
 
-    /* elevation */
-    --shadow-ambient:   0px 24px 48px -12px rgba(0, 0, 0, 0.05);
-    --shadow-card:      0 8px 24px rgba(0, 0, 0, 0.04);
-    --shadow-elevated:  0 12px 40px rgba(0, 0, 0, 0.08);
+    /* --- Typography Tokens --- */
+    --font-size-xs:     11px;
+    --font-size-sm:     13px;
+    --font-size-base:   14px;
+    --font-size-lg:     18px;
+    --font-size-xl:     24px;
+    --font-size-xxl:    36px;
+
+    /* --- Semantic Status --- */
+    --error:            #EF4444;
+    --warning:          #F59E0B;
+    --info:             #3B82F6;
+    --success:          #10B981;
+
+    --highlight-success-bg:     #DCFCE7;
+    --highlight-success-text:   #166534;
+    --highlight-error-bg:       #FEE2E2;
+    --highlight-error-text:     #991B1B;
+    --highlight-warning-bg:     #FEF3C7;
+    --highlight-warning-text:   #92400E;
+
+    /* --- Backward Compatibility Aliases --- */
+    --surface:          var(--bg-main);
+    --on-surface:       var(--text-primary);
+    --surface-container-lowest: var(--bg-surface);
+    --surface-container-low:    var(--bg-surface-low);
+    --surface-container:        var(--bg-surface-low);
+    --surface-container-high:   var(--bg-surface-high);
+    --on-surface-variant:       var(--text-secondary);
+    --outline-variant:          var(--border-subtle);
+    --shadow-card:              var(--shadow-md);
+    --shadow-elevated:          var(--shadow-lg);
+}
+
+[data-theme='dark'] {
+    --bg-main:          #020617; /* Darkest Slate */
+    --bg-surface:       #0F172A; /* Deep Slate */
+    --bg-surface-low:   #1E293B; /* Slate 800 */
+    --bg-surface-high:  #334155; /* Slate 700 */
+    
+    --text-primary:     #F8FAFC;
+    --text-secondary:   #94A3B8;
+    --text-muted:       #64748B;
+    
+    --border-subtle:    rgba(255,255,255,0.05);
+    --border-strong:    rgba(255,255,255,0.1);
+    
+    --shadow-sm:        0 1px 3px rgba(0,0,0,0.3);
+    --shadow-md:        0 10px 25px -5px rgba(0,0,0,0.4), 0 8px 10px -6px rgba(0,0,0,0.4);
+    --shadow-lg:        0 20px 25px -5px rgba(0,0,0,0.5), 0 8px 10px -6px rgba(0,0,0,0.5);
+    
+    --enba-dark:        #F8FAFC;
+
+    --highlight-success-bg:     rgba(22, 163, 74, 0.15);
+    --highlight-success-text:   #4ADE80;
+    --highlight-error-bg:       rgba(220, 38, 38, 0.15);
+    --highlight-error-text:     #F87171;
+    --highlight-warning-bg:     rgba(245, 158, 11, 0.15);
+    --highlight-warning-text:   #FBBF24;
 }
 
 /* ============================================================
@@ -151,7 +200,7 @@
 
 h1, h2, h3, h4 {
     font-family: 'Manrope', sans-serif;
-    color: var(--enba-dark);
+    color: var(--text-primary);
     margin: 0;
 }
 
@@ -163,12 +212,13 @@ h3 { font-weight: 700; font-size: 1.4rem; }
 
 /* High-Premium Card */
 .enba-card {
-    background: #ffffff !important;
-    border: 1px solid #eeeeee !important;
-    border-radius: 1.5rem !important;
+    background: var(--bg-surface) !important;
+    border: 1px solid var(--border-subtle) !important;
+    border-radius: var(--card-radius) !important;
     padding: 24px !important;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04) !important;
+    box-shadow: var(--shadow-md) !important;
     transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+    color: var(--text-primary) !important;
 }
 
 .enba-card:hover {
@@ -219,9 +269,9 @@ h3 { font-weight: 700; font-size: 1.4rem; }
 }
 
 .btn-secondary {
-    background: #ffffff;
-    color: var(--enba-dark);
-    border: 1px solid #ddd;
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    border: 1px solid var(--border-strong);
 }
 
 .btn-secondary:hover {
@@ -288,8 +338,8 @@ body {
     margin: 0;
     padding: 0;
     font-family: 'Inter', sans-serif;
-    background-color: var(--surface);
-    color: var(--on-surface);
+    background-color: var(--bg-main);
+    color: var(--text-primary);
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
 }
@@ -441,7 +491,8 @@ body {
 .factory {
     flex: 1;
     padding: 40px 48px;
-    background-color: var(--surface);
+    background-color: var(--bg-main);
+    color: var(--text-primary);
     display: flex;
     flex-direction: column;
     overflow-y: auto;

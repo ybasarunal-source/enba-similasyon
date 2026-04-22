@@ -405,6 +405,22 @@ export const PnL: React.FC = () => {
         return { aylar: aList, modeller: mList };
     }, [gelirData, pGiderData]);
 
+    const topExpenses = useMemo(() => {
+        if (!pGiderData) return [];
+        return Object.keys(pGiderData.kategoriler)
+            .map(kat => {
+                let total = 0;
+                Object.keys(pGiderData.kategoriler[kat]).forEach(ay => {
+                    Object.keys(pGiderData.kategoriler[kat][ay]).forEach(mod => {
+                        total += pGiderData.kategoriler[kat][ay][mod];
+                    });
+                });
+                return { kat, total };
+            })
+            .sort((a, b) => b.total - a.total)
+            .slice(0, 10);
+    }, [pGiderData]);
+
     const getHucreselTutar = (data: PnLData | null, kat: string, ay: string, mod: string) => {
         if(!data || !data.kategoriler[kat] || !data.kategoriler[kat][ay] || !data.kategoriler[kat][ay][mod]) return 0;
         return data.kategoriler[kat][ay][mod];
@@ -896,6 +912,43 @@ export const PnL: React.FC = () => {
                     </div>
                 </div>
             </div>
+            
+            {/* Top Expenses Insight */}
+            {pGiderData && topExpenses.length > 0 && (
+                <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-card">
+                    <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-red-50 text-red-500 rounded-xl flex items-center justify-center">
+                                <TrendingDown size={20} />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-black text-enba-dark tracking-tight">En Yüksek 10 Gider Kalemi</h3>
+                                <p className="text-xs text-gray-400 font-medium italic">Seçili dönem için toplam tutara göre sıralanmıştır</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                        {topExpenses.map((exp, idx) => (
+                            <div key={exp.kat} className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100 flex flex-col gap-2 group hover:bg-white hover:border-red-100 transition-all">
+                                <div className="flex items-center justify-between">
+                                    <span className="w-6 h-6 rounded-lg bg-gray-200 text-gray-500 text-[10px] font-black flex items-center justify-center group-hover:bg-red-500 group-hover:text-white transition-all">
+                                        {idx + 1}
+                                    </span>
+                                    <span className="text-[10px] font-black text-red-500 bg-red-50 px-2 py-0.5 rounded-md">
+                                        %{Math.round((exp.total / (pGiderData?.aylikToplam[aylar[aylar.length-1]]?.Toplam || 1)) * 100) || '-'}
+                                    </span>
+                                </div>
+                                <div className="text-xs font-bold text-gray-800 line-clamp-2 min-h-[2rem]">
+                                    {exp.kat}
+                                </div>
+                                <div className="text-sm font-black text-enba-dark mt-1">
+                                    {fmt(exp.total)} ₺
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
             
             {/* Report Area */}
             {(gelirData || pGiderData) && (

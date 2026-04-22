@@ -4,6 +4,14 @@
 function EnbaRouter() {
     const [sayfa, setSayfa] = React.useState('landing');
     const [lang, setLang] = React.useState(() => localStorage.getItem('enba_lang') || 'TR');
+    const [theme, setTheme] = React.useState(() => localStorage.getItem('enba_theme') || 'light');
+
+    React.useEffect(() => {
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('enba_theme', theme);
+    }, [theme]);
+
+    const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
 
     const handleLangChange = (newLang) => {
         localStorage.setItem('enba_lang', newLang);
@@ -202,7 +210,7 @@ function EnbaRouter() {
     return (
         <div>
             {/* Üst Navigasyon — tüm sayfalarda görünür */}
-            <TopNav aktifSayfa={sayfa} navigate={navigate} user={user} onLogout={onLogout} currentLang={lang} onLangChange={handleLangChange} />
+            <TopNav aktifSayfa={sayfa} navigate={navigate} user={user} onLogout={onLogout} currentLang={lang} onLangChange={handleLangChange} theme={theme} toggleTheme={toggleTheme} />
 
             {sayfa === 'landing'     && <LandingPage navigate={navigate} user={user} t={window.t} />}
             {sayfa === 'isPlanlama'  && <App globalAyarlar={globalAyarlar} />}
@@ -302,7 +310,7 @@ const getNavGroups = () => [
     }
 ];
 
-function TopNav({ aktifSayfa, navigate, user, onLogout, currentLang, onLangChange }) {
+function TopNav({ aktifSayfa, navigate, user, onLogout, currentLang, onLangChange, theme, toggleTheme }) {
     const [acikGrup,  setAcikGrup]  = React.useState(null);
     const [mobAcik,   setMobAcik]   = React.useState(false);
     const [mobGrup,   setMobGrup]   = React.useState(null);
@@ -438,8 +446,23 @@ function TopNav({ aktifSayfa, navigate, user, onLogout, currentLang, onLangChang
                     })}
                 </div>
 
+                {/* Theme Toggle */}
+                <button 
+                    onClick={toggleTheme}
+                    style={{ 
+                        background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', 
+                        color: theme === 'light' ? 'rgba(255,255,255,0.8)' : '#FFB380', 
+                        borderRadius: '50%', width: '32px', height: '32px', 
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                        transition: 'all 0.2s', margin: '0 8px', flexShrink: 0
+                    }}
+                    title={theme === 'light' ? 'Karanlık Mod' : 'Aydınlık Mod'}
+                >
+                    <i className={`ph ${theme === 'light' ? 'ph-moon' : 'ph-sun-dim'}`} style={{ fontSize: '16px' }}></i>
+                </button>
+
                 {/* Kullanıcı Profili (Avatar + Dropdown) */}
-                <div className="nav-dd-wrap" style={{ position: 'relative', marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div className="nav-dd-wrap" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column' }} className="nav-user-info-text">
                         <span style={{ color: '#fff', fontSize: '13px', fontWeight: 700 }}>{user.name}</span>
                         <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '10px', textTransform: 'uppercase' }}>{user.role}</span>
