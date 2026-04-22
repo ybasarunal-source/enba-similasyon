@@ -137,7 +137,7 @@ export const parasutService = {
     let page = 1;
     const pageSize = '25';
 
-    while (page <= 40) { // Safety limit: max 1000 records (40 pages * 25)
+    while (page <= 200) { // Safety limit: max 5000 records (200 pages * 25)
       const resp = await this.request(path, { ...params, 'page[size]': pageSize, 'page[number]': String(page) });
       allData = [...allData, ...(resp.data || [])];
       allIncluded = [...allIncluded, ...(resp.included || [])];
@@ -176,6 +176,24 @@ export const parasutService = {
     return this._mapInvoices(raw, 'expenditures');
   },
 
+  async getSalaries(companyId: string, dateFrom: string, dateTo: string): Promise<ParasutInvoice[]> {
+    const raw = await this.requestAll(`/${companyId}/salaries`, {
+      'filter[issue_date][gteq]': dateFrom,
+      'filter[issue_date][lteq]': dateTo,
+      'sort': '-issue_date',
+    });
+    return this._mapInvoices(raw, 'expenditures'); // Salaries are also expenses
+  },
+
+  async getTaxes(companyId: string, dateFrom: string, dateTo: string): Promise<ParasutInvoice[]> {
+    const raw = await this.requestAll(`/${companyId}/taxes`, {
+      'filter[issue_date][gteq]': dateFrom,
+      'filter[issue_date][lteq]': dateTo,
+      'sort': '-issue_date',
+    });
+    return this._mapInvoices(raw, 'expenditures'); // Taxes are expenses
+  },
+
   _mapInvoices(raw: any, type: 'sales_invoices' | 'purchase_bills' | 'expenditures'): ParasutInvoice[] {
     const included: any[] = raw.included || [];
     const findContact = (id: string) => {
@@ -188,11 +206,18 @@ export const parasutService = {
     };
     return (raw.data || []).map((item: any) => {
       const a = item.attributes || {};
+      const itemType = item.type; // 'sales_invoices', 'purchase_bills', 'expenditures', 'salaries', 'taxes'
       const contactId =
         item.relationships?.contact?.data?.id ||
         item.relationships?.supplier?.data?.id ||
         item.relationships?.employee?.data?.id;
       const categoryId = item.relationships?.category?.data?.id;
+      
+      let catName = categoryId ? findCategory(categoryId) : 'Genel';
+      
+      // Explicitly set category for salaries and taxes if they don't have one
+      if (itemType === 'salaries') catName = '770 Personel Maaş ve Giderleri';
+      if (itemType === 'taxes') catName = '770 Vergi ve Fonlar';
       
       return {
         id: item.id,
@@ -201,7 +226,7 @@ export const parasutService = {
         due_date: a.due_date || '',
         description: a.description || a.invoice_series || '—',
         contact_name: contactId ? findContact(contactId) : '—',
-        category_name: categoryId ? findCategory(categoryId) : 'Genel',
+        category_name: catName,
         net_total: parseFloat(a.net_total || '0'),
         gross_total: parseFloat(a.gross_total || a.total_gross || '0'),
         currency: a.currency || 'TRL',

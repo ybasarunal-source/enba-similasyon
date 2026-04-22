@@ -255,16 +255,21 @@ export const PnL: React.FC = () => {
             setGelirDosya(`Paraşüt: ${startDate} - ${endDate}`);
             setGiderDosya(`Paraşüt: ${startDate} - ${endDate}`);
 
-            // Fetch Sales (Income), Purchase Bills and Expenditures (Expense)
-            const [sales, purchases, expenditures] = await Promise.all([
+            // Fetch all document types that affect P&L
+            const [sales, purchases, expenditures, salaries, taxes] = await Promise.all([
                 parasutService.getSalesInvoices(companyId, startDate, endDate),
                 parasutService.getPurchaseBills(companyId, startDate, endDate),
-                parasutService.getExpenditures(companyId, startDate, endDate)
+                parasutService.getExpenditures(companyId, startDate, endDate),
+                parasutService.getSalaries(companyId, startDate, endDate),
+                parasutService.getTaxes(companyId, startDate, endDate)
             ]);
+
+            // Combine all expense types
+            const allExpenses = [...purchases, ...expenditures, ...salaries, ...taxes];
 
             // Map and Save
             setGelirData(mapParasutInvoicesToPnL(sales));
-            setGiderData(mapParasutInvoicesToPnL([...purchases, ...expenditures]));
+            setGiderData(mapParasutInvoicesToPnL(allExpenses));
         } catch (err: any) {
             setSyncError(err.message || 'Senkronizasyon hatası');
             alert("Paraşüt verisi çekilemedi: " + (err.message || 'Bilinmeyen hata'));
