@@ -29,7 +29,8 @@ import {
   Filter,
   Check,
   Maximize,
-  Minimize
+  Minimize,
+  Pin
 } from 'lucide-react';
 import { microsoftService } from '../api/microsoft';
 import { googleService } from '../api/google';
@@ -50,6 +51,7 @@ interface Task {
   msListId?: string;
   gTaskId?: string;
   gListId?: string;
+  isPinned?: boolean;
 }
 
 interface Project {
@@ -282,6 +284,12 @@ export const Tasks: React.FC = () => {
     }
   };
 
+  const togglePin = (taskId: string | number) => {
+    const updated = tasks.map(t => t.id === taskId ? { ...t, isPinned: !t.isPinned } : t);
+    setTasks(updated);
+    localStorage.setItem('enba_tasks', JSON.stringify(updated));
+  };
+
   const handleDeleteTask = async (task: Task) => {
     if (!confirm('Bu görev silinecek. Emin misiniz?')) return;
     
@@ -497,6 +505,8 @@ export const Tasks: React.FC = () => {
         return matchesProject && matchesSource && matchesSearch;
       })
       .sort((a, b) => {
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
         if (a.status === 'done' && b.status !== 'done') return 1;
         if (a.status !== 'done' && b.status === 'done') return -1;
         return 0;
@@ -531,6 +541,9 @@ export const Tasks: React.FC = () => {
               >
                 {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
+              <button onClick={() => togglePin(task.id)} className={`p-0.5 rounded transition-colors ${task.isPinned ? 'bg-orange-50 text-enba-orange' : 'hover:bg-gray-100 text-gray-400'}`} title={task.isPinned ? 'Sabitlemeyi Kaldır' : 'Başa Sabitle'}>
+                <Pin size={11} className={task.isPinned ? 'fill-current' : ''} />
+              </button>
               <button onClick={() => { setEditingTask(task); setFormData(task); setShowTaskForm(true); }} className="p-0.5 hover:bg-gray-100 rounded text-gray-400 hover:text-enba-dark transition-colors"><Pencil size={11} /></button>
               <button onClick={() => handleDeleteTask(task)} className="p-0.5 hover:bg-rose-50 rounded text-gray-400 hover:text-rose-600 transition-colors"><Trash2 size={11} /></button>
             </div>
