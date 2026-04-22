@@ -23,13 +23,14 @@ export const ModulesOverview: React.FC<ModulesOverviewProps> = ({ navigate, menu
       </div>
 
       {/* Search Bar */}
-      <div className="relative mb-10 max-w-md">
+      <div className="relative mb-10" style={{ maxWidth: '400px' }}>
         <input 
           type="text" 
           placeholder="Modül ara..." 
           value={searchTerm}
           onChange={e => setSearchTerm(e.target.value)}
-          className="w-full bg-white border border-gray-100 rounded-2xl px-12 py-3.5 shadow-sm focus:ring-4 focus:ring-[var(--enba-orange)]/10 focus:border-[var(--enba-orange)]/30 transition-all outline-none text-base font-semibold text-[var(--enba-dark)]"
+          style={{ height: '48px', paddingLeft: '48px' }}
+          className="w-full bg-white border border-gray-100 rounded-2xl shadow-sm focus:ring-4 focus:ring-[var(--enba-orange)]/10 focus:border-[var(--enba-orange)]/30 transition-all outline-none text-base font-semibold text-[var(--enba-dark)]"
         />
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={20} strokeWidth={2.5} />
       </div>
@@ -45,8 +46,11 @@ export const ModulesOverview: React.FC<ModulesOverviewProps> = ({ navigate, menu
             {/* Decorative element */}
             <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-gray-50 rounded-full group-hover:bg-[var(--enba-orange)]/10 transition-colors duration-500" />
             
-            <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 group-hover:bg-[var(--enba-orange)] group-hover:text-white transition-all duration-500 shadow-sm group-hover:shadow-lg group-hover:shadow-[var(--enba-orange)]/30 group-hover:scale-110">
-              <item.icon size={22} strokeWidth={2} />
+            <div 
+              style={{ width: '44px', height: '44px' }}
+              className="bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 group-hover:bg-[var(--enba-orange)] group-hover:text-white transition-all duration-500 shadow-sm group-hover:shadow-lg group-hover:shadow-[var(--enba-orange)]/30 group-hover:scale-110"
+            >
+              <item.icon size={20} strokeWidth={2.5} />
             </div>
             
             <div className="relative z-10">
