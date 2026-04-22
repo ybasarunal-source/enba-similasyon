@@ -39,6 +39,76 @@ interface SavedReport {
   payload: any;
 }
 
+const PNL_CONFIG = [
+  { 
+    section: "I. HASILAT", 
+    items: [
+      { id: "M109", label: "Mal Satışı (Toplam)", isRevenue: true },
+      { id: "M149", label: "Al sat Toplam", isRevenue: true },
+      { id: "M159", label: "Diğer Satışlar", isRevenue: true },
+      { id: "M179", label: "Toplam Satış", isTotal: true, formula: ["M109", "M149", "M159"], isRevenue: true },
+      { id: "M249", label: "SATIŞ Harcamaları", isRevenue: false },
+      { id: "M209", label: "Nakliye", isRevenue: false },
+      { id: "M299", label: "Hasılat", isTotal: true, formula: ["M179", "-M249", "-M209"], isRevenue: true },
+    ]
+  },
+  { 
+    section: "II. MAL MALİYETLERİ", 
+    items: [
+      { id: "M301", label: "Alım Nakliye", isRevenue: false },
+      { id: "M305", label: "Mal alım maliyeti", isRevenue: false },
+      { id: "M339", label: "Mal Maliyetleri", isTotal: true, formula: ["M301", "M305"], isRevenue: false },
+      { id: "M349", label: "Ticaret Mal maliyeti", isRevenue: false },
+      { id: "M399", label: "KATKI", isTotal: true, formula: ["M299", "-M339", "-M349"], isRevenue: true },
+    ]
+  },
+  { 
+    section: "III. ENERJİ MALİYETLERİ", 
+    items: [
+      { id: "M405", label: "Elektrik", isRevenue: false },
+      { id: "M410", label: "Yakıt", isRevenue: false },
+      { id: "M415", label: "Su", isRevenue: false },
+      { id: "M419", label: "Toplam enerji maliyeti", isTotal: true, formula: ["M405", "M410", "M415"], isRevenue: false },
+    ]
+  },
+  { 
+    section: "IV. PERSONEL MALİYETLERİ", 
+    items: [
+      { id: "M450", label: "Maaşlar", isRevenue: false },
+      { id: "M455", label: "sigortalar", isRevenue: false },
+      { id: "M475", label: "Yol", isRevenue: false },
+      { id: "M480", label: "Yemek", isRevenue: false },
+      { id: "M489", label: "Personel maliyetleri", isTotal: true, formula: ["M450", "M455", "M475", "M480"], isRevenue: false },
+    ]
+  },
+  { 
+    section: "V. DİĞER GİDERLER", 
+    items: [
+      { id: "M509", label: "Bakım Onarım", isRevenue: false },
+      { id: "M310", label: "Kimyasallar", isRevenue: false },
+      { id: "M315", label: "Tel ve diğer Malzeme ÇUVAL", isRevenue: false },
+      { id: "M609", label: "DIŞ Hizmetler", isRevenue: false },
+      { id: "M610", label: "Kiralama Ücretleri", isRevenue: false },
+      { id: "M615", label: "Seyahat Giderleri", isRevenue: false },
+      { id: "M620", label: "İletişim Ücretleri", isRevenue: false },
+      { id: "M625", label: "Yasal Ücretler", isRevenue: false },
+      { id: "M630", label: "Reklama", isRevenue: false },
+      { id: "M635", label: "sigortalar", isRevenue: false },
+      { id: "M640", label: "Bilişim Harcamaları", isRevenue: false },
+      { id: "M650", label: "Banka giderleri", isRevenue: false },
+      { id: "M660", label: "Beklenmedik Giderler", isRevenue: false },
+      { id: "M665", label: "Harçlar ve Vergiler", isRevenue: false },
+      { id: "M689", label: "Tolam Diğer Maliyetler", isTotal: true, formula: ["M509", "M310", "M315", "M609", "M610", "M615", "M620", "M625", "M630", "M635", "M640", "M650", "M660", "M665"], isRevenue: false },
+    ]
+  },
+  { 
+    section: "SONUÇ", 
+    items: [
+      { id: "M769", label: "EBITDA", isTotal: true, formula: ["M399", "-M419", "-M489", "-M689"], isRevenue: true }
+    ]
+  }
+];
+
 export const PnL: React.FC = () => {
     const [gelirData, setGelirData] = useState<PnLData | null>(null);
     const [giderData, setGiderData] = useState<PnLData | null>(null);
@@ -181,19 +251,22 @@ export const PnL: React.FC = () => {
             let rawKat = (kategoriKey && row[kategoriKey]) ? row[kategoriKey].toString().trim() : "Genel/Diğer";
             let tutar = Number(row[tutarKey]) || 0;
             
-            let model = "Ortak";
+            // Extract Code (Mxxx)
             let baseKat = rawKat;
-            
+            const codeMatch = rawKat.match(/(M\d{3})/);
+            if (codeMatch) {
+                baseKat = codeMatch[1];
+            } else {
+                // Try to find code by label matching
+                const configItem = PNL_CONFIG.flatMap(s => s.items).find(i => rawKat.toLowerCase().includes(i.label.toLowerCase()));
+                if (configItem) baseKat = configItem.id;
+            }
+
+            let model = "Ortak";
             const match = rawKat.match(/^([A-Za-z]+)[-_ \.]?(\d+.*)$/);
             if (match) {
                 let prefix = match[1].toUpperCase();
-                baseKat = match[2].trim();
-                
-                if (prefix === 'YM') {
-                    model = "Ortak";
-                } else {
-                    model = prefix;
-                }
+                if (prefix !== 'YM') model = prefix;
             }
             
             modellerSet.add(model);
@@ -293,22 +366,23 @@ export const PnL: React.FC = () => {
             let rawKat = inv.category_name || 'Genel';
             let tutar = inv.net_total || 0;
             
-            let model = "Ortak";
+            // Extract Code (Mxxx)
             let baseKat = rawKat;
-            
-            // Re-use existing regex for model extraction
-            const match = rawKat.match(/^([A-Za-z]+)[-_ \.]?(\d+.*)$/);
-            if (match) {
-                let prefix = match[1].toUpperCase();
-                baseKat = match[2].trim();
-                model = (prefix === 'YM') ? "Ortak" : prefix;
+            const codeMatch = rawKat.match(/(M\d{3})/);
+            if (codeMatch) {
+                baseKat = codeMatch[1];
             } else {
-                // If contact name contains model info
-                const contactMatch = inv.contact_name.match(/^([A-Za-z]+)[-_ \.]?(\d+.*)$/);
-                if (contactMatch) {
-                    let prefix = contactMatch[1].toUpperCase();
-                    model = (prefix === 'YM') ? "Ortak" : prefix;
-                }
+                // Try to find code by label matching
+                const configItem = PNL_CONFIG.flatMap(s => s.items).find(i => rawKat.toLowerCase().includes(i.label.toLowerCase()));
+                if (configItem) baseKat = configItem.id;
+            }
+
+            let model = "Ortak";
+            // If contact name contains model info
+            const contactMatch = inv.contact_name.match(/^([A-Za-z]+)[-_ \.]?(\d+.*)$/);
+            if (contactMatch) {
+                let prefix = contactMatch[1].toUpperCase();
+                if (prefix !== 'YM') model = prefix;
             }
             
             modellerSet.add(model);
@@ -422,15 +496,61 @@ export const PnL: React.FC = () => {
             .slice(0, 10);
     }, [pGiderData]);
 
-    const getHucreselTutar = (data: PnLData | null, kat: string, ay: string, mod: string) => {
-        if(!data || !data.kategoriler[kat] || !data.kategoriler[kat][ay] || !data.kategoriler[kat][ay][mod]) return 0;
-        return data.kategoriler[kat][ay][mod];
-    };
+    const unifiedData = useMemo(() => {
+        if(!gelirData && !pGiderData) return null;
+        
+        // Merge Kategoriler from both
+        const mergedKats = { 
+            ...(gelirData?.kategoriler || {}), 
+            ...(pGiderData?.kategoriler || {}) 
+        };
 
-    const getAylikToplam = (data: PnLData | null, ay: string, mod: string) => {
-        if(!data || !data.aylikToplam[ay]) return 0;
-        if(mod === 'Toplam') return data.aylikToplam[ay].Toplam || 0;
-        return data.aylikToplam[ay][mod] || 0;
+        const getVal = (code: string, ay: string, mod: string): number => {
+            if (mergedKats[code] && mergedKats[code][ay] && mergedKats[code][ay][mod]) {
+                return mergedKats[code][ay][mod];
+            }
+            return 0;
+        };
+
+        const getAylikVal = (code: string, ay: string): number => {
+            let total = 0;
+            modeller.forEach(m => { total += getVal(code, ay, m); });
+            return total;
+        };
+
+        // Add calculated rows (Totals)
+        PNL_CONFIG.forEach(section => {
+            section.items.forEach(item => {
+                if (item.isTotal && item.formula) {
+                    if (!mergedKats[item.id]) mergedKats[item.id] = {};
+                    aylar.forEach(ay => {
+                        if (!mergedKats[item.id][ay]) mergedKats[item.id][ay] = {};
+                        modeller.forEach(mod => {
+                            let total = 0;
+                            item.formula!.forEach(f => {
+                                if (f.startsWith('-')) {
+                                    total -= getVal(f.substring(1), ay, mod);
+                                } else {
+                                    total += getVal(f, ay, mod);
+                                }
+                            });
+                            mergedKats[item.id][ay][mod] = total;
+                        });
+                    });
+                }
+            });
+        });
+
+        return {
+            aylar,
+            modeller,
+            kategoriler: mergedKats
+        };
+    }, [gelirData, pGiderData, aylar, modeller]);
+
+    const getHucreselTutar = (data: any, code: string, ay: string, mod: string) => {
+        if(!data || !data.kategoriler[code] || !data.kategoriler[code][ay] || !data.kategoriler[code][ay][mod]) return 0;
+        return data.kategoriler[code][ay][mod];
     };
 
     const excelIndir = () => {
@@ -465,168 +585,15 @@ export const PnL: React.FC = () => {
         }, 500); 
     };
 
-    // Table Rendering Core Component
     const renderTableDenge = (sAylar: string[], oAylarFull: string[], showTotalCol: boolean, tableIndex: number) => {
-        const renderKategoriSatirlari = (data: PnLData | null, tipLabel: string, colorClass: string, isGrupEnabled = false) => {
-            if(!data) return null;
-            let kats = Object.keys(data.kategoriler).sort();
-            
-            if (!isGrupEnabled) {
-                return kats.filter(k => k.toLowerCase().includes(katFiltre.toLowerCase())).map(kat => {
-                    const isAmort = kat.includes("Amortisman");
-                    let rowGenelGlobal = 0;
-                    oAylarFull.forEach(ga => modeller.forEach(gm => { rowGenelGlobal += getHucreselTutar(data, kat, ga, gm) }));
-
-                    return (
-                        <tr key={kat} className={`border-b border-gray-100 transition-colors hover:bg-gray-50/50 ${isAmort ? 'bg-enba-orange/5' : ''}`}>
-                            <td className="p-4 border-r border-gray-100 bg-gray-50/30 text-center w-[80px] min-w-[80px]">
-                                <span className="text-[9px] font-black px-2 py-0.5 bg-white border border-gray-200 text-gray-500 rounded uppercase tracking-wider shadow-sm">{tipLabel}</span>
-                            </td>
-                            <td className="p-4 w-[220px] min-w-[220px]">
-                                <span className={`text-xs font-bold ${isAmort ? 'text-enba-orange' : 'text-enba-dark'}`}>
-                                  {isAmort ? <Gem size={14} className="inline mr-1" /> : null} {kat}
-                                </span>
-                            </td>
-                            {sAylar.map(ay => {
-                                let ayTop = 0;
-                                const modCells = modeller.map(mod => {
-                                    const val = getHucreselTutar(data, kat, ay, mod);
-                                    ayTop += val;
-                                    return <td key={`${ay}-${mod}`} className={`p-4 text-right text-xs font-medium border-l border-gray-50 ${mod === modeller[0] ? 'border-l-gray-200' : ''}`}>{val > 0 ? fmt(val) : '-'}</td>
-                                });
-                                
-                                if (modelDetayAcik) {
-                                    return (
-                                        <React.Fragment key={`frag-${kat}-${ay}`}>
-                                            {modCells}
-                                            <td className="p-4 text-right text-xs font-black border-l border-gray-200 bg-gray-50/30">{ayTop > 0 ? fmt(ayTop) : '-'}</td>
-                                        </React.Fragment>
-                                    );
-                                } else {
-                                    return <td key={`top-${kat}-${ay}`} className="p-4 text-right text-xs font-black border-l-2 border-gray-100 bg-gray-50/30">{ayTop > 0 ? fmt(ayTop) : '-'}</td>;
-                                }
-                            })}
-                            {showTotalCol && <td className={`p-4 text-right text-xs font-black border-l-2 border-gray-200 ${colorClass}`}>{fmt(rowGenelGlobal)} ₺</td>}
-                        </tr>
-                    )
-                });
-            } else {
-                let gruplar: Record<string, string[]> = {};
-                kats.forEach(kat => {
-                    let grupAdi = "Diğer Giderler";
-                    const m = kat.match(/^(\d{1})/); 
-                    if (m) {
-                        const digit = m[1];
-                        if (digit === "2") grupAdi = "200'ler - Satış Maliyeti";
-                        else if (digit === "3") grupAdi = "300'ler - Alış Maliyeti";
-                        else if (digit === "4") grupAdi = "400'ler - Üretim Maliyetleri";
-                        else if (digit === "5") grupAdi = "500'ler - Bakım Onarım Maliyeti";
-                        else if (digit === "6") grupAdi = "600'ler - Diğer Maliyetler";
-                        else grupAdi = `${digit}00'lü Grubun Toplamı`;
-                    }
-                    if (!gruplar[grupAdi]) gruplar[grupAdi] = [];
-                    gruplar[grupAdi].push(kat);
-                });
-
-                return Object.keys(gruplar).sort().map(grupAdi => {
-                    const isOpen = isPdfGenerating ? true : grupAcik[grupAdi] === true; 
-                    let grupGloGenel = 0;
-                    oAylarFull.forEach(ga => modeller.forEach(gm => { 
-                        gruplar[grupAdi].forEach(kat => grupGloGenel += getHucreselTutar(data, kat, ga, gm));
-                    }));
-
-                    const grupAylarAraTpl: Record<string, Record<string, number>> = {}; 
-                    sAylar.forEach(ay => {
-                        if (!grupAylarAraTpl[ay]) grupAylarAraTpl[ay] = {};
-                        modeller.forEach(mod => {
-                            let cellTot = 0;
-                            gruplar[grupAdi].forEach(kat => {
-                                cellTot += getHucreselTutar(data, kat, ay, mod);
-                            });
-                            grupAylarAraTpl[ay][mod] = cellTot;
-                        });
-                    });
-
-                    return (
-                        <React.Fragment key={grupAdi}>
-                            <tr className="bg-gray-50/50 cursor-pointer border-b border-gray-200" onClick={() => toggleGrup(grupAdi)}>
-                                <td className="p-4 border-r border-gray-100 bg-gray-100/30 text-center w-[80px] min-w-[80px]">
-                                   <span className="text-[9px] font-black px-2 py-0.5 bg-gray-800 text-gray-400 rounded uppercase tracking-wider shadow-sm">{tipLabel}</span>
-                                </td>
-                                <td className="p-4 flex items-center gap-2 w-[220px] min-w-[220px]">
-                                   <span className={`transition-transform duration-300 ${isOpen ? 'rotate-90' : ''}`}>
-                                      <Eye className="text-gray-400" size={14} /> 
-                                   </span>
-                                   <span className="text-xs font-black text-enba-dark tracking-tight">{grupAdi}</span>
-                                </td>
-                                {sAylar.map(ay => {
-                                    let ayTop = 0;
-                                    const modCells = modeller.map(mod => {
-                                        const val = grupAylarAraTpl[ay][mod];
-                                        ayTop += val;
-                                        return <td key={`grp-${ay}-${mod}`} className={`p-4 text-right text-xs font-bold text-enba-dark border-l border-gray-100 ${mod === modeller[0] ? 'border-l-gray-300' : ''}`}>{val > 0 ? fmt(val) : '-'}</td>
-                                    });
-                                    
-                                    if (modelDetayAcik) {
-                                         return (
-                                            <React.Fragment key={`frag-grp-${ay}`}>
-                                                {modCells}
-                                                <td className="p-4 text-right text-xs font-black bg-gray-100/50 text-enba-dark border-l border-gray-300">{fmt(ayTop)}</td>
-                                            </React.Fragment>
-                                         )
-                                    } else {
-                                         return <td key={`top-grp-${ay}`} className="p-4 text-right text-xs font-black bg-gray-100/50 text-enba-dark border-l-2 border-gray-300">{fmt(ayTop)}</td>
-                                    }
-                                })}
-                                {showTotalCol && <td className="p-4 text-right text-xs font-black bg-gray-100 text-enba-dark border-l-2 border-gray-300">{fmt(grupGloGenel)} ₺</td>}
-                            </tr>
-
-                            {isOpen && gruplar[grupAdi].filter(k => k.toLowerCase().includes(katFiltre.toLowerCase())).map(kat => {
-                                    const isAmort = kat.includes("Amortisman");
-                                    let cGloGenel = 0;
-                                    oAylarFull.forEach(ga => modeller.forEach(gm => cGloGenel += getHucreselTutar(data, kat, ga, gm)));
-
-                                    return (
-                                        <tr key={kat} className={`border-b border-gray-50 transition-colors hover:bg-gray-100/20 ${isAmort ? 'bg-enba-orange/5' : ''}`}>
-                                            <td className="p-3 border-r border-gray-100 bg-gray-50/10 w-[80px] min-w-[80px]"></td>
-                                            <td className="p-3 pl-10 text-[11px] font-bold text-gray-500 flex items-center gap-2 w-[220px] min-w-[220px]">
-                                                <span className="text-gray-200">└</span>
-                                                {kat}
-                                            </td>
-                                            {sAylar.map(ay => {
-                                                let ayTop = 0;
-                                                const modCells = modeller.map(mod => {
-                                                    const val = getHucreselTutar(data, kat, ay, mod);
-                                                    ayTop += val;
-                                                    return <td key={`ch-${ay}-${mod}`} className={`p-3 text-right text-[11px] font-medium text-gray-400 border-l border-gray-50 ${mod === modeller[0] ? 'border-l-gray-100' : ''}`}>{val > 0 ? fmt(val) : '-'}</td>
-                                                });
-                                                if (modelDetayAcik) {
-                                                    return (
-                                                        <React.Fragment key={`frag-ch-${ay}`}>
-                                                            {modCells}
-                                                            <td className="p-3 text-right text-[11px] font-bold bg-gray-50/50 text-gray-600 border-l border-gray-100">{ayTop > 0 ? fmt(ayTop) : '-'}</td>
-                                                        </React.Fragment>
-                                                    )
-                                                } else {
-                                                    return <td key={`top-ch-${ay}`} className="p-3 text-right text-[11px] font-bold bg-gray-50/50 text-gray-600 border-l-2 border-gray-100">{ayTop > 0 ? fmt(ayTop) : '-'}</td>
-                                                }
-                                            })}
-                                            {showTotalCol && <td className={`p-3 text-right text-[11px] font-black bg-gray-50 text-enba-dark border-l-2 border-gray-100`}>{fmt(cGloGenel)} ₺</td>}
-                                        </tr>
-                                    )
-                            })}
-                        </React.Fragment>
-                    );
-                });
-            }
-        };
+        if (!unifiedData) return null;
 
         return (
             <div className="overflow-x-auto custom-scrollbar">
               <table id={`pnl-table-report-${tableIndex}`} className="w-full border-collapse border border-gray-200 bg-white">
                   <thead>
                       <tr className="bg-enba-dark text-white">
-                          <th rowSpan={2} className="p-4 text-center text-[10px] font-black uppercase tracking-widest w-[80px] border-b-4 border-enba-orange border-r border-white/10">Tür</th>
+                          <th rowSpan={2} className="p-4 text-center text-[10px] font-black uppercase tracking-widest w-[80px] border-b-4 border-enba-orange border-r border-white/10">Kod</th>
                           <th rowSpan={2} className="p-6 text-left text-[10px] font-black uppercase tracking-[3px] w-[220px] border-b-4 border-enba-orange">Kategori</th>
                           {sAylar.map(ay => (
                               <th key={ay} colSpan={modelDetayAcik ? modeller.length + 1 : 1} className="p-4 text-center text-[11px] font-black uppercase tracking-widest border-l border-white/10">{ay}</th>
@@ -651,117 +618,66 @@ export const PnL: React.FC = () => {
                       </tr>
                   </thead>
                   <tbody>
-                      
-                      {gelirData && (
-                          <>
-                              <tr className="bg-emerald-50 text-emerald-700 cursor-pointer" onClick={() => setGelirAcik(!gelirAcik)}>
-                                  <td colSpan={2 + sAylar.length * (modelDetayAcik ? modeller.length + 1 : 1) + (showTotalCol ? 1 : 0)} className="p-5 font-black text-sm border-b-2 border-emerald-500 flex items-center gap-3">
-                                      {gelirAcik ? <Eye size={18} /> : <EyeOff size={18} />}
-                                      I. GELİRLER (SATIŞLAR)
+                      {PNL_CONFIG.map((section, sIdx) => (
+                          <React.Fragment key={section.section}>
+                              <tr className="bg-gray-50/80">
+                                  <td colSpan={2 + sAylar.length * (modelDetayAcik ? modeller.length + 1 : 1) + (showTotalCol ? 1 : 0)} className="p-4 font-black text-[11px] text-enba-orange-dark uppercase tracking-[2px] border-b border-gray-200">
+                                      {section.section}
                                   </td>
                               </tr>
-                              {(gelirAcik || isPdfGenerating) && renderKategoriSatirlari(gelirData, 'GELİR', 'text-emerald-600')}
-                              
-                              <tr className="bg-emerald-100/50">
-                                  <td colSpan={2} className="p-5 font-black text-sm text-emerald-800">GELİR TOPLAMI</td>
-                                  {sAylar.map(ay => {
-                                      let ayTop = getAylikToplam(gelirData, ay, 'Toplam');
-                                      const modCells = modeller.map(mod => (
-                                          <td key={`gelir-${ay}-${mod}`} className="p-5 text-right font-bold text-emerald-700 border-l border-emerald-200/30">{fmt(getAylikToplam(gelirData, ay, mod))}</td>
-                                      ));
+                              {section.items.map(item => {
+                                  let rowTotal = 0;
+                                  oAylarFull.forEach(ay => modeller.forEach(m => { rowTotal += getHucreselTutar(unifiedData, item.id, ay, m) }));
 
-                                      if (modelDetayAcik) {
-                                          return (
-                                              <React.Fragment key={`frag-geltop-${ay}`}>
-                                                  {modCells}
-                                                  <td className="p-5 text-right font-black text-emerald-800 bg-emerald-100 border-l-2 border-emerald-300">{fmt(ayTop)}</td>
-                                              </React.Fragment>
-                                          )
-                                      } else {
-                                          return <td key={`top-geltop-${ay}`} className="p-5 text-right font-black text-emerald-800 bg-emerald-100 border-l-2 border-emerald-300">{fmt(ayTop)}</td>
-                                      }
-                                  })}
-                                  {showTotalCol && <td className="p-5 text-right font-black text-emerald-900 bg-emerald-200 border-l-2 border-emerald-400">
-                                      {fmt(oAylarFull.reduce((a, b) => a + getAylikToplam(gelirData, b, 'Toplam'), 0))} ₺
-                                  </td>}
-                              </tr>
-                          </>
-                      )}
+                                  return (
+                                      <tr key={item.id} className={`border-b border-gray-100 transition-colors hover:bg-gray-50/50 ${item.isTotal ? 'bg-gray-50 font-bold' : ''}`}>
+                                          <td className="p-4 border-r border-gray-100 bg-gray-50/30 text-center w-[80px] min-w-[80px]">
+                                              <span className="text-[9px] font-black px-2 py-0.5 bg-white border border-gray-200 text-gray-500 rounded uppercase tracking-wider shadow-sm">{item.id}</span>
+                                          </td>
+                                          <td className="p-4 w-[220px] min-w-[220px]">
+                                              <span className={`text-xs ${item.isTotal ? 'font-black text-enba-dark' : 'font-bold text-gray-600'}`}>
+                                                  {item.label}
+                                              </span>
+                                          </td>
+                                          {sAylar.map(ay => {
+                                              let ayTop = 0;
+                                              const modCells = modeller.map(mod => {
+                                                  const val = getHucreselTutar(unifiedData, item.id, ay, mod);
+                                                  ayTop += val;
+                                                  return (
+                                                      <td key={`${ay}-${mod}`} className={`p-4 text-right text-xs font-medium border-l border-gray-50 ${mod === modeller[0] ? 'border-l-gray-200' : ''}`}>
+                                                          {val !== 0 ? fmt(val) : '-'}
+                                                      </td>
+                                                  );
+                                              });
 
-                      {pGiderData && (
-                          <>
-                              <tr className="bg-red-50 text-red-700 cursor-pointer" onClick={() => setGiderAcik(!giderAcik)}>
-                                  <td colSpan={2 + sAylar.length * (modelDetayAcik ? modeller.length + 1 : 1) + (showTotalCol ? 1 : 0)} className="p-5 font-black text-sm border-b-2 border-red-500 mt-4 flex items-center gap-3">
-                                      {giderAcik ? <Eye size={18} /> : <EyeOff size={18} />}
-                                      II. GİDERLER (OPEX & YATIRIM)
-                                  </td>
-                              </tr>
-                              {(giderAcik || isPdfGenerating) && renderKategoriSatirlari(pGiderData, 'GİDER', 'text-red-600', true)}
-                              
-                              <tr className="bg-red-100/50">
-                                  <td colSpan={2} className="p-5 font-black text-sm text-red-800">GİDER TOPLAMI</td>
-                                  {sAylar.map(ay => {
-                                      let ayTop = getAylikToplam(pGiderData, ay, 'Toplam');
-                                      const modCells = modeller.map(mod => (
-                                          <td key={`gider-${ay}-${mod}`} className="p-5 text-right font-bold text-red-700 border-l border-red-200/30">{fmt(getAylikToplam(pGiderData, ay, mod))}</td>
-                                      ));
-
-                                      if (modelDetayAcik) {
-                                          return (
-                                              <React.Fragment key={`frag-gidtop-${ay}`}>
-                                                  {modCells}
-                                                  <td className="p-5 text-right font-black text-red-800 bg-red-100 border-l-2 border-red-300">{fmt(ayTop)}</td>
-                                              </React.Fragment>
-                                          )
-                                      } else {
-                                          return <td key={`top-gidtop-${ay}`} className="p-5 text-right font-black text-red-800 bg-red-100 border-l-2 border-red-300">{fmt(ayTop)}</td>
-                                      }
-                                  })}
-                                  {showTotalCol && <td className="p-5 text-right font-black text-red-900 bg-red-200 border-l-2 border-red-400">
-                                      {fmt(oAylarFull.reduce((a, b) => a + getAylikToplam(pGiderData, b, 'Toplam'), 0))} ₺
-                                  </td>}
-                              </tr>
-                          </>
-                      )}
-
-                      {(gelirData && pGiderData) && (
-                          <>
-                              <tr className="bg-enba-dark text-white border-t-8 border-white">
-                                  <td colSpan={2} className="p-8 text-lg font-black tracking-tighter uppercase italic">EBITDA Net Kâr/Zarar</td>
-                                  {sAylar.map(ay => {
-                                      const gTot = getAylikToplam(gelirData, ay, 'Toplam');
-                                      const cTot = getAylikToplam(pGiderData, ay, 'Toplam');
-                                      const netTop = gTot - cTot;
-                                      const topColorClass = netTop > 0 ? 'text-emerald-400' : (netTop < 0 ? 'text-red-400' : 'text-gray-400');
-
-                                      const modCells = modeller.map(mod => {
-                                          const gelir = getAylikToplam(gelirData, ay, mod);
-                                          const c = getAylikToplam(pGiderData, ay, mod);
-                                          const net = gelir - c;
-                                          const rColorClass = net > 0 ? 'text-emerald-400' : (net < 0 ? 'text-red-400' : 'text-gray-400'); 
-                                          return <td key={`net-${ay}-${mod}`} className={`p-8 text-right font-black text-sm border-l border-white/5 ${rColorClass}`}>{fmt(net)}</td>
-                                      });
-
-                                      if (modelDetayAcik) {
-                                          return (
-                                              <React.Fragment key={`f-net-${ay}`}>
-                                                  {modCells}
-                                                  <td className={`p-8 text-right font-black text-lg border-l-2 border-white/20 bg-white/5 ${topColorClass}`}>{fmt(netTop)}</td>
-                                              </React.Fragment>
-                                          )
-                                      } else {
-                                          return <td key={`top-net-${ay}`} className={`p-8 text-right font-black text-lg border-l-2 border-white/20 bg-white/5 ${topColorClass}`}>{fmt(netTop)}</td>
-                                      }
-                                  })}
-                                  
-                                  {showTotalCol && <td className="p-8 text-right font-black text-xl border-l-4 border-enba-orange bg-enba-orange/10 text-white">
-                                      {fmt(
-                                          oAylarFull.reduce((a, b) => a + getAylikToplam(gelirData, b, 'Toplam'), 0) - oAylarFull.reduce((a, b) => a + getAylikToplam(pGiderData, b, 'Toplam'), 0)
-                                      )} ₺
-                                  </td>}
-                              </tr>
-                          </>
-                      )}
+                                              if (modelDetayAcik) {
+                                                  return (
+                                                      <React.Fragment key={`frag-${item.id}-${ay}`}>
+                                                          {modCells}
+                                                          <td className={`p-4 text-right text-xs font-black border-l border-gray-200 ${item.isRevenue ? 'text-emerald-700' : 'text-red-700'} ${item.isTotal ? 'bg-gray-100/50' : 'bg-gray-50/30'}`}>
+                                                              {ayTop !== 0 ? fmt(ayTop) : '-'}
+                                                          </td>
+                                                      </React.Fragment>
+                                                  );
+                                              } else {
+                                                  return (
+                                                      <td key={`top-${item.id}-${ay}`} className={`p-4 text-right text-xs font-black border-l-2 border-gray-100 ${item.isRevenue ? 'text-emerald-700' : 'text-red-700'} ${item.isTotal ? 'bg-gray-100/50' : 'bg-gray-50/30'}`}>
+                                                          {ayTop !== 0 ? fmt(ayTop) : '-'}
+                                                      </td>
+                                                  );
+                                              }
+                                          })}
+                                          {showTotalCol && (
+                                              <td className={`p-4 text-right text-xs font-black border-l-2 border-gray-200 ${item.isRevenue ? 'text-emerald-800 bg-emerald-50/30' : 'text-red-800 bg-red-50/30'}`}>
+                                                  {fmt(rowTotal)} ₺
+                                              </td>
+                                          )}
+                                      </tr>
+                                  );
+                              })}
+                          </React.Fragment>
+                      ))}
                   </tbody>
               </table>
             </div>
