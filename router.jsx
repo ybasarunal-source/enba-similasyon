@@ -446,6 +446,24 @@ function TopNav({ aktifSayfa, navigate, user, onLogout, currentLang, onLangChang
                     })}
                 </div>
 
+                {/* Language Switcher on Bar */}
+                <div style={{ display: 'flex', background: 'rgba(255,255,255,0.06)', borderRadius: '2rem', padding: '2px', margin: '0 4px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                    {['TR', 'EN', 'DE'].map(lg => (
+                        <button key={lg} 
+                            onClick={() => onLangChange(lg)}
+                            style={{ 
+                                padding: '4px 10px', borderRadius: '2rem', border: 'none', 
+                                background: currentLang === lg ? 'var(--enba-orange)' : 'transparent',
+                                color: currentLang === lg ? '#fff' : 'rgba(255,255,255,0.4)', 
+                                fontSize: '10px', fontWeight: 800, cursor: 'pointer',
+                                transition: 'all 0.2s'
+                            }}
+                        >
+                            {lg}
+                        </button>
+                    ))}
+                </div>
+
                 {/* Theme Toggle */}
                 <button 
                     onClick={toggleTheme}
@@ -498,23 +516,6 @@ function TopNav({ aktifSayfa, navigate, user, onLogout, currentLang, onLangChang
                             <button style={dropItemStyle(aktifSayfa === 'profilim')} onClick={() => { navigate('profilim'); setAcikGrup(null); }}>
                                 <i className="ph ph-user"></i> {window.t('nav.profile')}
                             </button>
-                            <div style={{ height: '1px', background: 'rgba(255,255,255,0.08)', margin: '4px 0' }} />
-                            
-                            <div style={{ padding: '4px 8px', display: 'flex', gap: '4px' }}>
-                                {['TR', 'EN', 'DE'].map(lg => (
-                                    <button key={lg} 
-                                        onClick={() => { onLangChange(lg); setAcikGrup(null); }}
-                                        style={{ 
-                                            flex: 1, padding: '6px', borderRadius: '0.4rem', border: 'none', 
-                                            background: currentLang === lg ? 'var(--enba-orange)' : 'rgba(255,255,255,0.05)',
-                                            color: '#fff', fontSize: '10px', fontWeight: 800, cursor: 'pointer'
-                                        }}
-                                    >
-                                        {lg}
-                                    </button>
-                                ))}
-                            </div>
-
                             <div style={{ height: '1px', background: 'rgba(255,255,255,0.08)', margin: '4px 0' }} />
                             <button style={{ ...dropItemStyle(false), color: '#ff7675' }} onClick={onLogout}>
                                 <i className="ph ph-sign-out"></i> {window.t('auth.logout')}
