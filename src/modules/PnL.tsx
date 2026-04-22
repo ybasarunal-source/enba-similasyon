@@ -49,7 +49,7 @@ const PNL_CONFIG = [
     section: "I. HASILAT", 
     items: [
       { id: "M109", label: "Mal Satışı (Toplam)", isRevenue: true },
-      { id: "M149", label: "Al sat Toplam", isRevenue: true },
+      { id: "M149", label: "Al Sat Toplam", isRevenue: true },
       { id: "M159", label: "Diğer Satışlar", isRevenue: true },
       { id: "M179", label: "Toplam Satış", isTotal: true, formula: ["M109", "M149", "M159"], isRevenue: true },
       { id: "M249", label: "SATIŞ Harcamaları", isRevenue: false },
@@ -80,7 +80,7 @@ const PNL_CONFIG = [
     section: "IV. PERSONEL MALİYETLERİ", 
     items: [
       { id: "M450", label: "Maaşlar", isRevenue: false },
-      { id: "M455", label: "sigortalar", isRevenue: false },
+      { id: "M455", label: "Sigortalar", isRevenue: false },
       { id: "M475", label: "Yol", isRevenue: false },
       { id: "M480", label: "Yemek", isRevenue: false },
       { id: "M489", label: "Personel maliyetleri", isTotal: true, formula: ["M450", "M455", "M475", "M480"], isRevenue: false },
@@ -97,19 +97,20 @@ const PNL_CONFIG = [
       { id: "M615", label: "Seyahat Giderleri", isRevenue: false },
       { id: "M620", label: "İletişim Ücretleri", isRevenue: false },
       { id: "M625", label: "Yasal Ücretler", isRevenue: false },
-      { id: "M630", label: "Reklama", isRevenue: false },
-      { id: "M635", label: "sigortalar", isRevenue: false },
+      { id: "M630", label: "Reklam", isRevenue: false },
+      { id: "M635", label: "Sigortalar (Diğer)", isRevenue: false },
       { id: "M640", label: "Bilişim Harcamaları", isRevenue: false },
       { id: "M650", label: "Banka giderleri", isRevenue: false },
       { id: "M660", label: "Beklenmedik Giderler", isRevenue: false },
       { id: "M665", label: "Harçlar ve Vergiler", isRevenue: false },
-      { id: "M689", label: "Tolam Diğer Maliyetler", isTotal: true, formula: ["M509", "M310", "M315", "M609", "M610", "M615", "M620", "M625", "M630", "M635", "M640", "M650", "M660", "M665"], isRevenue: false },
+      { id: "M689", label: "Toplam Diğer Maliyetler", isTotal: true, formula: ["M310", "M315", "M609", "M610", "M615", "M620", "M625", "M630", "M635", "M640", "M650", "M660", "M665"], isRevenue: false },
     ]
   },
   { 
     section: "SONUÇ", 
     items: [
-      { id: "M769", label: "EBITDA", isTotal: true, formula: ["M399", "-M419", "-M489", "-M689"], isRevenue: true }
+      { id: "TOTAL_COST", label: "Toplam Maliyet", isTotal: true, formula: ["M689", "M509", "M489", "M419"], isRevenue: false },
+      { id: "M769", label: "EBITDA", isTotal: true, formula: ["M399", "-TOTAL_COST"], isRevenue: true }
     ]
   }
 ];
