@@ -307,6 +307,7 @@ export const Parasut: React.FC = () => {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-bold text-gray-800 tracking-tight">Finansal Takip</h1>
+              <span className="bg-gray-100 text-gray-400 text-[9px] font-black px-2 py-0.5 rounded-full">VER 1.5 - Paraşüt</span>
               <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-full border border-emerald-100/50">
                 <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
                 <span className="text-[10px] font-bold uppercase tracking-wider">Bağlı</span>
@@ -437,7 +438,8 @@ export const Parasut: React.FC = () => {
               <tr className="border-b border-gray-100">
                 {[
                   { id: 'issue_date', label: 'Tarih' },
-                  { id: 'type', label: 'Tür / Kategori' },
+                  { id: 'type', label: 'Tür' },
+                  { id: 'category_name', label: 'Kategori' },
                   { id: 'contact_name', label: 'Cari / Açıklama' },
                   { id: 'invoice_no', label: 'Fatura No' },
                   { id: 'gross_total', label: 'Tutar (KDV\'li)' },
@@ -477,8 +479,12 @@ export const Parasut: React.FC = () => {
                         {isIncome ? <ArrowUpRight size={11} /> : <ArrowDownRight size={11} />}
                         {isIncome ? 'Gelir' : 'Gider'}
                       </div>
-                      {inv.category_name && (
-                        <div className="text-[10px] text-gray-400 mt-1 font-medium">{inv.category_name}</div>
+                    </td>
+                    <td className="px-5 py-3.5">
+                      {inv.category_name ? (
+                        <div className="text-xs font-semibold text-gray-700">{inv.category_name}</div>
+                      ) : (
+                        <span className="text-xs text-gray-300 italic">Kategorisiz</span>
                       )}
                     </td>
                     <td className="px-5 py-3.5 max-w-[200px]">
