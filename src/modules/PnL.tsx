@@ -18,6 +18,7 @@ import {
   Gem,
   Info,
   RefreshCw,
+  TrendingDown,
   Calendar as CalendarIcon,
   Link as LinkIcon
 } from 'lucide-react';
