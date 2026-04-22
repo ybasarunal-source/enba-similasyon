@@ -20,7 +20,9 @@ import {
   RefreshCw,
   TrendingDown,
   Calendar as CalendarIcon,
-  Link as LinkIcon
+  Link as LinkIcon,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 import { fmt } from '../utils/formatters';
 import { parasutService, ParasutInvoice } from '../api/parasut';
@@ -140,9 +142,21 @@ export const PnL: React.FC = () => {
     const [companyId, setCompanyId] = useState(parasutService.getCompany()?.id || '');
     
     const [grupAcik, setGrupAcik] = useState<Record<string, boolean>>({});
+    const [sectionAcik, setSectionAcik] = useState<Record<string, boolean>>({
+        "I. HASILAT": true,
+        "II. MAL MALİYETLERİ": true,
+        "III. ENERJİ MALİYETLERİ": true,
+        "IV. PERSONEL MALİYETLERİ": true,
+        "V. DİĞER GİDERLER": true,
+        "SONUÇ": true
+    });
 
     const toggleGrup = (grupAd: string) => {
         setGrupAcik(prev => ({...prev, [grupAd]: prev[grupAd] === undefined ? true : !prev[grupAd]}));
+    };
+
+    const toggleSection = (sectionName: string) => {
+        setSectionAcik(prev => ({...prev, [sectionName]: !prev[sectionName]}));
     };
 
     useEffect(() => {
@@ -618,66 +632,75 @@ export const PnL: React.FC = () => {
                       </tr>
                   </thead>
                   <tbody>
-                      {PNL_CONFIG.map((section, sIdx) => (
-                          <React.Fragment key={section.section}>
-                              <tr className="bg-gray-50/80">
-                                  <td colSpan={2 + sAylar.length * (modelDetayAcik ? modeller.length + 1 : 1) + (showTotalCol ? 1 : 0)} className="p-4 font-black text-[11px] text-enba-orange-dark uppercase tracking-[2px] border-b border-gray-200">
-                                      {section.section}
-                                  </td>
-                              </tr>
-                              {section.items.map(item => {
-                                  let rowTotal = 0;
-                                  oAylarFull.forEach(ay => modeller.forEach(m => { rowTotal += getHucreselTutar(unifiedData, item.id, ay, m) }));
+                      {PNL_CONFIG.map((section, sIdx) => {
+                          const isOpen = sectionAcik[section.section] || isPdfGenerating;
+                          return (
+                              <React.Fragment key={section.section}>
+                                  <tr 
+                                      className="bg-gray-50/80 cursor-pointer hover:bg-gray-100 transition-colors border-b border-gray-200"
+                                      onClick={() => toggleSection(section.section)}
+                                  >
+                                      <td colSpan={2 + sAylar.length * (modelDetayAcik ? modeller.length + 1 : 1) + (showTotalCol ? 1 : 0)} className="p-4 font-black text-[11px] text-enba-orange-dark uppercase tracking-[2px]">
+                                          <div className="flex items-center gap-2">
+                                              {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                                              {section.section}
+                                          </div>
+                                      </td>
+                                  </tr>
+                                  {isOpen && section.items.map(item => {
+                                      let rowTotal = 0;
+                                      oAylarFull.forEach(ay => modeller.forEach(m => { rowTotal += getHucreselTutar(unifiedData, item.id, ay, m) }));
 
-                                  return (
-                                      <tr key={item.id} className={`border-b border-gray-100 transition-colors hover:bg-gray-50/50 ${item.isTotal ? 'bg-gray-50 font-bold' : ''}`}>
-                                          <td className="p-4 border-r border-gray-100 bg-gray-50/30 text-center w-[80px] min-w-[80px]">
-                                              <span className="text-[9px] font-black px-2 py-0.5 bg-white border border-gray-200 text-gray-500 rounded uppercase tracking-wider shadow-sm">{item.id}</span>
-                                          </td>
-                                          <td className="p-4 w-[220px] min-w-[220px]">
-                                              <span className={`text-xs ${item.isTotal ? 'font-black text-enba-dark' : 'font-bold text-gray-600'}`}>
-                                                  {item.label}
-                                              </span>
-                                          </td>
-                                          {sAylar.map(ay => {
-                                              let ayTop = 0;
-                                              const modCells = modeller.map(mod => {
-                                                  const val = getHucreselTutar(unifiedData, item.id, ay, mod);
-                                                  ayTop += val;
-                                                  return (
-                                                      <td key={`${ay}-${mod}`} className={`p-4 text-right text-xs font-medium border-l border-gray-50 ${mod === modeller[0] ? 'border-l-gray-200' : ''}`}>
-                                                          {val !== 0 ? fmt(val) : '-'}
-                                                      </td>
-                                                  );
-                                              });
+                                      return (
+                                          <tr key={item.id} className={`border-b border-gray-100 transition-colors hover:bg-gray-50/50 ${item.isTotal ? 'bg-gray-50 font-bold' : ''}`}>
+                                              <td className="p-4 border-r border-gray-100 bg-gray-50/30 text-center w-[80px] min-w-[80px]">
+                                                  <span className="text-[9px] font-black px-2 py-0.5 bg-white border border-gray-200 text-gray-500 rounded uppercase tracking-wider shadow-sm">{item.id}</span>
+                                              </td>
+                                              <td className="p-4 w-[220px] min-w-[220px]">
+                                                  <span className={`text-xs ${item.isTotal ? 'font-black text-enba-dark' : 'font-bold text-gray-600'}`}>
+                                                      {item.label}
+                                                  </span>
+                                              </td>
+                                              {sAylar.map(ay => {
+                                                  let ayTop = 0;
+                                                  const modCells = modeller.map(mod => {
+                                                      const val = getHucreselTutar(unifiedData, item.id, ay, mod);
+                                                      ayTop += val;
+                                                      return (
+                                                          <td key={`${ay}-${mod}`} className={`p-4 text-right text-xs font-medium border-l border-gray-50 ${mod === modeller[0] ? 'border-l-gray-200' : ''}`}>
+                                                              {val !== 0 ? fmt(val) : '-'}
+                                                          </td>
+                                                      );
+                                                  });
 
-                                              if (modelDetayAcik) {
-                                                  return (
-                                                      <React.Fragment key={`frag-${item.id}-${ay}`}>
-                                                          {modCells}
-                                                          <td className={`p-4 text-right text-xs font-black border-l border-gray-200 ${item.isRevenue ? 'text-emerald-700' : 'text-red-700'} ${item.isTotal ? 'bg-gray-100/50' : 'bg-gray-50/30'}`}>
+                                                  if (modelDetayAcik) {
+                                                      return (
+                                                          <React.Fragment key={`frag-${item.id}-${ay}`}>
+                                                              {modCells}
+                                                              <td className={`p-4 text-right text-xs font-black border-l border-gray-200 ${item.isRevenue ? 'text-emerald-700' : 'text-red-700'} ${item.isTotal ? 'bg-gray-100/50' : 'bg-gray-50/30'}`}>
+                                                                  {ayTop !== 0 ? fmt(ayTop) : '-'}
+                                                              </td>
+                                                          </React.Fragment>
+                                                      );
+                                                  } else {
+                                                      return (
+                                                          <td key={`top-${item.id}-${ay}`} className={`p-4 text-right text-xs font-black border-l-2 border-gray-100 ${item.isRevenue ? 'text-emerald-700' : 'text-red-700'} ${item.isTotal ? 'bg-gray-100/50' : 'bg-gray-50/30'}`}>
                                                               {ayTop !== 0 ? fmt(ayTop) : '-'}
                                                           </td>
-                                                      </React.Fragment>
-                                                  );
-                                              } else {
-                                                  return (
-                                                      <td key={`top-${item.id}-${ay}`} className={`p-4 text-right text-xs font-black border-l-2 border-gray-100 ${item.isRevenue ? 'text-emerald-700' : 'text-red-700'} ${item.isTotal ? 'bg-gray-100/50' : 'bg-gray-50/30'}`}>
-                                                          {ayTop !== 0 ? fmt(ayTop) : '-'}
-                                                      </td>
-                                                  );
-                                              }
-                                          })}
-                                          {showTotalCol && (
-                                              <td className={`p-4 text-right text-xs font-black border-l-2 border-gray-200 ${item.isRevenue ? 'text-emerald-800 bg-emerald-50/30' : 'text-red-800 bg-red-50/30'}`}>
-                                                  {fmt(rowTotal)} ₺
-                                              </td>
-                                          )}
-                                      </tr>
-                                  );
-                              })}
-                          </React.Fragment>
-                      ))}
+                                                      );
+                                                  }
+                                              })}
+                                              {showTotalCol && (
+                                                  <td className={`p-4 text-right text-xs font-black border-l-2 border-gray-200 ${item.isRevenue ? 'text-emerald-800 bg-emerald-50/30' : 'text-red-800 bg-red-50/30'}`}>
+                                                      {fmt(rowTotal)} ₺
+                                                  </td>
+                                              )}
+                                          </tr>
+                                      );
+                                  })}
+                              </React.Fragment>
+                          );
+                      })}
                   </tbody>
               </table>
             </div>
