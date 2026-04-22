@@ -45,7 +45,9 @@ import {
   LogOut,
   SlidersHorizontal,
   Calendar as CalendarIcon,
-  Receipt
+  Receipt,
+  Moon,
+  Sun
 } from 'lucide-react';
 
 type ModuleType =
@@ -78,6 +80,14 @@ export const App: React.FC = () => {
   const userMenuRef = useRef<HTMLDivElement>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isProfileLoading, setIsProfileLoading] = useState(true);
+  const [theme, setTheme] = useState(() => localStorage.getItem('enba_theme') || 'light');
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('enba_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
 
   // Dışarı tıklayınca menüyü kapat
   useEffect(() => {
@@ -337,7 +347,7 @@ export const App: React.FC = () => {
       <main className="flex-1 flex flex-col min-w-0">
 
         {/* ─── Top Header ─────────────────────────────────── */}
-        <header className="h-13 bg-white border-b border-gray-100 flex items-center justify-between px-8 flex-shrink-0 z-10" style={{ height: '52px' }}>
+        <header className="h-13 bg-white border-b border-gray-100 flex items-center justify-between px-8 flex-shrink-0 z-10 transition-colors dark:bg-[#0F172A] dark:border-white/5" style={{ height: '52px' }}>
           {/* Sol: Geri/İleri + Breadcrumb */}
           <div className="flex items-center gap-3">
 
@@ -401,8 +411,18 @@ export const App: React.FC = () => {
             </div>
           </div>
 
-          {/* User area — dropdown menu */}
-          <div ref={userMenuRef} style={{ position: 'relative' }}>
+          <div className="flex items-center gap-4">
+            {/* Tema Değiştirici */}
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-[var(--enba-orange)] transition-all dark:bg-white/5 dark:text-gray-500"
+              title={theme === 'light' ? 'Karanlık Mod' : 'Aydınlık Mod'}
+            >
+              {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+            </button>
+
+            {/* User area — dropdown menu */}
+            <div ref={userMenuRef} style={{ position: 'relative' }}>
             <button
               onClick={() => setUserMenuOpen(v => !v)}
               className="flex items-center gap-3 hover:opacity-80 transition-opacity"

@@ -162,7 +162,7 @@ const Dashboard: React.FC<DashboardProps> = ({ navigate, user }) => {
             {new Date().toLocaleDateString('tr-TR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
           </p>
           <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-8">
-            <h1 className="text-2xl font-semibold text-gray-800">
+            <h1 className="text-2xl font-semibold text-[var(--text-primary)]">
               {t('landing.welcome')}{' '}
               <span className="text-enba-orange font-semibold">{user?.name || 'Administrator'}</span>
             </h1>
@@ -171,7 +171,7 @@ const Dashboard: React.FC<DashboardProps> = ({ navigate, user }) => {
               action="https://www.google.com/search" 
               method="GET" 
               target="_blank"
-              className="group flex items-center bg-white border-2 border-gray-50 rounded-2xl px-4 py-2 hover:border-enba-orange/20 focus-within:border-enba-orange/50 shadow-sm hover:shadow-md focus-within:shadow-lg transition-all duration-300 w-full max-w-[360px]"
+              className="group flex items-center bg-[var(--bg-surface)] border-2 border-[var(--bg-surface-low)] rounded-2xl px-4 py-2 hover:border-enba-orange/20 focus-within:border-enba-orange/50 shadow-sm hover:shadow-md focus-within:shadow-lg transition-all duration-300 w-full max-w-[360px]"
             >
               <Search size={18} className="text-gray-400 group-focus-within:text-enba-orange transition-colors" />
               <input 
@@ -213,7 +213,7 @@ const Dashboard: React.FC<DashboardProps> = ({ navigate, user }) => {
         {kpis.map((kpi, i) => (
           <div
             key={i}
-            className={`bg-white rounded-2xl px-6 py-5 border ${kpi.border} shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow`}
+            className={`bg-[var(--bg-surface)] rounded-2xl px-6 py-5 border ${kpi.border} shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow`}
           >
             <div className={`w-10 h-10 rounded-xl ${kpi.bg} flex items-center justify-center flex-shrink-0`}>
               <kpi.icon size={20} className={kpi.color} />
@@ -234,11 +234,11 @@ const Dashboard: React.FC<DashboardProps> = ({ navigate, user }) => {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
         {/* Stock Panel */}
-        <div className="lg:col-span-4 bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col gap-5">
+        <div className="lg:col-span-4 bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-subtle)] shadow-sm p-6 flex flex-col gap-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <PieChart size={18} className="text-enba-orange" />
-              <h3 className="text-sm font-semibold text-gray-800">Envanter Özeti</h3>
+              <h3 className="text-sm font-semibold text-[var(--text-primary)]">Envanter Özeti</h3>
             </div>
             <button
               onClick={() => navigate('stock')}
@@ -271,7 +271,7 @@ const Dashboard: React.FC<DashboardProps> = ({ navigate, user }) => {
               { label: t('landing.raw_stock'), value: `${fmt(stats.rawStock)} T`, dot: 'bg-gray-400' },
               { label: t('landing.mamul_stock'), value: `${fmt(stats.mamulStock)} T`, dot: 'bg-enba-orange' },
             ].map((row, i) => (
-              <div key={i} className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-xl">
+              <div key={i} className="flex items-center justify-between px-4 py-3 bg-[var(--bg-surface-low)] rounded-xl">
                 <div className="flex items-center gap-2.5">
                   <div className={`w-2.5 h-2.5 rounded-full ${row.dot}`} />
                   <span className="text-xs font-medium text-gray-600">{row.label}</span>
@@ -288,12 +288,12 @@ const Dashboard: React.FC<DashboardProps> = ({ navigate, user }) => {
         </div>
 
         {/* Operational Panel */}
-        <div className="lg:col-span-8 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
+        <div className="lg:col-span-8 bg-[var(--bg-surface)] rounded-2xl border border-[var(--border-subtle)] shadow-sm overflow-hidden flex flex-col">
           {/* Tabs header */}
-          <div className="border-b border-gray-100 px-6 pt-5">
+          <div className="border-b border-[var(--border-subtle)] px-6 pt-5">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-sm font-semibold text-gray-800">Operasyonel Panel</h3>
+                <h3 className="text-sm font-semibold text-[var(--text-primary)]">Operasyonel Panel</h3>
                 <p className="text-[10px] font-medium text-gray-400 mt-0.5">Günlük iş ve finansal akış</p>
               </div>
               <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/50" />
@@ -310,7 +310,7 @@ const Dashboard: React.FC<DashboardProps> = ({ navigate, user }) => {
                   onClick={() => setActiveTab(tab.id as any)}
                   className={`flex items-center gap-2 pb-3 text-xs font-medium transition-all relative border-b-2 ${
                     activeTab === tab.id
-                      ? 'text-enba-dark border-enba-orange'
+                      ? 'text-[var(--text-primary)] border-enba-orange'
                       : 'text-gray-400 border-transparent hover:text-gray-600'
                   }`}
                 >

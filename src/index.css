@@ -6,40 +6,85 @@
 
 @layer base {
   :root {
+    /* --- Modern Theme Tokens (Light) --- */
+    --bg-main:          #F7F7F7;
+    --bg-surface:       #FFFFFF;
+    --bg-surface-low:   #F1F3F5;
+    --bg-surface-high:  #E9ECEF;
+    
+    --text-primary:     #1A1A1A;
+    --text-secondary:   #495057;
+    --text-muted:       #ADB5BD;
+    
+    --border-subtle:    #E9ECEF;
+    --border-strong:    #DEE2E6;
+
+    /* --- Brand Colors --- */
     --enba-orange: #E35205;
     --enba-orange-dark: #C24604;
-    --enba-dark: #1A1A1A;
-    --enba-dark-light: #333333;
-    --enba-bg: #F7F7F7;
+    --enba-dark: var(--text-primary);
+    --enba-bg: var(--bg-main);
     
     --shadow-ambient: 0px 24px 48px -12px rgba(0, 0, 0, 0.05);
     --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.04);
     --shadow-elevated: 0 12px 40px rgba(0, 0, 0, 0.08);
+
+    /* Highlight tokens */
+    --highlight-success-bg:     #DCFCE7;
+    --highlight-success-text:   #166534;
+    --highlight-error-bg:       #FEE2E2;
+    --highlight-error-text:     #991B1B;
+    --highlight-warning-bg:     #FEF3C7;
+    --highlight-warning-text:   #92400E;
+  }
+
+  [data-theme='dark'] {
+    --bg-main:          #020617;
+    --bg-surface:       #0F172A;
+    --bg-surface-low:   #1E293B;
+    --bg-surface-high:  #334155;
+    
+    --text-primary:     #F8FAFC;
+    --text-secondary:   #94A3B8;
+    --text-muted:       #64748B;
+    
+    --border-subtle:    rgba(255,255,255,0.05);
+    --border-strong:    rgba(255,255,255,0.1);
+
+    --highlight-success-bg:     rgba(22, 163, 74, 0.15);
+    --highlight-success-text:   #4ADE80;
+    --highlight-error-bg:       rgba(220, 38, 38, 0.15);
+    --highlight-error-text:     #F87171;
+    --highlight-warning-bg:     rgba(245, 158, 11, 0.15);
+    --highlight-warning-text:   #FBBF24;
   }
 
   body {
-    @apply bg-[var(--enba-bg)] text-[var(--enba-dark)] antialiased;
+    @apply antialiased;
+    background-color: var(--bg-main);
+    color: var(--text-primary);
     font-family: 'Poppins', sans-serif;
     font-weight: 400;
     margin: 0;
     padding: 0;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Poppins', sans-serif;
-    @apply text-[var(--enba-dark)];
+    color: var(--text-primary);
     letter-spacing: -0.01em;
   }
 }
 
 @layer components {
   .enba-card {
-    background: #ffffff;
-    border: 1px solid #eeeeee;
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
     border-radius: 1.5rem;
     padding: 24px;
     box-shadow: var(--shadow-card);
-    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.3s ease;
   }
   
   .enba-card:hover {
@@ -50,6 +95,9 @@
 
   .enba-sidebar-glass {
     background: linear-gradient(160deg, rgba(46, 21, 5, 0.98) 0%, rgba(22, 10, 0, 1) 100%);
+    [data-theme='dark'] & {
+      background: linear-gradient(160deg, #0f172a 0%, #020617 100%);
+    }
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
     box-shadow: var(--shadow-elevated);
@@ -64,8 +112,11 @@
   }
 
   .btn-premium-dark {
-    @apply bg-[var(--enba-dark)] text-white shadow-lg shadow-black/20 hover:bg-black hover:-translate-y-0.5;
+    background-color: var(--bg-surface-high);
+    color: var(--text-primary);
+    @apply shadow-lg hover:-translate-y-0.5;
   }
+}
 
   .custom-scrollbar::-webkit-scrollbar {
     width: 6px;
