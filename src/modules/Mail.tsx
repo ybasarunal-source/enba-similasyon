@@ -34,6 +34,9 @@ export const Mail: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sourceFilter, setSourceFilter] = useState<'all' | 'outlook' | 'gmail'>('all');
   
+  const [selectedEmail, setSelectedEmail] = useState<Email | null>(null);
+  const [isBodyLoading, setIsBodyLoading] = useState(false);
+
   const [showCompose, setShowCompose] = useState(false);
   const [composeData, setComposeData] = useState({ to: '', subject: '', body: '', source: 'outlook' as 'outlook' | 'gmail' });
   const [isSending, setIsSending] = useState(false);
@@ -131,6 +134,25 @@ export const Mail: React.FC = () => {
       return matchesSource && matchesSearch;
     });
   }, [emails, sourceFilter, searchTerm]);
+
+  const handleOpenEmail = async (email: Email) => {
+    setSelectedEmail(email);
+    if (email.source === 'gmail' && !email.body.includes('<')) {
+      // Body is probably just a snippet, fetch full HTML body
+      setIsBodyLoading(true);
+      try {
+        const fullBody = await googleService.getEmailBody(email.id);
+        if (fullBody) {
+          setSelectedEmail({ ...email, body: fullBody });
+          setEmails(emails.map(e => e.id === email.id ? { ...e, body: fullBody } : e));
+        }
+      } catch (e) {
+        console.error('Error fetching full body:', e);
+      } finally {
+        setIsBodyLoading(false);
+      }
+    }
+  };
 
   return (
     <div className="flex h-screen bg-[#FAFAFA] animate-fade-in overflow-hidden">
@@ -240,7 +262,7 @@ export const Mail: React.FC = () => {
               </div>
             ) : (
               filteredEmails.map(email => (
-                <div key={email.id} className={`bg-white p-4 rounded-xl border ${email.isRead ? 'border-gray-100' : 'border-l-4 border-l-enba-orange border-y-gray-100 border-r-gray-100'} shadow-sm hover:shadow-md transition-all flex gap-4`}>
+                <div key={email.id} onClick={() => handleOpenEmail(email)} className={`bg-white p-4 rounded-xl border ${email.isRead ? 'border-gray-100' : 'border-l-4 border-l-enba-orange border-y-gray-100 border-r-gray-100'} shadow-sm hover:shadow-md transition-all flex gap-4 cursor-pointer`}>
                   <div className="flex-shrink-0 mt-1">
                     {email.source === 'outlook' ? (
                       <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-500 font-bold text-xs uppercase">
@@ -316,6 +338,47 @@ export const Mail: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Read Email Modal */}
+      {selectedEmail && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center animate-in fade-in duration-200">
+          <div className="bg-white w-full max-w-3xl h-[80vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+            <div className="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                {selectedEmail.source === 'outlook' ? (
+                  <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-500 font-bold text-sm uppercase">O</div>
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center text-red-500 font-bold text-sm uppercase">G</div>
+                )}
+                <div>
+                  <h3 className="text-sm font-bold text-enba-dark">{selectedEmail.sender}</h3>
+                  <p className="text-xs text-gray-400">&lt;{selectedEmail.senderEmail}&gt;</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <span className="text-[10px] font-bold text-gray-400 bg-gray-50 px-3 py-1.5 rounded-lg">
+                  {new Date(selectedEmail.date).toLocaleString('tr-TR')}
+                </span>
+                <button onClick={() => setSelectedEmail(null)} className="p-2 text-gray-400 hover:text-enba-dark hover:bg-gray-100 rounded-xl transition-all"><X size={20} /></button>
+              </div>
+            </div>
+            <div className="px-6 py-4 border-b border-gray-50 bg-gray-50/50">
+              <h2 className="text-lg font-bold text-gray-900">{selectedEmail.subject}</h2>
+            </div>
+            <div className="p-6 flex-1 overflow-y-auto custom-scrollbar relative">
+              {isBodyLoading ? (
+                <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-10">
+                  <RefreshCw size={24} className="animate-spin text-enba-orange" />
+                </div>
+              ) : null}
+              <div 
+                className="text-sm text-gray-700 leading-relaxed max-w-none prose prose-sm prose-a:text-enba-orange"
+                dangerouslySetInnerHTML={{ __html: selectedEmail.body || selectedEmail.bodyPreview }}
+              />
+            </div>
           </div>
         </div>
       )}

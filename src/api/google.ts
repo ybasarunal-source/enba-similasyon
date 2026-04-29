@@ -249,6 +249,40 @@ export const googleService = {
     }
   },
 
+  async getEmailBody(id: string) {
+    const token = this.getAccessToken();
+    if (!token) return '';
+    try {
+      const response = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}?format=full`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      
+      const getBodyStr = (payload: any): string => {
+        if (!payload) return '';
+        if (payload.body && payload.body.data) {
+          return decodeURIComponent(escape(atob(payload.body.data.replace(/-/g, '+').replace(/_/g, '/'))));
+        }
+        if (payload.parts) {
+          const htmlPart = payload.parts.find((p: any) => p.mimeType === 'text/html');
+          if (htmlPart) return getBodyStr(htmlPart);
+          const plainPart = payload.parts.find((p: any) => p.mimeType === 'text/plain');
+          if (plainPart) return getBodyStr(plainPart);
+          for (const part of payload.parts) {
+            const res = getBodyStr(part);
+            if (res) return res;
+          }
+        }
+        return '';
+      };
+      
+      return getBodyStr(data.payload);
+    } catch (err) {
+      console.error('Google Get Body Error:', err);
+      return '';
+    }
+  },
+
   async sendEmail(to: string, subject: string, body: string) {
     const token = this.getAccessToken();
     if (!token) return false;
