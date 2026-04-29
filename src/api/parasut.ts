@@ -30,6 +30,17 @@ export interface ParasutInvoice {
   invoice_no: string;
 }
 
+export interface ParasutItem {
+  id: string;
+  name: string;
+  code: string;
+  stock_count: number;
+  unit: string;
+  list_price: number;
+  currency: string;
+  category_name?: string;
+}
+
 // In-memory cache so localStorage failures don't break the session
 let _memToken: StoredToken | null = null;
 
@@ -207,6 +218,13 @@ export const parasutService = {
     return this._mapInvoices(raw, 'expenditures'); // Taxes are expenses
   },
 
+  async getItems(companyId: string): Promise<ParasutItem[]> {
+    const raw = await this.requestAll(`/${companyId}/items`, {
+      'sort': 'name',
+    });
+    return this._mapItems(raw);
+  },
+
   _mapInvoices(raw: any, type: 'sales_invoices' | 'purchase_bills' | 'expenditures'): ParasutInvoice[] {
     const included: any[] = raw.included || [];
     const findContact = (id: string) => {
@@ -271,6 +289,30 @@ export const parasutService = {
         payment_status: a.payment_status || '',
         invoice_no: [a.invoice_series, a.invoice_id].filter(Boolean).join('-') || item.id,
       } as ParasutInvoice;
+    });
+  },
+
+  _mapItems(raw: any): ParasutItem[] {
+    const included: any[] = raw.included || [];
+    const findCategory = (id: string) => {
+      const c = included.find((i: any) => i.id === id && i.type === 'item_categories');
+      return c?.attributes?.name || '';
+    };
+
+    return (raw.data || []).map((item: any) => {
+      const a = item.attributes || {};
+      const categoryId = item.relationships?.category?.data?.id;
+
+      return {
+        id: item.id,
+        name: a.name || '—',
+        code: a.code || '',
+        stock_count: parseFloat(a.stock_count || '0'),
+        unit: a.unit || 'Adet',
+        list_price: parseFloat(a.list_price || '0'),
+        currency: a.currency || 'TRL',
+        category_name: categoryId ? findCategory(categoryId) : '',
+      } as ParasutItem;
     });
   },
 };

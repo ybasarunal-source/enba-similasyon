@@ -758,27 +758,27 @@ export const PnL: React.FC = () => {
             <div className="overflow-x-auto custom-scrollbar">
               <table id={`pnl-table-report-${tableIndex}`} className="w-full border-collapse border border-gray-200 bg-white">
                   <thead>
-                      <tr className="bg-enba-dark text-white">
-                          <th rowSpan={2} className="p-4 text-center text-[10px] font-black uppercase tracking-widest w-[80px] border-b-4 border-enba-orange border-r border-white/10">Kod</th>
+                      <tr className="bg-gray-100 text-enba-dark border-b border-gray-300">
+                          <th rowSpan={2} className="p-4 text-center text-[10px] font-black uppercase tracking-widest w-[80px] border-b-4 border-enba-orange border-r border-gray-300">Kod</th>
                           <th rowSpan={2} className="p-6 text-left text-[10px] font-black uppercase tracking-[3px] w-[220px] border-b-4 border-enba-orange">Kategori</th>
                           {sAylar.map(ay => (
-                              <th key={ay} colSpan={modelDetayAcik ? modeller.length + 1 : 1} className="p-4 text-center text-[11px] font-black uppercase tracking-widest border-l border-white/10">{ay}</th>
+                              <th key={ay} colSpan={modelDetayAcik ? modeller.length + 1 : 1} className="p-4 text-center text-[11px] font-black uppercase tracking-widest border-l border-gray-300">{ay}</th>
                           ))}
-                          {showTotalCol && <th rowSpan={2} className="p-6 text-right text-[10px] font-black uppercase tracking-[3px] border-l border-white/10 border-b-4 border-enba-orange text-enba-orange">Toplam</th>}
+                          {showTotalCol && <th rowSpan={2} className="p-6 text-right text-[10px] font-black uppercase tracking-[3px] border-l border-gray-300 border-b-4 border-enba-orange text-enba-orange">Toplam</th>}
                       </tr>
-                      <tr className="bg-gray-800 text-gray-400">
+                      <tr className="bg-gray-50 text-gray-600">
                           {sAylar.map(ay => {
                               if(modelDetayAcik) {
                                   return (
                                       <React.Fragment key={`th-${ay}`}>
                                           {modeller.map(mod => (
-                                              <th key={`${ay}-${mod}`} className="p-3 text-right text-[9px] font-black uppercase border-l border-white/5">{mod}</th>
+                                              <th key={`${ay}-${mod}`} className="p-3 text-right text-[9px] font-black uppercase border-l border-gray-200">{mod}</th>
                                           ))}
-                                          <th key={`${ay}-toplam`} className="p-3 text-right text-[9px] font-black uppercase border-l border-white/20 bg-white/5 text-white">Top</th>
+                                          <th key={`${ay}-toplam`} className="p-3 text-right text-[9px] font-black uppercase border-l border-gray-300 bg-gray-200 text-enba-dark">Top</th>
                                       </React.Fragment>
                                   )
                               } else {
-                                  return <th key={`${ay}-toplam`} className="p-3 text-right text-[9px] font-black uppercase border-l border-white/20 bg-white/5 text-white">Top</th>
+                                  return <th key={`${ay}-toplam`} className="p-3 text-right text-[9px] font-black uppercase border-l border-gray-300 bg-gray-200 text-enba-dark">Top</th>
                               }
                           })}
                       </tr>
@@ -789,10 +789,10 @@ export const PnL: React.FC = () => {
                           return (
                               <React.Fragment key={section.section}>
                                   <tr 
-                                      className={`cursor-pointer transition-colors border-b border-gray-200 ${isOpen ? 'bg-gray-50/80 hover:bg-gray-100' : 'bg-enba-dark text-white hover:bg-gray-900'}`}
+                                      className={`cursor-pointer transition-colors border-b border-gray-200 ${isOpen ? 'bg-gray-50/80 hover:bg-gray-100' : 'bg-gray-200 text-enba-dark hover:bg-gray-300'}`}
                                       onClick={() => toggleSection(section.section)}
                                   >
-                                      <td className="p-4 text-center border-r border-white/10">
+                                      <td className={`p-4 text-center border-r ${isOpen ? 'border-gray-100' : 'border-gray-300'}`}>
                                           {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                                       </td>
                                       <td className="p-4 font-black text-[11px] uppercase tracking-[2px]">
@@ -817,25 +817,25 @@ export const PnL: React.FC = () => {
                                               return (
                                                   <React.Fragment key={`section-ay-${ay}`}>
                                                       {modeller.map(mod => (
-                                                          <td key={`sec-${ay}-${mod}`} className="p-4 text-right text-[10px] font-bold border-l border-white/5 opacity-50">
+                                                          <td key={`sec-${ay}-${mod}`} className={`p-4 text-right text-[10px] font-bold border-l ${isOpen ? 'border-gray-100' : 'border-gray-300'} opacity-70`}>
                                                               {!isOpen && ayTop !== 0 ? fmt(getHucreselTutar(unifiedData, summaryId, ay, mod)) : ''}
                                                           </td>
                                                       ))}
-                                                      <td className="p-4 text-right text-xs font-black border-l border-white/20 bg-white/5">
+                                                      <td className={`p-4 text-right text-xs font-black border-l ${isOpen ? 'border-gray-200 bg-gray-50/50' : 'border-gray-400 bg-gray-300/50'}`}>
                                                           {!isOpen && ayTop !== 0 ? fmt(ayTop) : ''}
                                                       </td>
                                                   </React.Fragment>
                                               );
                                           } else {
                                               return (
-                                                  <td key={`section-ay-top-${ay}`} className="p-4 text-right text-xs font-black border-l border-white/20 bg-white/5">
+                                                  <td key={`section-ay-top-${ay}`} className={`p-4 text-right text-xs font-black border-l ${isOpen ? 'border-gray-200 bg-gray-50/50' : 'border-gray-400 bg-gray-300/50'}`}>
                                                       {!isOpen && ayTop !== 0 ? fmt(ayTop) : ''}
                                                   </td>
                                               );
                                           }
                                       })}
                                       {showTotalCol && (
-                                          <td className="p-4 text-right text-xs font-black border-l border-white/20 bg-white/5">
+                                          <td className={`p-4 text-right text-xs font-black border-l ${isOpen ? 'border-gray-200 bg-gray-50/50' : 'border-gray-400 bg-gray-300/50'}`}>
                                               {/* Total section total if needed */}
                                           </td>
                                       )}

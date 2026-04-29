@@ -3,8 +3,10 @@ import { DataService, StockRecord, SalesRecord } from '../api/dataService';
 import { fmt } from '../utils/formatters';
 import {
   PlusCircle, Pencil, Trash2, X, Check, Package,
-  Truck, Users, BarChart3, Settings, AlertTriangle, ChevronDown
+  Truck, Users, BarChart3, Settings, AlertTriangle, ChevronDown,
+  RefreshCw, Link as LinkIcon
 } from 'lucide-react';
+import { parasutService, ParasutItem } from '../api/parasut';
 
 const VARSAYILAN_HAMMADDE = [
   'Plastik (PET)', 'Plastik (HDPE)', 'Plastik (PP)', 'Plastik (PVC)',
@@ -82,6 +84,11 @@ export const Stock: React.FC = () => {
   const [yeniMamul, setYeniMamul]       = useState('');
 
   const [silOnay, setSilOnay]           = useState<SilOnay|null>(null);
+
+  // Paraşüt Sync
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [parasutItems, setParasutItems] = useState<ParasutItem[]>([]);
+  const [parasutConnected, setParasutConnected] = useState(parasutService.isLoggedIn());
 
   useEffect(() => {
     (async () => {
@@ -245,6 +252,29 @@ export const Stock: React.FC = () => {
       setSilOnay(null);
     } catch { alert('Silme hatası oluştu'); }
     finally { setLoading(false); }
+  }
+
+  async function handleParasutSync() {
+    if (!parasutConnected) return;
+    const company = parasutService.getCompany();
+    if (!company) {
+      alert("Lütfen önce Paraşüt modülünden bir firma seçin.");
+      return;
+    }
+
+    setIsSyncing(true);
+    try {
+      const items = await parasutService.getItems(company.id);
+      setParasutItems(items);
+      
+      // Optionally, we could auto-map these to our categories if the names match
+      // For now, let's just display them in a separate section or as a reference
+    } catch (err: any) {
+      console.error("Paraşüt sync error:", err);
+      alert("Paraşüt verileri çekilirken bir hata oluştu: " + err.message);
+    } finally {
+      setIsSyncing(false);
+    }
   }
 
   const cName = (c: ContactRecord) => c.name || (c as any).adi || '—';
@@ -588,6 +618,76 @@ export const Stock: React.FC = () => {
               </div>
             )}
         </div>
+
+        {/* Paraşüt Entegrasyon Paneli */}
+        <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden relative">
+            <div className="absolute top-0 right-0 p-8 opacity-[0.03] pointer-events-none">
+                <RefreshCw size={80} />
+            </div>
+            
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+                <div className="flex items-start gap-4">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-md ${parasutConnected ? 'bg-emerald-50 text-emerald-500' : 'bg-gray-50 text-gray-400'}`}>
+                        <LinkIcon size={20} />
+                    </div>
+                    <div>
+                        <h3 className="text-sm font-black text-enba-dark tracking-tight">Paraşüt Ürün & Stok Senkronizasyonu</h3>
+                        <p className="text-[10px] text-gray-400 font-medium mt-0.5">
+                            {parasutConnected 
+                                ? "Paraşüt'teki tüm ürünleri ve güncel stok miktarlarını buraya yansıtın." 
+                                : "Bu özelliği kullanmak için önce Paraşüt modülünden giriş yapmalısınız."}
+                        </p>
+                    </div>
+                </div>
+
+                {parasutConnected && (
+                    <button
+                        onClick={handleParasutSync}
+                        disabled={isSyncing}
+                        className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${isSyncing ? 'bg-gray-100 text-gray-400' : 'bg-enba-orange text-white hover:bg-enba-dark shadow-lg shadow-enba-orange/20'}`}
+                    >
+                        {isSyncing ? <RefreshCw size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+                        {isSyncing ? 'Senkronize Ediliyor...' : 'Paraşüt\'ten Veri Çek'}
+                    </button>
+                )}
+            </div>
+        </div>
+
+        {parasutItems.length > 0 && (
+          <div className="enba-card border-t-4 border-t-orange-400">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-sm font-black text-[var(--enba-dark)] uppercase tracking-tight flex items-center gap-2">
+                <RefreshCw size={16} className="text-orange-500"/> Paraşüt'ten Gelen Ürünler
+              </h3>
+              <span className="text-[10px] font-bold bg-orange-50 text-orange-600 px-3 py-1 rounded-full">{parasutItems.length} Ürün Bulundu</span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr>
+                    {['Ürün Adı','Kod','Kategori','Stok Miktarı','Birim','Liste Fiyatı','Döviz'].map(h => (
+                      <th key={h} className={['Stok Miktarı','Liste Fiyatı'].includes(h) ? thRCls : thCls}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {parasutItems.map(pi => (
+                    <tr key={pi.id} className="hover:bg-orange-50/30 transition-colors border-b border-slate-50">
+                      <td className={tdCls + ' font-bold'}>{pi.name}</td>
+                      <td className={tdCls + ' text-slate-500'}>{pi.code || '—'}</td>
+                      <td className={tdCls}><span className="px-2 py-0.5 bg-slate-100 rounded text-[10px] font-bold text-slate-600">{pi.category_name || 'Genel'}</span></td>
+                      <td className={tdRCls + ' text-orange-600 font-black'}>{fmt(pi.stock_count, 0)}</td>
+                      <td className={tdCls + ' text-center text-slate-400 font-bold'}>{pi.unit}</td>
+                      <td className={tdRCls}>{fmt(pi.list_price)}</td>
+                      <td className={tdCls + ' text-center font-bold text-slate-500'}>{pi.currency}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-4 text-[10px] text-gray-400 italic font-medium">* Bu tablo Paraşüt API'sinden çekilen anlık verileri gösterir. Yerel stok kayıtlarını etkilemez.</p>
+          </div>
+        )}
       </div>
     );
   }
