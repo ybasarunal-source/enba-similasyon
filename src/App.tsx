@@ -120,7 +120,7 @@ export const App: React.FC = () => {
         try {
           // Sadece daha önce izin verilmişse (sessizce) al, login penceresi açmamak için.
           // microsoftService graph client alırken hata fırlatmaz, token yoksa boş döner.
-          const msToken = await microsoftService.getToken(['User.Read', 'Mail.ReadWrite', 'Mail.Send'], true);
+          const msToken = await microsoftService.getToken(['User.Read', 'Mail.ReadWrite', 'Mail.Send']);
           if (msToken) {
             count += await microsoftService.getUnreadCount();
           }
