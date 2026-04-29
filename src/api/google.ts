@@ -260,12 +260,12 @@ export const googleService = {
         'Content-Type: text/plain; charset="UTF-8"',
         '',
         body
-      ].join('\\r\\n');
+      ].join('\r\n');
 
       // Base64URL encode
       const encodedEmail = btoa(unescape(encodeURIComponent(emailContent)))
-        .replace(/\\+/g, '-')
-        .replace(/\\//g, '_')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
         .replace(/=+$/, '');
 
       const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
