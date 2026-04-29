@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from './api/i18n';
 import { supabase } from './api/supabase';
+import { microsoftService } from './api/microsoft';
+import { googleService } from './api/google';
 import { Login } from './modules/Login';
 import type { Session } from '@supabase/supabase-js';
 import { profileAPI, type UserProfile } from './api/supabase';
@@ -83,6 +85,7 @@ export const App: React.FC = () => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isProfileLoading, setIsProfileLoading] = useState(true);
   const [theme, setTheme] = useState(() => localStorage.getItem('enba_theme') || 'light');
+  const [unreadMailCount, setUnreadMailCount] = useState(0);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -109,6 +112,35 @@ export const App: React.FC = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (session) {
+      const fetchUnreadCounts = async () => {
+        let count = 0;
+        try {
+          // Sadece daha önce izin verilmişse (sessizce) al, login penceresi açmamak için.
+          // microsoftService graph client alırken hata fırlatmaz, token yoksa boş döner.
+          const msToken = await microsoftService.getToken(['User.Read', 'Mail.ReadWrite', 'Mail.Send'], true);
+          if (msToken) {
+            count += await microsoftService.getUnreadCount();
+          }
+        } catch (e) { /* ignore */ }
+
+        try {
+          const gToken = googleService.getAccessToken();
+          if (gToken) {
+            count += await googleService.getUnreadCount();
+          }
+        } catch (e) { /* ignore */ }
+
+        setUnreadMailCount(count);
+      };
+
+      fetchUnreadCounts();
+      const interval = setInterval(fetchUnreadCounts, 120000); // 2 dakikada bir kontrol
+      return () => clearInterval(interval);
+    }
+  }, [session]);
 
   useEffect(() => {
     if (session?.user) {
@@ -415,6 +447,20 @@ export const App: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-4">
+            {/* E-Posta Bildirimi */}
+            <button
+              onClick={() => navigate('mail')}
+              className="relative p-2 rounded-xl bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-[var(--enba-orange)] transition-all dark:bg-white/5 dark:text-gray-500"
+              title="Gelen Kutusu"
+            >
+              <MailIcon size={18} />
+              {unreadMailCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white shadow-sm ring-2 ring-white dark:ring-[#0F172A]">
+                  {unreadMailCount > 99 ? '99+' : unreadMailCount}
+                </span>
+              )}
+            </button>
+
             {/* Tema Değiştirici */}
             <button
               onClick={toggleTheme}

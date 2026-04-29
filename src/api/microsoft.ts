@@ -304,6 +304,18 @@ export const microsoftService = {
     }
   },
 
+  async getUnreadCount(): Promise<number> {
+    const client = await this.getGraphClient(mailScopes);
+    if (!client) return 0;
+    try {
+      const response = await client.api('/me/mailFolders/Inbox').select('unreadItemCount').get();
+      return response.unreadItemCount || 0;
+    } catch (err) {
+      console.error('MS Get Unread Count Error:', err);
+      return 0;
+    }
+  },
+
   async sendEmail(to: string, subject: string, body: string) {
     const client = await this.getGraphClient(mailScopes);
     if (!client) return false;

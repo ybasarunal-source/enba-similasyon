@@ -283,6 +283,21 @@ export const googleService = {
     }
   },
 
+  async getUnreadCount(): Promise<number> {
+    const token = this.getAccessToken();
+    if (!token) return 0;
+    try {
+      const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/labels/INBOX', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      return data.messagesUnread || 0;
+    } catch (err) {
+      console.error('Google Unread Count Error:', err);
+      return 0;
+    }
+  },
+
   async sendEmail(to: string, subject: string, body: string) {
     const token = this.getAccessToken();
     if (!token) return false;
