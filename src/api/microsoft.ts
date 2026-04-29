@@ -21,9 +21,10 @@ const msalConfig: Configuration = {
   },
 };
 
-const loginScopes = ['User.Read', 'Tasks.ReadWrite', 'Calendars.ReadWrite'];
+const loginScopes = ['User.Read', 'Tasks.ReadWrite', 'Calendars.ReadWrite', 'Mail.ReadWrite', 'Mail.Send'];
 const taskScopes = ['User.Read', 'Tasks.ReadWrite'];
 const calendarScopes = ['User.Read', 'Calendars.ReadWrite'];
+const mailScopes = ['User.Read', 'Mail.ReadWrite', 'Mail.Send'];
 
 let msalInstance: PublicClientApplication | null = null;
 let isInitialized = false;
@@ -273,6 +274,61 @@ export const microsoftService = {
       return true;
     } catch (err) {
       console.error('MS Delete Event Error:', err);
+      return false;
+    }
+  },
+
+  async getRecentEmails(top: number = 20) {
+    const client = await this.getGraphClient(mailScopes);
+    if (!client) return [];
+    try {
+      const response = await client.api('/me/messages')
+        .select('id,subject,bodyPreview,sender,receivedDateTime,isRead,body')
+        .orderby('receivedDateTime DESC')
+        .top(top)
+        .get();
+      return (response.value || []).map((msg: any) => ({
+        id: msg.id,
+        subject: msg.subject,
+        bodyPreview: msg.bodyPreview,
+        body: msg.body?.content || '',
+        sender: msg.sender?.emailAddress?.name || msg.sender?.emailAddress?.address || 'Unknown',
+        senderEmail: msg.sender?.emailAddress?.address || '',
+        date: msg.receivedDateTime,
+        isRead: msg.isRead,
+        source: 'outlook'
+      }));
+    } catch (err) {
+      console.error('MS Get Emails Error:', err);
+      return [];
+    }
+  },
+
+  async sendEmail(to: string, subject: string, body: string) {
+    const client = await this.getGraphClient(mailScopes);
+    if (!client) return false;
+    try {
+      const message = {
+        message: {
+          subject: subject,
+          body: {
+            contentType: 'Text',
+            content: body
+          },
+          toRecipients: [
+            {
+              emailAddress: {
+                address: to
+              }
+            }
+          ]
+        },
+        saveToSentItems: 'true'
+      };
+      await client.api('/me/sendMail').post(message);
+      return true;
+    } catch (err) {
+      console.error('MS Send Email Error:', err);
       return false;
     }
   },

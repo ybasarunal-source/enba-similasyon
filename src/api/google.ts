@@ -1,6 +1,6 @@
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '785162351683-5ncn1udcqp6558nr3a86hgkt53imuubq.apps.googleusercontent.com';
 const REDIRECT_URI = window.location.origin;
-const SCOPES = 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/tasks';
+const SCOPES = 'https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/tasks https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send';
 
 interface GoogleCalendarEvent {
   id: string;
@@ -189,6 +189,97 @@ export const googleService = {
       return response.status === 204;
     } catch (err) {
       console.error('Google Delete Event Error:', err);
+      return false;
+    }
+  },
+
+  async getRecentEmails(maxResults: number = 20) {
+    const token = this.getAccessToken();
+    if (!token) return [];
+
+    try {
+      // Get message list
+      const listResponse = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${maxResults}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!listResponse.ok) throw new Error('Failed to fetch gmail messages');
+      const listData = await listResponse.json();
+      const messages = listData.messages || [];
+
+      // Fetch details for each message
+      const detailedMessages = await Promise.all(
+        messages.map(async (msg: any) => {
+          const detailResponse = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}?format=metadata&metadataHeaders=Subject&metadataHeaders=From&metadataHeaders=Date`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const detailData = await detailResponse.json();
+          
+          const headers = detailData.payload?.headers || [];
+          const subject = headers.find((h: any) => h.name.toLowerCase() === 'subject')?.value || 'No Subject';
+          const from = headers.find((h: any) => h.name.toLowerCase() === 'from')?.value || 'Unknown';
+          const date = headers.find((h: any) => h.name.toLowerCase() === 'date')?.value || '';
+          
+          // Parse "Name <email@domain.com>" format
+          let senderName = from;
+          let senderEmail = from;
+          const match = from.match(/(.*)<(.*)>/);
+          if (match) {
+            senderName = match[1].trim() || match[2].trim();
+            senderEmail = match[2].trim();
+          }
+
+          return {
+            id: detailData.id,
+            subject: subject,
+            bodyPreview: detailData.snippet || '',
+            body: detailData.snippet || '', // Just snippet for now to save API calls
+            sender: senderName,
+            senderEmail: senderEmail,
+            date: date ? new Date(date).toISOString() : new Date().toISOString(),
+            isRead: !(detailData.labelIds || []).includes('UNREAD'),
+            source: 'gmail'
+          };
+        })
+      );
+
+      return detailedMessages;
+    } catch (err) {
+      console.error('Google Get Emails Error:', err);
+      return [];
+    }
+  },
+
+  async sendEmail(to: string, subject: string, body: string) {
+    const token = this.getAccessToken();
+    if (!token) return false;
+
+    try {
+      const emailContent = [
+        `To: ${to}`,
+        `Subject: =?utf-8?B?${btoa(unescape(encodeURIComponent(subject)))}?=`,
+        'Content-Type: text/plain; charset="UTF-8"',
+        '',
+        body
+      ].join('\\r\\n');
+
+      // Base64URL encode
+      const encodedEmail = btoa(unescape(encodeURIComponent(emailContent)))
+        .replace(/\\+/g, '-')
+        .replace(/\\//g, '_')
+        .replace(/=+$/, '');
+
+      const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ raw: encodedEmail })
+      });
+
+      return response.ok;
+    } catch (err) {
+      console.error('Google Send Email Error:', err);
       return false;
     }
   },

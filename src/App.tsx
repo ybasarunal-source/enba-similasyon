@@ -22,6 +22,7 @@ import { FastPlan } from './modules/FastPlan';
 import { Calendar as CalendarModule } from './modules/Calendar';
 import { Parasut } from './modules/Parasut';
 import { ModulesOverview } from './modules/ModulesOverview';
+import { Mail } from './modules/Mail';
 import {
   Home,
   LayoutGrid,
@@ -47,13 +48,14 @@ import {
   Calendar as CalendarIcon,
   Receipt,
   Moon,
-  Sun
+  Sun,
+  Mail as MailIcon
 } from 'lucide-react';
 
 type ModuleType =
   | 'dashboard' | 'stock' | 'production' | 'logistics' | 'hr'
   | 'archive' | 'cashflow' | 'planning' | 'fastplan' | 'machinery'
-  | 'tasks' | 'calendar' | 'licensing' | 'settings' | 'pnl' | 'profile' | 'parasut' | 'modules';
+  | 'tasks' | 'calendar' | 'licensing' | 'settings' | 'pnl' | 'profile' | 'parasut' | 'modules' | 'mail';
 
 const getProfileAvatar = () => {
   try { return JSON.parse(localStorage.getItem('enba_profile_data') || '{}').avatar || ''; }
@@ -164,6 +166,7 @@ export const App: React.FC = () => {
     { id: 'machinery',  label: t('modules.machinery'),     icon: Wrench },
     { id: 'tasks',      label: t('modules.tasks'),         icon: ClipboardList },
     { id: 'calendar',   label: 'Takvim',                   icon: CalendarIcon },
+    { id: 'mail',       label: 'E-Posta',                  icon: MailIcon },
     { id: 'logistics',  label: t('modules.logistics'),     icon: Truck },
     { id: 'settings',   label: t('nav.sistem'),            icon: SettingsIcon },
     { id: 'profile',    label: 'Profilim',                 icon: User },
@@ -173,7 +176,7 @@ export const App: React.FC = () => {
     // FALLBACK: Veritabanı hatası (RLS) durumunda oturum varsa tam erişim sağla
     if (!userProfile && session?.user) return true;
     // Core modules always visible, others depend on permissions
-    if (item.id === 'profile' || item.id === 'dashboard' || item.id === 'tasks' || item.id === 'calendar' || item.id === 'modules') return true;
+    if (item.id === 'profile' || item.id === 'dashboard' || item.id === 'tasks' || item.id === 'calendar' || item.id === 'modules' || item.id === 'mail') return true;
     // Others depend on permissions
     return userProfile?.permissions?.[item.id] === true;
   });
@@ -559,8 +562,9 @@ export const App: React.FC = () => {
             {activeModule === 'settings'   && <Settings profile={userProfile ? { ...userProfile, role: user.role as any } : { role: user.role } as any} />}
             {activeModule === 'fastplan'   && <FastPlan />}
             {activeModule === 'planning'   && <DetailedPlanManager />}
-            {activeModule === 'profile'    && <Profile />}
-            {activeModule === 'parasut'    && <Parasut />}
+            { activeModule === 'profile'    && <Profile /> }
+            { activeModule === 'parasut'    && <Parasut /> }
+            { activeModule === 'mail'       && <Mail /> }
           </div>
         </div>
       </main>
