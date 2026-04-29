@@ -79,8 +79,9 @@ export const googleService = {
       });
 
       if (!response.ok) {
-        if (response.status === 401) {
+        if (response.status === 401 || response.status === 403) {
           localStorage.removeItem('google_access_token');
+          localStorage.removeItem('google_token_expiry');
         }
         console.warn(`Google API Error: ${response.status} ${response.statusText}`);
         return [];
@@ -202,7 +203,13 @@ export const googleService = {
       const listResponse = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${maxResults}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      if (!listResponse.ok) throw new Error('Failed to fetch gmail messages');
+      if (!listResponse.ok) {
+        if (listResponse.status === 401 || listResponse.status === 403) {
+          localStorage.removeItem('google_access_token');
+          localStorage.removeItem('google_token_expiry');
+        }
+        throw new Error('Failed to fetch gmail messages');
+      }
       const listData = await listResponse.json();
       const messages = listData.messages || [];
 
@@ -290,6 +297,13 @@ export const googleService = {
       const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/labels/INBOX', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          localStorage.removeItem('google_access_token');
+          localStorage.removeItem('google_token_expiry');
+        }
+        return 0;
+      }
       const data = await response.json();
       return data.messagesUnread || 0;
     } catch (err) {
