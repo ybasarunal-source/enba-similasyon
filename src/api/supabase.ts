@@ -107,3 +107,81 @@ export const profileAPI = {
     return !error;
   }
 };
+
+// ── Fixed Expenses (Abonelikler) API ───────────────────────
+export interface SupabaseFixedExpense {
+  id?: string;
+  user_id?: string;
+  title: string;
+  amount: number;
+  category: string;
+  due_date: number;
+  is_auto_pay: boolean;
+  parasut_match_keyword?: string;
+  history: Record<string, boolean>;
+  created_at?: string;
+}
+
+export const fixedExpensesAPI = {
+  async getAll(): Promise<SupabaseFixedExpense[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const { data, error } = await supabase
+      .from('fixed_expenses')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error("Sabit giderler çekilemedi:", error);
+      return [];
+    }
+    return data || [];
+  },
+
+  async insert(expense: SupabaseFixedExpense): Promise<SupabaseFixedExpense | null> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const { data, error } = await supabase
+      .from('fixed_expenses')
+      .insert({ ...expense, user_id: user.id })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Sabit gider eklenemedi:", error);
+      return null;
+    }
+    return data;
+  },
+
+  async update(id: string, updates: Partial<SupabaseFixedExpense>): Promise<SupabaseFixedExpense | null> {
+    const { data, error } = await supabase
+      .from('fixed_expenses')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Sabit gider güncellenemedi:", error);
+      return null;
+    }
+    return data;
+  },
+
+  async delete(id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('fixed_expenses')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error("Sabit gider silinemedi:", error);
+      return false;
+    }
+    return true;
+  }
+};

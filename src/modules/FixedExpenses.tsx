@@ -19,17 +19,7 @@ import {
 } from 'lucide-react';
 import { fmt } from '../utils/formatters';
 import { parasutService } from '../api/parasut';
-
-export interface ExpenseItem {
-  id: string;
-  title: string;
-  amount: number;
-  category: string;
-  dueDate: number; // 1-31
-  isAutoPay: boolean;
-  parasutMatchKeyword?: string;
-  history: Record<string, boolean>; // 'YYYY-MM': boolean
-}
+import { fixedExpensesAPI, SupabaseFixedExpense } from '../api/supabase';
 
 const CATEGORIES = [
   { id: 'yazilim', label: 'Yazılım & SaaS', color: 'bg-blue-500', text: 'text-blue-500', border: 'border-blue-500/20' },
@@ -41,36 +31,63 @@ const CATEGORIES = [
 ];
 
 export const FixedExpenses: React.FC = () => {
-  const [expenses, setExpenses] = useState<ExpenseItem[]>(() => {
-    const saved = localStorage.getItem('enba_fixed_expenses');
-    if (saved) {
-      try { return JSON.parse(saved); } catch (e) { return []; }
-    }
-    // Default Data
-    return [
-      { id: '1', title: 'Ofis Kirası', amount: 25000, category: 'kira', dueDate: 5, isAutoPay: false, history: {} },
-      { id: '2', title: 'Elektrik Faturası', amount: 4500, category: 'fatura', dueDate: 15, isAutoPay: true, history: {} },
-      { id: '3', title: 'Microsoft 365', amount: 1250, category: 'yazilim', dueDate: 10, isAutoPay: true, history: {} },
-    ];
-  });
+  const [expenses, setExpenses] = useState<SupabaseFixedExpense[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<ExpenseItem | null>(null);
+  const [editingItem, setEditingItem] = useState<SupabaseFixedExpense | null>(null);
   const [filter, setFilter] = useState<'all' | 'pending' | 'paid'>('all');
   const [isSyncing, setIsSyncing] = useState(false);
   
   // Form State
-  const [formData, setFormData] = useState<Partial<ExpenseItem>>({
-    title: '', amount: 0, category: 'diger', dueDate: 1, isAutoPay: false, parasutMatchKeyword: ''
+  const [formData, setFormData] = useState<Partial<SupabaseFixedExpense>>({
+    title: '', amount: 0, category: 'diger', due_date: 1, is_auto_pay: false, parasut_match_keyword: ''
   });
 
   const currentMonthKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
   
-  // Save to LocalStorage whenever expenses change
+  // Fetch from Supabase + Silent Migration
   useEffect(() => {
-    localStorage.setItem('enba_fixed_expenses', JSON.stringify(expenses));
-  }, [expenses]);
+    async function loadData() {
+      setIsLoading(true);
+      try {
+        const cloudData = await fixedExpensesAPI.getAll();
+        
+        // Silent Migration check
+        const localStr = localStorage.getItem('enba_fixed_expenses');
+        if (localStr && cloudData.length === 0) {
+           const localData = JSON.parse(localStr);
+           if (Array.isArray(localData) && localData.length > 0) {
+             console.log("Migrating local FixedExpenses to Supabase...");
+             for (const item of localData) {
+               await fixedExpensesAPI.insert({
+                 title: item.title,
+                 amount: item.amount,
+                 category: item.category,
+                 due_date: item.dueDate || item.due_date,
+                 is_auto_pay: item.isAutoPay || item.is_auto_pay,
+                 parasut_match_keyword: item.parasutMatchKeyword || item.parasut_match_keyword,
+                 history: item.history || {}
+               });
+             }
+             const migratedData = await fixedExpensesAPI.getAll();
+             setExpenses(migratedData);
+             localStorage.removeItem('enba_fixed_expenses');
+             setIsLoading(false);
+             return;
+           }
+        }
+
+        setExpenses(cloudData);
+      } catch (err) {
+        console.error("Veriler yüklenemedi:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadData();
+  }, []);
 
   const handlePrevMonth = () => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
@@ -80,54 +97,57 @@ export const FixedExpenses: React.FC = () => {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
   };
 
-  const handleTogglePayment = (id: string) => {
-    setExpenses(prev => prev.map(exp => {
-      if (exp.id === id) {
-        const isCurrentlyPaid = !!exp.history[currentMonthKey];
-        return {
-          ...exp,
-          history: {
-            ...exp.history,
-            [currentMonthKey]: !isCurrentlyPaid
-          }
-        };
-      }
-      return exp;
-    }));
+  const handleTogglePayment = async (id: string) => {
+    const exp = expenses.find(e => e.id === id);
+    if (!exp || !exp.id) return;
+
+    const isCurrentlyPaid = !!exp.history[currentMonthKey];
+    const newHistory = { ...exp.history, [currentMonthKey]: !isCurrentlyPaid };
+    
+    // Optimistic Update
+    setExpenses(prev => prev.map(e => e.id === id ? { ...e, history: newHistory } : e));
+    
+    // API Call
+    await fixedExpensesAPI.update(exp.id, { history: newHistory });
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (window.confirm('Bu ödemeyi silmek istediğinize emin misiniz?')) {
-      setExpenses(prev => prev.filter(e => e.id !== id));
+      const success = await fixedExpensesAPI.delete(id);
+      if (success) {
+        setExpenses(prev => prev.filter(e => e.id !== id));
+      }
     }
   };
 
-  const openModal = (item?: ExpenseItem) => {
+  const openModal = (item?: SupabaseFixedExpense) => {
     if (item) {
       setEditingItem(item);
       setFormData(item);
     } else {
       setEditingItem(null);
-      setFormData({ title: '', amount: 0, category: 'diger', dueDate: 1, isAutoPay: false, parasutMatchKeyword: '' });
+      setFormData({ title: '', amount: 0, category: 'diger', due_date: 1, is_auto_pay: false, parasut_match_keyword: '' });
     }
     setIsModalOpen(true);
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title || !formData.amount) return;
 
-    if (editingItem) {
-      setExpenses(prev => prev.map(exp => 
-        exp.id === editingItem.id ? { ...exp, ...formData as ExpenseItem } : exp
-      ));
+    if (editingItem && editingItem.id) {
+      const updated = await fixedExpensesAPI.update(editingItem.id, formData);
+      if (updated) {
+        setExpenses(prev => prev.map(exp => exp.id === editingItem.id ? updated : exp));
+      }
     } else {
-      const newItem: ExpenseItem = {
-        ...(formData as ExpenseItem),
-        id: Date.now().toString(),
+      const newItem = await fixedExpensesAPI.insert({
+        ...(formData as SupabaseFixedExpense),
         history: {}
-      };
-      setExpenses(prev => [...prev, newItem]);
+      });
+      if (newItem) {
+        setExpenses(prev => [...prev, newItem]);
+      }
     }
     setIsModalOpen(false);
   };
@@ -156,36 +176,32 @@ export const FixedExpenses: React.FC = () => {
       const allParasutInvoices = [...expenditures, ...bills];
 
       let syncCount = 0;
-      setExpenses(prev => {
-        let updated = false;
-        const newExpenses = prev.map(exp => {
-          if (!exp.parasutMatchKeyword || exp.history[currentMonthKey]) return exp;
+      let updatedExpenses = [...expenses];
+      
+      for (const exp of expenses) {
+        if (!exp.id || !exp.parasut_match_keyword || exp.history[currentMonthKey]) continue;
 
-          const keyword = exp.parasutMatchKeyword.toLowerCase();
-          
-          const isMatchedAndPaid = allParasutInvoices.some(inv => {
-             const matchText = `${inv.contact_name} ${inv.description} ${inv.category_name}`.toLowerCase();
-             return matchText.includes(keyword) && inv.payment_status === 'paid';
-          });
-
-          if (isMatchedAndPaid) {
-            updated = true;
-            syncCount++;
-            return {
-              ...exp,
-              history: { ...exp.history, [currentMonthKey]: true }
-            };
-          }
-          return exp;
+        const keyword = exp.parasut_match_keyword.toLowerCase();
+        
+        const isMatchedAndPaid = allParasutInvoices.some(inv => {
+           const matchText = `${inv.contact_name} ${inv.description} ${inv.category_name}`.toLowerCase();
+           return matchText.includes(keyword) && inv.payment_status === 'paid';
         });
 
-        if (updated) {
-          setTimeout(() => alert(`Senkronizasyon tamamlandı: ${syncCount} adet gider otomatik olarak "Ödendi" işaretlendi!`), 500);
-          return newExpenses;
+        if (isMatchedAndPaid) {
+          syncCount++;
+          const newHistory = { ...exp.history, [currentMonthKey]: true };
+          await fixedExpensesAPI.update(exp.id, { history: newHistory });
+          updatedExpenses = updatedExpenses.map(e => e.id === exp.id ? { ...e, history: newHistory } : e);
         }
+      }
+
+      if (syncCount > 0) {
+        setExpenses(updatedExpenses);
+        setTimeout(() => alert(`Senkronizasyon tamamlandı: ${syncCount} adet gider otomatik olarak "Ödendi" işaretlendi!`), 500);
+      } else {
         setTimeout(() => alert('Yeni bir eşleşen "Ödenmiş" kayıt bulunamadı.'), 500);
-        return prev;
-      });
+      }
 
     } catch (error: any) {
       alert("Paraşüt senkronizasyonu sırasında hata oluştu: " + error.message);
@@ -361,7 +377,7 @@ export const FixedExpenses: React.FC = () => {
                         <span className={`text-sm font-bold ${isPaid ? 'text-gray-500 line-through' : 'text-enba-dark'}`}>
                           {exp.title}
                         </span>
-                        {exp.isAutoPay && (
+                        {exp.is_auto_pay && (
                           <span className="px-2 py-0.5 bg-blue-50 text-blue-500 rounded text-[9px] font-black uppercase tracking-widest">
                             Oto-Ödeme
                           </span>
@@ -373,7 +389,7 @@ export const FixedExpenses: React.FC = () => {
                         </span>
                         <span className="text-gray-400 flex items-center gap-1">
                           <Calendar size={12} />
-                          Her Ayın {exp.dueDate}. Günü
+                          Her Ayın {exp.due_date}. Günü
                         </span>
                       </div>
                     </div>
@@ -447,8 +463,8 @@ export const FixedExpenses: React.FC = () => {
                     type="number" 
                     required
                     min="1" max="31"
-                    value={formData.dueDate || 1}
-                    onChange={e => setFormData({...formData, dueDate: Number(e.target.value)})}
+                    value={formData.due_date || 1}
+                    onChange={e => setFormData({...formData, due_date: Number(e.target.value)})}
                     className="w-full bg-gray-50 border border-transparent rounded-2xl px-5 py-4 text-sm font-bold text-enba-dark focus:bg-white focus:border-enba-orange/30 outline-none transition-all"
                   />
                 </div>
@@ -474,17 +490,17 @@ export const FixedExpenses: React.FC = () => {
                 </label>
                 <input 
                   type="text" 
-                  value={formData.parasutMatchKeyword || ''}
-                  onChange={e => setFormData({...formData, parasutMatchKeyword: e.target.value})}
+                  value={formData.parasut_match_keyword || ''}
+                  onChange={e => setFormData({...formData, parasut_match_keyword: e.target.value})}
                   className="w-full bg-blue-50/30 border border-blue-100 rounded-2xl px-5 py-4 text-sm font-bold text-enba-dark focus:bg-white focus:border-blue-300 outline-none transition-all"
                   placeholder="Örn: Microsoft, Yandex, Ahmet Yılmaz..."
                 />
                 <p className="text-[9px] text-gray-400 ml-1">Fatura açıklaması veya cari adında bu kelime geçerse otomatik eşleşir.</p>
               </div>
 
-              <div className="flex items-center gap-3 mt-2 p-4 rounded-2xl border border-gray-100 bg-gray-50/50 cursor-pointer" onClick={() => setFormData({...formData, isAutoPay: !formData.isAutoPay})}>
-                <div className={`w-5 h-5 rounded flex items-center justify-center transition-all ${formData.isAutoPay ? 'bg-enba-orange text-white' : 'border-2 border-gray-300'}`}>
-                  {formData.isAutoPay && <Check size={14} strokeWidth={4} />}
+              <div className="flex items-center gap-3 mt-2 p-4 rounded-2xl border border-gray-100 bg-gray-50/50 cursor-pointer" onClick={() => setFormData({...formData, is_auto_pay: !formData.is_auto_pay})}>
+                <div className={`w-5 h-5 rounded flex items-center justify-center transition-all ${formData.is_auto_pay ? 'bg-enba-orange text-white' : 'border-2 border-gray-300'}`}>
+                  {formData.is_auto_pay && <Check size={14} strokeWidth={4} />}
                 </div>
                 <div>
                   <span className="text-xs font-bold text-enba-dark block">Otomatik Ödeme Talimatı</span>
