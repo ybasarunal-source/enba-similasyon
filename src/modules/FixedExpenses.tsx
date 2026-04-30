@@ -228,7 +228,7 @@ export const FixedExpenses: React.FC = () => {
   // Filtered List
   const filteredList = useMemo(() => {
     let list = [...expenses];
-    list.sort((a, b) => a.dueDate - b.dueDate);
+    list.sort((a, b) => a.due_date - b.due_date);
     
     if (filter === 'pending') {
       list = list.filter(exp => !exp.history[currentMonthKey]);
@@ -366,7 +366,7 @@ export const FixedExpenses: React.FC = () => {
                   {/* Left: Check & Info */}
                   <div className="flex items-center gap-5 w-full sm:w-auto">
                     <button 
-                      onClick={() => handleTogglePayment(exp.id)}
+                      onClick={() => exp.id && handleTogglePayment(exp.id)}
                       className={`flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${isPaid ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-gray-200 text-transparent hover:border-enba-orange'}`}
                     >
                       <Check size={16} strokeWidth={3} />
@@ -407,7 +407,7 @@ export const FixedExpenses: React.FC = () => {
                       <button onClick={() => openModal(exp)} className="p-2 text-gray-400 hover:text-enba-dark hover:bg-gray-100 rounded-xl transition-all">
                         <Pencil size={14} />
                       </button>
-                      <button onClick={() => handleDelete(exp.id)} className="p-2 text-gray-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all">
+                      <button onClick={() => exp.id && handleDelete(exp.id)} className="p-2 text-gray-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all">
                         <Trash2 size={14} />
                       </button>
                     </div>
