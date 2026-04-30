@@ -185,3 +185,230 @@ export const fixedExpensesAPI = {
     return true;
   }
 };
+
+// ── Tasks (Görevler) API ──────────────────────────────────
+export interface SupabaseProjectGroup {
+  id: string;
+  user_id?: string;
+  name: string;
+  created_at?: string;
+}
+
+export interface SupabaseProject {
+  id: string;
+  user_id?: string;
+  name: string;
+  group_id?: string;
+  created_at?: string;
+}
+
+export interface SupabaseTask {
+  id: string;
+  user_id?: string;
+  title: string;
+  description?: string;
+  priority: string;
+  deadline?: string;
+  project_id?: string;
+  module_ref?: string;
+  status: string;
+  source: string;
+  ms_todo_id?: string;
+  ms_list_id?: string;
+  g_task_id?: string;
+  g_list_id?: string;
+  is_pinned?: boolean;
+  created_at?: string;
+}
+
+export const projectGroupsAPI = {
+  async getAll(): Promise<SupabaseProjectGroup[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const { data, error } = await supabase
+      .from('project_groups')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error("Proje grupları çekilemedi:", error);
+      return [];
+    }
+    return data || [];
+  },
+
+  async insert(group: SupabaseProjectGroup): Promise<SupabaseProjectGroup | null> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const { data, error } = await supabase
+      .from('project_groups')
+      .insert({ ...group, user_id: user.id })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Proje grubu eklenemedi:", error);
+      return null;
+    }
+    return data;
+  },
+
+  async update(id: string, updates: Partial<SupabaseProjectGroup>): Promise<SupabaseProjectGroup | null> {
+    const { data, error } = await supabase
+      .from('project_groups')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Proje grubu güncellenemedi:", error);
+      return null;
+    }
+    return data;
+  },
+
+  async delete(id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('project_groups')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error("Proje grubu silinemedi:", error);
+      return false;
+    }
+    return true;
+  }
+};
+
+export const projectsAPI = {
+  async getAll(): Promise<SupabaseProject[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const { data, error } = await supabase
+      .from('projects')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error("Projeler çekilemedi:", error);
+      return [];
+    }
+    return data || [];
+  },
+
+  async insert(project: SupabaseProject): Promise<SupabaseProject | null> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const { data, error } = await supabase
+      .from('projects')
+      .insert({ ...project, user_id: user.id })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Proje eklenemedi:", error);
+      return null;
+    }
+    return data;
+  },
+
+  async update(id: string, updates: Partial<SupabaseProject>): Promise<SupabaseProject | null> {
+    const { data, error } = await supabase
+      .from('projects')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Proje güncellenemedi:", error);
+      return null;
+    }
+    return data;
+  },
+
+  async delete(id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('projects')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error("Proje silinemedi:", error);
+      return false;
+    }
+    return true;
+  }
+};
+
+export const tasksAPI = {
+  async getAll(): Promise<SupabaseTask[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const { data, error } = await supabase
+      .from('tasks')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error("Görevler çekilemedi:", error);
+      return [];
+    }
+    return data || [];
+  },
+
+  async insert(task: SupabaseTask): Promise<SupabaseTask | null> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const { data, error } = await supabase
+      .from('tasks')
+      .insert({ ...task, user_id: user.id })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Görev eklenemedi:", error);
+      return null;
+    }
+    return data;
+  },
+
+  async update(id: string, updates: Partial<SupabaseTask>): Promise<SupabaseTask | null> {
+    const { data, error } = await supabase
+      .from('tasks')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Görev güncellenemedi:", error);
+      return null;
+    }
+    return data;
+  },
+
+  async delete(id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('tasks')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error("Görev silinemedi:", error);
+      return false;
+    }
+    return true;
+  }
+};

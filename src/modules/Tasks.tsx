@@ -34,7 +34,10 @@ import {
 } from 'lucide-react';
 import { microsoftService } from '../api/microsoft';
 import { googleService } from '../api/google';
-import { profileAPI } from '../api/supabase';
+import { profileAPI, projectGroupsAPI, projectsAPI, tasksAPI, SupabaseTask, SupabaseProject, SupabaseProjectGroup } from '../api/supabase';
+
+const toSupabaseTask = (t: Task): SupabaseTask => ({ id: t.id.toString(), title: t.title, description: t.desc, priority: t.priority, deadline: t.deadline, project_id: t.projectId, module_ref: t.moduleRef, status: t.status, source: t.source, ms_todo_id: t.msTodoId, ms_list_id: t.msListId, g_task_id: t.gTaskId, g_list_id: t.gListId, is_pinned: t.isPinned });
+const fromSupabaseTask = (t: SupabaseTask): Task => ({ id: t.id, title: t.title, desc: t.description || '', priority: t.priority as any, deadline: t.deadline || '', projectId: t.project_id || '', moduleRef: t.module_ref || '', status: t.status as any, createdAt: t.created_at || '', source: t.source as any, msTodoId: t.ms_todo_id, msListId: t.ms_list_id, gTaskId: t.g_task_id, gListId: t.g_list_id, isPinned: t.is_pinned });
 
 interface Task {
   id: string | number;
@@ -69,25 +72,10 @@ export const Tasks: React.FC = () => {
   const { t } = useTranslation();
 
   // ── Data States ──────────────────────────────────────────
-  const [tasks, setTasks] = useState<Task[]>(() => {
-    const saved = localStorage.getItem('enba_tasks');
-    const parsed: Task[] = saved ? JSON.parse(saved) : [];
-    // Ensure all existing tasks have a source
-    return parsed.map(t => ({ ...t, source: t.source || 'local' }));
-  });
-
-  const [projects, setProjects] = useState<Project[]>(() => {
-    const saved = localStorage.getItem('enba_projects');
-    return saved ? JSON.parse(saved) : [
-      { id: 'p1', name: 'GENEL' }
-    ];
-  });
-
-  const [groups, setGroups] = useState<ProjectGroup[]>(() => {
-    const saved = localStorage.getItem('enba_project_groups');
-    const parsed: ProjectGroup[] = saved ? JSON.parse(saved) : [{ id: 'g2', name: 'RUTİN İŞLER' }];
-    return parsed.filter(g => g.id !== 'g1').map(g => g.id === 'g2' ? { ...g, name: 'LİSTELER' } : g);
-  });
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [groups, setGroups] = useState<ProjectGroup[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const [msAccount, setMsAccount] = useState<any>(null);
   const [googleAccount, setGoogleAccount] = useState<any>(null);
@@ -106,12 +94,51 @@ export const Tasks: React.FC = () => {
   });
   const [sourceFilter, setSourceFilter] = useState<'all' | 'google' | 'outlook' | 'local'>('all');
 
-  // ── Sync with LocalStorage ───────────────────────────────
+  // ── Load from Supabase & Silent Migration ───────────────────────────────
   useEffect(() => {
-    localStorage.setItem('enba_tasks', JSON.stringify(tasks));
-    localStorage.setItem('enba_projects', JSON.stringify(projects));
-    localStorage.setItem('enba_project_groups', JSON.stringify(groups));
-  }, [tasks, projects, groups]);
+    async function loadData() {
+      setIsLoading(true);
+      try {
+        const [cloudTasks, cloudProjects, cloudGroups] = await Promise.all([
+          tasksAPI.getAll(),
+          projectsAPI.getAll(),
+          projectGroupsAPI.getAll()
+        ]);
+
+        const localTasksStr = localStorage.getItem('enba_tasks');
+        if (localTasksStr && cloudTasks.length === 0) {
+          console.log("Migrating Tasks to Supabase...");
+          const lTasks = JSON.parse(localTasksStr) || [];
+          const lProjects = JSON.parse(localStorage.getItem('enba_projects') || '[]');
+          const lGroups = JSON.parse(localStorage.getItem('enba_project_groups') || '[]');
+          
+          for(const g of lGroups) await projectGroupsAPI.insert({ id: g.id, name: g.name });
+          for(const p of lProjects) await projectsAPI.insert({ id: p.id, name: p.name, group_id: p.groupId });
+          for(const t of lTasks) await tasksAPI.insert(toSupabaseTask(t));
+
+          const [newT, newP, newG] = await Promise.all([tasksAPI.getAll(), projectsAPI.getAll(), projectGroupsAPI.getAll()]);
+          setTasks(newT.map(fromSupabaseTask));
+          setProjects(newP.map(x => ({ id: x.id, name: x.name, groupId: x.group_id })));
+          setGroups(newG);
+
+          localStorage.removeItem('enba_tasks');
+          localStorage.removeItem('enba_projects');
+          localStorage.removeItem('enba_project_groups');
+          setIsLoading(false);
+          return;
+        }
+
+        setTasks(cloudTasks.map(fromSupabaseTask));
+        setProjects(cloudProjects.map(x => ({ id: x.id, name: x.name, groupId: x.group_id })));
+        setGroups(cloudGroups);
+      } catch (err) {
+        console.error("Görev verileri yüklenemedi:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadData();
+  }, []);
 
   useEffect(() => {
     const recoverSession = async () => {
@@ -186,7 +213,7 @@ export const Tasks: React.FC = () => {
       p.id === editingProject.id ? { ...p, name: editingProjectName.trim().toUpperCase() } : p
     );
     setProjects(updated);
-    localStorage.setItem('enba_projects', JSON.stringify(updated));
+    
     setEditingProject(null);
   };
 
@@ -195,17 +222,18 @@ export const Tasks: React.FC = () => {
     if (deleteTargetId === 'delete') {
       const updatedTasks = tasks.filter(t => t.projectId !== deletingProject.id);
       setTasks(updatedTasks);
-      localStorage.setItem('enba_tasks', JSON.stringify(updatedTasks));
+      tasks.forEach(t => { if(t.projectId === deletingProject.id) tasksAPI.delete(t.id.toString()); });
     } else if (deleteTargetId !== 'none') {
       const updatedTasks = tasks.map(t =>
         t.projectId === deletingProject.id ? { ...t, projectId: deleteTargetId } : t
       );
       setTasks(updatedTasks);
-      localStorage.setItem('enba_tasks', JSON.stringify(updatedTasks));
+      tasks.forEach(t => { if(t.projectId === deletingProject.id) tasksAPI.update(t.id.toString(), { project_id: deleteTargetId }); });
     }
     const updatedProjects = projects.filter(p => p.id !== deletingProject.id);
     setProjects(updatedProjects);
-    localStorage.setItem('enba_projects', JSON.stringify(updatedProjects));
+    projectsAPI.delete(deletingProject.id);
+    
     if (selectedProjectId === deletingProject.id) setSelectedProjectId('all');
     setDeletingProject(null);
     setDeleteTargetId('none');
@@ -215,7 +243,8 @@ export const Tasks: React.FC = () => {
   const handleMoveTask = (taskId: string | number, newProjectId: string) => {
     const updated = tasks.map(t => t.id === taskId ? { ...t, projectId: newProjectId } : t);
     setTasks(updated);
-    localStorage.setItem('enba_tasks', JSON.stringify(updated));
+    tasksAPI.update(taskId.toString(), { project_id: newProjectId });
+    
   };
 
   // ── UI States ────────────────────────────────────────────
@@ -252,6 +281,7 @@ export const Tasks: React.FC = () => {
     };
 
     setTasks(prev => isNew ? [...prev, newTask] : prev.map(t => t.id === newTask.id ? newTask : t));
+    if (isNew) { tasksAPI.insert(toSupabaseTask(newTask)); } else { tasksAPI.update(newTask.id.toString(), toSupabaseTask(newTask)); }
     setShowTaskForm(false);
     setEditingTask(null);
 
@@ -277,6 +307,7 @@ export const Tasks: React.FC = () => {
     
     // Local update
     setTasks(prev => prev.map(t => t.id === id ? { ...t, status: newStatus } : t));
+    tasksAPI.update(id.toString(), { status: newStatus });
 
     // Microsoft Update
     if (msAccount && task.msTodoId && task.msListId) {
@@ -287,13 +318,16 @@ export const Tasks: React.FC = () => {
   const togglePin = (taskId: string | number) => {
     const updated = tasks.map(t => t.id === taskId ? { ...t, isPinned: !t.isPinned } : t);
     setTasks(updated);
-    localStorage.setItem('enba_tasks', JSON.stringify(updated));
+    const tObj = tasks.find(t => t.id === taskId);
+    if (tObj) tasksAPI.update(taskId.toString(), { is_pinned: !tObj.isPinned });
+    
   };
 
   const handleDeleteTask = async (task: Task) => {
     if (!confirm('Bu görev silinecek. Emin misiniz?')) return;
     
     setTasks(prev => prev.filter(t => t.id !== task.id));
+    tasksAPI.delete(task.id.toString());
 
     if (msAccount && task.msTodoId && task.msListId) {
       await microsoftService.deleteTask(task.msListId, task.msTodoId);
@@ -330,7 +364,7 @@ export const Tasks: React.FC = () => {
       }
       if (updatedProjects.length !== projects.length) {
         setProjects(updatedProjects);
-        localStorage.setItem('enba_projects', JSON.stringify(updatedProjects));
+        
       }
 
       const cleanText = (s: string) =>
@@ -378,7 +412,7 @@ export const Tasks: React.FC = () => {
 
       const merged = [...updatedTasks, ...newTasks];
       setTasks(merged);
-      localStorage.setItem('enba_tasks', JSON.stringify(merged));
+      
 
       setSyncStatus(`✓ ${msTasks.length} çekildi · ${updatedCount} güncellendi · ${newTasks.length} yeni`);
       setTimeout(() => setSyncStatus(''), 5000);
@@ -442,8 +476,8 @@ export const Tasks: React.FC = () => {
 
       setProjects(newProjects);
       setTasks(snapshot);
-      localStorage.setItem('enba_tasks', JSON.stringify(snapshot));
-      localStorage.setItem('enba_projects', JSON.stringify(newProjects));
+      
+      
       setSyncStatus(`✓ Google: ${newCount} yeni · ${updatedCount} güncellendi`);
       setTimeout(() => setSyncStatus(''), 5000);
     } catch (err) {
@@ -892,7 +926,7 @@ export const Tasks: React.FC = () => {
                   const name = (document.getElementById('newProjName') as HTMLInputElement).value;
                   const gId = (document.getElementById('newProjGroup') as HTMLSelectElement).value;
                   if (name) {
-                    setProjects(prev => [...prev, { id: 'p-' + Date.now(), name, groupId: gId }]);
+                    const nId = 'p-' + Date.now(); setProjects(prev => [...prev, { id: nId, name, groupId: gId }]); projectsAPI.insert({ id: nId, name, group_id: gId });
                     setShowProjectForm(false);
                   }
                 }} className="flex-1 py-4 bg-enba-dark text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black shadow-lg shadow-black/10 transition-all">EKLE</button>
