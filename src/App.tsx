@@ -184,7 +184,15 @@ export const App: React.FC = () => {
   // Giriş yapılmamışsa Login ekranı
   if (!session) return <Login />;
 
-  const menuItems = [
+  const MENU_GROUPS = [
+    { id: 'g1', title: 'Operasyon (Kısayollar)', items: ['modules', 'dashboard', 'tasks', 'calendar', 'mail'] },
+    { id: 'g2', title: 'Finans & Muhasebe', items: ['pnl', 'cashflow', 'parasut', 'fixedexpenses'] },
+    { id: 'g3', title: 'Üretim & Lojistik', items: ['fastplan', 'planning', 'production', 'stock', 'logistics', 'machinery'] },
+    { id: 'g4', title: 'Kurumsal Yönetim', items: ['hr', 'licensing', 'archive'] },
+    { id: 'g5', title: 'Sistem', items: ['profile', 'settings'] }
+  ];
+
+  const rawMenuItems = [
     { id: 'modules',    label: 'Ana Sayfa',                 icon: LayoutGrid },
     { id: 'dashboard',  label: t('nav.home'),              icon: Home },
     { id: 'fastplan',   label: 'Hızlı İş Planı',           icon: Zap },
@@ -205,7 +213,9 @@ export const App: React.FC = () => {
     { id: 'logistics',  label: t('modules.logistics'),     icon: Truck },
     { id: 'settings',   label: t('nav.sistem'),            icon: SettingsIcon },
     { id: 'profile',    label: 'Profilim',                 icon: User },
-  ].filter(item => {
+  ];
+
+  const allowedItems = rawMenuItems.filter(item => {
     // Admin ise her şeyi görür
     if (user.role === 'admin') return true;
     // FALLBACK: Veritabanı hatası (RLS) durumunda oturum varsa tam erişim sağla
@@ -215,6 +225,8 @@ export const App: React.FC = () => {
     // Others depend on permissions
     return userProfile?.permissions?.[item.id] === true;
   });
+
+  const menuItems = allowedItems;
 
   const navigate = (view: string) => {
     const mod = view as ModuleType;
@@ -296,58 +308,80 @@ export const App: React.FC = () => {
         </div>
 
         {/* Nav items */}
-        <nav className="flex-1 py-3 overflow-y-auto sidebar-scrollbar flex flex-col gap-0.5 px-2">
-          {menuItems.map(item => {
-            const active = activeModule === item.id;
+        <nav className="flex-1 py-3 overflow-y-auto sidebar-scrollbar flex flex-col px-2 pb-10">
+          {MENU_GROUPS.map((group, gIdx) => {
+            const groupItems = group.items
+              .map(itemId => allowedItems.find(i => i.id === itemId))
+              .filter(Boolean) as typeof allowedItems;
+
+            if (groupItems.length === 0) return null;
+
             return (
-              <button
-                key={item.id}
-                onClick={() => navigate(item.id)}
-                title={!isSidebarOpen ? item.label : ''}
-                className={`
-                  group relative flex items-center rounded-xl transition-all duration-200
-                  ${isSidebarOpen ? 'px-3 py-2.5 gap-3' : 'px-0 py-2.5 justify-center'}
-                  ${active
-                    ? 'bg-white/10 text-white'
-                    : 'text-gray-500 hover:bg-white/5 hover:text-gray-200'}
-                `}
-              >
-                {/* Active indicator */}
-                {active && (
-                  <div className="absolute left-0 top-2 bottom-2 w-0.5 bg-[var(--enba-orange)] rounded-full" />
-                )}
-
-                {/* Icon */}
-                <item.icon
-                  size={18}
-                  className={`flex-shrink-0 transition-colors ${active ? 'text-[var(--enba-orange)]' : ''}`}
-                />
-
-                {/* Label — only when open */}
-                {isSidebarOpen && (
-                  <span
-                    style={{ fontFamily: "'Poppins', sans-serif" }}
-                    className={`text-[12px] font-medium truncate transition-colors ${active ? 'text-white' : ''}`}
-                  >
-                    {item.label}
-                  </span>
-                )}
-
-                {/* Tooltip when closed */}
-                {!isSidebarOpen && (
-                  <div className="
-                    absolute left-full ml-3 px-2.5 py-1.5 rounded-lg
-                    bg-gray-900 text-white text-xs font-medium whitespace-nowrap
-                    pointer-events-none opacity-0 group-hover:opacity-100
-                    transition-opacity duration-150 z-50 shadow-xl
-                    border border-white/5
-                  "
-                    style={{ fontFamily: "'Poppins', sans-serif" }}
-                  >
-                    {item.label}
+              <div key={group.id} className="mb-3">
+                {isSidebarOpen ? (
+                  <div className={`px-3 mb-1 text-[9px] font-black uppercase tracking-[2px] text-white/30 ${gIdx === 0 ? 'mt-0' : 'mt-2'}`}>
+                    {group.title}
                   </div>
+                ) : (
+                  gIdx > 0 && <div className="w-6 mx-auto h-[1px] bg-white/10 my-3 rounded-full" />
                 )}
-              </button>
+                
+                <div className="flex flex-col gap-0.5">
+                  {groupItems.map(item => {
+                    const active = activeModule === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => navigate(item.id)}
+                        title={!isSidebarOpen ? item.label : ''}
+                        className={`
+                          group relative flex items-center rounded-xl transition-all duration-200
+                          ${isSidebarOpen ? 'px-3 py-2.5 gap-3' : 'px-0 py-2.5 justify-center'}
+                          ${active
+                            ? 'bg-white/10 text-white'
+                            : 'text-gray-500 hover:bg-white/5 hover:text-gray-200'}
+                        `}
+                      >
+                        {/* Active indicator */}
+                        {active && (
+                          <div className="absolute left-0 top-2 bottom-2 w-0.5 bg-[var(--enba-orange)] rounded-full" />
+                        )}
+
+                        {/* Icon */}
+                        <item.icon
+                          size={18}
+                          className={`flex-shrink-0 transition-colors ${active ? 'text-[var(--enba-orange)]' : ''}`}
+                        />
+
+                        {/* Label — only when open */}
+                        {isSidebarOpen && (
+                          <span
+                            style={{ fontFamily: "'Poppins', sans-serif" }}
+                            className={`text-[12px] font-medium truncate transition-colors ${active ? 'text-white' : ''}`}
+                          >
+                            {item.label}
+                          </span>
+                        )}
+
+                        {/* Tooltip when closed */}
+                        {!isSidebarOpen && (
+                          <div className="
+                            absolute left-full ml-3 px-2.5 py-1.5 rounded-lg
+                            bg-gray-900 text-white text-xs font-medium whitespace-nowrap
+                            pointer-events-none opacity-0 group-hover:opacity-100
+                            transition-opacity duration-150 z-50 shadow-xl
+                            border border-white/5
+                          "
+                            style={{ fontFamily: "'Poppins', sans-serif" }}
+                          >
+                            {item.label}
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             );
           })}
         </nav>
