@@ -25,6 +25,7 @@ import { Calendar as CalendarModule } from './modules/Calendar';
 import { Parasut } from './modules/Parasut';
 import { ModulesOverview } from './modules/ModulesOverview';
 import { Mail } from './modules/Mail';
+import { FixedExpenses } from './modules/FixedExpenses';
 import {
   Home,
   LayoutGrid,
@@ -51,13 +52,14 @@ import {
   Receipt,
   Moon,
   Sun,
-  Mail as MailIcon
+  Mail as MailIcon,
+  CreditCard
 } from 'lucide-react';
 
 type ModuleType =
   | 'dashboard' | 'stock' | 'production' | 'logistics' | 'hr'
   | 'archive' | 'cashflow' | 'planning' | 'fastplan' | 'machinery'
-  | 'tasks' | 'calendar' | 'licensing' | 'settings' | 'pnl' | 'profile' | 'parasut' | 'modules' | 'mail';
+  | 'tasks' | 'calendar' | 'licensing' | 'settings' | 'pnl' | 'profile' | 'parasut' | 'modules' | 'mail' | 'fixedexpenses';
 
 const getProfileAvatar = () => {
   try { return JSON.parse(localStorage.getItem('enba_profile_data') || '{}').avatar || ''; }
@@ -199,6 +201,7 @@ export const App: React.FC = () => {
     { id: 'tasks',      label: t('modules.tasks'),         icon: ClipboardList },
     { id: 'calendar',   label: 'Takvim',                   icon: CalendarIcon },
     { id: 'mail',       label: 'E-Posta',                  icon: MailIcon },
+    { id: 'fixedexpenses', label: 'Abonelikler/Ödemeler', icon: CreditCard },
     { id: 'logistics',  label: t('modules.logistics'),     icon: Truck },
     { id: 'settings',   label: t('nav.sistem'),            icon: SettingsIcon },
     { id: 'profile',    label: 'Profilim',                 icon: User },
@@ -208,7 +211,7 @@ export const App: React.FC = () => {
     // FALLBACK: Veritabanı hatası (RLS) durumunda oturum varsa tam erişim sağla
     if (!userProfile && session?.user) return true;
     // Core modules always visible, others depend on permissions
-    if (item.id === 'profile' || item.id === 'dashboard' || item.id === 'tasks' || item.id === 'calendar' || item.id === 'modules' || item.id === 'mail') return true;
+    if (item.id === 'profile' || item.id === 'dashboard' || item.id === 'tasks' || item.id === 'calendar' || item.id === 'modules' || item.id === 'mail' || item.id === 'fixedexpenses') return true;
     // Others depend on permissions
     return userProfile?.permissions?.[item.id] === true;
   });
@@ -611,6 +614,7 @@ export const App: React.FC = () => {
             { activeModule === 'profile'    && <Profile /> }
             { activeModule === 'parasut'    && <Parasut /> }
             { activeModule === 'mail'       && <Mail /> }
+            { activeModule === 'fixedexpenses' && <FixedExpenses /> }
           </div>
         </div>
       </main>
