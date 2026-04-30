@@ -13,9 +13,12 @@ import {
   Check,
   TrendingUp,
   Receipt,
-  X
+  X,
+  RefreshCw,
+  CloudLightning
 } from 'lucide-react';
 import { fmt } from '../utils/formatters';
+import { parasutService } from '../api/parasut';
 
 export interface ExpenseItem {
   id: string;
@@ -24,6 +27,7 @@ export interface ExpenseItem {
   category: string;
   dueDate: number; // 1-31
   isAutoPay: boolean;
+  parasutMatchKeyword?: string;
   history: Record<string, boolean>; // 'YYYY-MM': boolean
 }
 
@@ -54,10 +58,11 @@ export const FixedExpenses: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ExpenseItem | null>(null);
   const [filter, setFilter] = useState<'all' | 'pending' | 'paid'>('all');
+  const [isSyncing, setIsSyncing] = useState(false);
   
   // Form State
   const [formData, setFormData] = useState<Partial<ExpenseItem>>({
-    title: '', amount: 0, category: 'diger', dueDate: 1, isAutoPay: false
+    title: '', amount: 0, category: 'diger', dueDate: 1, isAutoPay: false, parasutMatchKeyword: ''
   });
 
   const currentMonthKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
@@ -103,7 +108,7 @@ export const FixedExpenses: React.FC = () => {
       setFormData(item);
     } else {
       setEditingItem(null);
-      setFormData({ title: '', amount: 0, category: 'diger', dueDate: 1, isAutoPay: false });
+      setFormData({ title: '', amount: 0, category: 'diger', dueDate: 1, isAutoPay: false, parasutMatchKeyword: '' });
     }
     setIsModalOpen(true);
   };
@@ -125,6 +130,68 @@ export const FixedExpenses: React.FC = () => {
       setExpenses(prev => [...prev, newItem]);
     }
     setIsModalOpen(false);
+  };
+
+  const handleSyncParasut = async () => {
+    if (!parasutService.isLoggedIn()) {
+      alert("Paraşüt bağlantınız yok. Önce Paraşüt modülünden giriş yapmalısınız.");
+      return;
+    }
+    const company = parasutService.getCompany();
+    if (!company) return;
+
+    setIsSyncing(true);
+    try {
+      const year = currentDate.getFullYear();
+      const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+      const dateFrom = `${year}-${month}-01`;
+      const lastDay = new Date(year, currentDate.getMonth() + 1, 0).getDate();
+      const dateTo = `${year}-${month}-${lastDay}`;
+
+      const [expenditures, bills] = await Promise.all([
+        parasutService.getExpenditures(company.id, dateFrom, dateTo).catch(() => []),
+        parasutService.getPurchaseBills(company.id, dateFrom, dateTo).catch(() => [])
+      ]);
+
+      const allParasutInvoices = [...expenditures, ...bills];
+
+      let syncCount = 0;
+      setExpenses(prev => {
+        let updated = false;
+        const newExpenses = prev.map(exp => {
+          if (!exp.parasutMatchKeyword || exp.history[currentMonthKey]) return exp;
+
+          const keyword = exp.parasutMatchKeyword.toLowerCase();
+          
+          const isMatchedAndPaid = allParasutInvoices.some(inv => {
+             const matchText = `${inv.contact_name} ${inv.description} ${inv.category_name}`.toLowerCase();
+             return matchText.includes(keyword) && inv.payment_status === 'paid';
+          });
+
+          if (isMatchedAndPaid) {
+            updated = true;
+            syncCount++;
+            return {
+              ...exp,
+              history: { ...exp.history, [currentMonthKey]: true }
+            };
+          }
+          return exp;
+        });
+
+        if (updated) {
+          setTimeout(() => alert(`Senkronizasyon tamamlandı: ${syncCount} adet gider otomatik olarak "Ödendi" işaretlendi!`), 500);
+          return newExpenses;
+        }
+        setTimeout(() => alert('Yeni bir eşleşen "Ödenmiş" kayıt bulunamadı.'), 500);
+        return prev;
+      });
+
+    } catch (error: any) {
+      alert("Paraşüt senkronizasyonu sırasında hata oluştu: " + error.message);
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   // Stats Calculations
@@ -246,13 +313,23 @@ export const FixedExpenses: React.FC = () => {
             </button>
           </div>
 
-          <button 
-            onClick={() => openModal()} 
-            className="flex items-center gap-2 px-6 py-3 bg-enba-dark text-white rounded-2xl text-[10px] font-black uppercase tracking-[2px] shadow-lg hover:bg-black transition-all hover:-translate-y-0.5"
-          >
-            <PlusCircle size={16} className="text-enba-orange" />
-            Yeni Ekle
-          </button>
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={handleSyncParasut}
+              disabled={isSyncing}
+              className={`flex items-center gap-2 px-6 py-3 bg-blue-50 text-blue-600 rounded-2xl text-[10px] font-black uppercase tracking-[2px] transition-all hover:bg-blue-100 ${isSyncing ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              <RefreshCw size={16} className={isSyncing ? 'animate-spin' : ''} />
+              {isSyncing ? 'Senkronize Ediliyor...' : 'Paraşüt Sync'}
+            </button>
+            <button 
+              onClick={() => openModal()} 
+              className="flex items-center gap-2 px-6 py-3 bg-enba-dark text-white rounded-2xl text-[10px] font-black uppercase tracking-[2px] shadow-lg hover:bg-black transition-all hover:-translate-y-0.5"
+            >
+              <PlusCircle size={16} className="text-enba-orange" />
+              Yeni Ekle
+            </button>
+          </div>
         </div>
 
         {/* List */}
@@ -388,6 +465,21 @@ export const FixedExpenses: React.FC = () => {
                     <option key={c.id} value={c.id}>{c.label}</option>
                   ))}
                 </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                  <CloudLightning size={14} className="text-blue-500" />
+                  Paraşüt Eşleşme Kelimesi (Opsiyonel)
+                </label>
+                <input 
+                  type="text" 
+                  value={formData.parasutMatchKeyword || ''}
+                  onChange={e => setFormData({...formData, parasutMatchKeyword: e.target.value})}
+                  className="w-full bg-blue-50/30 border border-blue-100 rounded-2xl px-5 py-4 text-sm font-bold text-enba-dark focus:bg-white focus:border-blue-300 outline-none transition-all"
+                  placeholder="Örn: Microsoft, Yandex, Ahmet Yılmaz..."
+                />
+                <p className="text-[9px] text-gray-400 ml-1">Fatura açıklaması veya cari adında bu kelime geçerse otomatik eşleşir.</p>
               </div>
 
               <div className="flex items-center gap-3 mt-2 p-4 rounded-2xl border border-gray-100 bg-gray-50/50 cursor-pointer" onClick={() => setFormData({...formData, isAutoPay: !formData.isAutoPay})}>
