@@ -18,6 +18,7 @@ import {
   Calendar
 } from 'lucide-react';
 import { fmt } from '../utils/formatters';
+import { permitsAPI, SupabasePermit } from '../api/supabase';
 
 interface Permit {
   id: string;
@@ -36,23 +37,49 @@ export const Licensing: React.FC = () => {
   const { t } = useTranslation();
 
   // ── Data States ──────────────────────────────────────────
-  const [kayitlar, setKayitlar] = useState<Permit[]>(() => {
-    const saved = localStorage.getItem('enba_lisans_kayitlari');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [kayitlar, setKayitlar] = useState<SupabasePermit[]>([]);
 
   const [loading, setLoading] = useState(false);
 
-  // ── Sync with LocalStorage ───────────────────────────────
+  // ── Sync with Supabase ───────────────────────────────
   useEffect(() => {
-    localStorage.setItem('enba_lisans_kayitlari', JSON.stringify(kayitlar));
-  }, [kayitlar]);
+    async function loadData() {
+      const cloudPermits = await permitsAPI.getAll();
+
+      const savedStr = localStorage.getItem('enba_lisans_kayitlari');
+      if (savedStr && cloudPermits.length === 0) {
+        console.log("Migrating Licensing to Supabase...");
+        const saved = JSON.parse(savedStr);
+        for (const k of saved) {
+          await permitsAPI.insert({
+            ad: k.ad,
+            kategori: k.kategori,
+            kurum: k.kurum,
+            alinis_tarihi: k.alinisTarihi,
+            yenileme_tarihi: k.yenilemeTarihi,
+            is_suresiz: k.isSuresiz,
+            maliyet: k.maliyet,
+            file_id: k.fileId,
+            file_name: k.fileName
+          } as SupabasePermit);
+        }
+
+        const migrated = await permitsAPI.getAll();
+        setKayitlar(migrated);
+        localStorage.removeItem('enba_lisans_kayitlari');
+        return;
+      }
+
+      setKayitlar(cloudPermits);
+    }
+    loadData();
+  }, []);
 
   // ── UI States ────────────────────────────────────────────
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState<Partial<Permit>>({
-    ad: '', kategori: 'Ruhsat', kurum: '', alinisTarihi: '', yenilemeTarihi: '', isSuresiz: false, maliyet: 0
+  const [formData, setFormData] = useState<Partial<SupabasePermit>>({
+    ad: '', kategori: 'Ruhsat', kurum: '', alinis_tarihi: '', yenileme_tarihi: '', is_suresiz: false, maliyet: 0
   });
 
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -73,33 +100,30 @@ export const Licensing: React.FC = () => {
     return { label: "Aktif", color: "text-emerald-600", bg: "bg-emerald-50", border: 'border-emerald-100', icon: CheckCircle };
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.ad) return;
 
-    const newRecord: Permit = {
-      ...formData as Permit,
-      id: editingId || `prm_${Date.now()}`
-    };
-
     if (editingId) {
-      setKayitlar(prev => prev.map(k => k.id === editingId ? newRecord : k));
+      const updated = await permitsAPI.update(editingId, formData);
+      if (updated) setKayitlar(prev => prev.map(k => k.id === editingId ? updated : k));
     } else {
-      setKayitlar(prev => [...prev, newRecord]);
+      const newRecord = await permitsAPI.insert(formData as SupabasePermit);
+      if (newRecord) setKayitlar(prev => [...prev, newRecord]);
     }
 
     setIsFormOpen(false);
     setEditingId(null);
-    setFormData({ ad: '', kategori: 'Ruhsat', kurum: '', alinisTarihi: '', yenilemeTarihi: '', isSuresiz: false, maliyet: 0 });
+    setFormData({ ad: '', kategori: 'Ruhsat', kurum: '', alinis_tarihi: '', yenileme_tarihi: '', is_suresiz: false, maliyet: 0 });
   };
 
   const stats = useMemo(() => {
     const totalCost = kayitlar.reduce((sum, k) => sum + (k.maliyet || 0), 0);
     const expiringCount = kayitlar.filter(k => {
-      const status = calculateStatus(k.yenilemeTarihi, k.isSuresiz);
+      const status = calculateStatus(k.yenileme_tarihi, k.is_suresiz);
       return status.label === "Yaklaşıyor";
     }).length;
-    const expiredCount = kayitlar.filter(k => !k.isSuresiz && calculateStatus(k.yenilemeTarihi, k.isSuresiz).label === "Süresi Dolmuş").length;
+    const expiredCount = kayitlar.filter(k => !k.is_suresiz && calculateStatus(k.yenileme_tarihi, k.is_suresiz).label === "Süresi Dolmuş").length;
 
     return { totalCost, expiringCount, expiredCount, total: kayitlar.length };
   }, [kayitlar]);
@@ -176,7 +200,7 @@ export const Licensing: React.FC = () => {
                 </thead>
                 <tbody className="divide-y divide-gray-50">
                    {kayitlar.map(k => {
-                     const status = calculateStatus(k.yenilemeTarihi, k.isSuresiz);
+                     const status = calculateStatus(k.yenileme_tarihi, k.is_suresiz);
                      const StatusIcon = status.icon;
 
                      return (
@@ -203,7 +227,7 @@ export const Licensing: React.FC = () => {
                               <div className="flex items-center gap-3">
                                  <Calendar size={18} className="text-enba-orange" />
                                  <span className={`text-[11px] font-black tracking-widest uppercase italic tabular-nums ${status.label === 'Süresi Dolmuş' ? 'text-rose-500 underline underline-offset-4 decoration-rose-200' : 'text-enba-dark'}`}>
-                                    {k.isSuresiz ? 'SÜRESİZ GEÇERLİ' : (k.yenilemeTarihi ? new Date(k.yenilemeTarihi).toLocaleDateString('tr-TR') : 'BELİRTİLMEDİ')}
+                                    {k.is_suresiz ? 'SÜRESİZ GEÇERLİ' : (k.yenileme_tarihi ? new Date(k.yenileme_tarihi).toLocaleDateString('tr-TR') : 'BELİRTİLMEDİ')}
                                  </span>
                               </div>
                            </td>
@@ -217,7 +241,12 @@ export const Licensing: React.FC = () => {
                                  <button onClick={() => { setEditingId(k.id); setFormData(k); setIsFormOpen(true); }} className="w-10 h-10 rounded-xl bg-enba-dark text-white flex items-center justify-center hover:bg-black transition-all shadow-xl active:scale-90">
                                     <Pencil size={18} />
                                  </button>
-                                 <button onClick={() => setKayitlar(prev => prev.filter(x => x.id !== k.id))} className="w-10 h-10 rounded-xl bg-rose-50 text-rose-500 border border-rose-100 flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all shadow-sm active:scale-90">
+                                 <button onClick={async () => {
+                                    if (confirm("Bu kaydı silmek istediğinize emin misiniz?")) {
+                                      const success = await permitsAPI.delete(k.id);
+                                      if (success) setKayitlar(prev => prev.filter(x => x.id !== k.id));
+                                    }
+                                  }} className="w-10 h-10 rounded-xl bg-rose-50 text-rose-500 border border-rose-100 flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all shadow-sm active:scale-90">
                                     <Trash2 size={18} />
                                  </button>
                               </div>
@@ -282,13 +311,13 @@ export const Licensing: React.FC = () => {
                      </div>
                      <div className="space-y-3">
                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-[4px] ml-1 italic">Edinim Tarihi</label>
-                        <input type="date" value={formData.alinisTarihi} onChange={e => setFormData({...formData, alinisTarihi: e.target.value})} className="w-full bg-gray-50 border border-transparent rounded-[1.5rem] px-8 py-5 text-sm font-black text-enba-dark focus:bg-white focus:ring-2 focus:ring-enba-orange/20 outline-none transition-all" />
+                        <input type="date" value={formData.alinis_tarihi} onChange={e => setFormData({...formData, alinis_tarihi: e.target.value})} className="w-full bg-gray-50 border border-transparent rounded-[1.5rem] px-8 py-5 text-sm font-black text-enba-dark focus:bg-white focus:ring-2 focus:ring-enba-orange/20 outline-none transition-all" />
                      </div>
                      <div className="space-y-3 relative">
                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-[4px] ml-1 italic">Vade / Yenileme Tarihi</label>
-                        <input type="date" required={!formData.isSuresiz} disabled={formData.isSuresiz} value={formData.yenilemeTarihi || ''} onChange={e => setFormData({...formData, yenilemeTarihi: e.target.value})} className={`w-full bg-gray-50 border border-transparent rounded-[1.5rem] px-8 py-5 text-sm font-black text-enba-dark focus:bg-white focus:ring-2 focus:ring-enba-orange/20 outline-none transition-all ${formData.isSuresiz ? 'opacity-20 pointer-events-none' : ''}`} />
+                        <input type="date" required={!formData.is_suresiz} disabled={formData.is_suresiz} value={formData.yenileme_tarihi || ''} onChange={e => setFormData({...formData, yenileme_tarihi: e.target.value})} className={`w-full bg-gray-50 border border-transparent rounded-[1.5rem] px-8 py-5 text-sm font-black text-enba-dark focus:bg-white focus:ring-2 focus:ring-enba-orange/20 outline-none transition-all ${formData.is_suresiz ? 'opacity-20 pointer-events-none' : ''}`} />
                         <label className="flex items-center gap-3 mt-4 cursor-pointer group/chk">
-                           <input type="checkbox" checked={formData.isSuresiz} onChange={e => setFormData({...formData, isSuresiz: e.target.checked})} className="w-5 h-5 rounded-lg bg-gray-100 border-none text-enba-orange focus:ring-0 cursor-pointer" />
+                           <input type="checkbox" checked={formData.is_suresiz} onChange={e => setFormData({...formData, is_suresiz: e.target.checked})} className="w-5 h-5 rounded-lg bg-gray-100 border-none text-enba-orange focus:ring-0 cursor-pointer" />
                            <span className="text-[9px] font-black text-gray-400 uppercase tracking-[3px] group-hover/chk:text-enba-orange transition-colors italic">Süresiz Geçerli Belge</span>
                         </label>
                      </div>

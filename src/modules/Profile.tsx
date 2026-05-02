@@ -21,8 +21,6 @@ interface ProfileData {
   website: string;
 }
 
-const STORAGE_KEY = 'enba_profile_data';
-
 const defaultProfile = (): ProfileData => ({
   name: 'Administrator',
   title: '',
@@ -40,14 +38,7 @@ const defaultProfile = (): ProfileData => ({
   website: '',
 });
 
-const loadProfileLocal = (): ProfileData => {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? { ...defaultProfile(), ...JSON.parse(raw) } : defaultProfile();
-  } catch {
-    return defaultProfile();
-  }
-};
+
 
 const labelCls = 'block text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5';
 const inputCls =
@@ -83,18 +74,16 @@ const SocialInput: React.FC<{
 );
 
 export const Profile: React.FC = () => {
-  // localStorage'dan anında göster, Supabase'den gelirse üzerine yaz
-  const [form, setForm] = useState<ProfileData>(loadProfileLocal);
+  const [form, setForm] = useState<ProfileData>(defaultProfile);
   const [saved, setSaved] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      const cloud = user?.user_metadata?.profile_data as Partial<ProfileData> | undefined;
+      const cloud = user?.user_metadata?.profile_data as Partial<ProfileData> & { avatarUrl?: string } | undefined;
       if (cloud) {
-        const local = loadProfileLocal();
-        // avatar sadece localStorage'da — cloud'dan gelen diğer alanlarla birleştir
-        setForm({ ...defaultProfile(), ...cloud, avatar: local.avatar || '' });
+        setForm({ ...defaultProfile(), ...cloud, avatar: cloud.avatarUrl || '' });
       }
     })();
   }, []);
@@ -147,8 +136,9 @@ export const Profile: React.FC = () => {
   };
   const handleMouseUp = () => setDragging(false);
 
-  const finalizeCrop = () => {
+  const finalizeCrop = async () => {
     if (!imgRef.current) return;
+    setIsUploading(true);
     const OUTPUT = 400;
     const canvas = document.createElement('canvas');
     canvas.width = OUTPUT;
@@ -156,29 +146,56 @@ export const Profile: React.FC = () => {
     const ctx = canvas.getContext('2d')!;
     ctx.fillStyle = '#fff';
     ctx.fillRect(0, 0, OUTPUT, OUTPUT);
-    // Replicate CSS: translate(cropPos.x, cropPos.y) scale(zoom) transform-origin:0 0
-    // Scale everything up from 300px viewport → 400px output
     const s = OUTPUT / VIEWPORT;
     ctx.translate(cropPos.x * s, cropPos.y * s);
     ctx.scale(zoom * s, zoom * s);
     const img = imgRef.current;
     ctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight);
-    setForm(f => ({ ...f, avatar: canvas.toDataURL('image/jpeg', 0.85) }));
-    setShowCropper(false);
+    
+    canvas.toBlob(async (blob) => {
+      if (!blob) {
+        setIsUploading(false);
+        return;
+      }
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('Kullanıcı bulunamadı');
+        
+        const fileName = `${user.id}-${Date.now()}.jpg`;
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(fileName, blob, { upsert: true, contentType: 'image/jpeg' });
+          
+        if (uploadError) {
+          console.error('Avatar yüklenemedi:', uploadError);
+          alert("Fotoğraf yüklenemedi. Lütfen avatars bucket'ının kurulu ve public olduğundan emin olun.");
+          setIsUploading(false);
+          return;
+        }
+        
+        const { data: { publicUrl } } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(fileName);
+          
+        setForm(f => ({ ...f, avatar: publicUrl }));
+        setShowCropper(false);
+      } catch (err) {
+        console.error('Avatar yükleme hatası:', err);
+      } finally {
+        setIsUploading(false);
+      }
+    }, 'image/jpeg', 0.85);
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    // 1. localStorage'a anında kaydet (avatar dahil)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(form));
 
-    // 2. Supabase user_metadata'ya kaydet (avatar hariç — base64 boyutu çok büyük)
     const { name, title, department, location, startDate, email, phone, bio,
-            linkedin, twitter, instagram, github, website } = form;
+            linkedin, twitter, instagram, github, website, avatar } = form;
     try {
       await supabase.auth.updateUser({
         data: { profile_data: { name, title, department, location, startDate, email, phone, bio,
-                                linkedin, twitter, instagram, github, website } }
+                                linkedin, twitter, instagram, github, website, avatarUrl: avatar } }
       });
     } catch (err) {
       console.warn('Supabase profil senkronizasyonu başarısız:', err);
@@ -417,9 +434,10 @@ export const Profile: React.FC = () => {
               </button>
               <button
                 onClick={finalizeCrop}
-                className="flex-[2] py-3 rounded-2xl bg-[var(--enba-orange)] text-white text-sm font-black hover:brightness-110 transition-all"
+                disabled={isUploading}
+                className="flex-[2] py-3 rounded-2xl bg-[var(--enba-orange)] text-white text-sm font-black hover:brightness-110 transition-all disabled:opacity-50"
               >
-                Kırpmayı Tamamla
+                {isUploading ? 'Yükleniyor...' : 'Kırpmayı Tamamla'}
               </button>
             </div>
           </div>

@@ -412,3 +412,284 @@ export const tasksAPI = {
     return true;
   }
 };
+
+// ── PnL (Kâr/Zarar) API ──────────────────────────────────
+export interface SupabasePnlReport {
+  id: string;
+  user_id?: string;
+  name: string;
+  date: string;
+  payload: any;
+  created_at?: string;
+}
+
+export const pnlReportsAPI = {
+  async getAll(): Promise<SupabasePnlReport[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const { data, error } = await supabase
+      .from('pnl_reports')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error("PnL raporları çekilemedi:", error);
+      return [];
+    }
+    return data || [];
+  },
+
+  async insert(report: SupabasePnlReport): Promise<SupabasePnlReport | null> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const { data, error } = await supabase
+      .from('pnl_reports')
+      .insert({ ...report, user_id: user.id })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("PnL raporu eklenemedi:", error);
+      return null;
+    }
+    return data;
+  },
+
+  async delete(id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('pnl_reports')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error("PnL raporu silinemedi:", error);
+      return false;
+    }
+    return true;
+  }
+};
+
+// ── Machinery (Makine & Envanter) API ──────────────────────
+export interface SupabaseAsset {
+  id: string;
+  user_id?: string;
+  adi: string;
+  marka?: string;
+  motor_gucu?: number;
+  yatirim_bedeli: number;
+  satinalma_tarihi: string;
+  kategori: string;
+  kapasite?: number;
+  boyut?: string;
+  tur: string;
+  created_at?: string;
+}
+
+export interface SupabaseMaintenanceRecord {
+  id: string;
+  user_id?: string;
+  tarih: string;
+  varlik_id: string;
+  varlik_adi: string;
+  varlik_turu: string;
+  tur: string;
+  aciklama: string;
+  maliyet: number;
+  created_at?: string;
+}
+
+export const assetsAPI = {
+  async getAll(): Promise<SupabaseAsset[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const { data, error } = await supabase
+      .from('assets')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error("Varlıklar çekilemedi:", error);
+      return [];
+    }
+    return data || [];
+  },
+
+  async insert(asset: SupabaseAsset): Promise<SupabaseAsset | null> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const { data, error } = await supabase
+      .from('assets')
+      .insert({ ...asset, user_id: user.id })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Varlık eklenemedi:", error);
+      return null;
+    }
+    return data;
+  },
+
+  async update(id: string, updates: Partial<SupabaseAsset>): Promise<SupabaseAsset | null> {
+    const { data, error } = await supabase
+      .from('assets')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Varlık güncellenemedi:", error);
+      return null;
+    }
+    return data;
+  },
+
+  async delete(id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('assets')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error("Varlık silinemedi:", error);
+      return false;
+    }
+    return true;
+  }
+};
+
+export const maintenanceAPI = {
+  async getAll(): Promise<SupabaseMaintenanceRecord[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const { data, error } = await supabase
+      .from('maintenance_records')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error("Bakım kayıtları çekilemedi:", error);
+      return [];
+    }
+    return data || [];
+  },
+
+  async insert(record: SupabaseMaintenanceRecord): Promise<SupabaseMaintenanceRecord | null> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const { data, error } = await supabase
+      .from('maintenance_records')
+      .insert({ ...record, user_id: user.id })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Bakım kaydı eklenemedi:", error);
+      return null;
+    }
+    return data;
+  },
+
+  async delete(id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('maintenance_records')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error("Bakım kaydı silinemedi:", error);
+      return false;
+    }
+    return true;
+  }
+};
+
+// ── Licensing (Lisans ve İzinler) API ──────────────────────
+export interface SupabasePermit {
+  id: string;
+  user_id?: string;
+  ad: string;
+  kategori: string;
+  kurum: string;
+  alinis_tarihi: string;
+  yenileme_tarihi: string | null;
+  is_suresiz: boolean;
+  maliyet: number;
+  file_id?: string;
+  file_name?: string;
+  created_at?: string;
+}
+
+export const permitsAPI = {
+  async getAll(): Promise<SupabasePermit[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const { data, error } = await supabase
+      .from('permits')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error("Lisanslar çekilemedi:", error);
+      return [];
+    }
+    return data || [];
+  },
+
+  async insert(permit: SupabasePermit): Promise<SupabasePermit | null> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const { data, error } = await supabase
+      .from('permits')
+      .insert({ ...permit, user_id: user.id })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Lisans eklenemedi:", error);
+      return null;
+    }
+    return data;
+  },
+
+  async update(id: string, updates: Partial<SupabasePermit>): Promise<SupabasePermit | null> {
+    const { data, error } = await supabase
+      .from('permits')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Lisans güncellenemedi:", error);
+      return null;
+    }
+    return data;
+  },
+
+  async delete(id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('permits')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error("Lisans silinemedi:", error);
+      return false;
+    }
+    return true;
+  }
+};

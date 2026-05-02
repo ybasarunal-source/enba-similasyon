@@ -61,11 +61,6 @@ type ModuleType =
   | 'archive' | 'cashflow' | 'planning' | 'fastplan' | 'machinery'
   | 'tasks' | 'calendar' | 'licensing' | 'settings' | 'pnl' | 'profile' | 'parasut' | 'modules' | 'mail' | 'fixedexpenses';
 
-const getProfileAvatar = () => {
-  try { return JSON.parse(localStorage.getItem('enba_profile_data') || '{}').avatar || ''; }
-  catch { return ''; }
-};
-
 export const App: React.FC = () => {
   const { t, language, setLanguage, isLoading } = useTranslation();
   const [activeModule, setActiveModule] = useState<ModuleType>(() => {
@@ -81,7 +76,7 @@ export const App: React.FC = () => {
   const [history, setHistory] = useState<ModuleType[]>(['dashboard']);
   const [historyIndex, setHistoryIndex] = useState(0);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [profileAvatar, setProfileAvatar] = useState(getProfileAvatar);
+  const [profileAvatar, setProfileAvatar] = useState('');
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -147,6 +142,7 @@ export const App: React.FC = () => {
   useEffect(() => {
     if (session?.user) {
       setIsProfileLoading(true);
+      setProfileAvatar(session.user.user_metadata?.profile_data?.avatarUrl || '');
       profileAPI.getMyProfile()
         .then(profile => {
           setUserProfile(profile);
@@ -159,6 +155,7 @@ export const App: React.FC = () => {
     } else {
       setUserProfile(null);
       setIsProfileLoading(false);
+      setProfileAvatar('');
     }
   }, [session]);
 
@@ -233,7 +230,6 @@ export const App: React.FC = () => {
     if (!mod || mod === activeModule) return;
     
     setActiveModule(mod);
-    setProfileAvatar(getProfileAvatar());
     
     // Geçmişi güvenli bir şekilde güncelle
     setHistory(prev => {
@@ -248,7 +244,6 @@ export const App: React.FC = () => {
     const newIndex = historyIndex - 1;
     setHistoryIndex(newIndex);
     setActiveModule(history[newIndex]);
-    setProfileAvatar(getProfileAvatar());
   };
 
   const goForward = () => {
@@ -256,7 +251,6 @@ export const App: React.FC = () => {
     const newIndex = historyIndex + 1;
     setHistoryIndex(newIndex);
     setActiveModule(history[newIndex]);
-    setProfileAvatar(getProfileAvatar());
   };
 
   const canGoBack    = historyIndex > 0;

@@ -20,6 +20,7 @@ import {
   Calendar
 } from 'lucide-react';
 import { fmt } from '../utils/formatters';
+import { assetsAPI, maintenanceAPI, SupabaseAsset, SupabaseMaintenanceRecord } from '../api/supabase';
 
 interface Asset {
   id: string;
@@ -50,78 +51,103 @@ export const Machinery: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'machines' | 'fixtures' | 'maintenance'>('machines');
 
   // ── Data States ──────────────────────────────────────────
-  const [assets, setAssets] = useState<Asset[]>(() => {
-    const m = localStorage.getItem('enba_makinalar_v2');
-    const d = localStorage.getItem('enba_demirbaslar');
-    const machines = m ? JSON.parse(m).map((x: any) => ({ ...x, tur: 'makina' })) : [];
-    const fixtures = d ? JSON.parse(d).map((x: any) => ({ ...x, tur: 'demirbas' })) : [];
-    return [...machines, ...fixtures];
-  });
-
-  const [maintenance, setMaintenance] = useState<MaintenanceRecord[]>(() => {
-    const k = localStorage.getItem('enba_bakim_kayitlari');
-    return k ? JSON.parse(k) : [];
-  });
-
-  // ── Persist to LocalStorage ──────────────────────────────
-  useEffect(() => {
-    const machines = assets.filter(a => a.tur === 'makina');
-    const fixtures = assets.filter(a => a.tur === 'demirbas');
-    localStorage.setItem('enba_makinalar_v2', JSON.stringify(machines));
-    localStorage.setItem('enba_demirbaslar', JSON.stringify(fixtures));
-  }, [assets]);
+  const [assets, setAssets] = useState<SupabaseAsset[]>([]);
+  const [maintenance, setMaintenance] = useState<SupabaseMaintenanceRecord[]>([]);
 
   useEffect(() => {
-    localStorage.setItem('enba_bakim_kayitlari', JSON.stringify(maintenance));
-  }, [maintenance]);
+    async function loadData() {
+      const [cloudAssets, cloudMaint] = await Promise.all([
+        assetsAPI.getAll(),
+        maintenanceAPI.getAll()
+      ]);
+
+      const mStr = localStorage.getItem('enba_makinalar_v2');
+      const dStr = localStorage.getItem('enba_demirbaslar');
+      const kStr = localStorage.getItem('enba_bakim_kayitlari');
+
+      if ((mStr || dStr || kStr) && cloudAssets.length === 0 && cloudMaint.length === 0) {
+        console.log("Migrating Machinery to Supabase...");
+        const m = mStr ? JSON.parse(mStr) : [];
+        const d = dStr ? JSON.parse(dStr) : [];
+        const k = kStr ? JSON.parse(kStr) : [];
+
+        for (const item of m) {
+          await assetsAPI.insert({ adi: item.adi, marka: item.marka, motor_gucu: item.motorGucu, yatirim_bedeli: item.yatirimBedeli, satinalma_tarihi: item.satinalmaTarihi, kategori: item.kategori, kapasite: item.kapasite, boyut: item.boyut, tur: 'makina' } as SupabaseAsset);
+        }
+        for (const item of d) {
+          await assetsAPI.insert({ adi: item.adi, marka: item.marka, yatirim_bedeli: item.yatirimBedeli, satinalma_tarihi: item.satinalmaTarihi || new Date().toISOString().slice(0,10), kategori: item.kategori, boyut: item.boyut, tur: 'demirbas' } as SupabaseAsset);
+        }
+        for (const item of k) {
+          await maintenanceAPI.insert({ tarih: item.tarih, varlik_id: item.varlikId, varlik_adi: item.varlikAdi, varlik_turu: item.varlikTuru, tur: item.tur, aciklama: item.aciklama, maliyet: item.maliyet } as SupabaseMaintenanceRecord);
+        }
+
+        const [newAssets, newMaint] = await Promise.all([assetsAPI.getAll(), maintenanceAPI.getAll()]);
+        setAssets(newAssets);
+        setMaintenance(newMaint);
+
+        localStorage.removeItem('enba_makinalar_v2');
+        localStorage.removeItem('enba_demirbaslar');
+        localStorage.removeItem('enba_bakim_kayitlari');
+        return;
+      }
+
+      setAssets(cloudAssets);
+      setMaintenance(cloudMaint);
+    }
+    loadData();
+  }, []);
 
   // ── Form States ──────────────────────────────────────────
   const [isAssetFormOpen, setIsAssetFormOpen] = useState(false);
   const [isBulkOpen, setIsBulkOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState<Partial<Asset>>({
-    adi: '', marka: '', motorGucu: 0, yatirimBedeli: 0, satinalmaTarihi: '',
+  const [formData, setFormData] = useState<Partial<SupabaseAsset>>({
+    adi: '', marka: '', motor_gucu: 0, yatirim_bedeli: 0, satinalma_tarihi: '',
     kategori: 'production', kapasite: 0, boyut: 'Orta', tur: 'makina'
   });
 
   const [isMaintenanceFormOpen, setIsMaintenanceFormOpen] = useState(false);
-  const [maintFormData, setMaintFormData] = useState<Partial<MaintenanceRecord>>({
-    tarih: new Date().toISOString().slice(0, 10), tur: 'Bakım', aciklama: '', maliyet: 0, varlikId: ''
+  const [maintFormData, setMaintFormData] = useState<Partial<SupabaseMaintenanceRecord>>({
+    tarih: new Date().toISOString().slice(0, 10), tur: 'Bakım', aciklama: '', maliyet: 0, varlik_id: ''
   });
 
   // ── KPI Calculations ─────────────────────────────────────
   const stats = useMemo(() => {
-    const totalInvest = assets.reduce((acc, curr) => acc + (curr.yatirimBedeli || 0), 0);
-    const machineInvest = assets.filter(a => a.tur === 'makina').reduce((acc, curr) => acc + (curr.yatirimBedeli || 0), 0);
+    const totalInvest = assets.reduce((acc, curr) => acc + (curr.yatirim_bedeli || 0), 0);
+    const machineInvest = assets.filter(a => a.tur === 'makina').reduce((acc, curr) => acc + (curr.yatirim_bedeli || 0), 0);
     const totalMaint = maintenance.reduce((acc, curr) => acc + (curr.maliyet || 0), 0);
     return { totalInvest, machineInvest, totalMaint, count: assets.length };
   }, [assets, maintenance]);
 
   // ── Handlers ─────────────────────────────────────────────
-  const handleSaveAsset = (e: React.FormEvent) => {
+  const handleSaveAsset = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.adi) return;
 
-    const newAsset: Asset = {
-      ...formData as Asset,
-      id: editingId || `ast_${Date.now()}`
-    };
-
     if (editingId) {
-      setAssets(prev => prev.map(a => a.id === editingId ? newAsset : a));
+      const updated = await assetsAPI.update(editingId, formData);
+      if (updated) setAssets(prev => prev.map(a => a.id === editingId ? updated : a));
     } else {
-      setAssets(prev => [...prev, newAsset]);
+      const newAsset = await assetsAPI.insert(formData as SupabaseAsset);
+      if (newAsset) setAssets(prev => [...prev, newAsset]);
     }
 
     setIsAssetFormOpen(false);
     setEditingId(null);
-    setFormData({ adi: '', marka: '', motorGucu: 0, yatirimBedeli: 0, satinalmaTarihi: '', kategori: 'production', tur: formData.tur });
+    setFormData({ adi: '', marka: '', motor_gucu: 0, yatirim_bedeli: 0, satinalma_tarihi: '', kategori: 'production', tur: formData.tur });
   };
 
-  const handleDeleteAsset = (id: string) => {
+  const handleDeleteAsset = async (id: string) => {
     if (confirm('Bu varlığı ve bağlı bakım kayıtlarını silmek istediğinize emin misiniz?')) {
-      setAssets(prev => prev.filter(a => a.id !== id));
-      setMaintenance(prev => prev.filter(m => m.varlikId !== id));
+      const success = await assetsAPI.delete(id);
+      if (success) {
+        setAssets(prev => prev.filter(a => a.id !== id));
+        const relatedMaint = maintenance.filter(m => m.varlik_id === id);
+        for (const m of relatedMaint) {
+          await maintenanceAPI.delete(m.id);
+        }
+        setMaintenance(prev => prev.filter(m => m.varlik_id !== id));
+      }
     }
   };
 
@@ -130,7 +156,7 @@ export const Machinery: React.FC = () => {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (evt) => {
+    reader.onload = async (evt) => {
       const data = new Uint8Array(evt.target?.result as ArrayBuffer);
       const workbook = XLSX.read(data, { type: 'array' });
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
@@ -138,18 +164,26 @@ export const Machinery: React.FC = () => {
 
       if (rows.length < 2) return;
 
-      const newMachines: Asset[] = (rows.slice(1) as any[]).filter(r => r[0]).map((r, i) => ({
-        id: `mak_${Date.now()}_${i}`,
-        adi: String(r[0] || ''),
-        marka: String(r[1] || ''),
-        motorGucu: Number(r[2]) || 0,
-        kategori: 'production',
-        kapasite: Number(r[4]) || 0,
-        satinalmaTarihi: String(r[5] || ''),
-        yatirimBedeli: Number(r[6]) || 0,
-        boyut: r[7] || 'Orta',
-        tur: 'makina'
-      }));
+      const newMachines: SupabaseAsset[] = [];
+      for (let i = 1; i < rows.length; i++) {
+        const r = rows[i] as any[];
+        if (!r[0]) continue;
+        
+        const assetObj = {
+          adi: String(r[0] || ''),
+          marka: String(r[1] || ''),
+          motor_gucu: Number(r[2]) || 0,
+          kategori: 'production',
+          kapasite: Number(r[4]) || 0,
+          satinalma_tarihi: String(r[5] || new Date().toISOString().slice(0, 10)),
+          yatirim_bedeli: Number(r[6]) || 0,
+          boyut: r[7] || 'Orta',
+          tur: 'makina'
+        } as SupabaseAsset;
+        
+        const inserted = await assetsAPI.insert(assetObj);
+        if (inserted) newMachines.push(inserted);
+      }
 
       setAssets(prev => [...prev, ...newMachines]);
       setIsBulkOpen(false);
@@ -291,7 +325,7 @@ export const Machinery: React.FC = () => {
                      <div className="grid grid-cols-3 gap-8 p-6 bg-gray-50 rounded-[1.8rem] mb-8 relative z-10 border border-gray-100">
                         <div>
                            <div className="text-[9px] font-black text-gray-400 uppercase tracking-[4px] mb-1">Güç</div>
-                           <div className="text-base font-black text-enba-dark italic tabular-nums">{machine.motorGucu} <span className="text-[10px] opacity-30 font-bold ml-0.5">KW</span></div>
+                           <div className="text-base font-black text-enba-dark italic tabular-nums">{machine.motor_gucu} <span className="text-[10px] opacity-30 font-bold ml-0.5">KW</span></div>
                         </div>
                         <div>
                            <div className="text-[9px] font-black text-gray-400 uppercase tracking-[4px] mb-1">Kapasite</div>
@@ -299,17 +333,17 @@ export const Machinery: React.FC = () => {
                         </div>
                         <div>
                            <div className="text-[9px] font-black text-gray-400 uppercase tracking-[4px] mb-1">Değer</div>
-                           <div className="text-base font-black text-enba-dark italic tabular-nums">{fmt(machine.yatirimBedeli)} <span className="text-[10px] opacity-30 font-bold ml-0.5">₺</span></div>
+                           <div className="text-base font-black text-enba-dark italic tabular-nums">{fmt(machine.yatirim_bedeli)} <span className="text-[10px] opacity-30 font-bold ml-0.5">₺</span></div>
                         </div>
                      </div>
 
                      <div className="flex justify-between items-center relative z-10">
                         <div className="flex items-center gap-3 px-4 py-2 bg-white rounded-xl border border-gray-100">
                            <Calendar size={14} className="text-enba-orange" />
-                           <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest italic">{new Date(machine.satinalmaTarihi).toLocaleDateString('tr-TR')} Envanter Girişi</span>
+                           <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest italic">{new Date(machine.satinalma_tarihi).toLocaleDateString('tr-TR')} Envanter Girişi</span>
                         </div>
                         <button 
-                          onClick={() => { setMaintFormData({...maintFormData, varlikId: machine.id}); setIsMaintenanceFormOpen(true); }}
+                          onClick={() => { setMaintFormData({...maintFormData, varlik_id: machine.id}); setIsMaintenanceFormOpen(true); }}
                           className="px-5 py-2.5 bg-enba-dark text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-black transition-all shadow-xl active:scale-95 group/btn"
                         >
                            <Wrench size={14} className="text-enba-orange" /> Bakım Emri Oluştur
@@ -366,7 +400,7 @@ export const Machinery: React.FC = () => {
                            </div>
                         </td>
                         <td className="px-10 py-8 text-base font-black text-enba-dark tabular-nums italic text-right">
-                           {fmt(item.yatirimBedeli)} <span className="text-[10px] text-gray-300 font-bold ml-1">₺</span>
+                           {fmt(item.yatirim_bedeli)} <span className="text-[10px] text-gray-300 font-bold ml-1">₺</span>
                         </td>
                         <td className="px-10 py-8 text-center">
                            <div className="px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest inline-flex items-center gap-2 bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100">
@@ -437,8 +471,8 @@ export const Machinery: React.FC = () => {
                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-[4px] ml-1 italic">Yatırım Bedeli (NET ₺)</label>
                        <input 
                          type="number"
-                         value={formData.yatirimBedeli}
-                         onChange={e => setFormData({...formData, yatirimBedeli: Number(e.target.value)})}
+                         value={formData.yatirim_bedeli}
+                         onChange={e => setFormData({...formData, yatirim_bedeli: Number(e.target.value)})}
                          className="w-full bg-gray-50 border border-transparent rounded-[1.5rem] px-8 py-5 text-sm font-black text-enba-dark focus:bg-white focus:ring-2 focus:ring-enba-orange/20 outline-none transition-all tabular-nums"
                          placeholder="0.00"
                        />
@@ -448,8 +482,8 @@ export const Machinery: React.FC = () => {
                           <label className="text-[10px] font-black text-gray-400 uppercase tracking-[4px] ml-1 italic">Motor Gücü (kW)</label>
                           <input 
                             type="number"
-                            value={formData.motorGucu}
-                            onChange={e => setFormData({...formData, motorGucu: Number(e.target.value)})}
+                            value={formData.motor_gucu}
+                            onChange={e => setFormData({...formData, motor_gucu: Number(e.target.value)})}
                             className="w-full bg-gray-50 border border-transparent rounded-[1.5rem] px-8 py-5 text-sm font-black text-enba-dark focus:bg-white focus:ring-2 focus:ring-enba-orange/20 outline-none transition-all tabular-nums"
                             placeholder="0"
                           />
@@ -459,8 +493,8 @@ export const Machinery: React.FC = () => {
                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-[4px] ml-1 italic">Envanter Giriş Tarihi</label>
                        <input 
                          type="date"
-                         value={formData.satinalmaTarihi}
-                         onChange={e => setFormData({...formData, satinalmaTarihi: e.target.value})}
+                         value={formData.satinalma_tarihi}
+                         onChange={e => setFormData({...formData, satinalma_tarihi: e.target.value})}
                          className="w-full bg-gray-50 border border-transparent rounded-[1.5rem] px-8 py-5 text-sm font-black text-enba-dark focus:bg-white focus:ring-2 focus:ring-enba-orange/20 outline-none transition-all"
                        />
                     </div>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from '../api/i18n';
 import { microsoftService } from '../api/microsoft';
 import { googleService } from '../api/google';
+import { supabase, tasksAPI, permitsAPI, fixedExpensesAPI } from '../api/supabase';
 import {
   PieChart,
   Zap,
@@ -48,15 +49,21 @@ const Dashboard: React.FC<DashboardProps> = ({ navigate, user }) => {
   });
 
   useEffect(() => {
-    const loadStats = () => {
+    const loadStats = async () => {
       try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const [cloudTasks, cloudPermits, cloudPayments, { data: cloudPlans }] = await Promise.all([
+          tasksAPI.getAll(),
+          permitsAPI.getAll(),
+          fixedExpensesAPI.getAll(),
+          supabase.from('business_plans').select('*').eq('user_id', user.id)
+        ]);
+
         const alislar = JSON.parse(localStorage.getItem('enba_alislar') || '[]');
         const satislar = JSON.parse(localStorage.getItem('enba_satislar') || '[]');
         const uretim = JSON.parse(localStorage.getItem('enba_uretim_kayitlari') || '[]');
-        const planlar = JSON.parse(localStorage.getItem('enba_uretim_planlar') || '[]');
-        const lisanslar = JSON.parse(localStorage.getItem('enba_lisans_ruhsat') || '[]');
-        const tasks = JSON.parse(localStorage.getItem('enba_tasks') || '[]');
-        const payments = JSON.parse(localStorage.getItem('enba_payments') || '[]');
 
         const rawPurchased = alislar.reduce((s: number, a: any) => s + (parseFloat(a.netMiktar) || 0), 0);
         const rawSold = satislar.filter((s: any) => s.stokTuru === 'hammadde').reduce((s: number, a: any) => s + (parseFloat(a.miktar) || 0), 0);
@@ -66,38 +73,49 @@ const Dashboard: React.FC<DashboardProps> = ({ navigate, user }) => {
         const mamulSold = satislar.filter((s: any) => s.stokTuru === 'mamul').reduce((s: number, a: any) => s + (parseFloat(a.miktar) || 0), 0);
         const netMamul = Math.max(0, totalProd - mamulSold);
 
-        const bugun = new Date().toISOString().slice(0, 10);
-        const activePlan = planlar.find((p: any) => p.baslangicTarihi <= bugun && p.bitisTarihi >= bugun);
+        const activePlans = (cloudPlans || []).filter(p => p.status === 'active');
+        const activePlanTitle = activePlans.length > 0 ? activePlans[0].title : t('landing.no_active_plan');
         let perf = 0;
-        let activeTitle = t('landing.no_active_plan');
-        if (activePlan) {
-          activeTitle = activePlan.baslik;
-          const planActual = uretim
-            .filter((u: any) => u.tarih >= activePlan.baslangicTarihi && u.tarih <= activePlan.bitisTarihi)
-            .reduce((s: number, u: any) => s + (parseFloat(u.cikanUrun) || 0) / 1000, 0);
-          perf = activePlan.hedefCikanTon > 0 ? (planActual / activePlan.hedefCikanTon) * 100 : 0;
-        }
 
         const thisMonth = new Date().toISOString().slice(0, 7);
         const monthlyP = uretim
           .filter((u: any) => u.tarih.startsWith(thisMonth))
           .reduce((s: number, u: any) => s + (parseFloat(u.cikanUrun) || 0) / 1000, 0);
 
-        const urgentTasks = tasks
-          .filter((t: any) => t.status !== 'done' && (t.priority === 'high' || t.priority === 'medium'))
+        let targetMonthlyTon = 0;
+        activePlans.forEach(p => {
+          if (p.plan_type === 'fast' && p.data?.params?.aylikTon) {
+            targetMonthlyTon += p.data.params.aylikTon;
+          }
+        });
+
+        if (targetMonthlyTon > 0) {
+          perf = (monthlyP / targetMonthlyTon) * 100;
+        }
+
+        const urgentTasks = cloudTasks
+          .filter(t => t.status !== 'done' && (t.priority === 'high' || t.priority === 'medium'))
           .slice(0, 4);
 
         const now = new Date();
         const soon = new Date(); soon.setDate(soon.getDate() + 30);
-        const upcomingLicenses = lisanslar.filter((l: any) => {
-          if (!l.yenilenmeTarihi) return false;
-          const d = new Date(l.yenilenmeTarihi);
+        const upcomingLicenses = cloudPermits.filter(l => {
+          if (!l.yenileme_tarihi || l.is_suresiz) return false;
+          const d = new Date(l.yenileme_tarihi);
           return d >= now && d <= soon;
         });
 
-        const pendingOut = payments.filter((p: any) => p.type === 'outgoing' && p.status === 'pending');
+        const currentMonthKey = `${now.getFullYear()}-${now.getMonth() + 1}`;
+        const pendingOut = cloudPayments.filter(p => !p.history?.[currentMonthKey]).map(p => ({
+          id: p.id,
+          title: p.title,
+          dueDate: `${p.due_date}. Gün`,
+          category: p.category,
+          amount: p.amount
+        }));
 
-        setStats({
+        setStats(prev => ({
+          ...prev,
           totalStock: netRaw + netMamul,
           rawStock: netRaw,
           mamulStock: netMamul,
@@ -105,15 +123,13 @@ const Dashboard: React.FC<DashboardProps> = ({ navigate, user }) => {
           monthlyProd: monthlyP,
           licenseAlerts: upcomingLicenses.length,
           activeTasksCount: urgentTasks.length,
-          urgentTaskList: urgentTasks,
+          urgentTaskList: urgentTasks.map(t => ({ id: t.id, title: t.title, priority: t.priority, deadline: t.deadline || 'Belirtilmedi' })),
           upcomingPayments: pendingOut.slice(0, 5),
           totalPendingOutgoing: pendingOut.reduce((s: number, p: any) => s + (parseFloat(p.amount) || 0), 0),
-          activePlanTitle: activeTitle,
+          activePlanTitle: activePlanTitle,
           hasData: true,
-          appointments: [], // Will be loaded separately for auth reasons
-        });
+        }));
 
-        // Load appointments from all sources
         const loadUnifiedAppointments = async () => {
           const msAcc = await microsoftService.getAccount();
           const gToken = googleService.getAccessToken();

@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { fmt } from '../utils/formatters';
 import { parasutService, ParasutInvoice } from '../api/parasut';
+import { pnlReportsAPI, SupabasePnlReport } from '../api/supabase';
 
 console.log("PnL Debug - PnL.tsx file loaded");
 
@@ -37,12 +38,7 @@ interface PnLData {
   rawDetails?: Record<string, Record<string, Record<string, any[]>>>;
 }
 
-interface SavedReport {
-  id: string;
-  name: string;
-  date: string;
-  payload: any;
-}
+
 
 const PNL_CONFIG = [
   { 
@@ -121,7 +117,7 @@ export const PnL: React.FC = () => {
     const [gelirDosya, setGelirDosya] = useState("");
     const [giderDosya, setGiderDosya] = useState("");
     
-    const [savedReports, setSavedReports] = useState<SavedReport[]>([]);
+    const [savedReports, setSavedReports] = useState<SupabasePnlReport[]>([]);
     const [raporAdi, setRaporAdi] = useState("");
 
     // UI Toggles
@@ -176,10 +172,34 @@ export const PnL: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        const saved = localStorage.getItem('enba_pnl_reports');
-        if(saved) {
-            try { setSavedReports(JSON.parse(saved)); } catch(e){}
-        }
+        const loadReports = async () => {
+            const cloudReports = await pnlReportsAPI.getAll();
+            
+            // Silent Migration
+            const savedStr = localStorage.getItem('enba_pnl_reports');
+            if (savedStr && cloudReports.length === 0) {
+                try {
+                    const savedLocal = JSON.parse(savedStr);
+                    if (Array.isArray(savedLocal) && savedLocal.length > 0) {
+                        console.log("Migrating PnL Reports to Supabase...");
+                        for (const r of savedLocal) {
+                            await pnlReportsAPI.insert({
+                                id: r.id,
+                                name: r.name,
+                                date: r.date,
+                                payload: r.payload
+                            });
+                        }
+                        const migrated = await pnlReportsAPI.getAll();
+                        setSavedReports(migrated);
+                        localStorage.removeItem('enba_pnl_reports');
+                        return;
+                    }
+                } catch(e) {}
+            }
+            setSavedReports(cloudReports);
+        };
+        loadReports();
         
         // Auto-restore active state
         const active = localStorage.getItem('enba_pnl_active_state');
@@ -219,7 +239,7 @@ export const PnL: React.FC = () => {
         }
     }, [gelirData, giderData, gelirDosya, giderDosya, capexActive, capexVade, modelDetayAcik, sectionAcik]);
 
-    const raporuKaydet = () => {
+    const raporuKaydet = async () => {
         if(!raporAdi.trim()) {
             alert("Lütfen kaydetmeden önce raporunuza bir isim verin!");
             return;
@@ -229,7 +249,7 @@ export const PnL: React.FC = () => {
             return;
         }
         
-        const newReport: SavedReport = {
+        const newReport: SupabasePnlReport = {
             id: Date.now().toString(),
             name: raporAdi.trim(),
             date: new Date().toLocaleDateString('tr-TR'),
@@ -244,15 +264,17 @@ export const PnL: React.FC = () => {
             }
         };
         
-        const updated = [...savedReports, newReport];
-        setSavedReports(updated);
-        localStorage.setItem('enba_pnl_reports', JSON.stringify(updated));
-        
-        alert("Rapor başarıyla kaydedildi!");
-        setRaporAdi("");
+        const inserted = await pnlReportsAPI.insert(newReport);
+        if (inserted) {
+            setSavedReports(prev => [inserted, ...prev]);
+            alert("Rapor başarıyla kaydedildi!");
+            setRaporAdi("");
+        } else {
+            alert("Rapor kaydedilirken bir hata oluştu.");
+        }
     };
 
-    const raporuYukle = (report: SavedReport) => {
+    const raporuYukle = (report: SupabasePnlReport) => {
         setGelirData(report.payload.gelirData);
         setGiderData(report.payload.giderData);
         setCapexActive(report.payload.capexActive || false);
@@ -262,11 +284,12 @@ export const PnL: React.FC = () => {
         setGiderDosya(report.payload.giderDosya || "Kayıtlı Gider Verisi");
     };
 
-    const raporuSil = (id: string) => {
+    const raporuSil = async (id: string) => {
         if(confirm("Bu kayıtlı raporu silmek istediğinize emin misiniz?")) {
-            const updated = savedReports.filter(r => r.id !== id);
-            setSavedReports(updated);
-            localStorage.setItem('enba_pnl_reports', JSON.stringify(updated));
+            const success = await pnlReportsAPI.delete(id);
+            if (success) {
+                setSavedReports(prev => prev.filter(r => r.id !== id));
+            }
         }
     };
 
