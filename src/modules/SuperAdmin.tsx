@@ -27,8 +27,11 @@ export const SuperAdmin: React.FC = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  const [activeUserMenuId, setActiveUserMenuId] = useState<string | null>(null);
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
+  const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   const [newCompany, setNewCompany] = useState({
     name: '',
@@ -118,11 +121,55 @@ export const SuperAdmin: React.FC = () => {
     }
   };
 
-  // Click outside to close menu
+  const handleUpdateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingUser) return;
+
+    setActionLoading(true);
+    setActionError(null);
+    try {
+      // API call to update profile
+      const res = await profileAPI.adminUpdateProfile(editingUser.id, {
+        full_name: editingUser.full_name,
+        role: editingUser.role,
+        company_id: editingUser.company_id
+      });
+      if (res) {
+        setUsers(users.map(u => u.id === res.id ? res : u));
+        setEditingUser(null);
+      }
+    } catch (err: any) {
+      setActionError(err.message || "Kullanıcı güncelleme hatası.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDeleteUser = async (id: string) => {
+    if (!window.confirm('Bu kullanıcıyı silmek istediğinize emin misiniz?')) return;
+
+    setActionLoading(true);
+    try {
+      const success = await profileAPI.deleteProfile(id);
+      if (success) {
+        setUsers(users.filter(u => u.id !== id));
+      }
+    } catch (err: any) {
+      alert("Kullanıcı silme hatası: " + err.message);
+    } finally {
+      setActionLoading(false);
+      setActiveUserMenuId(null);
+    }
+  };
+
+  // Click outside to close menus
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setActiveMenuId(null);
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setActiveUserMenuId(null);
       }
     };
     document.addEventListener('mousedown', handler);
@@ -324,10 +371,31 @@ export const SuperAdmin: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 text-xs text-gray-400 font-mono">{u.company_id}</td>
                     <td className="px-6 py-4 text-sm text-gray-400">{new Date(u.created_at).toLocaleDateString('tr-TR')}</td>
-                    <td className="px-6 py-4 text-right">
-                      <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 transition-colors">
-                        <Settings size={16} />
+                    <td className="px-6 py-4 text-right relative">
+                      <button 
+                        onClick={() => setActiveUserMenuId(activeUserMenuId === u.id ? null : u.id)}
+                        className={`p-2 rounded-lg transition-colors ${activeUserMenuId === u.id ? 'bg-indigo-50 text-indigo-600' : 'hover:bg-gray-100 text-gray-400'}`}
+                      >
+                        <MoreVertical size={16} />
                       </button>
+
+                      {activeUserMenuId === u.id && (
+                        <div ref={userMenuRef} className="absolute right-6 top-12 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-50 animate-in zoom-in-95 duration-200">
+                          <button 
+                            onClick={() => { setEditingUser(u); setActiveUserMenuId(null); }}
+                            className="w-full px-4 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                          >
+                            <Settings size={14} className="text-gray-400" /> Düzenle / Yetkilendir
+                          </button>
+                          <div className="h-[1px] bg-gray-50 my-1" />
+                          <button 
+                            onClick={() => handleDeleteUser(u.id)}
+                            className="w-full px-4 py-2 text-left text-sm font-medium text-red-600 hover:bg-red-50 flex items-center gap-2"
+                          >
+                            <Trash2 size={14} /> Kullanıcıyı Sil
+                          </button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -503,6 +571,85 @@ export const SuperAdmin: React.FC = () => {
                   className={`flex-1 py-3 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-all shadow-md shadow-indigo-600/20 flex items-center justify-center gap-2 ${actionLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   {actionLoading ? 'Güncelleniyor...' : 'Değişiklikleri Kaydet'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* Edit User Modal */}
+      {editingUser && (
+        <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="p-6 border-b border-gray-50 flex items-center justify-between bg-emerald-600 text-white">
+              <div className="flex items-center gap-3">
+                <Users size={20} />
+                <h3 className="font-bold">Kullanıcı Düzenle</h3>
+              </div>
+              <button onClick={() => setEditingUser(null)} className="hover:bg-white/10 p-1 rounded-lg transition-colors">
+                <Plus size={20} className="rotate-45" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleUpdateUser} className="p-6 space-y-4">
+              {actionError && (
+                <div className="p-3 bg-red-50 border border-red-100 rounded-xl flex items-center gap-2 text-red-600 text-xs font-semibold">
+                  <AlertCircle size={14} />
+                  {actionError}
+                </div>
+              )}
+
+              <div>
+                <label className="text-xs font-bold text-gray-400 uppercase mb-1.5 block">Kullanıcı Adı</label>
+                <input 
+                  type="text" 
+                  value={editingUser.full_name || ''}
+                  onChange={e => setEditingUser({...editingUser, full_name: e.target.value})}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-gray-400 uppercase mb-1.5 block">Rol / Yetki</label>
+                <select 
+                  value={editingUser.role}
+                  onChange={e => setEditingUser({...editingUser, role: e.target.value as UserRole})}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:outline-none"
+                >
+                  <option value="user">Standart Kullanıcı</option>
+                  <option value="admin">Şirket Yöneticisi (Admin)</option>
+                  <option value="super_admin">Sistem Yöneticisi (SuperAdmin)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-gray-400 uppercase mb-1.5 block">Bağlı Olduğu Şirket</label>
+                <select 
+                  value={editingUser.company_id || ''}
+                  onChange={e => setEditingUser({...editingUser, company_id: e.target.value})}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:outline-none"
+                >
+                  <option value="">Şirket Seçilmedi</option>
+                  {companies.map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="pt-4 flex gap-3">
+                <button 
+                  type="button"
+                  onClick={() => setEditingUser(null)}
+                  className="flex-1 py-3 border border-gray-100 rounded-xl text-sm font-semibold text-gray-500 hover:bg-gray-50"
+                >
+                  İptal
+                </button>
+                <button 
+                  type="submit"
+                  disabled={actionLoading}
+                  className={`flex-1 py-3 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 ${actionLoading ? 'opacity-50' : ''}`}
+                >
+                  {actionLoading ? 'Güncelleniyor...' : 'Kullanıcıyı Güncelle'}
                 </button>
               </div>
             </form>

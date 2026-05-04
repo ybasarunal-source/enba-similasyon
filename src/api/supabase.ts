@@ -129,6 +129,34 @@ export const profileAPI = {
   clearCache() {
     cachedProfile = null;
     lastFetchTime = 0;
+  },
+
+  async adminUpdateProfile(id: string, updates: Partial<UserProfile>): Promise<UserProfile | null> {
+    const { data, error } = await supabase
+      .from('profiles')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) {
+      console.error('Error updating profile as admin:', error);
+      throw error;
+    }
+    return data;
+  },
+
+  async deleteProfile(id: string): Promise<boolean> {
+    // Note: This only deletes the profile record, not the auth user.
+    // In a real SaaS, you'd call an Edge Function to delete the auth user too.
+    const { error } = await supabase
+      .from('profiles')
+      .delete()
+      .eq('id', id);
+    if (error) {
+      console.error('Error deleting profile:', error);
+      throw error;
+    }
+    return true;
   }
 };
 
