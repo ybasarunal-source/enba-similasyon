@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { supabase } from '../api/supabase';
-import { LogIn, UserPlus, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { supabase, companiesAPI, Company } from '../api/supabase';
+import { LogIn, UserPlus, AlertCircle, Eye, EyeOff, Building2, Zap, ChevronDown } from 'lucide-react';
 
 type Mode = 'login' | 'register' | 'forgot';
 
@@ -12,6 +12,23 @@ export const Login: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [selectedCompanyId, setSelectedCompanyId] = useState('');
+
+  React.useEffect(() => {
+    companiesAPI.getAll().then(data => {
+      const activeOnes = data.filter(c => c.status !== 'suspended');
+      setCompanies(activeOnes);
+      if (activeOnes.length > 0) setSelectedCompanyId(activeOnes[0].id);
+    });
+  }, []);
+
+  const handleDemoLogin = () => {
+    setEmail('demo@enba.com');
+    setPassword('EnbaDemo2024!');
+    const demoComp = companies.find(c => c.status === 'demo');
+    if (demoComp) setSelectedCompanyId(demoComp.id);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,6 +99,29 @@ export const Login: React.FC = () => {
           )}
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            {/* Şirket Seçimi */}
+            <div>
+              <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-1.5">
+                Bağlanılacak Şirket
+              </label>
+              <div className="relative">
+                <select
+                  value={selectedCompanyId}
+                  onChange={e => setSelectedCompanyId(e.target.value)}
+                  className="w-full appearance-none bg-white/5 border border-white/10 rounded-xl px-4 py-3 pl-10 text-sm text-white outline-none focus:border-[var(--enba-orange)] transition-colors cursor-pointer"
+                  style={{ fontFamily: "'Poppins', sans-serif" }}
+                >
+                  {companies.map(c => (
+                    <option key={c.id} value={c.id} className="bg-[#1A1A1A] text-white">
+                      {c.name} {c.status === 'demo' ? '(Demo)' : ''}
+                    </option>
+                  ))}
+                </select>
+                <Building2 size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
+                <ChevronDown size={14} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+              </div>
+            </div>
+
             <div>
               <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-1.5">
                 E-posta
@@ -138,23 +178,33 @@ export const Login: React.FC = () => {
           </form>
 
           {/* Alt linkler */}
-          <div className="mt-6 flex flex-col items-center gap-2.5 text-[11px]" style={{ fontFamily: "'Poppins', sans-serif" }}>
-            {mode === 'login' && <>
-              <button onClick={() => { setMode('register'); setError(''); setInfo(''); }} className="text-gray-500 hover:text-gray-300 transition-colors">
-                Hesabınız yok mu? <span className="text-[var(--enba-orange)] font-semibold">Kayıt olun</span>
-              </button>
-              <button onClick={() => { setMode('forgot'); setError(''); setInfo(''); }} className="text-gray-600 hover:text-gray-400 transition-colors">
-                Şifremi unuttum
-              </button>
-            </>}
-            {mode !== 'login' && (
-              <button onClick={() => { setMode('login'); setError(''); setInfo(''); }} className="text-gray-500 hover:text-gray-300 transition-colors">
-                ← Giriş ekranına dön
-              </button>
-            )}
           </div>
+
+          {/* Demo Girişi - Hızlı Erişim */}
+          {mode === 'login' && (
+            <div className="mt-8 pt-6 border-t border-white/5 text-center">
+              <p className="text-[10px] text-gray-600 uppercase tracking-widest font-bold mb-3">Sunum & Deneme</p>
+              <button
+                type="button"
+                onClick={handleDemoLogin}
+                className="group w-full bg-white/5 border border-white/10 hover:border-indigo-500/50 rounded-2xl py-3 px-4 flex items-center justify-between transition-all"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-indigo-500/20 rounded-lg flex items-center justify-center text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white transition-all">
+                    <Zap size={16} />
+                  </div>
+                  <div className="text-left">
+                    <div className="text-xs font-bold text-gray-300">Demo Hesabı ile Dene</div>
+                    <div className="text-[9px] text-gray-500 uppercase tracking-tighter">Şifresiz hızlı erişim</div>
+                  </div>
+                </div>
+                <ChevronDown size={14} className="text-gray-600 -rotate-90" />
+              </button>
+            </div>
+          )}
         </div>
       </div>
+
     </div>
   );
 };
