@@ -251,64 +251,6 @@ export const App: React.FC = () => {
   // Giriş yapılmamışsa Login ekranı
   if (!session) return <Login />;
 
-  const MENU_GROUPS = [
-    { id: 'g1', title: 'Operasyon (Kısayollar)', items: ['modules', 'dashboard', 'tasks', 'calendar', 'mail'] },
-    { id: 'g2', title: 'Finans & Muhasebe', items: ['pnl', 'cashflow', 'parasut', 'fixedexpenses'] },
-    { id: 'g3', title: 'Üretim & Lojistik', items: ['fastplan', 'planning', 'production', 'stock', 'logistics', 'machinery'] },
-    { id: 'g4', title: 'Kurumsal Yönetim', items: ['hr', 'licensing', 'archive'] },
-    { id: 'g5', title: 'Sistem', items: ['profile', 'settings'] },
-    ...(user.role === 'super_admin' ? [{ id: 'g6', title: 'Yönetim', items: ['super_admin'] }] : [])
-  ];
-
-  const rawMenuItems = [
-    { id: 'modules',    label: 'Ana Sayfa',                 icon: LayoutGrid },
-    { id: 'dashboard',  label: t('nav.home'),              icon: Home },
-    { id: 'fastplan',   label: 'Hızlı İş Planı',           icon: Zap },
-    { id: 'planning',   label: 'Detaylı İş Planı',          icon: BarChart3 },
-    { id: 'pnl',        label: 'P&L Analizi',              icon: BarChart3 },
-    { id: 'stock',      label: t('modules.inventory'),     icon: Package },
-    { id: 'production', label: t('modules.prod_tracking'), icon: Factory },
-    { id: 'hr',         label: t('modules.hr'),            icon: Contact },
-    { id: 'archive',    label: t('modules.archive'),       icon: ArchiveIcon },
-    { id: 'licensing',  label: t('modules.licensing'),     icon: FileBadge },
-    { id: 'cashflow',   label: t('modules.cashflow'),      icon: Coins },
-    { id: 'parasut',    label: 'Paraşüt',                  icon: Receipt },
-    { id: 'machinery',  label: t('modules.machinery'),     icon: Wrench },
-    { id: 'tasks',      label: t('modules.tasks'),         icon: ClipboardList },
-    { id: 'calendar',   label: 'Takvim',                   icon: CalendarIcon },
-    { id: 'mail',       label: 'E-Posta',                  icon: MailIcon },
-    { id: 'fixedexpenses', label: 'Abonelikler/Ödemeler', icon: CreditCard },
-    { id: 'logistics',  label: t('modules.logistics'),     icon: Truck },
-    { id: 'settings',   label: t('nav.sistem'),            icon: SettingsIcon },
-    { id: 'profile',    label: 'Profilim',                 icon: User },
-    { id: 'super_admin', label: 'Sistem Yönetimi',         icon: Shield },
-  ];
-
-  const allowedItems = rawMenuItems.filter(item => {
-    try {
-      // Profil henüz yüklenmediyse sadece temel modülleri göster
-      if (!userProfile) {
-        return ['profile', 'dashboard', 'tasks', 'calendar', 'modules', 'mail', 'fixedexpenses'].includes(item.id);
-      }
-      
-      // SuperAdmin ve Admin her şeyi görür
-      if (user.role === 'super_admin' || user.role === 'admin') {
-        if (item.id === 'super_admin') return user.role === 'super_admin';
-        return true;
-      }
-      
-      // Core modules
-      if (['profile', 'dashboard', 'tasks', 'calendar', 'modules', 'mail', 'fixedexpenses'].includes(item.id)) return true;
-      
-      // Yetki kontrolü
-      return userProfile?.permissions?.[item.id] === true;
-    } catch (e) {
-      return false;
-    }
-  });
-
-  const menuItems = allowedItems;
-
   // Aktif modülü sessionStorage'a kaydet (her değişimde)
   useEffect(() => {
     sessionStorage.setItem('enba_active_module', activeModule);
