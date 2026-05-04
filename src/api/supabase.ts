@@ -43,7 +43,7 @@ export interface UserProfile {
   full_name: string;
   avatar_url?: string;
   role: UserRole;
-  company_id: string;
+  company_id?: string; // Opsiyonel yapıldı (migration öncesi çökmemesi için)
   permissions: ModulePermissions;
   created_at: string;
   ms_account_id?: string;
@@ -59,8 +59,17 @@ export interface Company {
 }
 
 // ── Yardımcı Fonksiyonlar ──────────────────────────────────
+// ── Profil & Yetki Servisleri ──────────────────────────────
+let cachedProfile: UserProfile | null = null;
+let lastFetchTime = 0;
+
 export const profileAPI = {
-  async getMyProfile(): Promise<UserProfile | null> {
+  async getMyProfile(force = false): Promise<UserProfile | null> {
+    const now = Date.now();
+    if (cachedProfile && !force && (now - lastFetchTime < 10000)) {
+      return cachedProfile;
+    }
+
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return null;
@@ -72,10 +81,11 @@ export const profileAPI = {
         .single();
         
       if (error) {
-        // RLS recursion errors often return 500, we catch it here and return null
-        console.warn("Profil veritabanından alınamadı (RLS hatası), varsayılan profil kullanılacak.");
+        console.warn("Profil veritabanından alınamadı, varsayılan profil kullanılacak.");
         return null;
       }
+      cachedProfile = data;
+      lastFetchTime = now;
       return data;
     } catch (err) {
       console.error("Profil servis hatası:", err);
@@ -179,15 +189,17 @@ export const fixedExpensesAPI = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
 
-    // Profil üzerinden company_id al
+    // Profil üzerinden company_id al, yoksa user_id fallback kullan (migration öncesi destek)
     const profile = await profileAPI.getMyProfile();
-    if (!profile) return [];
+    const query = supabase.from('fixed_expenses').select('*');
+    
+    if (profile?.company_id) {
+      query.eq('company_id', profile.company_id);
+    } else {
+      query.eq('user_id', user.id);
+    }
 
-    const { data, error } = await supabase
-      .from('fixed_expenses')
-      .select('*')
-      .eq('company_id', profile.company_id)
-      .order('created_at', { ascending: true });
+    const { data, error } = await query.order('created_at', { ascending: true });
 
     if (error) {
       console.error("Sabit giderler çekilemedi:", error);
@@ -201,11 +213,12 @@ export const fixedExpensesAPI = {
     if (!user) return null;
 
     const profile = await profileAPI.getMyProfile();
-    if (!profile) return null;
+    const payload: any = { ...expense, user_id: user.id };
+    if (profile?.company_id) payload.company_id = profile.company_id;
 
     const { data, error } = await supabase
       .from('fixed_expenses')
-      .insert({ ...expense, user_id: user.id, company_id: profile.company_id })
+      .insert(payload)
       .select()
       .single();
 
@@ -282,14 +295,19 @@ export interface SupabaseTask {
 
 export const projectGroupsAPI = {
   async getAll(): Promise<SupabaseProjectGroup[]> {
-    const profile = await profileAPI.getMyProfile();
-    if (!profile) return [];
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
 
-    const { data, error } = await supabase
-      .from('project_groups')
-      .select('*')
-      .eq('company_id', profile.company_id)
-      .order('created_at', { ascending: true });
+    const profile = await profileAPI.getMyProfile();
+    const query = supabase.from('project_groups').select('*');
+    
+    if (profile?.company_id) {
+      query.eq('company_id', profile.company_id);
+    } else {
+      query.eq('user_id', user.id);
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: true });
 
     if (error) {
       console.error("Proje grupları çekilemedi:", error);
@@ -303,11 +321,12 @@ export const projectGroupsAPI = {
     if (!user) return null;
 
     const profile = await profileAPI.getMyProfile();
-    if (!profile) return null;
+    const payload: any = { ...group, user_id: user.id };
+    if (profile?.company_id) payload.company_id = profile.company_id;
 
     const { data, error } = await supabase
       .from('project_groups')
-      .insert({ ...group, user_id: user.id, company_id: profile.company_id })
+      .insert(payload)
       .select()
       .single();
 
@@ -349,14 +368,19 @@ export const projectGroupsAPI = {
 
 export const projectsAPI = {
   async getAll(): Promise<SupabaseProject[]> {
-    const profile = await profileAPI.getMyProfile();
-    if (!profile) return [];
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
 
-    const { data, error } = await supabase
-      .from('projects')
-      .select('*')
-      .eq('company_id', profile.company_id)
-      .order('created_at', { ascending: true });
+    const profile = await profileAPI.getMyProfile();
+    const query = supabase.from('projects').select('*');
+    
+    if (profile?.company_id) {
+      query.eq('company_id', profile.company_id);
+    } else {
+      query.eq('user_id', user.id);
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: true });
 
     if (error) {
       console.error("Projeler çekilemedi:", error);
@@ -370,11 +394,12 @@ export const projectsAPI = {
     if (!user) return null;
 
     const profile = await profileAPI.getMyProfile();
-    if (!profile) return null;
+    const payload: any = { ...project, user_id: user.id };
+    if (profile?.company_id) payload.company_id = profile.company_id;
 
     const { data, error } = await supabase
       .from('projects')
-      .insert({ ...project, user_id: user.id, company_id: profile.company_id })
+      .insert(payload)
       .select()
       .single();
 
@@ -416,14 +441,19 @@ export const projectsAPI = {
 
 export const tasksAPI = {
   async getAll(): Promise<SupabaseTask[]> {
-    const profile = await profileAPI.getMyProfile();
-    if (!profile) return [];
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
 
-    const { data, error } = await supabase
-      .from('tasks')
-      .select('*')
-      .eq('company_id', profile.company_id)
-      .order('created_at', { ascending: false });
+    const profile = await profileAPI.getMyProfile();
+    const query = supabase.from('tasks').select('*');
+    
+    if (profile?.company_id) {
+      query.eq('company_id', profile.company_id);
+    } else {
+      query.eq('user_id', user.id);
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false });
 
     if (error) {
       console.error("Görevler çekilemedi:", error);
@@ -437,11 +467,12 @@ export const tasksAPI = {
     if (!user) return null;
 
     const profile = await profileAPI.getMyProfile();
-    if (!profile) return null;
+    const payload: any = { ...task, user_id: user.id };
+    if (profile?.company_id) payload.company_id = profile.company_id;
 
     const { data, error } = await supabase
       .from('tasks')
-      .insert({ ...task, user_id: user.id, company_id: profile.company_id })
+      .insert(payload)
       .select()
       .single();
 
@@ -493,14 +524,19 @@ export interface SupabasePnlReport {
 
 export const pnlReportsAPI = {
   async getAll(): Promise<SupabasePnlReport[]> {
-    const profile = await profileAPI.getMyProfile();
-    if (!profile) return [];
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
 
-    const { data, error } = await supabase
-      .from('pnl_reports')
-      .select('*')
-      .eq('company_id', profile.company_id)
-      .order('created_at', { ascending: false });
+    const profile = await profileAPI.getMyProfile();
+    const query = supabase.from('pnl_reports').select('*');
+    
+    if (profile?.company_id) {
+      query.eq('company_id', profile.company_id);
+    } else {
+      query.eq('user_id', user.id);
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false });
 
     if (error) {
       console.error("PnL raporları çekilemedi:", error);
@@ -514,11 +550,12 @@ export const pnlReportsAPI = {
     if (!user) return null;
 
     const profile = await profileAPI.getMyProfile();
-    if (!profile) return null;
+    const payload: any = { ...report, user_id: user.id };
+    if (profile?.company_id) payload.company_id = profile.company_id;
 
     const { data, error } = await supabase
       .from('pnl_reports')
-      .insert({ ...report, user_id: user.id, company_id: profile.company_id })
+      .insert(payload)
       .select()
       .single();
 
@@ -574,14 +611,19 @@ export interface SupabaseMaintenanceRecord {
 
 export const assetsAPI = {
   async getAll(): Promise<SupabaseAsset[]> {
-    const profile = await profileAPI.getMyProfile();
-    if (!profile) return [];
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
 
-    const { data, error } = await supabase
-      .from('assets')
-      .select('*')
-      .eq('company_id', profile.company_id)
-      .order('created_at', { ascending: true });
+    const profile = await profileAPI.getMyProfile();
+    const query = supabase.from('assets').select('*');
+    
+    if (profile?.company_id) {
+      query.eq('company_id', profile.company_id);
+    } else {
+      query.eq('user_id', user.id);
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: true });
 
     if (error) {
       console.error("Varlıklar çekilemedi:", error);
@@ -595,11 +637,12 @@ export const assetsAPI = {
     if (!user) return null;
 
     const profile = await profileAPI.getMyProfile();
-    if (!profile) return null;
+    const payload: any = { ...asset, user_id: user.id };
+    if (profile?.company_id) payload.company_id = profile.company_id;
 
     const { data, error } = await supabase
       .from('assets')
-      .insert({ ...asset, user_id: user.id, company_id: profile.company_id })
+      .insert(payload)
       .select()
       .single();
 
@@ -641,14 +684,19 @@ export const assetsAPI = {
 
 export const maintenanceAPI = {
   async getAll(): Promise<SupabaseMaintenanceRecord[]> {
-    const profile = await profileAPI.getMyProfile();
-    if (!profile) return [];
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
 
-    const { data, error } = await supabase
-      .from('maintenance_records')
-      .select('*')
-      .eq('company_id', profile.company_id)
-      .order('created_at', { ascending: false });
+    const profile = await profileAPI.getMyProfile();
+    const query = supabase.from('maintenance_records').select('*');
+    
+    if (profile?.company_id) {
+      query.eq('company_id', profile.company_id);
+    } else {
+      query.eq('user_id', user.id);
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false });
 
     if (error) {
       console.error("Bakım kayıtları çekilemedi:", error);
@@ -662,11 +710,12 @@ export const maintenanceAPI = {
     if (!user) return null;
 
     const profile = await profileAPI.getMyProfile();
-    if (!profile) return null;
+    const payload: any = { ...record, user_id: user.id };
+    if (profile?.company_id) payload.company_id = profile.company_id;
 
     const { data, error } = await supabase
       .from('maintenance_records')
-      .insert({ ...record, user_id: user.id, company_id: profile.company_id })
+      .insert(payload)
       .select()
       .single();
 
@@ -709,14 +758,19 @@ export interface SupabasePermit {
 
 export const permitsAPI = {
   async getAll(): Promise<SupabasePermit[]> {
-    const profile = await profileAPI.getMyProfile();
-    if (!profile) return [];
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
 
-    const { data, error } = await supabase
-      .from('permits')
-      .select('*')
-      .eq('company_id', profile.company_id)
-      .order('created_at', { ascending: false });
+    const profile = await profileAPI.getMyProfile();
+    const query = supabase.from('permits').select('*');
+    
+    if (profile?.company_id) {
+      query.eq('company_id', profile.company_id);
+    } else {
+      query.eq('user_id', user.id);
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false });
 
     if (error) {
       console.error("Lisanslar çekilemedi:", error);
@@ -730,11 +784,12 @@ export const permitsAPI = {
     if (!user) return null;
 
     const profile = await profileAPI.getMyProfile();
-    if (!profile) return null;
+    const payload: any = { ...permit, user_id: user.id };
+    if (profile?.company_id) payload.company_id = profile.company_id;
 
     const { data, error } = await supabase
       .from('permits')
-      .insert({ ...permit, user_id: user.id, company_id: profile.company_id })
+      .insert(payload)
       .select()
       .single();
 

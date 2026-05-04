@@ -147,10 +147,10 @@ export const App: React.FC = () => {
     }
   }, [session]);
 
-  const user = { 
+  const user = session ? { 
     name: userProfile?.full_name || session?.user?.email?.split('@')[0] || 'User',
-    role: userProfile?.role || 'user'
-  };
+    role: (userProfile?.role || 'user') as UserRole
+  } : null;
 
   // Yalnızca gerçek auth durumu bilinene kadar splash göster
   // isProfileLoading splash'e dahil değil: profil arka planda yüklenir, uygulama beklemiyor
@@ -176,7 +176,7 @@ export const App: React.FC = () => {
     { id: 'g3', title: 'Üretim & Lojistik', items: ['fastplan', 'planning', 'production', 'stock', 'logistics', 'machinery'] },
     { id: 'g4', title: 'Kurumsal Yönetim', items: ['hr', 'licensing', 'archive'] },
     { id: 'g5', title: 'Sistem', items: ['profile', 'settings'] },
-    ...(user.role === 'super_admin' ? [{ id: 'g6', title: 'Yönetim', items: ['super_admin'] }] : [])
+    ...(user?.role === 'super_admin' ? [{ id: 'g6', title: 'Yönetim', items: ['super_admin'] }] : [])
   ];
 
   const rawMenuItems = [
@@ -204,6 +204,7 @@ export const App: React.FC = () => {
   ];
 
   const allowedItems = rawMenuItems.filter(item => {
+    if (!user) return false;
     // SuperAdmin ve Admin her şeyi görür
     if (user.role === 'super_admin' || user.role === 'admin') {
       if (item.id === 'super_admin') return user.role === 'super_admin';
@@ -635,7 +636,7 @@ export const App: React.FC = () => {
             {activeModule === 'tasks'      && <Tasks />}
             {activeModule === 'calendar'   && <CalendarModule />}
             {activeModule === 'licensing'  && <Licensing />}
-            {activeModule === 'settings'   && <Settings profile={userProfile ? { ...userProfile, role: user.role as any } : { role: user.role } as any} />}
+            {activeModule === 'settings'   && <Settings profile={userProfile ? { ...userProfile, role: user?.role || 'user' } : { role: user?.role || 'user' } as any} />}
             {activeModule === 'profile'    && <Profile />}
             {activeModule === 'mail'       && <Mail />}
             {activeModule === 'fixedexpenses' && <FixedExpenses />}
