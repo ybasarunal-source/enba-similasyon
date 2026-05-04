@@ -12,22 +12,29 @@
 3. `Enba_Obsidian_Vault/log.md` son 3 girişe bak → bağlamı kur
 4. `Aktif Görevler` bölümünü kontrol et
 
+### Anlık Log — Her Önemli Adımdan Sonra Otomatik
+
+Kullanıcı onayı bekleme. Şu durumlarda `log.md`'ye hemen giriş ekle ve ilgili wiki sayfasını güncelle:
+- Yeni özellik tamamlandı
+- Bug düzeltildi
+- Mimari karar alındı
+- Yeni modül eklendi veya güncellendi
+- SQL şeması değişti
+
+```
+## [YYYY-MM-DD HH:MM] geliştirme | kısa özet
+- Yapılan: ...
+- Etkilenen dosyalar: ...
+- Bir sonraki: ...
+```
+
 ### Oturum Sonunda — "oturumu kapat" komutu geldiğinde
 
-Kullanıcı "oturumu kapat" yazdığında Claude Code şunları sırayla yapar:
-
-1. O oturumda yapılan işleri özetle `log.md`'ye ekle:
-   ```
-   ## [YYYY-MM-DD] geliştirme | kısa özet
-   - Yapılan: ...
-   - Güncellenen wiki sayfaları: ...
-   - Bir sonraki oturum: ...
-   ```
-2. Değişen wiki sayfalarını kaydet (`Moduller/`, `Kararlar/`, `Wiki/` vb.)
+1. Oturumun genel özetini `log.md`'ye ekle
+2. `CLAUDE.md` → `Aktif Görevler` bölümünü güncelle
 3. `index.md`'yi güncelle (yeni sayfa eklendiyse)
-4. `CLAUDE.md` → `Aktif Görevler` bölümünü bir sonraki oturum için güncelle
-5. Kullanıcıya şunu söyle:
-   > "Oturum kaydedildi. Obsidian Git 30 dakika içinde GitHub'a push edecek. Hemen push etmek istersen Obsidian'da Ctrl+P → 'Git: Commit and push' komutunu çalıştır."
+4. Kullanıcıya söyle:
+   > "Oturum kaydedildi. Obsidian Git otomatik push edecek. Hemen göndermek istersen Ctrl+P → Git: Commit → Git: Push."
 
 ---
 

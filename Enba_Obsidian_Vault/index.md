@@ -54,6 +54,7 @@
 |-------|------|----------------|
 | [[Wiki/Entegrasyon-Mimarisi\|Entegrasyon Mimarisi]] | Microsoft/Google/Paraşüt OAuth karşılaştırması, login akışı, riskler | 2026-05-04 |
 | [[Wiki/Is-Modeli\|İş Modeli & Hedefler]] | Kendi şirket ERP'i + SaaS demo/pazarlama, multi-tenancy kritik, SQL öncelikleri | 2026-05-04 |
+| [[Wiki/SQL-Sema-Analizi\|SQL Şema Analizi]] | Mevcut tablo envanteri, 4 kritik sorun (eksik tablolar, sütun uyuşmazlıkları, company_id), 3 aşamalı düzeltme planı | 2026-05-05 |
 
 ---
 
