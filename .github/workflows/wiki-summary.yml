@@ -1,0 +1,32 @@
+name: Wiki Degisiklik Ozeti
+
+on:
+  push:
+    paths:
+      - 'Enba_Obsidian_Vault/**'
+      - 'CLAUDE.md'
+
+jobs:
+  ozet:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Degisen wiki sayfalarini listele
+        run: |
+          echo "## Wiki Guncelleme Ozeti" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Tarih:** $(date '+%Y-%m-%d %H:%M')" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Degisen Dosyalar" >> $GITHUB_STEP_SUMMARY
+          git diff --name-only HEAD~1 HEAD | while read f; do
+            echo "- \`$f\`" >> $GITHUB_STEP_SUMMARY
+          done
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Son log.md Girisi" >> $GITHUB_STEP_SUMMARY
+          if [ -f "Enba_Obsidian_Vault/log.md" ]; then
+            grep "^## \[" Enba_Obsidian_Vault/log.md | tail -3 >> $GITHUB_STEP_SUMMARY
+          fi
