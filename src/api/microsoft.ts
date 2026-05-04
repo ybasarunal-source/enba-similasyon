@@ -142,6 +142,13 @@ export const microsoftService = {
     return Client.init({ authProvider: (done) => done(null, token) });
   },
 
+  // Profil verilerinden oturumu geri yükle
+  async resumeSession(profile: any): Promise<AccountInfo | null> {
+    const hint = profile.ms_account_username;
+    if (!hint) return null;
+    return await this.trySilentLogin(hint);
+  },
+
   // Sadece yerel depolamayı temizle (Redirect yapmaz)
   clearStorage() {
     clearAllMsalStorage();

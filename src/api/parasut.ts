@@ -69,6 +69,17 @@ export const parasutService = {
     return loadToken() !== null;
   },
 
+  // Profil verilerinden oturumu geri yükle
+  resumeSession(profile: any) {
+    if (profile.parasut_data?.token) {
+      _memToken = profile.parasut_data.token;
+      try { localStorage.setItem(TOKEN_KEY, JSON.stringify(_memToken)); } catch { /* ignore */ }
+    }
+    if (profile.parasut_data?.company) {
+      try { localStorage.setItem(COMPANY_KEY, JSON.stringify(profile.parasut_data.company)); } catch { /* ignore */ }
+    }
+  },
+
   logout(): void {
     _memToken = null;
     try { localStorage.removeItem(TOKEN_KEY); } catch { /* ignore */ }

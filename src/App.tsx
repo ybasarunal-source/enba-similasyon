@@ -6,6 +6,9 @@ import { googleService } from './api/google';
 import { Login } from './modules/Login';
 import type { Session } from '@supabase/supabase-js';
 import { profileAPI, type UserProfile, type UserRole } from './api/supabase';
+import { parasutService } from './api/parasut';
+import { googleService } from './api/google';
+import { microsoftService } from './api/microsoft';
 import Dashboard from './modules/Dashboard';
 import { Stock } from './modules/Stock';
 import { Production } from './modules/Production';
@@ -151,7 +154,15 @@ export const App: React.FC = () => {
     if (session?.user) {
       setProfileAvatar(session.user.user_metadata?.profile_data?.avatarUrl || '');
       profileAPI.getMyProfile(true) // force fetch
-        .then(profile => setUserProfile(profile))
+        .then(profile => {
+          setUserProfile(profile);
+          if (profile) {
+            // Otomatik Entegrasyon Geri Yükleme
+            microsoftService.resumeSession(profile);
+            googleService.resumeSession(profile);
+            parasutService.resumeSession(profile);
+          }
+        })
         .catch(() => console.warn("Profil yüklenemedi, varsayılan kullanılıyor."));
     } else {
       setUserProfile(null);

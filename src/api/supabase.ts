@@ -48,6 +48,9 @@ export interface UserProfile {
   created_at: string;
   ms_account_id?: string;
   ms_account_username?: string;
+  microsoft_data?: any;
+  google_data?: any;
+  parasut_data?: any;
 }
 
 export interface Company {

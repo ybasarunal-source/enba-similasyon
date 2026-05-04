@@ -61,6 +61,14 @@ export const googleService = {
     return null;
   },
 
+  // Profil verilerinden token'ı geri yükle ve yerel depolamaya yaz
+  resumeSession(profile: any) {
+    if (profile.google_data?.token) {
+      localStorage.setItem('google_access_token', profile.google_data.token);
+      localStorage.setItem('google_token_expiry', profile.google_data.expiry);
+    }
+  },
+
   async getCalendarEvents(start?: string, end?: string) {
     const token = this.getAccessToken();
     if (!token) return [];
