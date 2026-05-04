@@ -136,9 +136,10 @@ export const App: React.FC = () => {
 
   // Profil: oturum değişince yükle (basit ve güvenilir)
   useEffect(() => {
+    profileAPI.clearCache(); // Oturum değişince eski önbelleği temizle
     if (session?.user) {
       setProfileAvatar(session.user.user_metadata?.profile_data?.avatarUrl || '');
-      profileAPI.getMyProfile()
+      profileAPI.getMyProfile(true) // force fetch
         .then(profile => setUserProfile(profile))
         .catch(() => console.warn("Profil yüklenemedi, varsayılan kullanılıyor."));
     } else {
@@ -204,16 +205,21 @@ export const App: React.FC = () => {
   ];
 
   const allowedItems = rawMenuItems.filter(item => {
+    // Profil henüz yüklenmediyse sadece temel modülleri göster (çökmeyi önlemek için)
+    if (!userProfile && session.user) {
+      return ['profile', 'dashboard', 'tasks', 'calendar', 'modules', 'mail', 'fixedexpenses'].includes(item.id);
+    }
+    
     // SuperAdmin ve Admin her şeyi görür
     if (user.role === 'super_admin' || user.role === 'admin') {
       if (item.id === 'super_admin') return user.role === 'super_admin';
       return true;
     }
-    // FALLBACK: Veritabanı hatası (RLS) durumunda oturum varsa tam erişim sağla
-    if (!userProfile && session.user) return true;
-    // Core modules always visible, others depend on permissions
-    if (item.id === 'profile' || item.id === 'dashboard' || item.id === 'tasks' || item.id === 'calendar' || item.id === 'modules' || item.id === 'mail' || item.id === 'fixedexpenses') return true;
-    // Others depend on permissions
+    
+    // Core modules always visible
+    if (['profile', 'dashboard', 'tasks', 'calendar', 'modules', 'mail', 'fixedexpenses'].includes(item.id)) return true;
+    
+    // Diğerleri yetkiye bağlı
     return userProfile?.permissions?.[item.id] === true;
   });
 

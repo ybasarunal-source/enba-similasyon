@@ -124,6 +124,11 @@ export const profileAPI = {
       redirectTo: window.location.origin,
     });
     return !error;
+  },
+
+  clearCache() {
+    cachedProfile = null;
+    lastFetchTime = 0;
   }
 };
 

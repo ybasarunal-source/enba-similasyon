@@ -50,7 +50,7 @@ export const ModulesOverview: React.FC<ModulesOverviewProps> = ({ navigate, menu
               style={{ width: '36px', height: '36px' }}
               className="bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 group-hover:bg-[var(--enba-orange)] group-hover:text-white transition-all duration-300 shadow-sm flex-shrink-0"
             >
-              <item.icon size={18} strokeWidth={2.5} />
+              {item.icon ? <item.icon size={18} strokeWidth={2.5} /> : null}
             </div>
             
             <div className="relative z-10 flex-1 min-w-0">
