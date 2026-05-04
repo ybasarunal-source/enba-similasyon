@@ -82,9 +82,6 @@ export const App: React.FC = () => {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [isProfileLoading, setIsProfileLoading] = useState(true);
-  // Profil en az bir kez başarıyla yüklendiyse token refresh'te loading ekranı gösterme
-  const profileEverLoaded = useRef(false);
   const [theme, setTheme] = useState(() => localStorage.getItem('enba_theme') || 'light');
   const [unreadMailCount, setUnreadMailCount] = useState(0);
 
@@ -135,37 +132,17 @@ export const App: React.FC = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user?.id]); // Yalnızca kullanıcı değişince (login/logout) yeniden çalış — token refresh tetiklemez
 
+  // Profil: oturum değişince yükle (basit ve güvenilir)
   useEffect(() => {
-    if (session === undefined) return; // Hâlâ ilk yükleme — bekle
-
-    if (!session?.user) {
-      // Gerçek logout — sıfırla
+    if (session?.user) {
+      setProfileAvatar(session.user.user_metadata?.profile_data?.avatarUrl || '');
+      profileAPI.getMyProfile()
+        .then(profile => setUserProfile(profile))
+        .catch(() => console.warn("Profil yüklenemedi, varsayılan kullanılıyor."));
+    } else {
       setUserProfile(null);
-      setIsProfileLoading(false);
       setProfileAvatar('');
-      profileEverLoaded.current = false;
-      return;
     }
-
-    setProfileAvatar(session.user.user_metadata?.profile_data?.avatarUrl || '');
-
-    // Profil daha önce yüklendiyse (token refresh senaryosu) loading ekranı GÖSTERME
-    // profileEverLoaded ref stale closure'dan bağımsız çalışır
-    if (!profileEverLoaded.current) {
-      setIsProfileLoading(true);
-    }
-
-    profileAPI.getMyProfile()
-      .then(profile => {
-        setUserProfile(profile);
-        setIsProfileLoading(false);
-        profileEverLoaded.current = true; // Bir kez yüklendi, artık loading gösterme
-      })
-      .catch(() => {
-        console.warn("Profil yüklenirken hata oluştu, varsayılan görünümle devam ediliyor.");
-        setIsProfileLoading(false);
-        profileEverLoaded.current = true;
-      });
   }, [session]);
 
   const user = { 
@@ -173,8 +150,9 @@ export const App: React.FC = () => {
     role: userProfile?.role || 'user'
   };
 
-  // Auth veya i18n veya Profil yüklenirken splash
-  if (session === undefined || isLoading || isProfileLoading) {
+  // Yalnızca gerçek auth durumu bilinene kadar splash göster
+  // isProfileLoading splash'e dahil değil: profil arka planda yüklenir, uygulama beklemiyor
+  if (session === undefined || isLoading) {
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-[#1A1A1A] text-white">
           <div className="flex flex-col items-center gap-4 animate-pulse">
