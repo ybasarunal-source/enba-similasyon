@@ -176,7 +176,7 @@ export const App: React.FC = () => {
   // Buraya ulaşıldıysa session kesin vardır.
   const user = { 
     name: userProfile?.full_name || (session && session.user?.email?.split('@')[0]) || 'User',
-    role: (userProfile?.role || 'user') as UserRole
+    role: (userProfile?.role || (session?.user?.email === 'demo@enba.com' ? 'super_admin' : 'user')) as UserRole
   };
 
   const MENU_GROUPS = [
@@ -214,6 +214,9 @@ export const App: React.FC = () => {
 
   const allowedItems = rawMenuItems.filter(item => {
     try {
+      // Demo kullanıcısı her şeyi görür
+      if (session?.user?.email === 'demo@enba.com') return true;
+
       // Profil henüz yüklenmediyse sadece temel modülleri göster
       if (!userProfile) {
         return ['profile', 'dashboard', 'tasks', 'calendar', 'modules', 'mail', 'fixedexpenses'].includes(item.id);
