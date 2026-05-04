@@ -125,7 +125,7 @@ export const Login: React.FC = () => {
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             {/* Şirket Seçimi */}
-            <div>
+            <div className="relative z-50">
               <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-1.5">
                 Bağlanılacak Şirket
               </label>
