@@ -15,7 +15,7 @@ import {
   Lock,
   Zap
 } from 'lucide-react';
-import { companiesAPI, Company, profileAPI, UserProfile } from '../api/supabase';
+import { companiesAPI, Company, profileAPI, UserProfile, UserRole } from '../api/supabase';
 
 export const SuperAdmin: React.FC = () => {
   const [companies, setCompanies] = useState<Company[]>([]);
