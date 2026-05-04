@@ -214,8 +214,10 @@ export const App: React.FC = () => {
 
   const allowedItems = rawMenuItems.filter(item => {
     try {
-      // Demo kullanıcısı her şeyi görür
-      if (session?.user?.email === 'demo@enba.com') return true;
+      // Demo kullanıcısı her şeyi görür (Sistem Yönetimi hariç)
+      if (session?.user?.email === 'demo@enba.com') {
+        return item.id !== 'super_admin';
+      }
 
       // Profil henüz yüklenmediyse sadece temel modülleri göster
       if (!userProfile) {
