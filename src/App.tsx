@@ -26,6 +26,7 @@ import { Parasut } from './modules/Parasut';
 import { ModulesOverview } from './modules/ModulesOverview';
 import { Mail } from './modules/Mail';
 import { FixedExpenses } from './modules/FixedExpenses';
+import { SuperAdmin } from './modules/SuperAdmin';
 import {
   Home,
   LayoutGrid,
@@ -53,13 +54,14 @@ import {
   Moon,
   Sun,
   Mail as MailIcon,
-  CreditCard
+  CreditCard,
+  Shield
 } from 'lucide-react';
 
 type ModuleType =
   | 'dashboard' | 'stock' | 'production' | 'logistics' | 'hr'
   | 'archive' | 'cashflow' | 'planning' | 'fastplan' | 'machinery'
-  | 'tasks' | 'calendar' | 'licensing' | 'settings' | 'pnl' | 'profile' | 'parasut' | 'modules' | 'mail' | 'fixedexpenses';
+  | 'tasks' | 'calendar' | 'licensing' | 'settings' | 'pnl' | 'profile' | 'parasut' | 'modules' | 'mail' | 'fixedexpenses' | 'super_admin';
 
 export const App: React.FC = () => {
   const { t, language, setLanguage, isLoading } = useTranslation();
@@ -173,7 +175,8 @@ export const App: React.FC = () => {
     { id: 'g2', title: 'Finans & Muhasebe', items: ['pnl', 'cashflow', 'parasut', 'fixedexpenses'] },
     { id: 'g3', title: 'Üretim & Lojistik', items: ['fastplan', 'planning', 'production', 'stock', 'logistics', 'machinery'] },
     { id: 'g4', title: 'Kurumsal Yönetim', items: ['hr', 'licensing', 'archive'] },
-    { id: 'g5', title: 'Sistem', items: ['profile', 'settings'] }
+    { id: 'g5', title: 'Sistem', items: ['profile', 'settings'] },
+    ...(user.role === 'super_admin' ? [{ id: 'g6', title: 'Yönetim', items: ['super_admin'] }] : [])
   ];
 
   const rawMenuItems = [
@@ -197,11 +200,15 @@ export const App: React.FC = () => {
     { id: 'logistics',  label: t('modules.logistics'),     icon: Truck },
     { id: 'settings',   label: t('nav.sistem'),            icon: SettingsIcon },
     { id: 'profile',    label: 'Profilim',                 icon: User },
+    { id: 'super_admin', label: 'Sistem Yönetimi',         icon: Shield },
   ];
 
   const allowedItems = rawMenuItems.filter(item => {
-    // Admin ise her şeyi görür
-    if (user.role === 'admin') return true;
+    // SuperAdmin ve Admin her şeyi görür
+    if (user.role === 'super_admin' || user.role === 'admin') {
+      if (item.id === 'super_admin') return user.role === 'super_admin';
+      return true;
+    }
     // FALLBACK: Veritabanı hatası (RLS) durumunda oturum varsa tam erişim sağla
     if (!userProfile && session?.user) return true;
     // Core modules always visible, others depend on permissions
@@ -632,6 +639,7 @@ export const App: React.FC = () => {
             {activeModule === 'profile'    && <Profile />}
             {activeModule === 'mail'       && <Mail />}
             {activeModule === 'fixedexpenses' && <FixedExpenses />}
+            {activeModule === 'super_admin' && <SuperAdmin />}
 
             {activeModule === 'pnl'      && <PnL />}
             {activeModule === 'fastplan' && <FastPlan />}

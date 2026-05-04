@@ -16,7 +16,7 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ── Profil & Yetki Tipleri ────────────────────────────────
-export type UserRole = 'admin' | 'user';
+export type UserRole = 'super_admin' | 'admin' | 'user';
 
 export interface ModulePermissions {
   dashboard?: boolean;
@@ -43,10 +43,19 @@ export interface UserProfile {
   full_name: string;
   avatar_url?: string;
   role: UserRole;
+  company_id: string;
   permissions: ModulePermissions;
   created_at: string;
   ms_account_id?: string;
   ms_account_username?: string;
+}
+
+export interface Company {
+  id: string;
+  name: string;
+  slug: string;
+  status: 'active' | 'suspended' | 'demo';
+  created_at: string;
 }
 
 // ── Yardımcı Fonksiyonlar ──────────────────────────────────
@@ -108,6 +117,49 @@ export const profileAPI = {
   }
 };
 
+// ── Companies (Şirketler) API ──────────────────────────────
+export const companiesAPI = {
+  async getAll(): Promise<Company[]> {
+    const { data, error } = await supabase
+      .from('companies')
+      .select('*')
+      .order('name');
+    if (error) return [];
+    return data || [];
+  },
+
+  async getById(id: string): Promise<Company | null> {
+    const { data, error } = await supabase
+      .from('companies')
+      .select('*')
+      .eq('id', id)
+      .single();
+    if (error) return null;
+    return data;
+  },
+
+  async insert(company: Partial<Company>): Promise<Company | null> {
+    const { data, error } = await supabase
+      .from('companies')
+      .insert(company)
+      .select()
+      .single();
+    if (error) return null;
+    return data;
+  },
+
+  async update(id: string, updates: Partial<Company>): Promise<Company | null> {
+    const { data, error } = await supabase
+      .from('companies')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) return null;
+    return data;
+  }
+};
+
 // ── Fixed Expenses (Abonelikler) API ───────────────────────
 export interface SupabaseFixedExpense {
   id?: string;
@@ -127,10 +179,14 @@ export const fixedExpensesAPI = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return [];
 
+    // Profil üzerinden company_id al
+    const profile = await profileAPI.getMyProfile();
+    if (!profile) return [];
+
     const { data, error } = await supabase
       .from('fixed_expenses')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('company_id', profile.company_id)
       .order('created_at', { ascending: true });
 
     if (error) {
@@ -144,9 +200,12 @@ export const fixedExpensesAPI = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
 
+    const profile = await profileAPI.getMyProfile();
+    if (!profile) return null;
+
     const { data, error } = await supabase
       .from('fixed_expenses')
-      .insert({ ...expense, user_id: user.id })
+      .insert({ ...expense, user_id: user.id, company_id: profile.company_id })
       .select()
       .single();
 
@@ -223,13 +282,13 @@ export interface SupabaseTask {
 
 export const projectGroupsAPI = {
   async getAll(): Promise<SupabaseProjectGroup[]> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return [];
+    const profile = await profileAPI.getMyProfile();
+    if (!profile) return [];
 
     const { data, error } = await supabase
       .from('project_groups')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('company_id', profile.company_id)
       .order('created_at', { ascending: true });
 
     if (error) {
@@ -243,9 +302,12 @@ export const projectGroupsAPI = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
 
+    const profile = await profileAPI.getMyProfile();
+    if (!profile) return null;
+
     const { data, error } = await supabase
       .from('project_groups')
-      .insert({ ...group, user_id: user.id })
+      .insert({ ...group, user_id: user.id, company_id: profile.company_id })
       .select()
       .single();
 
@@ -287,13 +349,13 @@ export const projectGroupsAPI = {
 
 export const projectsAPI = {
   async getAll(): Promise<SupabaseProject[]> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return [];
+    const profile = await profileAPI.getMyProfile();
+    if (!profile) return [];
 
     const { data, error } = await supabase
       .from('projects')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('company_id', profile.company_id)
       .order('created_at', { ascending: true });
 
     if (error) {
@@ -307,9 +369,12 @@ export const projectsAPI = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
 
+    const profile = await profileAPI.getMyProfile();
+    if (!profile) return null;
+
     const { data, error } = await supabase
       .from('projects')
-      .insert({ ...project, user_id: user.id })
+      .insert({ ...project, user_id: user.id, company_id: profile.company_id })
       .select()
       .single();
 
@@ -351,13 +416,13 @@ export const projectsAPI = {
 
 export const tasksAPI = {
   async getAll(): Promise<SupabaseTask[]> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return [];
+    const profile = await profileAPI.getMyProfile();
+    if (!profile) return [];
 
     const { data, error } = await supabase
       .from('tasks')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('company_id', profile.company_id)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -371,9 +436,12 @@ export const tasksAPI = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
 
+    const profile = await profileAPI.getMyProfile();
+    if (!profile) return null;
+
     const { data, error } = await supabase
       .from('tasks')
-      .insert({ ...task, user_id: user.id })
+      .insert({ ...task, user_id: user.id, company_id: profile.company_id })
       .select()
       .single();
 
@@ -425,13 +493,13 @@ export interface SupabasePnlReport {
 
 export const pnlReportsAPI = {
   async getAll(): Promise<SupabasePnlReport[]> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return [];
+    const profile = await profileAPI.getMyProfile();
+    if (!profile) return [];
 
     const { data, error } = await supabase
       .from('pnl_reports')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('company_id', profile.company_id)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -445,9 +513,12 @@ export const pnlReportsAPI = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
 
+    const profile = await profileAPI.getMyProfile();
+    if (!profile) return null;
+
     const { data, error } = await supabase
       .from('pnl_reports')
-      .insert({ ...report, user_id: user.id })
+      .insert({ ...report, user_id: user.id, company_id: profile.company_id })
       .select()
       .single();
 
@@ -503,13 +574,13 @@ export interface SupabaseMaintenanceRecord {
 
 export const assetsAPI = {
   async getAll(): Promise<SupabaseAsset[]> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return [];
+    const profile = await profileAPI.getMyProfile();
+    if (!profile) return [];
 
     const { data, error } = await supabase
       .from('assets')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('company_id', profile.company_id)
       .order('created_at', { ascending: true });
 
     if (error) {
@@ -523,9 +594,12 @@ export const assetsAPI = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
 
+    const profile = await profileAPI.getMyProfile();
+    if (!profile) return null;
+
     const { data, error } = await supabase
       .from('assets')
-      .insert({ ...asset, user_id: user.id })
+      .insert({ ...asset, user_id: user.id, company_id: profile.company_id })
       .select()
       .single();
 
@@ -567,13 +641,13 @@ export const assetsAPI = {
 
 export const maintenanceAPI = {
   async getAll(): Promise<SupabaseMaintenanceRecord[]> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return [];
+    const profile = await profileAPI.getMyProfile();
+    if (!profile) return [];
 
     const { data, error } = await supabase
       .from('maintenance_records')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('company_id', profile.company_id)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -587,9 +661,12 @@ export const maintenanceAPI = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
 
+    const profile = await profileAPI.getMyProfile();
+    if (!profile) return null;
+
     const { data, error } = await supabase
       .from('maintenance_records')
-      .insert({ ...record, user_id: user.id })
+      .insert({ ...record, user_id: user.id, company_id: profile.company_id })
       .select()
       .single();
 
@@ -632,13 +709,13 @@ export interface SupabasePermit {
 
 export const permitsAPI = {
   async getAll(): Promise<SupabasePermit[]> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return [];
+    const profile = await profileAPI.getMyProfile();
+    if (!profile) return [];
 
     const { data, error } = await supabase
       .from('permits')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('company_id', profile.company_id)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -652,9 +729,12 @@ export const permitsAPI = {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
 
+    const profile = await profileAPI.getMyProfile();
+    if (!profile) return null;
+
     const { data, error } = await supabase
       .from('permits')
-      .insert({ ...permit, user_id: user.id })
+      .insert({ ...permit, user_id: user.id, company_id: profile.company_id })
       .select()
       .single();
 
