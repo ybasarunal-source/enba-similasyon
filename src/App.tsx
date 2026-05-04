@@ -83,6 +83,8 @@ export const App: React.FC = () => {
   const userMenuRef = useRef<HTMLDivElement>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isProfileLoading, setIsProfileLoading] = useState(true);
+  // Profil en az bir kez başarıyla yüklendiyse token refresh'te loading ekranı gösterme
+  const profileEverLoaded = useRef(false);
   const [theme, setTheme] = useState(() => localStorage.getItem('enba_theme') || 'light');
   const [unreadMailCount, setUnreadMailCount] = useState(0);
 
@@ -137,34 +139,34 @@ export const App: React.FC = () => {
     if (session === undefined) return; // Hâlâ ilk yükleme — bekle
 
     if (!session?.user) {
-      // Logout: oturumu temizle
+      // Gerçek logout — sıfırla
       setUserProfile(null);
       setIsProfileLoading(false);
       setProfileAvatar('');
+      profileEverLoaded.current = false;
       return;
     }
 
-    const uid = session.user.id;
     setProfileAvatar(session.user.user_metadata?.profile_data?.avatarUrl || '');
 
-    // Aynı kullanıcı için profil zaten var — sessizce arka planda yenile, yükleme ekranı GÖSTERME
-    // (Supabase TOKEN_REFRESHED her ~1 saatte tetikler, bu durumda ekran gösterme)
-    const isSameUser = userProfile?.id === uid;
-    if (!isSameUser) {
-      setIsProfileLoading(true); // Yalnızca farklı kullanıcı veya ilk girişte loading göster
+    // Profil daha önce yüklendiyse (token refresh senaryosu) loading ekranı GÖSTERME
+    // profileEverLoaded ref stale closure'dan bağımsız çalışır
+    if (!profileEverLoaded.current) {
+      setIsProfileLoading(true);
     }
 
     profileAPI.getMyProfile()
       .then(profile => {
         setUserProfile(profile);
         setIsProfileLoading(false);
+        profileEverLoaded.current = true; // Bir kez yüklendi, artık loading gösterme
       })
       .catch(() => {
         console.warn("Profil yüklenirken hata oluştu, varsayılan görünümle devam ediliyor.");
         setIsProfileLoading(false);
+        profileEverLoaded.current = true;
       });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session]); // session'a bağlı — ama aynı kullanıcı için yükleme ekranı gösterilmez
+  }, [session]);
 
   const user = { 
     name: userProfile?.full_name || session?.user?.email?.split('@')[0] || 'User',
@@ -653,19 +655,10 @@ export const App: React.FC = () => {
             {activeModule === 'mail'       && <Mail />}
             {activeModule === 'fixedexpenses' && <FixedExpenses />}
 
-            {/* Ağır state tutan modüller: unmount edilmez, sadece gizlenir */}
-            {/* Bu sayede sekme değişince veriler kaybolmaz */}
-            <div style={{ display: activeModule === 'pnl' ? 'block' : 'none' }}>
-              <PnL />
-            </div>
-            <div style={{ display: activeModule === 'fastplan' ? 'block' : 'none' }}>
-              <FastPlan />
-            </div>
-            <div style={{ display: activeModule === 'planning' ? 'block' : 'none' }}>
-              <DetailedPlanManager />
-            </div>
-            {/* Paraşüt: normal render — kendi token/login state'ini yönetiyor, unmount olmadan bozuluyor */}
-            {activeModule === 'parasut' && <Parasut />}
+            {activeModule === 'pnl'      && <PnL />}
+            {activeModule === 'fastplan' && <FastPlan />}
+            {activeModule === 'planning' && <DetailedPlanManager />}
+            {activeModule === 'parasut'  && <Parasut />}
           </div>
         </div>
       </main>
