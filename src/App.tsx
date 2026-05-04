@@ -5,7 +5,7 @@ import { microsoftService } from './api/microsoft';
 import { googleService } from './api/google';
 import { Login } from './modules/Login';
 import type { Session } from '@supabase/supabase-js';
-import { profileAPI, type UserProfile } from './api/supabase';
+import { profileAPI, type UserProfile, type UserRole } from './api/supabase';
 import Dashboard from './modules/Dashboard';
 import { Stock } from './modules/Stock';
 import { Production } from './modules/Production';
@@ -513,7 +513,7 @@ export const App: React.FC = () => {
                   style={{ fontFamily: "'Poppins', sans-serif" }}
                   className="text-[12px] font-semibold text-[var(--enba-dark)] leading-none"
                 >
-                  {user.name}
+                  {user?.name || 'User'}
                 </span>
                 <span
                   style={{ fontFamily: "'Poppins', sans-serif" }}
@@ -554,7 +554,7 @@ export const App: React.FC = () => {
                   marginBottom: '4px'
                 }}>
                   <div style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 700, fontSize: '13px', color: '#1a1a2e' }}>
-                    {user.name}
+                    {user?.name || 'User'}
                   </div>
                   <div style={{ fontFamily: "'Poppins', sans-serif", fontSize: '10px', color: 'var(--enba-orange)', fontWeight: 600 }}>
                     Platform Yöneticisi
