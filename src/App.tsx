@@ -423,7 +423,11 @@ export const App: React.FC = () => {
             </button>
           )}
           <button
-            onClick={() => supabase.auth.signOut()}
+            onClick={() => {
+              microsoftService.clearStorage();
+              googleService.logout();
+              supabase.auth.signOut();
+            }}
             title="Çıkış Yap"
             className={`
               flex items-center rounded-xl py-3 transition-all duration-300
@@ -631,7 +635,12 @@ export const App: React.FC = () => {
 
                 {/* Oturumu Kapat */}
                 <button
-                  onClick={() => { supabase.auth.signOut(); setUserMenuOpen(false); }}
+                  onClick={() => { 
+                    microsoftService.clearStorage();
+                    googleService.logout();
+                    supabase.auth.signOut(); 
+                    setUserMenuOpen(false); 
+                  }}
                   style={{
                     display: 'flex', alignItems: 'center', gap: '10px',
                     padding: '9px 12px', borderRadius: '9px', border: 'none',

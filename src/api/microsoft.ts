@@ -142,6 +142,14 @@ export const microsoftService = {
     return Client.init({ authProvider: (done) => done(null, token) });
   },
 
+  // Sadece yerel depolamayı temizle (Redirect yapmaz)
+  clearStorage() {
+    clearAllMsalStorage();
+    if (msalInstance) {
+      msalInstance.setActiveAccount(null);
+    }
+  },
+
   async getTodoLists() {
     const client = await this.getGraphClient();
     if (!client) return [];
