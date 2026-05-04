@@ -64,12 +64,14 @@ type ModuleType =
 export const App: React.FC = () => {
   const { t, language, setLanguage, isLoading } = useTranslation();
   const [activeModule, setActiveModule] = useState<ModuleType>(() => {
-    // Redirect sonrası kalınan yerden devam etmek için kontrol
-    const saved = sessionStorage.getItem('enba_return_module');
-    if (saved) {
+    // Sayfa yenileme / tarayıcıdan geri dönme sonrası aktif modülü geri yükle
+    const returnMod = sessionStorage.getItem('enba_return_module');
+    if (returnMod) {
       sessionStorage.removeItem('enba_return_module');
-      return saved as ModuleType;
+      return returnMod as ModuleType;
     }
+    const lastMod = sessionStorage.getItem('enba_active_module');
+    if (lastMod) return lastMod as ModuleType;
     return 'dashboard';
   });
   // Sayfa geçmişi — geri/ileri navigasyon için
@@ -110,38 +112,36 @@ export const App: React.FC = () => {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Mail okunmamış sayısı: sadece kullanıcı ID değişince yeniden kur (token refresh'te tekrar tetiklenmesin)
   useEffect(() => {
-    if (session) {
-      const fetchUnreadCounts = async () => {
-        let count = 0;
-        try {
-          // Sadece daha önce izin verilmişse (sessizce) al, login penceresi açmamak için.
-          // microsoftService graph client alırken hata fırlatmaz, token yoksa boş döner.
-          const msToken = await microsoftService.getToken(['User.Read', 'Mail.ReadWrite', 'Mail.Send']);
-          if (msToken) {
-            count += await microsoftService.getUnreadCount();
-          }
-        } catch (e) { /* ignore */ }
-
-        try {
-          const gToken = googleService.getAccessToken();
-          if (gToken) {
-            count += await googleService.getUnreadCount();
-          }
-        } catch (e) { /* ignore */ }
-
-        setUnreadMailCount(count);
-      };
-
-      fetchUnreadCounts();
-      const interval = setInterval(fetchUnreadCounts, 120000); // 2 dakikada bir kontrol
-      return () => clearInterval(interval);
-    }
-  }, [session]);
+    if (!session?.user?.id) return;
+    const fetchUnreadCounts = async () => {
+      let count = 0;
+      try {
+        const msToken = await microsoftService.getToken(['User.Read', 'Mail.ReadWrite', 'Mail.Send']);
+        if (msToken) count += await microsoftService.getUnreadCount();
+      } catch (e) { /* ignore */ }
+      try {
+        const gToken = googleService.getAccessToken();
+        if (gToken) count += await googleService.getUnreadCount();
+      } catch (e) { /* ignore */ }
+      setUnreadMailCount(count);
+    };
+    fetchUnreadCounts();
+    const interval = setInterval(fetchUnreadCounts, 120000);
+    return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.id]); // Yalnızca kullanıcı değişince (login/logout) yeniden çalış — token refresh tetiklemez
 
   useEffect(() => {
-    if (session?.user) {
-      setIsProfileLoading(true);
+    const uid = session?.user?.id;
+    if (uid) {
+      // Profil zaten yüklü ve aynı kullanıcıysa loading ekranı gösterme
+      setIsProfileLoading(prev => {
+        // İlk yüklemede (userProfile yok) veya farklı kullanıcıda true yap
+        if (!userProfile || userProfile.id !== uid) return true;
+        return prev; // Aynı kullanıcı, token refresh — ekranı gösterme
+      });
       setProfileAvatar(session.user.user_metadata?.profile_data?.avatarUrl || '');
       profileAPI.getMyProfile()
         .then(profile => {
@@ -152,12 +152,14 @@ export const App: React.FC = () => {
           console.warn("Profil yüklenirken hata oluştu, varsayılan görünümle devam ediliyor.");
           setIsProfileLoading(false);
         });
-    } else {
+    } else if (session === null) {
+      // Gerçek logout — sıfırla
       setUserProfile(null);
       setIsProfileLoading(false);
       setProfileAvatar('');
     }
-  }, [session]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.id]); // Sadece kullanıcı ID değişince profil yükle — Supabase token refresh'te tetiklenmesin
 
   const user = { 
     name: userProfile?.full_name || session?.user?.email?.split('@')[0] || 'User',
@@ -224,6 +226,11 @@ export const App: React.FC = () => {
   });
 
   const menuItems = allowedItems;
+
+  // Aktif modülü sessionStorage'a kaydet (her değişimde)
+  useEffect(() => {
+    sessionStorage.setItem('enba_active_module', activeModule);
+  }, [activeModule]);
 
   const navigate = (view: string) => {
     const mod = view as ModuleType;
@@ -623,6 +630,7 @@ export const App: React.FC = () => {
         {/* ─── Module Content ──────────────────────────────── */}
         <div className="flex-1 overflow-y-auto custom-scrollbar">
           <div className="max-w-[1200px] mx-auto min-h-full">
+            {/* Hafif modüller: sadece aktifken render edilir */}
             {activeModule === 'modules'    && <ModulesOverview key="v1.3" navigate={navigate} menuItems={menuItems} />}
             {activeModule === 'dashboard'  && <Dashboard navigate={navigate} user={{ name: 'Admin' }} />}
             {activeModule === 'stock'      && <Stock />}
@@ -635,14 +643,24 @@ export const App: React.FC = () => {
             {activeModule === 'tasks'      && <Tasks />}
             {activeModule === 'calendar'   && <CalendarModule />}
             {activeModule === 'licensing'  && <Licensing />}
-            {activeModule === 'pnl'        && <PnL />}
             {activeModule === 'settings'   && <Settings profile={userProfile ? { ...userProfile, role: user.role as any } : { role: user.role } as any} />}
-            {activeModule === 'fastplan'   && <FastPlan />}
-            {activeModule === 'planning'   && <DetailedPlanManager />}
-            { activeModule === 'profile'    && <Profile /> }
-            { activeModule === 'parasut'    && <Parasut /> }
-            { activeModule === 'mail'       && <Mail /> }
-            { activeModule === 'fixedexpenses' && <FixedExpenses /> }
+            {activeModule === 'profile'    && <Profile />}
+            {activeModule === 'mail'       && <Mail />}
+            {activeModule === 'fixedexpenses' && <FixedExpenses />}
+
+            {/* Ağır state tutan modüller: unmount edilmez, sadece gizlenir */}
+            {/* Bu sayede sekme değişince veriler kaybolmaz */}
+            <div style={{ display: activeModule === 'pnl' ? 'block' : 'none' }}>
+              <PnL />
+            </div>
+            <div style={{ display: activeModule === 'fastplan' ? 'block' : 'none' }}>
+              <FastPlan />
+            </div>
+            <div style={{ display: activeModule === 'planning' ? 'block' : 'none' }}>
+              <DetailedPlanManager />
+            </div>
+            {/* Paraşüt: normal render — kendi token/login state'ini yönetiyor, unmount olmadan bozuluyor */}
+            {activeModule === 'parasut' && <Parasut />}
           </div>
         </div>
       </main>
