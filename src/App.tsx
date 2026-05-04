@@ -81,6 +81,7 @@ export const App: React.FC = () => {
   const [historyIndex, setHistoryIndex] = useState(0);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [profileAvatar, setProfileAvatar] = useState('');
+  const [renderError, setRenderError] = useState<string | null>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -91,6 +92,16 @@ export const App: React.FC = () => {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('enba_theme', theme);
   }, [theme]);
+
+  // Global hata yakalayıcı (Beyaz ekranı önlemek için)
+  useEffect(() => {
+    const handleError = (event: ErrorEvent) => {
+      console.error("Global Hata:", event.error);
+      setRenderError(event.error?.message || "Beklenmedik bir uygulama hatası oluştu.");
+    };
+    window.addEventListener('error', handleError);
+    return () => window.removeEventListener('error', handleError);
+  }, []);
 
   const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
 
@@ -148,7 +159,7 @@ export const App: React.FC = () => {
     }
   }, [session]);
 
-  // Yalnızca gerçek auth durumu bilinene kadar splash göster
+  // Splash
   if (session === undefined || isLoading) {
     return (
       <div className="h-screen w-screen flex items-center justify-center bg-[#1A1A1A] text-white">
@@ -158,6 +169,17 @@ export const App: React.FC = () => {
               Recycling Platform
             </div>
           </div>
+      </div>
+    );
+  }
+
+  // Hata ekranı (Eğer render sırasında bir şey patlarsa)
+  if (renderError) {
+    return (
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-red-900 text-white p-8">
+        <h1 className="text-2xl font-bold mb-4">Uygulama Başlatılamadı</h1>
+        <p className="bg-black/20 p-4 rounded font-mono text-xs mb-6 max-w-xl overflow-auto">{renderError}</p>
+        <button onClick={() => { sessionStorage.clear(); window.location.reload(); }} className="bg-white text-red-900 px-6 py-2 rounded-full font-bold">Uygulamayı Sıfırla ve Yenile</button>
       </div>
     );
   }
@@ -205,22 +227,26 @@ export const App: React.FC = () => {
   ];
 
   const allowedItems = rawMenuItems.filter(item => {
-    // Profil henüz yüklenmediyse sadece temel modülleri göster (çökmeyi önlemek için)
-    if (!userProfile && session.user) {
-      return ['profile', 'dashboard', 'tasks', 'calendar', 'modules', 'mail', 'fixedexpenses'].includes(item.id);
+    try {
+      // Profil henüz yüklenmediyse sadece temel modülleri göster
+      if (!userProfile) {
+        return ['profile', 'dashboard', 'tasks', 'calendar', 'modules', 'mail', 'fixedexpenses'].includes(item.id);
+      }
+      
+      // SuperAdmin ve Admin her şeyi görür
+      if (user.role === 'super_admin' || user.role === 'admin') {
+        if (item.id === 'super_admin') return user.role === 'super_admin';
+        return true;
+      }
+      
+      // Core modules
+      if (['profile', 'dashboard', 'tasks', 'calendar', 'modules', 'mail', 'fixedexpenses'].includes(item.id)) return true;
+      
+      // Yetki kontrolü
+      return userProfile?.permissions?.[item.id] === true;
+    } catch (e) {
+      return false;
     }
-    
-    // SuperAdmin ve Admin her şeyi görür
-    if (user.role === 'super_admin' || user.role === 'admin') {
-      if (item.id === 'super_admin') return user.role === 'super_admin';
-      return true;
-    }
-    
-    // Core modules always visible
-    if (['profile', 'dashboard', 'tasks', 'calendar', 'modules', 'mail', 'fixedexpenses'].includes(item.id)) return true;
-    
-    // Diğerleri yetkiye bağlı
-    return userProfile?.permissions?.[item.id] === true;
   });
 
   const menuItems = allowedItems;
