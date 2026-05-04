@@ -23,11 +23,24 @@ export const Login: React.FC = () => {
     });
   }, []);
 
-  const handleDemoLogin = () => {
-    setEmail('demo@enba.com');
-    setPassword('EnbaDemo2024!');
+  const handleDemoLogin = async () => {
+    const dEmail = 'demo@enba.com';
+    const dPass = 'EnbaDemo2024!';
+    setEmail(dEmail);
+    setPassword(dPass);
     const demoComp = companies.find(c => c.status === 'demo');
     if (demoComp) setSelectedCompanyId(demoComp.id);
+
+    // Otomatik giriş tetikle
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email: dEmail, password: dPass });
+      if (error) throw error;
+    } catch (err: any) {
+      setError('Demo girişinde hata oluştu: ' + (err.message || 'Lütfen hesabı oluşturun.'));
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -178,6 +191,20 @@ export const Login: React.FC = () => {
           </form>
 
           {/* Alt linkler */}
+          <div className="mt-6 flex flex-col items-center gap-2.5 text-[11px]" style={{ fontFamily: "'Poppins', sans-serif" }}>
+            {mode === 'login' && <>
+              <button onClick={() => { setMode('register'); setError(''); setInfo(''); }} className="text-gray-500 hover:text-gray-300 transition-colors">
+                Hesabınız yok mu? <span className="text-[var(--enba-orange)] font-semibold">Kayıt olun</span>
+              </button>
+              <button onClick={() => { setMode('forgot'); setError(''); setInfo(''); }} className="text-gray-600 hover:text-gray-400 transition-colors">
+                Şifremi unuttum
+              </button>
+            </>}
+            {mode !== 'login' && (
+              <button onClick={() => { setMode('login'); setError(''); setInfo(''); }} className="text-gray-500 hover:text-gray-300 transition-colors">
+                ← Giriş ekranına dön
+              </button>
+            )}
           </div>
 
           {/* Demo Girişi - Hızlı Erişim */}
@@ -195,7 +222,7 @@ export const Login: React.FC = () => {
                   </div>
                   <div className="text-left">
                     <div className="text-xs font-bold text-gray-300">Demo Hesabı ile Dene</div>
-                    <div className="text-[9px] text-gray-500 uppercase tracking-tighter">Şifresiz hızlı erişim</div>
+                    <div className="text-[9px] text-gray-500 uppercase tracking-tighter">Tek tıkla hızlı giriş</div>
                   </div>
                 </div>
                 <ChevronDown size={14} className="text-gray-600 -rotate-90" />
@@ -204,7 +231,6 @@ export const Login: React.FC = () => {
           )}
         </div>
       </div>
-
     </div>
   );
 };
