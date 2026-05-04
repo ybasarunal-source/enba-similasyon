@@ -134,32 +134,37 @@ export const App: React.FC = () => {
   }, [session?.user?.id]); // Yalnızca kullanıcı değişince (login/logout) yeniden çalış — token refresh tetiklemez
 
   useEffect(() => {
-    const uid = session?.user?.id;
-    if (uid) {
-      // Profil zaten yüklü ve aynı kullanıcıysa loading ekranı gösterme
-      setIsProfileLoading(prev => {
-        // İlk yüklemede (userProfile yok) veya farklı kullanıcıda true yap
-        if (!userProfile || userProfile.id !== uid) return true;
-        return prev; // Aynı kullanıcı, token refresh — ekranı gösterme
-      });
-      setProfileAvatar(session.user.user_metadata?.profile_data?.avatarUrl || '');
-      profileAPI.getMyProfile()
-        .then(profile => {
-          setUserProfile(profile);
-          setIsProfileLoading(false);
-        })
-        .catch(() => {
-          console.warn("Profil yüklenirken hata oluştu, varsayılan görünümle devam ediliyor.");
-          setIsProfileLoading(false);
-        });
-    } else if (session === null) {
-      // Gerçek logout — sıfırla
+    if (session === undefined) return; // Hâlâ ilk yükleme — bekle
+
+    if (!session?.user) {
+      // Logout: oturumu temizle
       setUserProfile(null);
       setIsProfileLoading(false);
       setProfileAvatar('');
+      return;
     }
+
+    const uid = session.user.id;
+    setProfileAvatar(session.user.user_metadata?.profile_data?.avatarUrl || '');
+
+    // Aynı kullanıcı için profil zaten var — sessizce arka planda yenile, yükleme ekranı GÖSTERME
+    // (Supabase TOKEN_REFRESHED her ~1 saatte tetikler, bu durumda ekran gösterme)
+    const isSameUser = userProfile?.id === uid;
+    if (!isSameUser) {
+      setIsProfileLoading(true); // Yalnızca farklı kullanıcı veya ilk girişte loading göster
+    }
+
+    profileAPI.getMyProfile()
+      .then(profile => {
+        setUserProfile(profile);
+        setIsProfileLoading(false);
+      })
+      .catch(() => {
+        console.warn("Profil yüklenirken hata oluştu, varsayılan görünümle devam ediliyor.");
+        setIsProfileLoading(false);
+      });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.user?.id]); // Sadece kullanıcı ID değişince profil yükle — Supabase token refresh'te tetiklenmesin
+  }, [session]); // session'a bağlı — ama aynı kullanıcı için yükleme ekranı gösterilmez
 
   const user = { 
     name: userProfile?.full_name || session?.user?.email?.split('@')[0] || 'User',
