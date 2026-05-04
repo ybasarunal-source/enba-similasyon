@@ -13,27 +13,29 @@ export const Login: React.FC = () => {
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
   const [companies, setCompanies] = useState<Company[]>([]);
-  const [selectedCompanyId, setSelectedCompanyId] = useState('');
-  const [showCompanyDropdown, setShowCompanyDropdown] = useState(false);
+  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
+  const [showCompanyList, setShowCompanyList] = useState(false);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
-    companiesAPI.getAll().then(data => {
-      const activeOnes = data.filter(c => c.status !== 'suspended');
-      setCompanies(activeOnes);
-      if (activeOnes.length > 0) setSelectedCompanyId(activeOnes[0].id);
-    });
+    supabase.from('companies')
+      .select('*')
+      .in('status', ['active', 'demo'])
+      .order('name')
+      .then(({ data }) => {
+        const companyData = data || [];
+        setCompanies(companyData);
+        if (companyData.length > 0) setSelectedCompany(companyData[0]);
+      });
 
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setShowCompanyDropdown(false);
+        setShowCompanyList(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  const selectedCompany = companies.find(c => c.id === selectedCompanyId);
 
   const handleDemoLogin = async () => {
     const dEmail = 'demo@enba.com';
@@ -41,9 +43,8 @@ export const Login: React.FC = () => {
     setEmail(dEmail);
     setPassword(dPass);
     const demoComp = companies.find(c => c.status === 'demo');
-    if (demoComp) setSelectedCompanyId(demoComp.id);
+    if (demoComp) setSelectedCompany(demoComp);
 
-    // Otomatik giriş tetikle
     setLoading(true);
     try {
       const { error } = await supabase.auth.signInWithPassword({ email: dEmail, password: dPass });
@@ -124,27 +125,34 @@ export const Login: React.FC = () => {
           )}
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            {/* Şirket Seçimi */}
-            <div className="relative z-50">
-              <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-1.5">
+            <div className="relative" ref={dropdownRef} style={{ zIndex: 100 }}>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[2px] mb-2 ml-1">
                 Bağlanılacak Şirket
               </label>
-              <div className="relative" ref={dropdownRef}>
+              <div className="relative">
                 <button
                   type="button"
-                  onClick={() => setShowCompanyDropdown(!showCompanyDropdown)}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pl-10 text-sm text-white text-left outline-none focus:border-[var(--enba-orange)] transition-colors flex items-center justify-between"
-                  style={{ fontFamily: "'Poppins', sans-serif" }}
+                  onClick={() => setShowCompanyList(!showCompanyList)}
+                  className="w-full bg-slate-50/50 border border-slate-200 rounded-2xl px-5 py-4 text-left flex items-center justify-between hover:bg-white hover:border-[var(--enba-orange)]/50 transition-all group"
                 >
-                  <span className="truncate">{selectedCompany?.name || 'Şirket Seçin...'}</span>
-                  <ChevronDown size={14} className={`text-gray-500 transition-transform ${showCompanyDropdown ? 'rotate-180' : ''}`} />
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-[var(--enba-orange)] shadow-sm">
+                      <Building2 size={16} />
+                    </div>
+                    <span className={`text-sm font-bold ${selectedCompany ? 'text-slate-700' : 'text-slate-400'}`}>
+                      {selectedCompany ? selectedCompany.name : 'Şirket Seçiniz...'}
+                    </span>
+                  </div>
+                  <ChevronDown size={18} className={`text-slate-300 transition-transform duration-300 ${showCompanyList ? 'rotate-180' : ''}`} />
                 </button>
-                <Building2 size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
-                
-                {showCompanyDropdown && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-[#222] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
-                    <div className="max-h-48 overflow-y-auto custom-scrollbar">
-                      {companies.map(c => (
+
+                {showCompanyList && (
+                  <div 
+                    className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-100 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
+                    style={{ zIndex: 9999, maxHeight: '200px', overflowY: 'auto' }}
+                  >
+                    {companies.length > 0 ? (
+                      companies.map((c) => (
                         <button
                           key={c.id}
                           type="button"
