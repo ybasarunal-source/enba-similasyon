@@ -71,7 +71,7 @@ grep "^## \[" log.md | tail -5
   - `permit_records` silindi → `permits` adıyla doğru şekilde oluşturuldu
   - 7 eksik tablo oluşturuldu: `fixed_expenses`, `project_groups`, `projects`, `tasks`, `pnl_reports`, `assets`, `maintenance_records`
   - 12 mevcut tabloya `company_id` sütunu eklendi
-- **Bir sonraki:** Supabase Dashboard → SQL Editor'da migration'ı çalıştır
+- **Bir sonraki:** Auth & yetkilendirme sorunları — bkz. `Kararlar/2026-05-Auth-Sorunlari.md`
 
 ---
 
@@ -81,3 +81,30 @@ grep "^## \[" log.md | tail -5
 - **Sonuç:** Tüm kırmızı sorunlar giderildi — 18 tablo/değişiklik tamamlandı
 - **Durum:** Supabase şeması artık kodla uyumlu
 - **Bir sonraki:** Modülleri test et (Licensing, Tasks, FixedExpenses, Machinery, PnL)
+
+---
+
+## [2026-05-05] geliştirme | Auth & yetkilendirme sorunu tespit edildi
+
+- **Olay:** `basar.unal` kullanıcısına "tüm yetkiler" SQL'i çalıştırıldı; `role = 'admin'` yazılarak `super_admin` → `admin`'e düştü. Sistem Yönetimi menüsü kayboldu.
+- **Kök neden:** Admin işlemleri için safe SQL şablonu yok; UPDATE sorgusu ILIKE ile kullanıcı arıyor, role her seferinde elle belirtilmeli.
+- **Geçici düzeltme:** El ile `role = 'super_admin'` geri verildi.
+- **Tespit edilen ek sorunlar:**
+  - `DataService.insertData()` `company_id` set etmiyor → HR/Stock/Logistics yazmalar tenant-safe değil
+  - `attendance`, `personnel_payments`, `personnel_debts` RLS'te sadece `company_id` var, `user_id` fallback yok
+  - `userProfile` null olunca sessizce kısıtlı menü gösteriliyor, kullanıcıya hata bildirilmiyor
+  - SuperAdmin panelinde rol/izin yönetimi UI'ı yok
+- **Planlama notu:** `Kararlar/2026-05-Auth-Sorunlari.md`
+
+---
+
+## [2026-05-05] oturum kapanış | SQL şema + auth analizi oturumu
+
+**Bu oturumda yapılanlar:**
+- Supabase şema tam analizi (22 tablo, 4 kırmızı sorun tespit)
+- `scratch/migration_v3_kirmizi.sql` yazıldı ve başarıyla çalıştırıldı
+- Auth & yetkilendirme sorunları belgelendi ve bir sonraki oturuma planlandı
+- Wiki: `SQL-Sema-Analizi.md`, `2026-05-Auth-Sorunlari.md` oluşturuldu
+- Tüm değişiklikler commit + push edildi
+
+**Bir sonraki oturumda öncelik:** Auth sorunlarını çöz — `Kararlar/2026-05-Auth-Sorunlari.md`

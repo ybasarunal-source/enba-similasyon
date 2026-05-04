@@ -183,9 +183,16 @@ VITE_PARASUT_CLIENT_ID / VITE_PARASUT_CLIENT_SECRET
 ## Aktif Görevler
 > Her oturum başında güncelle
 
-- [ ] _(şu an çalışılan özellik)_
-- [ ] _(devam eden bug)_
-- [ ] _(bir sonraki hedef)_
+### 🔴 Auth & Yetkilendirme (bir sonraki oturumda çöz)
+Detaylar: `Kararlar/2026-05-Auth-Sorunlari.md`
+- [ ] `attendance`, `personnel_payments`, `personnel_debts` → `user_id` ekle + RLS fallback
+- [ ] `DataService.insertData()` → `company_id` set etmeli (HR/Stock/Logistics için)
+- [ ] `userProfile` null kalırsa kullanıcıya görünür hata/retry göster
+- [ ] SuperAdmin paneline rol & izin yönetimi UI'ı ekle
+
+### 🟡 SQL Şema (migration_v3 tamamlandı, devam edenler)
+- [ ] Turuncu sorunlar: RLS politikalarını company_id bazlı yeniden yaz
+- [ ] HR modülü form submit'i implement et (şu an sadece UI kabuğu var)
 
 ---
 

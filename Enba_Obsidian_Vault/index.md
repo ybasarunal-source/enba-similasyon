@@ -29,6 +29,7 @@
 | Sayfa | Özet | Son Güncelleme |
 |-------|------|----------------|
 | [[Kararlar/Mimari-Kararlar\|Mimari Kararlar]] | Custom history stack, no-Redux, Google implicit OAuth kararları | 2026-05-04 |
+| [[Kararlar/2026-05-Auth-Sorunlari\|Auth & Yetkilendirme Sorunları]] | 4 açık sorun, bir sonraki oturum planı: RLS, DataService, SuperAdmin UI | 2026-05-05 |
 
 ---
 
