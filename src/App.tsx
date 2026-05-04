@@ -7,8 +7,6 @@ import { Login } from './modules/Login';
 import type { Session } from '@supabase/supabase-js';
 import { profileAPI, type UserProfile, type UserRole } from './api/supabase';
 import { parasutService } from './api/parasut';
-import { googleService } from './api/google';
-import { microsoftService } from './api/microsoft';
 import Dashboard from './modules/Dashboard';
 import { Stock } from './modules/Stock';
 import { Production } from './modules/Production';
