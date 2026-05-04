@@ -159,7 +159,10 @@ export const companiesAPI = {
       .insert(company)
       .select()
       .single();
-    if (error) return null;
+    if (error) {
+      console.error('Error inserting company:', error);
+      throw error;
+    }
     return data;
   },
 

@@ -24,6 +24,8 @@ export const SuperAdmin: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'companies' | 'users' | 'system'>('companies');
   const [showNewCompanyModal, setShowNewCompanyModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [actionLoading, setActionLoading] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const [newCompany, setNewCompany] = useState({
     name: '',
@@ -55,11 +57,21 @@ export const SuperAdmin: React.FC = () => {
     e.preventDefault();
     if (!newCompany.name || !newCompany.slug) return;
 
-    const res = await companiesAPI.insert(newCompany);
-    if (res) {
-      setCompanies([...companies, res]);
-      setShowNewCompanyModal(false);
-      setNewCompany({ name: '', slug: '', status: 'active' });
+    setActionLoading(true);
+    setActionError(null);
+    try {
+      const res = await companiesAPI.insert(newCompany);
+      if (res) {
+        setCompanies([res, ...companies]);
+        setShowNewCompanyModal(false);
+        setNewCompany({ name: '', slug: '', status: 'active' });
+      } else {
+        setActionError("Şirket oluşturulamadı. Lütfen veritabanı bağlantısını kontrol edin.");
+      }
+    } catch (err: any) {
+      setActionError(err.message || "Bir hata oluştu.");
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -259,6 +271,13 @@ export const SuperAdmin: React.FC = () => {
             </div>
             
             <form onSubmit={handleCreateCompany} className="p-6 space-y-4">
+              {actionError && (
+                <div className="p-3 bg-red-50 border border-red-100 rounded-xl flex items-center gap-2 text-red-600 text-xs font-semibold animate-shake">
+                  <AlertCircle size={14} />
+                  {actionError}
+                </div>
+              )}
+
               <div>
                 <label className="text-xs font-bold text-gray-400 uppercase mb-1.5 block">Şirket Tam Adı</label>
                 <input 
@@ -309,9 +328,19 @@ export const SuperAdmin: React.FC = () => {
                 </button>
                 <button 
                   type="submit"
-                  className="flex-1 py-3 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-all shadow-md shadow-indigo-600/20 flex items-center justify-center gap-2"
+                  disabled={actionLoading}
+                  className={`flex-1 py-3 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-all shadow-md shadow-indigo-600/20 flex items-center justify-center gap-2 ${actionLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
-                  <CheckCircle2 size={18} /> Şirketi Oluştur
+                  {actionLoading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      İşleniyor...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 size={18} /> Şirketi Oluştur
+                    </>
+                  )}
                 </button>
               </div>
             </form>
