@@ -36,7 +36,15 @@ const clearAllMsalStorage = () => {
       const keys: string[] = [];
       for (let i = 0; i < storage.length; i++) {
         const k = storage.key(i);
-        if (k && (k.includes('msal.') || k.includes('login.microsoft'))) keys.push(k);
+        // MSAL keys usually start with 'msal.' or contain 'login.microsoftonline'
+        if (k && (
+          k.includes('msal.') || 
+          k.includes('login.microsoft') || 
+          k.includes('cc633a27-') || // Often MSAL uses client IDs in keys
+          k.includes('-login.windows.net')
+        )) {
+          keys.push(k);
+        }
       }
       keys.forEach(k => storage.removeItem(k));
     });
@@ -78,7 +86,11 @@ export const microsoftService = {
     await ensureInitialized();
     if (!msalInstance) throw new Error('MSAL başlatılamadı.');
     localStorage.setItem('msal_redirect_origin', 'tasks');
-    await msalInstance.loginRedirect({ scopes: loginScopes });
+    // Her zaman hesap seçtir ki önceki profile ait hesap otomatik bağlanmasın
+    await msalInstance.loginRedirect({ 
+      scopes: loginScopes,
+      prompt: 'select_account'
+    });
   },
 
   // Kaydedilmiş Microsoft hesabıyla sessiz bağlantı dene (SSO cookies üzerinden)
@@ -111,13 +123,8 @@ export const microsoftService = {
       await ensureInitialized();
       if (!msalInstance) return null;
       let account = msalInstance.getActiveAccount();
-      if (!account) {
-        const accounts = msalInstance.getAllAccounts();
-        if (accounts.length > 0) {
-          account = accounts[0];
-          msalInstance.setActiveAccount(account);
-        }
-      }
+      // Önemli: accounts[0] otomatik seçilmemeli, çünkü farklı bir profile ait olabilir.
+      // resumeSession() zaten doğru hesabı setActiveAccount() ile set ediyor.
       return account;
     } catch {
       return null;
@@ -145,7 +152,10 @@ export const microsoftService = {
   // Profil verilerinden oturumu geri yükle
   async resumeSession(profile: any): Promise<AccountInfo | null> {
     const hint = profile.ms_account_username;
-    if (!hint) return null;
+    if (!hint) {
+      this.clearStorage();
+      return null;
+    }
     return await this.trySilentLogin(hint);
   },
 

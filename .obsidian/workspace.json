@@ -1,0 +1,206 @@
+{
+  "main": {
+    "id": "b5caf42db1cc5c64",
+    "type": "split",
+    "children": [
+      {
+        "id": "a38abc97aadd2dbc",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "369de6b8ffb3aa2e",
+            "type": "leaf",
+            "state": {
+              "type": "empty",
+              "state": {},
+              "icon": "lucide-file",
+              "title": "Yeni sekme"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "7299ca54c0954991",
+    "type": "split",
+    "children": [
+      {
+        "id": "7e023552bd6c6c82",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "c96f3d62d2d7b577",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Dosya Gezgini"
+            }
+          },
+          {
+            "id": "5dee59a0061d2c11",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Ara"
+            }
+          },
+          {
+            "id": "d6b666357726da00",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Yer İmleri"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "9259e20f3740f051",
+    "type": "split",
+    "children": [
+      {
+        "id": "b1fa20326a71a5d6",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "acc8fc4797e0376c",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Geri Bağlantılar"
+            }
+          },
+          {
+            "id": "887829780ecab329",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Giden bağlantılar"
+            }
+          },
+          {
+            "id": "062fe3f1fc3d01d3",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Etiketler"
+            }
+          },
+          {
+            "id": "07cbf4634ab07d41",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "Tüm özellikler"
+            }
+          },
+          {
+            "id": "5ec08a96af285697",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "Enba_Obsidian_Vault/Gunluk/_Sablon-Gunluk.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "_Sablon-Gunluk ana hatları"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Hızlı geçişi aç": false,
+      "graph:Grafik görünümünü aç": false,
+      "canvas:Yeni tuval oluşturun": false,
+      "daily-notes:Bugünün Notunu Aç": false,
+      "templates:Şablon ekle": false,
+      "command-palette:Komut paletini aç": false,
+      "bases:Yeni taban oluştur": false,
+      "obsidian-git:Open Git source control": false
+    }
+  },
+  "active": "c96f3d62d2d7b577",
+  "lastOpenFiles": [
+    "Enba_Obsidian_Vault/Gunluk/_Sablon-Gunluk.md",
+    "Enba_Obsidian_Vault/Gunluk",
+    "Enba_Obsidian_Vault/Ham-Kaynaklar/Karpathy-LLM-Wiki.md",
+    "Enba_Obsidian_Vault/Ham-Kaynaklar",
+    "Enba_Obsidian_Vault/Kaynaklar/Claude-Code-Entegrasyon.md",
+    "Enba_Obsidian_Vault/Kaynaklar",
+    "Enba_Obsidian_Vault/Kararlar/Mimari-Kararlar.md",
+    "Enba_Obsidian_Vault/Kararlar",
+    "Enba_Obsidian_Vault/Moduller/00-Modul-Listesi.md",
+    "Enba_Obsidian_Vault/Moduller",
+    "Enba_Obsidian_Vault/index.md",
+    "Enba_Obsidian_Vault/Snippets/Supabase-Pattern.md",
+    "Enba_Obsidian_Vault/Snippets",
+    "Enba_Obsidian_Vault/Proje/Ana-Proje.md",
+    "Enba_Obsidian_Vault/Proje",
+    "Enba_Obsidian_Vault/Wiki/Is-Modeli.md",
+    "Enba_Obsidian_Vault/Wiki/Entegrasyon-Mimarisi.md",
+    "Enba_Obsidian_Vault/Wiki",
+    "Enba_Obsidian_Vault/log.md",
+    "1Va23052",
+    "Enba_Obsidian_Vault/CLAUDE.md",
+    "Enba_Obsidian_Vault"
+  ]
+}

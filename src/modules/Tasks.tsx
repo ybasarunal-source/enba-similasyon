@@ -172,6 +172,10 @@ export const Tasks: React.FC = () => {
           }
           // SSO başarısız — kullanıcıya bağlı hesap bilgisini göster, yeniden bağlanmasını bekle
           setMsAccount({ username: profile.ms_account_username, needsReconnect: true });
+        } else {
+          // Eğer profilde kayıtlı hesap yoksa, MSAL storage'ı temizle ki 
+          // önceki app kullanıcısının oturumu "hortlamasın".
+          microsoftService.clearStorage();
         }
       } catch (err) {
         console.warn('MSAL: Session recovery failed:', err);
@@ -185,7 +189,15 @@ export const Tasks: React.FC = () => {
     }
     const gToken = googleService.getAccessToken();
     if (gToken) {
-      setGoogleAccount({ name: 'Google Kullanıcısı' });
+      // Profil kontrolü: Eğer profilde google verisi yoksa ama token varsa (eski kullanıcıdan kaldıysa) temizle
+      profileAPI.getMyProfile().then(p => {
+        if (!p?.google_data?.token) {
+          googleService.logout();
+          setGoogleAccount(null);
+        } else {
+          setGoogleAccount({ name: 'Google Kullanıcısı' });
+        }
+      });
     }
   }, []);
 
