@@ -22,10 +22,12 @@ export const SuperAdmin: React.FC = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'companies' | 'users' | 'system'>('companies');
-  const [showNewCompanyModal, setShowNewCompanyModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  const [editingCompany, setEditingCompany] = useState<Company | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const [newCompany, setNewCompany] = useState({
     name: '',
@@ -66,7 +68,7 @@ export const SuperAdmin: React.FC = () => {
         setShowNewCompanyModal(false);
         setNewCompany({ name: '', slug: '', status: 'active' });
       } else {
-        setActionError("Şirket oluşturulamadı. Lütfen veritabanı bağlantısını kontrol edin.");
+        setActionError("Şirket oluşturulamadı.");
       }
     } catch (err: any) {
       setActionError(err.message || "Bir hata oluştu.");
@@ -74,6 +76,57 @@ export const SuperAdmin: React.FC = () => {
       setActionLoading(false);
     }
   };
+
+  const handleUpdateCompany = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCompany) return;
+
+    setActionLoading(true);
+    setActionError(null);
+    try {
+      const res = await companiesAPI.update(editingCompany.id, {
+        name: editingCompany.name,
+        slug: editingCompany.slug,
+        status: editingCompany.status
+      });
+      if (res) {
+        setCompanies(companies.map(c => c.id === res.id ? res : c));
+        setEditingCompany(null);
+      }
+    } catch (err: any) {
+      setActionError(err.message || "Güncelleme hatası.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDeleteCompany = async (id: string) => {
+    if (!window.confirm('Bu şirketi ve tüm verilerini silmek istediğinize emin misiniz? Bu işlem geri alınamaz.')) return;
+
+    setActionLoading(true);
+    try {
+      const success = await companiesAPI.delete(id);
+      if (success) {
+        setCompanies(companies.filter(c => c.id !== id));
+      }
+    } catch (err: any) {
+      alert("Silme hatası: " + err.message);
+    } finally {
+      setActionLoading(false);
+      setActiveMenuId(null);
+    }
+  };
+
+  // Click outside to close menu
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setActiveMenuId(null);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   return (
     <div className="p-8 space-y-6 animate-in fade-in duration-500">
@@ -192,10 +245,37 @@ export const SuperAdmin: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-400">{new Date(company.created_at).toLocaleDateString('tr-TR')}</td>
-                    <td className="px-6 py-4 text-right">
-                      <button className="p-2 hover:bg-gray-100 rounded-lg text-gray-400 transition-colors">
+                    <td className="px-6 py-4 text-right relative">
+                      <button 
+                        onClick={() => setActiveMenuId(activeMenuId === company.id ? null : company.id)}
+                        className={`p-2 rounded-lg transition-colors ${activeMenuId === company.id ? 'bg-indigo-50 text-indigo-600' : 'hover:bg-gray-100 text-gray-400'}`}
+                      >
                         <MoreVertical size={16} />
                       </button>
+
+                      {activeMenuId === company.id && (
+                        <div ref={menuRef} className="absolute right-6 top-12 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-50 animate-in zoom-in-95 duration-200">
+                          <button 
+                            onClick={() => { setEditingCompany(company); setActiveMenuId(null); }}
+                            className="w-full px-4 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                          >
+                            <Settings size={14} className="text-gray-400" /> Düzenle
+                          </button>
+                          <button 
+                            onClick={() => { /* Gelecekte: Şirket Verilerini Gör */ setActiveMenuId(null); }}
+                            className="w-full px-4 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                          >
+                            <ExternalLink size={14} className="text-gray-400" /> Verileri İncele
+                          </button>
+                          <div className="h-[1px] bg-gray-50 my-1" />
+                          <button 
+                            onClick={() => handleDeleteCompany(company.id)}
+                            className="w-full px-4 py-2 text-left text-sm font-medium text-red-600 hover:bg-red-50 flex items-center gap-2"
+                          >
+                            <Trash2 size={14} /> Şirketi Sil
+                          </button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -347,6 +427,88 @@ export const SuperAdmin: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Edit Company Modal */}
+      {editingCompany && (
+        <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="p-6 border-b border-gray-50 flex items-center justify-between bg-indigo-600 text-white">
+              <div className="flex items-center gap-3">
+                <Settings size={20} />
+                <h3 className="font-bold">Şirket Bilgilerini Düzenle</h3>
+              </div>
+              <button onClick={() => setEditingCompany(null)} className="hover:bg-white/10 p-1 rounded-lg transition-colors">
+                <Plus size={20} className="rotate-45" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleUpdateCompany} className="p-6 space-y-4">
+              {actionError && (
+                <div className="p-3 bg-red-50 border border-red-100 rounded-xl flex items-center gap-2 text-red-600 text-xs font-semibold animate-shake">
+                  <AlertCircle size={14} />
+                  {actionError}
+                </div>
+              )}
+
+              <div>
+                <label className="text-xs font-bold text-gray-400 uppercase mb-1.5 block">Şirket Tam Adı</label>
+                <input 
+                  type="text" 
+                  value={editingCompany.name}
+                  onChange={e => setEditingCompany({...editingCompany, name: e.target.value})}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="text-xs font-bold text-gray-400 uppercase mb-1.5 block">Slug (URL Kimliği)</label>
+                <div className="flex items-center gap-2 px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl">
+                  <span className="text-gray-300 text-sm">enba.app/</span>
+                  <input 
+                    type="text" 
+                    value={editingCompany.slug}
+                    onChange={e => setEditingCompany({...editingCompany, slug: e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '-')})}
+                    className="flex-1 bg-transparent border-none text-sm focus:outline-none text-indigo-600 font-semibold"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-gray-400 uppercase mb-1.5 block">Durum</label>
+                <select 
+                  value={editingCompany.status}
+                  onChange={e => setEditingCompany({...editingCompany, status: e.target.value as any})}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all"
+                >
+                  <option value="active">Aktif</option>
+                  <option value="demo">Demo Modu</option>
+                  <option value="suspended">Askıda</option>
+                </select>
+              </div>
+
+              <div className="pt-4 flex gap-3">
+                <button 
+                  type="button"
+                  onClick={() => setEditingCompany(null)}
+                  className="flex-1 py-3 border border-gray-100 rounded-xl text-sm font-semibold text-gray-500 hover:bg-gray-50 transition-all"
+                >
+                  İptal
+                </button>
+                <button 
+                  type="submit"
+                  disabled={actionLoading}
+                  className={`flex-1 py-3 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-all shadow-md shadow-indigo-600/20 flex items-center justify-center gap-2 ${actionLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  {actionLoading ? 'Güncelleniyor...' : 'Değişiklikleri Kaydet'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+

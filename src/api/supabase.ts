@@ -175,6 +175,18 @@ export const companiesAPI = {
       .single();
     if (error) return null;
     return data;
+  },
+
+  async delete(id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('companies')
+      .delete()
+      .eq('id', id);
+    if (error) {
+      console.error('Error deleting company:', error);
+      throw error;
+    }
+    return true;
   }
 };
 
