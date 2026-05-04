@@ -159,6 +159,11 @@ export const App: React.FC = () => {
     }
   }, [session]);
 
+  // Aktif modülü sessionStorage'a kaydet (her değişimde)
+  useEffect(() => {
+    sessionStorage.setItem('enba_active_module', activeModule);
+  }, [activeModule]);
+
   // Buraya ulaşıldıysa session kesin vardır.
   const user = { 
     name: userProfile?.full_name || (session && session.user?.email?.split('@')[0]) || 'User',
@@ -250,11 +255,6 @@ export const App: React.FC = () => {
 
   // Giriş yapılmamışsa Login ekranı
   if (!session) return <Login />;
-
-  // Aktif modülü sessionStorage'a kaydet (her değişimde)
-  useEffect(() => {
-    sessionStorage.setItem('enba_active_module', activeModule);
-  }, [activeModule]);
 
   const navigate = (view: string) => {
     const mod = view as ModuleType;
