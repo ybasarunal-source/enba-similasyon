@@ -1,23 +1,30 @@
-import React, { useState } from 'react';
-import { supabase, companiesAPI, Company } from '../api/supabase';
-import { LogIn, UserPlus, AlertCircle, Eye, EyeOff, Building2, Zap, ChevronDown } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { supabase } from '../api/supabase';
+import { 
+  LogIn, UserPlus, Mail, Lock, AlertCircle, Building2, 
+  ChevronDown, Check, Eye, EyeOff, Zap 
+} from 'lucide-react';
 
-type Mode = 'login' | 'register' | 'forgot';
+interface Company {
+  id: string;
+  name: string;
+  status: string;
+}
 
 export const Login: React.FC = () => {
-  const [mode, setMode] = useState<Mode>('login');
+  const [mode, setMode] = useState<'login' | 'register' | 'forgot'>('login');
+  const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
   const [companies, setCompanies] = useState<Company[]>([]);
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [showCompanyList, setShowCompanyList] = useState(false);
-  const dropdownRef = React.useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     supabase.from('companies')
       .select('*')
       .in('status', ['active', 'demo'])
@@ -42,6 +49,7 @@ export const Login: React.FC = () => {
     const dPass = 'EnbaDemo2024!';
     setEmail(dEmail);
     setPassword(dPass);
+    
     const demoComp = companies.find(c => c.status === 'demo');
     if (demoComp) setSelectedCompany(demoComp);
 
@@ -50,8 +58,7 @@ export const Login: React.FC = () => {
       const { error } = await supabase.auth.signInWithPassword({ email: dEmail, password: dPass });
       if (error) throw error;
     } catch (err: any) {
-      setError('Demo girişinde hata oluştu: ' + (err.message || 'Lütfen hesabı oluşturun.'));
-    } finally {
+      setError(err.message || 'Demo girişi yapılamadı.');
       setLoading(false);
     }
   };
@@ -60,43 +67,58 @@ export const Login: React.FC = () => {
     e.preventDefault();
     setError('');
     setInfo('');
+
+    if (!selectedCompany) {
+      setError('Lütfen bağlanmak istediğiniz şirketi seçin.');
+      return;
+    }
+
     setLoading(true);
+
     try {
       if (mode === 'login') {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       } else if (mode === 'register') {
-        const { error } = await supabase.auth.signUp({ email, password });
+        const { error } = await supabase.auth.signUp({ 
+          email, 
+          password,
+          options: {
+            data: { full_name: email.split('@')[0] }
+          }
+        });
         if (error) throw error;
-        setInfo('Kayıt başarılı! E-postanızı doğrulayın, ardından giriş yapabilirsiniz.');
-        setMode('login');
+        setInfo('Kayıt başarılı! Lütfen e-postanızı doğrulayın.');
       } else {
-        const { error } = await supabase.auth.resetPasswordForEmail(email);
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: window.location.origin,
+        });
         if (error) throw error;
         setInfo('Şifre sıfırlama bağlantısı e-postanıza gönderildi.');
-        setMode('login');
       }
     } catch (err: any) {
-      const msg = err?.message || 'Bir hata oluştu.';
-      if (msg.includes('Invalid login credentials'))   setError('E-posta veya şifre hatalı.');
-      else if (msg.includes('Email not confirmed'))    setError('E-postanızı doğrulamadan giriş yapamazsınız.');
-      else if (msg.includes('User already registered')) setError('Bu e-posta zaten kayıtlı.');
-      else setError(msg);
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const titles = { login: 'Giriş Yap', register: 'Hesap Oluştur', forgot: 'Şifre Sıfırla' };
-  const btnLabels = { login: 'Giriş Yap', register: 'Kayıt Ol', forgot: 'Sıfırlama Gönder' };
+  const titles = { login: 'Giriş Yap', register: 'Yeni Kayıt', forgot: 'Şifremi Unuttum' };
+  const btnLabels = { login: 'Giriş Yap', register: 'Kayıt Ol', forgot: 'Sıfırlama Linki Gönder' };
 
   return (
-    <div className="min-h-screen bg-[#1A1A1A] flex items-center justify-center p-4">
-      <div className="w-full max-w-sm">
-        {/* Logo */}
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-20 h-20 mb-5 text-center">
-            <img src="/icons/logo.png" className="w-full h-full object-contain filter drop-shadow-2xl" alt="Enba Logo" />
+    <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-4 selection:bg-[var(--enba-orange)] selection:text-white">
+      {/* Background Decor */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[var(--enba-orange)] opacity-[0.03] blur-[120px] rounded-full" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-500 opacity-[0.03] blur-[120px] rounded-full" />
+      </div>
+
+      <div className="w-full max-w-[420px] relative z-10">
+        {/* Logo Section */}
+        <div className="flex flex-col items-center mb-10">
+          <div className="w-16 h-16 bg-gradient-to-br from-[var(--enba-orange)] to-orange-600 rounded-[22px] flex items-center justify-center shadow-2xl shadow-orange-500/20 mb-4 group hover:scale-105 transition-transform duration-500">
+            <LogIn className="text-white group-hover:rotate-12 transition-transform" size={28} />
           </div>
           <div style={{ fontFamily: "'Nunito', sans-serif", fontWeight: 800, fontSize: '28px', letterSpacing: '-0.01em', lineHeight: 1 }}>
             <span style={{ color: 'var(--enba-orange)' }}>en</span><span style={{ color: 'white' }}>ba</span>
@@ -125,6 +147,7 @@ export const Login: React.FC = () => {
           )}
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            {/* Şirket Seçimi */}
             <div className="relative" ref={dropdownRef} style={{ zIndex: 100 }}>
               <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[2px] mb-2 ml-1">
                 Bağlanılacak Şirket
@@ -133,22 +156,22 @@ export const Login: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowCompanyList(!showCompanyList)}
-                  className="w-full bg-slate-50/50 border border-slate-200 rounded-2xl px-5 py-4 text-left flex items-center justify-between hover:bg-white hover:border-[var(--enba-orange)]/50 transition-all group"
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-left flex items-center justify-between hover:bg-white/10 hover:border-white/20 transition-all group"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-[var(--enba-orange)] shadow-sm">
+                    <div className="w-8 h-8 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center text-[var(--enba-orange)] shadow-sm">
                       <Building2 size={16} />
                     </div>
-                    <span className={`text-sm font-bold ${selectedCompany ? 'text-slate-700' : 'text-slate-400'}`}>
+                    <span className={`text-sm font-bold ${selectedCompany ? 'text-white' : 'text-gray-500'}`}>
                       {selectedCompany ? selectedCompany.name : 'Şirket Seçiniz...'}
                     </span>
                   </div>
-                  <ChevronDown size={18} className={`text-slate-300 transition-transform duration-300 ${showCompanyList ? 'rotate-180' : ''}`} />
+                  <ChevronDown size={18} className={`text-gray-500 transition-transform duration-300 ${showCompanyList ? 'rotate-180' : ''}`} />
                 </button>
 
                 {showCompanyList && (
                   <div 
-                    className="absolute top-full left-0 right-0 mt-2 bg-white border border-slate-100 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
+                    className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a1a] border border-white/10 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
                     style={{ zIndex: 9999, maxHeight: '200px', overflowY: 'auto' }}
                   >
                     {companies.length > 0 ? (
@@ -157,19 +180,25 @@ export const Login: React.FC = () => {
                           key={c.id}
                           type="button"
                           onClick={() => {
-                            setSelectedCompanyId(c.id);
-                            setShowCompanyDropdown(false);
+                            setSelectedCompany(c);
+                            setShowCompanyList(false);
                           }}
-                          className={`w-full px-4 py-3 text-left text-sm transition-colors hover:bg-white/5 flex items-center justify-between ${selectedCompanyId === c.id ? 'bg-white/10 text-[var(--enba-orange)]' : 'text-gray-300'}`}
-                          style={{ fontFamily: "'Poppins', sans-serif" }}
+                          className={`w-full px-5 py-3.5 text-left text-sm font-bold transition-colors hover:bg-white/5 flex items-center justify-between border-b border-white/5 last:border-0 ${selectedCompany?.id === c.id ? 'bg-white/10 text-[var(--enba-orange)]' : 'text-gray-400'}`}
                         >
-                          <span>{c.name}</span>
-                          {c.status === 'demo' && (
-                            <span className="text-[9px] bg-indigo-500/20 text-indigo-400 px-1.5 py-0.5 rounded font-bold uppercase">Demo</span>
-                          )}
+                          <div className="flex items-center gap-2">
+                            {c.name}
+                            {c.status === 'demo' && (
+                              <span className="text-[8px] bg-indigo-500/20 text-indigo-400 px-1.5 py-0.5 rounded font-black uppercase tracking-tighter">Demo</span>
+                            )}
+                          </div>
+                          {selectedCompany?.id === c.id && <Check size={14} />}
                         </button>
-                      ))}
-                    </div>
+                      ))
+                    ) : (
+                      <div className="px-5 py-4 text-xs text-gray-500 italic text-center">
+                        Kayıtlı şirket bulunamadı.
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -232,14 +261,16 @@ export const Login: React.FC = () => {
 
           {/* Alt linkler */}
           <div className="mt-6 flex flex-col items-center gap-2.5 text-[11px]" style={{ fontFamily: "'Poppins', sans-serif" }}>
-            {mode === 'login' && <>
-              <button onClick={() => { setMode('register'); setError(''); setInfo(''); }} className="text-gray-500 hover:text-gray-300 transition-colors">
-                Hesabınız yok mu? <span className="text-[var(--enba-orange)] font-semibold">Kayıt olun</span>
-              </button>
-              <button onClick={() => { setMode('forgot'); setError(''); setInfo(''); }} className="text-gray-600 hover:text-gray-400 transition-colors">
-                Şifremi unuttum
-              </button>
-            </>}
+            {mode === 'login' && (
+              <>
+                <button onClick={() => { setMode('register'); setError(''); setInfo(''); }} className="text-gray-500 hover:text-gray-300 transition-colors">
+                  Hesabınız yok mu? <span className="text-[var(--enba-orange)] font-semibold">Kayıt olun</span>
+                </button>
+                <button onClick={() => { setMode('forgot'); setError(''); setInfo(''); }} className="text-gray-600 hover:text-gray-400 transition-colors">
+                  Şifremi unuttum
+                </button>
+              </>
+            )}
             {mode !== 'login' && (
               <button onClick={() => { setMode('login'); setError(''); setInfo(''); }} className="text-gray-500 hover:text-gray-300 transition-colors">
                 ← Giriş ekranına dön
