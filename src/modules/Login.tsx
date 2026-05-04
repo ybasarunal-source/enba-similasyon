@@ -10,10 +10,11 @@ export const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const [info, setInfo] = useState('');
   const [companies, setCompanies] = useState<Company[]>([]);
   const [selectedCompanyId, setSelectedCompanyId] = useState('');
+  const [showCompanyDropdown, setShowCompanyDropdown] = useState(false);
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     companiesAPI.getAll().then(data => {
@@ -21,7 +22,17 @@ export const Login: React.FC = () => {
       setCompanies(activeOnes);
       if (activeOnes.length > 0) setSelectedCompanyId(activeOnes[0].id);
     });
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowCompanyDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  const selectedCompany = companies.find(c => c.id === selectedCompanyId);
 
   const handleDemoLogin = async () => {
     const dEmail = 'demo@enba.com';
@@ -117,21 +128,41 @@ export const Login: React.FC = () => {
               <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-1.5">
                 Bağlanılacak Şirket
               </label>
-              <div className="relative">
-                <select
-                  value={selectedCompanyId}
-                  onChange={e => setSelectedCompanyId(e.target.value)}
-                  className="w-full appearance-none bg-white/5 border border-white/10 rounded-xl px-4 py-3 pl-10 text-sm text-white outline-none focus:border-[var(--enba-orange)] transition-colors cursor-pointer"
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => setShowCompanyDropdown(!showCompanyDropdown)}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pl-10 text-sm text-white text-left outline-none focus:border-[var(--enba-orange)] transition-colors flex items-center justify-between"
                   style={{ fontFamily: "'Poppins', sans-serif" }}
                 >
-                  {companies.map(c => (
-                    <option key={c.id} value={c.id} className="bg-[#1A1A1A] text-white">
-                      {c.name} {c.status === 'demo' ? '(Demo)' : ''}
-                    </option>
-                  ))}
-                </select>
+                  <span className="truncate">{selectedCompany?.name || 'Şirket Seçin...'}</span>
+                  <ChevronDown size={14} className={`text-gray-500 transition-transform ${showCompanyDropdown ? 'rotate-180' : ''}`} />
+                </button>
                 <Building2 size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
-                <ChevronDown size={14} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+                
+                {showCompanyDropdown && (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-[#222] border border-white/10 rounded-2xl shadow-2xl overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="max-h-48 overflow-y-auto custom-scrollbar">
+                      {companies.map(c => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedCompanyId(c.id);
+                            setShowCompanyDropdown(false);
+                          }}
+                          className={`w-full px-4 py-3 text-left text-sm transition-colors hover:bg-white/5 flex items-center justify-between ${selectedCompanyId === c.id ? 'bg-white/10 text-[var(--enba-orange)]' : 'text-gray-300'}`}
+                          style={{ fontFamily: "'Poppins', sans-serif" }}
+                        >
+                          <span>{c.name}</span>
+                          {c.status === 'demo' && (
+                            <span className="text-[9px] bg-indigo-500/20 text-indigo-400 px-1.5 py-0.5 rounded font-bold uppercase">Demo</span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
