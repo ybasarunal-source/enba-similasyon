@@ -87,6 +87,7 @@ export const App: React.FC = () => {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [isProfileLoading, setIsProfileLoading] = useState(true);
   const [theme, setTheme] = useState(() => localStorage.getItem('enba_theme') || 'light');
   const [unreadMailCount, setUnreadMailCount] = useState(0);
 
@@ -151,10 +152,12 @@ export const App: React.FC = () => {
   useEffect(() => {
     profileAPI.clearCache(); // Oturum değişince eski önbelleği temizle
     if (session?.user) {
+      setIsProfileLoading(true);
       setProfileAvatar(session.user.user_metadata?.profile_data?.avatarUrl || '');
       profileAPI.getMyProfile(true) // force fetch
         .then(profile => {
           setUserProfile(profile);
+          setIsProfileLoading(false);
           if (profile) {
             // Otomatik Entegrasyon Geri Yükleme
             microsoftService.resumeSession(profile);
@@ -162,10 +165,14 @@ export const App: React.FC = () => {
             parasutService.resumeSession(profile);
           }
         })
-        .catch(() => console.warn("Profil yüklenemedi, varsayılan kullanılıyor."));
+        .catch(() => {
+          console.warn("Profil yüklenemedi, varsayılan kullanılıyor.");
+          setIsProfileLoading(false);
+        });
     } else {
       setUserProfile(null);
       setProfileAvatar('');
+      setIsProfileLoading(false);
     }
   }, [session]);
 
@@ -175,9 +182,19 @@ export const App: React.FC = () => {
   }, [activeModule]);
 
   // Buraya ulaşıldıysa session kesin vardır.
+  // Rol: önce DB profili, yoksa session app_metadata, yoksa demo kuralı, son çare 'user'
+  const sessionRole = (
+    session?.user?.app_metadata?.role ||
+    session?.user?.user_metadata?.role
+  ) as UserRole | undefined;
+
   const user = { 
     name: userProfile?.full_name || (session && session.user?.email?.split('@')[0]) || 'User',
-    role: (userProfile?.role || (session?.user?.email === 'demo@enba.com' ? 'super_admin' : 'user')) as UserRole
+    role: (
+      userProfile?.role ||
+      sessionRole ||
+      (session?.user?.email === 'demo@enba.com' ? 'super_admin' : 'user')
+    ) as UserRole
   };
 
   const MENU_GROUPS = [
@@ -222,16 +239,16 @@ export const App: React.FC = () => {
         return item.id !== 'super_admin';
       }
 
-      // Profil henüz yüklenmediyse sadece temel modülleri göster
-      if (!userProfile) {
-        return ['profile', 'dashboard', 'tasks', 'calendar', 'modules', 'mail', 'fixedexpenses'].includes(item.id);
-      }
-      
-      // Rol bazlı erişim
+      // Rol bazlı erişim — rol artık profil yüklenmeden önce de bilinebilir
       if (user.role === 'super_admin' || user.role === 'admin') {
         if (item.id === 'super_admin')   return user.role === 'super_admin';
         if (item.id === 'company_admin') return user.role === 'admin';
         return true;
+      }
+
+      // Profil henüz yükleniyorsa (ve rol 'user') temel modülleri göster
+      if (isProfileLoading) {
+        return ['profile', 'dashboard', 'tasks', 'calendar', 'modules', 'mail', 'fixedexpenses'].includes(item.id);
       }
       
       // Core modules

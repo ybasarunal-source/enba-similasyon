@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Gunluk/_Sablon-Gunluk.md",
+                "file": "Wiki/SQL-Sema-Analizi.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "_Sablon-Gunluk"
+              "title": "SQL-Sema-Analizi"
             }
           }
         ]
@@ -183,9 +183,17 @@
   },
   "active": "548e60b89a167ad9",
   "lastOpenFiles": [
+    "Memory/MEMORY.md",
+    "Memory/feedback_claude_md_edit_only.md",
     "Wiki/SQL-Sema-Analizi.md",
+    "Wiki/Is-Modeli.md",
+    "Wiki/Entegrasyon-Mimarisi.md",
+    "Kararlar/2026-05-Auth-Sorunlari.md",
+    "Ham-Kaynaklar/Karpathy-LLM-Wiki.md",
+    "Memory",
+    "Gunluk/_Sablon-Gunluk.md",
+    "Kararlar/Mimari-Kararlar.md",
     "Moduller/00-Modul-Listesi.md",
-    "Proje/Ana-Proje.md",
-    "Ham-Kaynaklar/Karpathy-LLM-Wiki.md"
+    "Proje/Ana-Proje.md"
   ]
 }

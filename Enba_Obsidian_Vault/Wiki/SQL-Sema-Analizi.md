@@ -7,32 +7,32 @@
 
 ### Supabase'de OLMASI GEREKEN tablolar (kod biliyor, SQL mevcut mu?)
 
-| Tablo | supabase.ts | migration_v2.sql | Durum |
-|-------|-------------|------------------|-------|
-| `profiles` | ✅ | ✅ (supabase/schema.sql) | Eksik sütunlar var |
-| `companies` | ✅ | ❌ | **YOK** |
-| `fixed_expenses` | ✅ | ❌ | **YOK** |
-| `project_groups` | ✅ | ❌ | **YOK** |
-| `projects` | ✅ | ❌ | **YOK** |
-| `tasks` | ✅ | ❌ | **YOK** |
-| `pnl_reports` | ✅ | ❌ | **YOK** |
-| `assets` | ✅ | ❌ | **YOK** |
-| `maintenance_records` | ✅ | ❌ | **YOK** |
-| `permits` | ✅ (`permits`) | ✅ (`permit_records`) | **İSİM UYUŞMAZLIĞI** |
-| `business_plans` | ✅ (dataService) | ✅ | Eksik: `company_id` |
-| `stock_records` | ✅ (dataService) | ✅ | **SÜTUN UYUŞMAZLIĞI** |
-| `sales_records` | ✅ (dataService) | ✅ | OK |
-| `contacts` | ✅ (dataService) | ✅ | Eksik: `notlar` |
-| `personnel` | HR modülü | ✅ | Eksik: `company_id` |
-| `attendance` | HR modülü | ✅ | Eksik: `company_id` |
-| `personnel_payments` | HR modülü | ✅ | Eksik: `company_id` |
-| `personnel_debts` | HR modülü | ✅ | Eksik: `company_id` |
-| `production_records` | Production modülü | ✅ | Eksik: `company_id` |
-| `production_plans` | Production modülü | ✅ | Eksik: `company_id` |
-| `logistics_records` | Logistics modülü | ✅ | Eksik: `company_id` |
-| `arsiv_files` | Archive modülü | ✅ | Eksik: `company_id` |
-| `cashflow_parameters` | Cashflow modülü | ✅ | Eksik: `company_id` |
-| `app_settings` | - | ✅ | OK |
+| Tablo                 | supabase.ts       | migration_v2.sql        | Durum                 |
+| --------------------- | ----------------- | ----------------------- | --------------------- |
+| `profiles`            | ✅                 | ✅ (supabase/schema.sql) | Eksik sütunlar var    |
+| `companies`           | ✅                 | ❌                       | **YOK**               |
+| `fixed_expenses`      | ✅                 | ❌                       | **YOK**               |
+| `project_groups`      | ✅                 | ❌                       | **YOK**               |
+| `projects`            | ✅                 | ❌                       | **YOK**               |
+| `tasks`               | ✅                 | ❌                       | **YOK**               |
+| `pnl_reports`         | ✅                 | ❌                       | **YOK**               |
+| `assets`              | ✅                 | ❌                       | **YOK**               |
+| `maintenance_records` | ✅                 | ❌                       | **YOK**               |
+| `permits`             | ✅ (`permits`)     | ✅ (`permit_records`)    | **İSİM UYUŞMAZLIĞI**  |
+| `business_plans`      | ✅ (dataService)   | ✅                       | Eksik: `company_id`   |
+| `stock_records`       | ✅ (dataService)   | ✅                       | **SÜTUN UYUŞMAZLIĞI** |
+| `sales_records`       | ✅ (dataService)   | ✅                       | OK                    |
+| `contacts`            | ✅ (dataService)   | ✅                       | Eksik: `notlar`       |
+| `personnel`           | HR modülü         | ✅                       | Eksik: `company_id`   |
+| `attendance`          | HR modülü         | ✅                       | Eksik: `company_id`   |
+| `personnel_payments`  | HR modülü         | ✅                       | Eksik: `company_id`   |
+| `personnel_debts`     | HR modülü         | ✅                       | Eksik: `company_id`   |
+| `production_records`  | Production modülü | ✅                       | Eksik: `company_id`   |
+| `production_plans`    | Production modülü | ✅                       | Eksik: `company_id`   |
+| `logistics_records`   | Logistics modülü  | ✅                       | Eksik: `company_id`   |
+| `arsiv_files`         | Archive modülü    | ✅                       | Eksik: `company_id`   |
+| `cashflow_parameters` | Cashflow modülü   | ✅                       | Eksik: `company_id`   |
+| `app_settings`        | -                 | ✅                       | OK                    |
 
 ---
 
