@@ -37,6 +37,8 @@
 | Sayfa | Özet | Son Güncelleme |
 |-------|------|----------------|
 | [[Kararlar/Mimari-Kararlar\|Mimari Kararlar]] | Custom history stack, no-Redux, Google implicit OAuth kararları | 2026-05-04 |
+| [[Kararlar/2026-05-RLS-Dersleri\|RLS Dersleri]] | 5 kural: DROP POLICY tuzakları, SECURITY DEFINER, auth.jwt(), HTTP 500 teşhisi | 2026-05-05 |
+| [[Kararlar/2026-05-Auth-Sorunlari\|Auth Sorunları]] | Tüm kırmızı liste kapatıldı — RLS, DataService, profil bant, SuperAdmin UI | 2026-05-05 |
 
 ---
 

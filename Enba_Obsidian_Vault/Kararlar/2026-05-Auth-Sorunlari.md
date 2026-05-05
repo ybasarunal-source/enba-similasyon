@@ -1,5 +1,5 @@
 # Auth & Yetkilendirme Sorunları — Planlama Notu
-> Oluşturulma: 2026-05-05 | Durum: Bir sonraki oturumda çözülecek
+> Oluşturulma: 2026-05-05 | Durum: Tamamlandı ✓ (2026-05-05)
 
 ---
 
@@ -16,22 +16,20 @@
 
 ### 3. RLS `attendance`, `personnel_payments`, `personnel_debts`'te sadece `company_id` bakıyor
 **Olay:** Bu tablolarda `user_id` fallback yok. `company_id`'si olmayan kullanıcılar veri okuyamaz/yazamaz.  
-**Durum:** Henüz düzeltilmedi.
+**Durum:** ✓ migration_v5 ile düzeltildi — user_id sütunu eklendi, RLS `company_id OR user_id` oldu.
 
 ### 4. `DataService.insertData()` `company_id` set etmiyor
 **Olay:** HR, Stock, Logistics modülleri `DataService` kullanıyor. `DataService` sadece `user_id` ekliyor, `company_id` yok. Multi-tenant izolasyon kırık.  
-**Etkilenen modüller:** HR (`personnel`, `attendance`), Logistics (`logistics_records`), Stock (kısmen — `stock_records`/`sales_records` user_id fallback ile RLS'i geçiyor ama izolasyon yok).  
-**Durum:** Henüz düzeltilmedi.
+**Durum:** ✓ `profileAPI.getMyProfile()` çağrısı eklendi, company_id otomatik ekleniyor.
 
 ### 5. `userProfile` null kalırsa menü kısıtlanıyor
 **Olay:** `profileAPI.getMyProfile()` hata dönerse `userProfile = null` kalıyor. Menu `!userProfile` kontrolünde sadece 7 core modülü gösteriyor. Kullanıcı "kısıtlı" görüyor ama aslında profile yüklenemedi.  
 **Kök neden:** Sessiz hata — kullanıcıya hiçbir hata mesajı yok.  
-**Durum:** Henüz düzeltilmedi.
+**Durum:** ✓ App.tsx'te amber bant + "Yeniden dene" butonu eklendi.
 
 ### 6. Admin kullanıcı yönetimi için safe SQL şablonu yok
 **Olay:** Kullanıcı rolü/izin değişikliklerini elle SQL ile yapıyoruz. Hata marjı yüksek.  
-**İdeal çözüm:** SuperAdmin paneline kullanıcı rol/izin yönetimi UI'ı.  
-**Durum:** SuperAdmin paneli var ama rol değiştirme özelliği eksik.
+**Durum:** ✓ SuperAdmin panelinde rol dropdown + izin checkbox'ları mevcut. "Rol değişikliği yeniden girişle aktif olur" notu eklendi.
 
 ---
 

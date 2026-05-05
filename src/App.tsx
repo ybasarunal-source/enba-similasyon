@@ -5,7 +5,7 @@ import { microsoftService } from './api/microsoft';
 import { googleService } from './api/google';
 import { Login } from './modules/Login';
 import type { Session } from '@supabase/supabase-js';
-import { profileAPI, type UserProfile, type UserRole } from './api/supabase';
+import { profileAPI, companiesAPI, type UserProfile, type UserRole } from './api/supabase';
 import { parasutService } from './api/parasut';
 import Dashboard from './modules/Dashboard';
 import { Stock } from './modules/Stock';
@@ -89,6 +89,7 @@ export const App: React.FC = () => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isProfileLoading, setIsProfileLoading] = useState(true);
   const [profileLoadError, setProfileLoadError] = useState(false);
+  const [companyName, setCompanyName] = useState<string | null>(null);
   const [theme, setTheme] = useState(() => localStorage.getItem('enba_theme') || 'light');
   const [unreadMailCount, setUnreadMailCount] = useState(0);
 
@@ -166,6 +167,11 @@ export const App: React.FC = () => {
           setUserProfile(profile);
           setProfileLoadError(!profile);
           setIsProfileLoading(false);
+          if (profile?.company_id) {
+            companiesAPI.getById(profile.company_id).then(c => setCompanyName(c?.name ?? null));
+          } else {
+            setCompanyName(null);
+          }
           if (profile) {
             // Otomatik Entegrasyon Geri Yükleme
             microsoftService.resumeSession(profile);
@@ -609,7 +615,7 @@ export const App: React.FC = () => {
                   style={{ fontFamily: "'Poppins', sans-serif" }}
                   className="text-[10px] font-medium text-[var(--enba-orange)] mt-0.5"
                 >
-                  Platform Yöneticisi
+                  {user.role === 'super_admin' ? 'Sistem Yöneticisi' : (companyName ?? 'Şirket bilgisi yükleniyor…')}
                 </span>
               </div>
               <div className="w-8 h-8 rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center border border-gray-200 relative flex-shrink-0">
@@ -647,7 +653,7 @@ export const App: React.FC = () => {
                     {user?.name || 'User'}
                   </div>
                   <div style={{ fontFamily: "'Poppins', sans-serif", fontSize: '10px', color: 'var(--enba-orange)', fontWeight: 600 }}>
-                    Platform Yöneticisi
+                    {user.role === 'super_admin' ? 'Sistem Yöneticisi' : (companyName ?? 'Şirket bilgisi yükleniyor…')}
                   </div>
                 </div>
 

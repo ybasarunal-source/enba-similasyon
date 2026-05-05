@@ -41,6 +41,22 @@ grep "^## \[" log.md | tail -5
 
 ---
 
+## [2026-05-05] geliştirme | RLS kriz çözüldü — profiles HTTP 500 → migration_v9
+
+**Olay:** fix_rls_infinite_recursion + migration_v6/v7/v8 birikimi sonucu profiles tablosunda 5-6 çakışan policy oluştu. Orijinal şemadan kalan "Adminler tum profilleri gorebilir" policy'si `is_admin()` çağırıyordu, `is_admin()` profiles sorguluyor, sonsuz döngü → HTTP 500.
+
+**Kök neden:** `DROP POLICY IF EXISTS` isim uyuşmazlığı yüzünden eski policy'leri silmedi; üstüne yenileri eklendi.
+
+**Çözüm:** migration_v9 — DO bloğuyla tüm policy'leri sil, 3 temiz policy yaz. Ayrıca is_admin() JWT tabanlı yapıldı, SECURITY DEFINER Supabase'de RLS bypass etmiyor öğrenildi.
+
+**Yeni sayfa:** [[Kararlar/2026-05-RLS-Dersleri|RLS Dersleri]] — 5 kural, doğru şablon, HTTP 500 teşhis rehberi
+
+**Etkilenen dosyalar:** scratch/migration_v9_profiles_rls_reset.sql (yeni)
+
+**Bir sonraki:** Turuncu liste — kalan modüller veya yeni özellik
+
+---
+
 ## [2026-05-05] geliştirme | Kırmızı liste tamamlandı — RLS + DataService + UX
 
 **Yapılan:**
