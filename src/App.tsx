@@ -88,6 +88,7 @@ export const App: React.FC = () => {
   const userMenuRef = useRef<HTMLDivElement>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isProfileLoading, setIsProfileLoading] = useState(true);
+  const [profileLoadError, setProfileLoadError] = useState(false);
   const [theme, setTheme] = useState(() => localStorage.getItem('enba_theme') || 'light');
   const [unreadMailCount, setUnreadMailCount] = useState(0);
 
@@ -156,7 +157,14 @@ export const App: React.FC = () => {
       setProfileAvatar(session.user.user_metadata?.profile_data?.avatarUrl || '');
       profileAPI.getMyProfile(true) // force fetch
         .then(profile => {
+          console.log('[ENBA DEBUG] Profil yüklendi:', {
+            id: profile?.id,
+            email: profile?.email,
+            role: profile?.role,
+            permissions: profile?.permissions
+          });
           setUserProfile(profile);
+          setProfileLoadError(!profile);
           setIsProfileLoading(false);
           if (profile) {
             // Otomatik Entegrasyon Geri Yükleme
@@ -167,6 +175,7 @@ export const App: React.FC = () => {
         })
         .catch(() => {
           console.warn("Profil yüklenemedi, varsayılan kullanılıyor.");
+          setProfileLoadError(true);
           setIsProfileLoading(false);
         });
     } else {
@@ -233,6 +242,17 @@ export const App: React.FC = () => {
   ];
 
   const allowedItems = rawMenuItems.filter(item => {
+    // DEBUG — bir kez çalışsın yeter
+    if (item.id === 'modules') {
+      console.log('[ENBA DEBUG] allowedItems hesaplanıyor:', {
+        userProfileRole: userProfile?.role,
+        sessionAppRole: session?.user?.app_metadata?.role,
+        sessionUserMetaRole: session?.user?.user_metadata?.role,
+        computedRole: user.role,
+        isProfileLoading,
+        userProfileNull: userProfile === null
+      });
+    }
     try {
       // Demo kullanıcısı her şeyi görür (Sistem Yönetimi hariç)
       if (session?.user?.email === 'demo@enba.com') {
@@ -694,6 +714,25 @@ export const App: React.FC = () => {
           </div>
         </div>
       </header>
+
+        {/* ─── Profil Hata Bandı ───────────────────────────── */}
+        {profileLoadError && !isProfileLoading && (
+          <div className="flex items-center justify-between bg-amber-50 border-b border-amber-200 px-6 py-2 text-sm text-amber-800 dark:bg-amber-900/20 dark:border-amber-800/40 dark:text-amber-300">
+            <span>Profil yüklenemedi — menü kısıtlı görünüyor olabilir.</span>
+            <button
+              onClick={() => {
+                setProfileLoadError(false);
+                setIsProfileLoading(true);
+                profileAPI.getMyProfile(true)
+                  .then(p => { setUserProfile(p); setProfileLoadError(!p); setIsProfileLoading(false); })
+                  .catch(() => { setProfileLoadError(true); setIsProfileLoading(false); });
+              }}
+              className="ml-4 underline font-medium hover:text-amber-900 dark:hover:text-amber-200"
+            >
+              Yeniden dene
+            </button>
+          </div>
+        )}
 
         {/* ─── Module Content ──────────────────────────────── */}
         <div className="flex-1 overflow-y-auto custom-scrollbar">

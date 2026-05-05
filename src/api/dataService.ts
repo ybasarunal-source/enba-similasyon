@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase, profileAPI } from './supabase';
 
 /**
  * Enba Similasyon - Veri Servisi (TypeScript)
@@ -133,11 +133,13 @@ export const DataService = {
 
   async insertData(table: string, payload: any) {
     const { data: { session } } = await supabase.auth.getSession();
-    const p = {
+    const profile = await profileAPI.getMyProfile();
+    const p: any = {
       ...payload,
       user_id: session?.user?.id || null,
       created_at: new Date().toISOString()
     };
+    if (profile?.company_id) p.company_id = profile.company_id;
 
     const { data, error } = await supabase.from(table).insert([p]).select();
     if (error) throw error;

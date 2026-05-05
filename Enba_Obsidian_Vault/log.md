@@ -41,6 +41,21 @@ grep "^## \[" log.md | tail -5
 
 ---
 
+## [2026-05-05] geliştirme | Kırmızı liste tamamlandı — RLS + DataService + UX
+
+**Yapılan:**
+- `fix_rls_infinite_recursion.sql` çalıştırıldı: profiles/companies RLS döngüsü kırıldı, roller JWT'ye senkronize edildi
+- `migration_v5_hr_rls_fix.sql`: attendance, personnel_payments, personnel_debts tablolarına user_id sütunu eklendi, RLS `company_id OR user_id` pattern'ine güncellendi, mevcut kayıtlara personnel tablosundan backfill yapıldı
+- `dataService.ts`: `insertData()` artık `profileAPI.getMyProfile()` ile company_id ekliyor — HR/Stock/Logistics kayıtları tenant-safe oldu
+- `App.tsx`: profil yüklenemezse amber bant + "Yeniden dene" butonu gösteriliyor (`profileLoadError` state)
+- `SuperAdmin.tsx`: rol dropdown'una "Rol değişikliği kullanıcının yeniden giriş yapmasıyla aktif olur" notu eklendi
+
+**Etkilenen dosyalar:** `src/api/dataService.ts`, `src/App.tsx`, `src/modules/SuperAdmin.tsx`, `scratch/migration_v5_hr_rls_fix.sql` (yeni)
+
+**Bir sonraki:** Turuncu liste — company_id eksik tablolara migration (production, logistics, arsiv vb.) veya modül geliştirme
+
+---
+
 ## [2026-05-05] geliştirme | Rol/izin mimarisi — SuperAdmin + CompanyAdmin
 
 **Yapılan:**

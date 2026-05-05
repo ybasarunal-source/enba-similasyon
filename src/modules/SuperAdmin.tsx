@@ -658,6 +658,7 @@ export const SuperAdmin: React.FC = () => {
                   <option value="admin">Şirket Yöneticisi (Admin)</option>
                   <option value="super_admin">Sistem Yöneticisi (SuperAdmin)</option>
                 </select>
+                <p className="mt-1.5 text-[10px] text-gray-400">Rol değişikliği kullanıcının yeniden giriş yapmasıyla aktif olur.</p>
               </div>
 
               <div>
