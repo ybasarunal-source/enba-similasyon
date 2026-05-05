@@ -41,70 +41,19 @@ grep "^## \[" log.md | tail -5
 
 ---
 
-## [2026-05-05] analiz | SQL şema tam analizi yapıldı — 4 kritik sorun belirlendi
+## [2026-05-05] geliştirme | Rol/izin mimarisi — SuperAdmin + CompanyAdmin
 
 **Yapılan:**
-- `supabase.ts`, `dataService.ts`, `migration_v2.sql`, `schema.sql` ve 8 modül incelendi
-- Kapsamlı şema karşılaştırması yapıldı (kod ↔ SQL)
-- `Wiki/SQL-Sema-Analizi.md` sayfası oluşturuldu
+- `supabase.ts` → `PERMISSION_MODULES` sabiti (13 modül, TR etiket) + `getCompanyProfiles()` eklendi
+- `CompanyAdmin.tsx` → yeni modül: şirkete scoped kullanıcı yönetimi + izin checkboxları
+- `SuperAdmin.tsx` → edit user modalına izin checkboxları + loading spinner eklendi; `permissions` artık kaydediliyor
+- `App.tsx` → `company_admin` ModuleType + menü + render bağlandı
 
-**Bulunan kritik sorunlar:**
-1. **KIRMIZI — `companies` tablosu SQL'de yok** (SuperAdmin paneli ve tüm multi-tenancy bozuk)
-2. **KIRMIZI — 8 tablo SQL'de yok**: `fixed_expenses`, `project_groups`, `projects`, `tasks`, `pnl_reports`, `assets`, `maintenance_records` + isim çakışması: `permits` vs `permit_records`
-3. **KIRMIZI — `stock_records` sütun uyuşmazlığı**: SQL ile kod tamamen farklı sütun isimleri
-4. **TURUNCU — `company_id` neredeyse hiç tabloda yok**: Tüm kullanıcılar birbirinin datasını görebilir
+**Rol davranışı:**
+- `super_admin` → tüm modüller + Sistem Yönetimi (tüm şirket/kullanıcı yönetimi)
+- `admin` → tüm modüller + Şirket Yönetimi (kendi şirketi, user/admin rol + izin toggle)
+- `user` → yalnızca `profile.permissions`'daki modüller
 
-**Etkilenen dosyalar:** `supabase/schema.sql`, `scratch/migration_v2.sql`, `src/api/supabase.ts`
+**Etkilenen dosyalar:** `src/api/supabase.ts`, `src/modules/CompanyAdmin.tsx` (yeni), `src/modules/SuperAdmin.tsx`, `src/App.tsx`
 
-**Bir sonraki:** `scratch/migration_v3_kirmizi.sql` Supabase'de çalıştırılacak
-
----
-
-## [2026-05-05] geliştirme | migration_v3_kirmizi.sql oluşturuldu
-
-- **Yapılan:** 4 kırmızı sorunu gideren SQL migration dosyası yazıldı
-- **Etkilenen dosyalar:** `scratch/migration_v3_kirmizi.sql` (yeni)
-- **Kapsam:**
-  - `companies` tablosu oluşturuldu (multi-tenancy temeli)
-  - `profiles`'a 6 eksik sütun eklendi (company_id, ms/google/parasut data)
-  - `stock_records` yeniden oluşturuldu (doğru sütunlarla, eski tablo backup olarak korunuyor)
-  - `permit_records` silindi → `permits` adıyla doğru şekilde oluşturuldu
-  - 7 eksik tablo oluşturuldu: `fixed_expenses`, `project_groups`, `projects`, `tasks`, `pnl_reports`, `assets`, `maintenance_records`
-  - 12 mevcut tabloya `company_id` sütunu eklendi
-- **Bir sonraki:** Auth & yetkilendirme sorunları — bkz. `Kararlar/2026-05-Auth-Sorunlari.md`
-
----
-
-## [2026-05-05] geliştirme | migration_v3 Supabase'de başarıyla çalıştı
-
-- **Yapılan:** `scratch/migration_v3_kirmizi.sql` Supabase'e uygulandı
-- **Sonuç:** Tüm kırmızı sorunlar giderildi — 18 tablo/değişiklik tamamlandı
-- **Durum:** Supabase şeması artık kodla uyumlu
-- **Bir sonraki:** Modülleri test et (Licensing, Tasks, FixedExpenses, Machinery, PnL)
-
----
-
-## [2026-05-05] geliştirme | Auth & yetkilendirme sorunu tespit edildi
-
-- **Olay:** `basar.unal` kullanıcısına "tüm yetkiler" SQL'i çalıştırıldı; `role = 'admin'` yazılarak `super_admin` → `admin`'e düştü. Sistem Yönetimi menüsü kayboldu.
-- **Kök neden:** Admin işlemleri için safe SQL şablonu yok; UPDATE sorgusu ILIKE ile kullanıcı arıyor, role her seferinde elle belirtilmeli.
-- **Geçici düzeltme:** El ile `role = 'super_admin'` geri verildi.
-- **Tespit edilen ek sorunlar:**
-  - `DataService.insertData()` `company_id` set etmiyor → HR/Stock/Logistics yazmalar tenant-safe değil
-  - `attendance`, `personnel_payments`, `personnel_debts` RLS'te sadece `company_id` var, `user_id` fallback yok
-  - `userProfile` null olunca sessizce kısıtlı menü gösteriliyor, kullanıcıya hata bildirilmiyor
-  - SuperAdmin panelinde rol/izin yönetimi UI'ı yok
-- **Planlama notu:** `Kararlar/2026-05-Auth-Sorunlari.md`
-
----
-
-## [2026-05-05] oturum kapanış | SQL şema + auth analizi oturumu
-
-**Bu oturumda yapılanlar:**
-- Supabase şema tam analizi (22 tablo, 4 kırmızı sorun tespit)
-- `scratch/migration_v3_kirmizi.sql` yazıldı ve başarıyla çalıştırıldı
-- Auth & yetkilendirme sorunları belgelendi ve bir sonraki oturuma planlandı
-- Wiki: `SQL-Sema-Analizi.md`, `2026-05-Auth-Sorunlari.md` oluşturuldu
-- Tüm değişiklikler commit + push edildi
-
-**Bir sonraki oturumda öncelik:** Auth sorunlarını çöz — `Kararlar/2026-05-Auth-Sorunlari.md`
+**Bir sonraki:** Kullanıcı bazlı detaylı yetki matrisi görünümü

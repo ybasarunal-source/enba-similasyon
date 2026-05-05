@@ -1,21 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Building2, 
-  Users, 
-  Settings, 
-  Plus, 
-  Search, 
-  MoreVertical, 
-  CheckCircle2, 
-  AlertCircle, 
-  Clock,
+import {
+  Building2,
+  Users,
+  Settings,
+  Plus,
+  Search,
+  MoreVertical,
+  CheckCircle2,
+  AlertCircle,
   Shield,
   ExternalLink,
   Trash2,
-  Lock,
-  Zap
+  Lock
 } from 'lucide-react';
-import { companiesAPI, Company, profileAPI, UserProfile, UserRole } from '../api/supabase';
+import { companiesAPI, Company, profileAPI, UserProfile, UserRole, PERMISSION_MODULES } from '../api/supabase';
 
 export const SuperAdmin: React.FC = () => {
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -29,6 +27,7 @@ export const SuperAdmin: React.FC = () => {
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [activeUserMenuId, setActiveUserMenuId] = useState<string | null>(null);
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
+  const [editingCompanyPerms, setEditingCompanyPerms] = useState<Company | null>(null);
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -104,6 +103,26 @@ export const SuperAdmin: React.FC = () => {
     }
   };
 
+  const handleSaveCompanyPermissions = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCompanyPerms) return;
+    setActionLoading(true);
+    setActionError(null);
+    try {
+      const res = await companiesAPI.update(editingCompanyPerms.id, {
+        module_permissions: editingCompanyPerms.module_permissions,
+      });
+      if (res) {
+        setCompanies(companies.map(c => c.id === res.id ? res : c));
+        setEditingCompanyPerms(null);
+      }
+    } catch (err: any) {
+      setActionError(err.message || 'Güncelleme hatası.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleDeleteCompany = async (id: string) => {
     if (!window.confirm('Bu şirketi ve tüm verilerini silmek istediğinize emin misiniz? Bu işlem geri alınamaz.')) return;
 
@@ -128,11 +147,11 @@ export const SuperAdmin: React.FC = () => {
     setActionLoading(true);
     setActionError(null);
     try {
-      // API call to update profile
       const res = await profileAPI.adminUpdateProfile(editingUser.id, {
         full_name: editingUser.full_name,
         role: editingUser.role,
-        company_id: editingUser.company_id
+        company_id: editingUser.company_id,
+        permissions: editingUser.permissions,
       });
       if (res) {
         setUsers(users.map(u => u.id === res.id ? res : u));
@@ -143,6 +162,14 @@ export const SuperAdmin: React.FC = () => {
     } finally {
       setActionLoading(false);
     }
+  };
+
+  const togglePermission = (moduleId: string, value: boolean) => {
+    if (!editingUser) return;
+    setEditingUser({
+      ...editingUser,
+      permissions: { ...editingUser.permissions, [moduleId]: value },
+    });
   };
 
   const handleDeleteUser = async (id: string) => {
@@ -260,8 +287,13 @@ export const SuperAdmin: React.FC = () => {
           </div>
         </div>
 
+        {loading && (
+          <div className="p-12 flex items-center justify-center">
+            <div className="w-8 h-8 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+          </div>
+        )}
         <div className="overflow-x-auto">
-          {activeTab === 'companies' && (
+          {!loading && activeTab === 'companies' && (
             <table className="w-full text-left">
               <thead className="bg-gray-50/50">
                 <tr>
@@ -303,13 +335,19 @@ export const SuperAdmin: React.FC = () => {
 
                       {activeMenuId === company.id && (
                         <div ref={menuRef} className="absolute right-6 top-12 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-50 animate-in zoom-in-95 duration-200">
-                          <button 
+                          <button
                             onClick={() => { setEditingCompany(company); setActiveMenuId(null); }}
                             className="w-full px-4 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                           >
                             <Settings size={14} className="text-gray-400" /> Düzenle
                           </button>
-                          <button 
+                          <button
+                            onClick={() => { setEditingCompanyPerms({ ...company, module_permissions: company.module_permissions ?? {} }); setActiveMenuId(null); }}
+                            className="w-full px-4 py-2 text-left text-sm font-medium text-indigo-600 hover:bg-indigo-50 flex items-center gap-2"
+                          >
+                            <Lock size={14} /> Modül İzinleri
+                          </button>
+                          <button
                             onClick={() => { /* Gelecekte: Şirket Verilerini Gör */ setActiveMenuId(null); }}
                             className="w-full px-4 py-2 text-left text-sm font-medium text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                           >
@@ -331,7 +369,7 @@ export const SuperAdmin: React.FC = () => {
             </table>
           )}
 
-          {activeTab === 'users' && (
+          {!loading && activeTab === 'users' && (
             <table className="w-full text-left">
               <thead className="bg-gray-50/50">
                 <tr>
@@ -591,7 +629,7 @@ export const SuperAdmin: React.FC = () => {
               </button>
             </div>
             
-            <form onSubmit={handleUpdateUser} className="p-6 space-y-4">
+            <form onSubmit={handleUpdateUser} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
               {actionError && (
                 <div className="p-3 bg-red-50 border border-red-100 rounded-xl flex items-center gap-2 text-red-600 text-xs font-semibold">
                   <AlertCircle size={14} />
@@ -601,8 +639,8 @@ export const SuperAdmin: React.FC = () => {
 
               <div>
                 <label className="text-xs font-bold text-gray-400 uppercase mb-1.5 block">Kullanıcı Adı</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   value={editingUser.full_name || ''}
                   onChange={e => setEditingUser({...editingUser, full_name: e.target.value})}
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:outline-none"
@@ -611,7 +649,7 @@ export const SuperAdmin: React.FC = () => {
 
               <div>
                 <label className="text-xs font-bold text-gray-400 uppercase mb-1.5 block">Rol / Yetki</label>
-                <select 
+                <select
                   value={editingUser.role}
                   onChange={e => setEditingUser({...editingUser, role: e.target.value as UserRole})}
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:outline-none"
@@ -624,7 +662,7 @@ export const SuperAdmin: React.FC = () => {
 
               <div>
                 <label className="text-xs font-bold text-gray-400 uppercase mb-1.5 block">Bağlı Olduğu Şirket</label>
-                <select 
+                <select
                   value={editingUser.company_id || ''}
                   onChange={e => setEditingUser({...editingUser, company_id: e.target.value})}
                   className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:outline-none"
@@ -636,20 +674,149 @@ export const SuperAdmin: React.FC = () => {
                 </select>
               </div>
 
-              <div className="pt-4 flex gap-3">
-                <button 
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <label className="text-xs font-bold text-gray-400 uppercase flex items-center gap-1.5">
+                    <Lock size={11} /> Modül İzinleri
+                  </label>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setEditingUser({ ...editingUser, permissions: Object.fromEntries(PERMISSION_MODULES.map(m => [m.id, true])) })}
+                      className="text-[10px] font-bold text-emerald-600 hover:text-emerald-700 px-2 py-1 rounded-lg hover:bg-emerald-50 transition-colors"
+                    >
+                      Tümünü Aç
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingUser({ ...editingUser, permissions: Object.fromEntries(PERMISSION_MODULES.map(m => [m.id, false])) })}
+                      className="text-[10px] font-bold text-gray-400 hover:text-gray-600 px-2 py-1 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      Tümünü Kapat
+                    </button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {PERMISSION_MODULES.map(mod => (
+                    <label
+                      key={mod.id}
+                      className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                        editingUser.permissions?.[mod.id]
+                          ? 'border-emerald-200 bg-emerald-50/50'
+                          : 'border-gray-100 hover:border-emerald-100 hover:bg-emerald-50/20'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={editingUser.permissions?.[mod.id] ?? false}
+                        onChange={e => togglePermission(mod.id, e.target.checked)}
+                        className="w-4 h-4 accent-emerald-600 rounded"
+                      />
+                      <span className="text-xs font-medium text-gray-700">{mod.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="pt-2 flex gap-3">
+                <button
                   type="button"
                   onClick={() => setEditingUser(null)}
                   className="flex-1 py-3 border border-gray-100 rounded-xl text-sm font-semibold text-gray-500 hover:bg-gray-50"
                 >
                   İptal
                 </button>
-                <button 
+                <button
                   type="submit"
                   disabled={actionLoading}
                   className={`flex-1 py-3 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 ${actionLoading ? 'opacity-50' : ''}`}
                 >
-                  {actionLoading ? 'Güncelleniyor...' : 'Kullanıcıyı Güncelle'}
+                  {actionLoading ? 'Güncelleniyor...' : <><CheckCircle2 size={16} /> Kaydet</>}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Company Module Permissions Modal */}
+      {editingCompanyPerms && (
+        <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="p-6 border-b border-gray-50 flex items-center justify-between bg-indigo-600 text-white">
+              <div className="flex items-center gap-3">
+                <Lock size={20} />
+                <div>
+                  <h3 className="font-bold">Modül İzinleri</h3>
+                  <p className="text-xs text-indigo-200">{editingCompanyPerms.name}</p>
+                </div>
+              </div>
+              <button onClick={() => setEditingCompanyPerms(null)} className="hover:bg-white/10 p-1.5 rounded-lg transition-colors text-lg leading-none">✕</button>
+            </div>
+
+            <form onSubmit={handleSaveCompanyPermissions} className="p-6 space-y-5">
+              {actionError && (
+                <div className="p-3 bg-red-50 border border-red-100 rounded-xl flex items-center gap-2 text-red-600 text-xs font-semibold">
+                  <AlertCircle size={14} /> {actionError}
+                </div>
+              )}
+
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-xs text-gray-400">İşaretlenen modüller bu şirketteki kullanıcılara açılabilir.</p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setEditingCompanyPerms({ ...editingCompanyPerms, module_permissions: Object.fromEntries(PERMISSION_MODULES.map(m => [m.id, true])) })}
+                      className="text-[10px] font-bold text-indigo-600 hover:text-indigo-700 px-2 py-1 rounded-lg hover:bg-indigo-50 transition-colors"
+                    >
+                      Tümünü Aç
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingCompanyPerms({ ...editingCompanyPerms, module_permissions: Object.fromEntries(PERMISSION_MODULES.map(m => [m.id, false])) })}
+                      className="text-[10px] font-bold text-gray-400 hover:text-gray-600 px-2 py-1 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      Tümünü Kapat
+                    </button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  {PERMISSION_MODULES.map(mod => {
+                    const active = editingCompanyPerms.module_permissions?.[mod.id] ?? false;
+                    return (
+                      <label
+                        key={mod.id}
+                        className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                          active ? 'border-indigo-200 bg-indigo-50/50' : 'border-gray-100 hover:border-indigo-100 hover:bg-indigo-50/20'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={active}
+                          onChange={e => setEditingCompanyPerms({
+                            ...editingCompanyPerms,
+                            module_permissions: { ...editingCompanyPerms.module_permissions, [mod.id]: e.target.checked },
+                          })}
+                          className="w-4 h-4 accent-indigo-600 rounded"
+                        />
+                        <span className="text-xs font-medium text-gray-700">{mod.label}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => setEditingCompanyPerms(null)} className="flex-1 py-3 border border-gray-100 rounded-xl text-sm font-semibold text-gray-500 hover:bg-gray-50">
+                  İptal
+                </button>
+                <button
+                  type="submit"
+                  disabled={actionLoading}
+                  className={`flex-1 py-3 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 ${actionLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  {actionLoading ? 'Kaydediliyor...' : <><CheckCircle2 size={16} /> Kaydet</>}
                 </button>
               </div>
             </form>

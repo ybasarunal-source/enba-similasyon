@@ -5,6 +5,14 @@
 
 ---
 
+## Memory (Claude Code Kalıcı Hafızası)
+
+| Sayfa | Özet | Son Güncelleme |
+|-------|------|----------------|
+| [[Memory/MEMORY.md\|Memory Index]] | Tüm memory pointer'ları — her oturumda oku | 2026-05-05 |
+
+---
+
 ## Nasıl Kullanılır (Claude Code için talimat)
 
 1. Oturum başında bu dosyayı oku → konuyla ilgili sayfaları belirle
@@ -29,7 +37,6 @@
 | Sayfa | Özet | Son Güncelleme |
 |-------|------|----------------|
 | [[Kararlar/Mimari-Kararlar\|Mimari Kararlar]] | Custom history stack, no-Redux, Google implicit OAuth kararları | 2026-05-04 |
-| [[Kararlar/2026-05-Auth-Sorunlari\|Auth & Yetkilendirme Sorunları]] | 4 açık sorun, bir sonraki oturum planı: RLS, DataService, SuperAdmin UI | 2026-05-05 |
 
 ---
 
@@ -55,7 +62,6 @@
 |-------|------|----------------|
 | [[Wiki/Entegrasyon-Mimarisi\|Entegrasyon Mimarisi]] | Microsoft/Google/Paraşüt OAuth karşılaştırması, login akışı, riskler | 2026-05-04 |
 | [[Wiki/Is-Modeli\|İş Modeli & Hedefler]] | Kendi şirket ERP'i + SaaS demo/pazarlama, multi-tenancy kritik, SQL öncelikleri | 2026-05-04 |
-| [[Wiki/SQL-Sema-Analizi\|SQL Şema Analizi]] | Mevcut tablo envanteri, 4 kritik sorun (eksik tablolar, sütun uyuşmazlıkları, company_id), 3 aşamalı düzeltme planı | 2026-05-05 |
 
 ---
 

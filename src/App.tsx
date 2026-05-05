@@ -28,6 +28,7 @@ import { ModulesOverview } from './modules/ModulesOverview';
 import { Mail } from './modules/Mail';
 import { FixedExpenses } from './modules/FixedExpenses';
 import { SuperAdmin } from './modules/SuperAdmin';
+import { CompanyAdmin } from './modules/CompanyAdmin';
 import {
   Home,
   LayoutGrid,
@@ -62,7 +63,7 @@ import {
 type ModuleType =
   | 'dashboard' | 'stock' | 'production' | 'logistics' | 'hr'
   | 'archive' | 'cashflow' | 'planning' | 'fastplan' | 'machinery'
-  | 'tasks' | 'calendar' | 'licensing' | 'settings' | 'pnl' | 'profile' | 'parasut' | 'modules' | 'mail' | 'fixedexpenses' | 'super_admin';
+  | 'tasks' | 'calendar' | 'licensing' | 'settings' | 'pnl' | 'profile' | 'parasut' | 'modules' | 'mail' | 'fixedexpenses' | 'super_admin' | 'company_admin';
 
 export const App: React.FC = () => {
   const { t, language, setLanguage, isLoading } = useTranslation();
@@ -185,7 +186,8 @@ export const App: React.FC = () => {
     { id: 'g3', title: 'Üretim & Lojistik', items: ['fastplan', 'planning', 'production', 'stock', 'logistics', 'machinery'] },
     { id: 'g4', title: 'Kurumsal Yönetim', items: ['hr', 'licensing', 'archive'] },
     { id: 'g5', title: 'Sistem', items: ['profile', 'settings'] },
-    ...(user.role === 'super_admin' ? [{ id: 'g6', title: 'Yönetim', items: ['super_admin'] }] : [])
+    ...(user.role === 'super_admin' ? [{ id: 'g6', title: 'Yönetim', items: ['super_admin'] }] : []),
+    ...(user.role === 'admin' ? [{ id: 'g6', title: 'Yönetim', items: ['company_admin'] }] : [])
   ];
 
   const rawMenuItems = [
@@ -209,7 +211,8 @@ export const App: React.FC = () => {
     { id: 'logistics',  label: t('modules.logistics'),     icon: Truck },
     { id: 'settings',   label: t('nav.sistem'),            icon: SettingsIcon },
     { id: 'profile',    label: 'Profilim',                 icon: User },
-    { id: 'super_admin', label: 'Sistem Yönetimi',         icon: Shield },
+    { id: 'super_admin',   label: 'Sistem Yönetimi',   icon: Shield },
+    { id: 'company_admin', label: 'Şirket Yönetimi',   icon: Shield },
   ];
 
   const allowedItems = rawMenuItems.filter(item => {
@@ -224,9 +227,10 @@ export const App: React.FC = () => {
         return ['profile', 'dashboard', 'tasks', 'calendar', 'modules', 'mail', 'fixedexpenses'].includes(item.id);
       }
       
-      // SuperAdmin ve Admin her şeyi görür
+      // Rol bazlı erişim
       if (user.role === 'super_admin' || user.role === 'admin') {
-        if (item.id === 'super_admin') return user.role === 'super_admin';
+        if (item.id === 'super_admin')   return user.role === 'super_admin';
+        if (item.id === 'company_admin') return user.role === 'admin';
         return true;
       }
       
@@ -694,7 +698,8 @@ export const App: React.FC = () => {
             {activeModule === 'profile'    && <Profile />}
             {activeModule === 'mail'       && <Mail />}
             {activeModule === 'fixedexpenses' && <FixedExpenses />}
-            {activeModule === 'super_admin' && <SuperAdmin />}
+            {activeModule === 'super_admin'   && <SuperAdmin />}
+            {activeModule === 'company_admin' && <CompanyAdmin />}
 
             {activeModule === 'pnl'      && <PnL />}
             {activeModule === 'fastplan' && <FastPlan />}

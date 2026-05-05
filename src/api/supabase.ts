@@ -18,6 +18,22 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 // ── Profil & Yetki Tipleri ────────────────────────────────
 export type UserRole = 'super_admin' | 'admin' | 'user';
 
+export const PERMISSION_MODULES: { id: string; label: string }[] = [
+  { id: 'stock',      label: 'Stok Yönetimi' },
+  { id: 'production', label: 'Üretim' },
+  { id: 'logistics',  label: 'Lojistik' },
+  { id: 'hr',         label: 'İnsan Kaynakları' },
+  { id: 'archive',    label: 'Arşiv' },
+  { id: 'cashflow',   label: 'Nakit Akışı' },
+  { id: 'planning',   label: 'Planlama' },
+  { id: 'fastplan',   label: 'Hızlı Plan' },
+  { id: 'machinery',  label: 'Makine Park' },
+  { id: 'licensing',  label: 'Lisans Yönetimi' },
+  { id: 'pnl',        label: 'P&L Analizi' },
+  { id: 'settings',   label: 'Ayarlar' },
+  { id: 'parasut',    label: 'Paraşüt' },
+];
+
 export interface ModulePermissions {
   dashboard?: boolean;
   stock?: boolean;
@@ -59,6 +75,7 @@ export interface Company {
   slug: string;
   status: 'active' | 'suspended' | 'demo';
   created_at: string;
+  module_permissions?: Record<string, boolean>;
 }
 
 // ── Yardımcı Fonksiyonlar ──────────────────────────────────
@@ -101,11 +118,20 @@ export const profileAPI = {
       .from('profiles')
       .select('*')
       .order('created_at', { ascending: false });
-      
     if (error) {
       console.error("Profiller listelenemedi:", error);
       return [];
     }
+    return data || [];
+  },
+
+  async getCompanyProfiles(companyId: string): Promise<UserProfile[]> {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('company_id', companyId)
+      .order('full_name');
+    if (error) return [];
     return data || [];
   },
 

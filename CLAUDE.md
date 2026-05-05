@@ -7,10 +7,11 @@
 ## ⚡ Oturum Protokolü (HER OTURUMDA UYGULA)
 
 ### Oturum Başında (önce bunları yap)
-1. `Enba_Obsidian_Vault/index.md` oku → konuyla ilgili sayfaları belirle
-2. İlgili wiki sayfalarını oku (Kararlar/, Moduller/, Snippets/)
-3. `Enba_Obsidian_Vault/log.md` son 3 girişe bak → bağlamı kur
-4. `Aktif Görevler` bölümünü kontrol et
+1. `Enba_Obsidian_Vault/Memory/MEMORY.md` oku → kalıcı hafızayı yükle, ilgili memory dosyalarını oku
+2. `Enba_Obsidian_Vault/index.md` oku → konuyla ilgili sayfaları belirle
+3. İlgili wiki sayfalarını oku (Kararlar/, Moduller/, Snippets/)
+4. `Enba_Obsidian_Vault/log.md` son 3 girişe bak → bağlamı kur
+5. `Aktif Görevler` bölümünü kontrol et
 
 ### Anlık Log — Her Önemli Adımdan Sonra Otomatik
 
@@ -37,6 +38,95 @@ Kullanıcı onayı bekleme. Şu durumlarda `log.md`'ye hemen giriş ekle ve ilgi
    > "Oturum kaydedildi. Obsidian Git otomatik push edecek. Hemen göndermek istersen Ctrl+P → Git: Commit → Git: Push."
 
 ---
+
+---
+
+## 📥 Ingest Protokolü — Yeni Kaynak Eklendiğinde
+
+Kullanıcı yeni bir kaynak getirdiğinde (toplantı notu, müşteri geri bildirimi, makale, kod parçası, SQL değişikliği, ekran görüntüsü) şu adımları sırayla uygula. Kullanıcı onayı bekleme — direkt başla.
+
+### Adım 1: Kaynağı Oku ve Özetle
+- Kaynağı baştan sona oku
+- Şu soruları cevapla: Ne söylüyor? Projemizle nasıl ilgili? Hangi modülleri/kararları etkiliyor?
+- `Ham-Kaynaklar/` klasörüne özet sayfası oluştur:
+  ```
+  # [Kaynak Başlığı]
+  Tip: [toplantı notu / makale / geri bildirim / SQL / kod]
+  Tarih: YYYY-MM-DD
+  Ekleyen: Başar
+  
+  ## Özet
+  [3-5 cümle]
+  
+  ## Projemize Etkisi
+  [hangi modüller, kararlar, tablolar etkileniyor]
+  
+  ## İlgili Wiki Sayfaları
+  [[...]], [[...]]
+  ```
+
+### Adım 2: Etkilenen Wiki Sayfalarını Güncelle
+- `index.md`'yi oku → etkilenen sayfaları belirle
+- Her etkilenen sayfaya git ve güncelle:
+  - Yeni bilgiyi ilgili bölüme ekle
+  - Çelişki varsa `~~eski bilgi~~` ile üstünü çiz, yeni bilgiyi yaz
+  - Çelişki varsa `index.md` Çelişki Takibi'ne ekle
+- Tek bir kaynak 5-15 sayfayı etkileyebilir — hepsini güncelle
+
+### Adım 3: Gerekiyorsa Yeni Sayfa Aç
+Kaynakta wikide sayfası olmayan ama önemli bir kavram/modül/karar varsa:
+- `Wiki/YeniKonu.md` veya `Moduller/YeniModul.md` oluştur
+- `index.md`'ye ekle
+- İlgili mevcut sayfalardan bu yeni sayfaya link ver
+
+### Adım 4: index.md ve log.md Güncelle
+- `index.md` → Ham Kaynaklar tablosuna yeni satır ekle
+- `log.md` → ingest girişi ekle:
+  ```
+  ## [YYYY-MM-DD HH:MM] ingest | Kaynak Adı
+  - Kaynak: [tip ve başlık]
+  - Güncellenen sayfalar: [liste]
+  - Yeni sayfalar: [liste veya "yok"]
+  - Önemli çıkarım: [1 cümle]
+  ```
+
+### Adım 5: Kullanıcıya Özet Sun
+İngest tamamlanınca şunu söyle:
+- Kaynaktan ne öğrenildi (1-2 cümle)
+- Kaç sayfa güncellendi
+- Varsa çelişki veya dikkat edilmesi gereken şey
+- Önerilen sonraki adım
+
+---
+
+## 🔍 Sorgu Protokolü — Soru Sorulduğunda
+
+Kullanıcı wikideki bilgiyle ilgili soru sorduğunda:
+
+1. `index.md`'yi oku → ilgili sayfaları belirle
+2. İlgili sayfaları oku
+3. Cevabı sentezle ve kaynak sayfaları belirt
+4. Cevap değerliyse (karşılaştırma, analiz, keşif) → `Wiki/` altına yeni sayfa olarak kaydet
+5. `log.md`'ye sorgu girişi ekle:
+   ```
+   ## [YYYY-MM-DD HH:MM] sorgu | Soru özeti
+   - Soru: ...
+   - Cevap kaydedildi mi: evet/hayır
+   ```
+
+---
+
+## 🧹 Lint Protokolü — "wiki lint" komutu geldiğinde
+
+1. Tüm wiki sayfalarını tara
+2. Şunları tespit et ve `index.md` Çelişki/Orphan bölümlerine raporla:
+   - Orphan sayfalar (hiçbir sayfadan link almayan)
+   - Çelişkili bilgiler
+   - Stale (eski) bilgiler
+   - Sayfası olmayan ama sık geçen kavramlar
+   - Eksik cross-reference'lar
+3. `log.md`'ye lint girişi ekle
+4. Kullanıcıya öneri listesi sun: hangi kaynaklar eklenmeli, hangi sorular sorulmalı
 
 ## Wiki Bakım Kuralları
 
@@ -183,16 +273,9 @@ VITE_PARASUT_CLIENT_ID / VITE_PARASUT_CLIENT_SECRET
 ## Aktif Görevler
 > Her oturum başında güncelle
 
-### 🔴 Auth & Yetkilendirme (bir sonraki oturumda çöz)
-Detaylar: `Kararlar/2026-05-Auth-Sorunlari.md`
-- [ ] `attendance`, `personnel_payments`, `personnel_debts` → `user_id` ekle + RLS fallback
-- [ ] `DataService.insertData()` → `company_id` set etmeli (HR/Stock/Logistics için)
-- [ ] `userProfile` null kalırsa kullanıcıya görünür hata/retry göster
-- [ ] SuperAdmin paneline rol & izin yönetimi UI'ı ekle
-
-### 🟡 SQL Şema (migration_v3 tamamlandı, devam edenler)
-- [ ] Turuncu sorunlar: RLS politikalarını company_id bazlı yeniden yaz
-- [ ] HR modülü form submit'i implement et (şu an sadece UI kabuğu var)
+- [ ] _(şu an çalışılan özellik)_
+- [ ] _(devam eden bug)_
+- [ ] _(bir sonraki hedef)_
 
 ---
 
