@@ -273,10 +273,10 @@ VITE_PARASUT_CLIENT_ID / VITE_PARASUT_CLIENT_SECRET
 ## Aktif Görevler
 > Her oturum başında güncelle
 
-- [ ] **Supabase'de çalıştırılacak:** `scratch/migration_v12_companies_rls.sql` → companies tablosu RLS
-- [ ] **Supabase'de çalıştırılacak:** `scratch/migration_v13_companies_anon_fix.sql` → login sayfası anon fix
-- [ ] İkisi çalıştırıldıktan sonra: çıkış yap → tekrar giriş yap → admin izolasyonunu doğrula
-- [ ] Admin olarak giriş yapınca: başka şirketler görünmemeli, header'da kendi şirket adı görünmeli
+- [x] migration_v12 (companies RLS) çalıştırıldı
+- [x] migration_v13 (anon policy fix) çalıştırıldı
+- [ ] **Kullanıcı yapısı hazır değil** — admin izolasyonu test edilemiyor. Supabase'de `role='admin'` + geçerli `company_id` atanmış test hesabı oluşturulmalı
+- [ ] Test hesabı oluşturulunca: çıkış/giriş → header'da şirket adı + başka şirket görünmemeli doğrulanmalı
 
 ---
 

@@ -102,9 +102,11 @@ grep "^## \[" log.md | tail -5
 
 **Etkilenen dosyalar:** `src/App.tsx` (push edildi), `scratch/migration_v12_companies_rls.sql` (yerel), `scratch/migration_v13_companies_anon_fix.sql` (yerel)
 
-**Bekleyen SQL (Supabase Dashboard'da çalıştırılmadı):**
-- `migration_v12_companies_rls.sql` → companies RLS
-- `migration_v13_companies_anon_fix.sql` → anon fix
-- Her ikisi çalıştırıldıktan sonra **çıkış yapıp tekrar giriş şart** (JWT company_id yenilenmesi için)
+**SQL Durumu:** migration_v12 ve migration_v13 Supabase Dashboard'da çalıştırıldı ✓
 
-**Bir sonraki:** migration_v12 + v13 çalıştır → çıkış/giriş → admin izolasyonunu doğrula
+**Önemli not — Kullanıcı yapısı henüz hazır değil:**
+- Veritabanında gerçek admin/user test hesapları yok veya company_id atamaları yapılmamış
+- RLS policy'leri doğru yazıldı fakat test edecek uygun rol/şirket kombinasyonu oluşturulmadı
+- Admin izolasyonu teknik olarak hazır; doğrulama için önce Supabase'de test kullanıcıları oluşturulmalı: role='admin', geçerli company_id ile bir profil
+
+**Bir sonraki:** Test kullanıcısı oluştur (role=admin, company_id atanmış) → çıkış/giriş → izolasyonu doğrula
