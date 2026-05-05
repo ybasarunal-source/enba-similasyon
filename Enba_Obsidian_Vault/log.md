@@ -88,3 +88,23 @@ grep "^## \[" log.md | tail -5
 **Etkilenen dosyalar:** `src/api/supabase.ts`, `src/modules/CompanyAdmin.tsx` (yeni), `src/modules/SuperAdmin.tsx`, `src/App.tsx`
 
 **Bir sonraki:** Kullanıcı bazlı detaylı yetki matrisi görünümü
+
+---
+
+## [2026-05-05] geliştirme | Admin şirket izolasyonu + header şirket adı
+
+**Yapılan:**
+- `App.tsx`: `companiesAPI` import edildi, `companyName` state eklendi, profil yüklenince `companiesAPI.getById()` çağrılıyor; header + dropdown'daki hardcoded "Platform Yöneticisi" → super_admin için "Sistem Yöneticisi", diğerleri için şirket adı
+- `migration_v12_companies_rls.sql`: companies tablosuna `FORCE ROW LEVEL SECURITY` + 3 policy (SuperAdmin tümü, admin+user kendi şirketi, admin kendi şirketini günceller)
+- `migration_v13_companies_anon_fix.sql`: migration_v12 login sayfasını kırdı — anon rolü companies göremez hale geldi ("Kayıtlı şirket bulunamadı"). Anon için `status IN ('active','demo')` SELECT policy eklendi
+- **Öğrenilen:** `FORCE ROW LEVEL SECURITY` + `TO authenticated` policy → anon (oturum açılmamış) kullanıcılar hiçbir satır göremez. Login sayfası gibi pre-auth sorguları için ayrıca `TO anon` policy gerekir.
+- `scratch/` klasörü `.gitignore`'da — SQL migration dosyaları git'e gitmiyor, Supabase Dashboard'da manuel çalıştırılıyor
+
+**Etkilenen dosyalar:** `src/App.tsx` (push edildi), `scratch/migration_v12_companies_rls.sql` (yerel), `scratch/migration_v13_companies_anon_fix.sql` (yerel)
+
+**Bekleyen SQL (Supabase Dashboard'da çalıştırılmadı):**
+- `migration_v12_companies_rls.sql` → companies RLS
+- `migration_v13_companies_anon_fix.sql` → anon fix
+- Her ikisi çalıştırıldıktan sonra **çıkış yapıp tekrar giriş şart** (JWT company_id yenilenmesi için)
+
+**Bir sonraki:** migration_v12 + v13 çalıştır → çıkış/giriş → admin izolasyonunu doğrula

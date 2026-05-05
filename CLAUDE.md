@@ -273,9 +273,10 @@ VITE_PARASUT_CLIENT_ID / VITE_PARASUT_CLIENT_SECRET
 ## Aktif Görevler
 > Her oturum başında güncelle
 
-- [ ] _(şu an çalışılan özellik)_
-- [ ] _(devam eden bug)_
-- [ ] _(bir sonraki hedef)_
+- [ ] **Supabase'de çalıştırılacak:** `scratch/migration_v12_companies_rls.sql` → companies tablosu RLS
+- [ ] **Supabase'de çalıştırılacak:** `scratch/migration_v13_companies_anon_fix.sql` → login sayfası anon fix
+- [ ] İkisi çalıştırıldıktan sonra: çıkış yap → tekrar giriş yap → admin izolasyonunu doğrula
+- [ ] Admin olarak giriş yapınca: başka şirketler görünmemeli, header'da kendi şirket adı görünmeli
 
 ---
 

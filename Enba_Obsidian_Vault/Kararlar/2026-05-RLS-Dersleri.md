@@ -112,6 +112,28 @@ CREATE POLICY "SuperAdmin tüm profilleri yönetir"
 
 ---
 
+## Kural 6 — FORCE ROW LEVEL SECURITY anon rolünü kırar
+
+```sql
+ALTER TABLE public.companies FORCE ROW LEVEL SECURITY;
+```
+
+Bu komut tablo sahibini (postgres) da dahil olmak üzere herkese RLS uygular. Eğer tüm policy'ler `TO authenticated` yazılmışsa, `anon` rolü (oturum açılmamış kullanıcı) hiçbir satır göremez.
+
+**Örnek kırılma:** Login sayfası, kullanıcı henüz giriş yapmadan companies tablosunu sorgular (şirket dropdown'u için). FORCE RLS + yalnızca authenticated policy → "Kayıtlı şirket bulunamadı."
+
+**Çözüm:** Pre-auth gerektiren tablolarda `TO anon` policy de ekle:
+
+```sql
+CREATE POLICY "Herkes aktif şirketleri görebilir"
+  ON public.companies FOR SELECT TO anon
+  USING (status IN ('active', 'demo'));
+```
+
+**Kontrol sorusu:** "Bu tabloyu oturum açılmadan önce de sorgulayan bir sayfa var mı?" → Varsa anon policy şart.
+
+---
+
 ## HTTP Durum Kodları — RLS Hataları
 
 | Kod | Anlam |
