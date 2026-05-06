@@ -34,7 +34,12 @@ export const Logistics: React.FC = () => {
     setLoading(true);
     try {
       const data = await DataService.fetchData<any>('logistics_records');
-      setKayitlar((data || []).sort((a: any, b: any) => new Date(b.tarih).getTime() - new Date(a.tarih).getTime()));
+      const mapped = (data || []).map((r: any) => ({
+        id: r.id, tarih: r.tarih, aracPlaka: r.arac_plaka, kullanici: r.kullanici,
+        baslangicKm: Number(r.baslangic_km) || 0, bitisKm: Number(r.bitis_km) || 0,
+        farkKm: Number(r.fark_km) || 0, guzergah: r.guzergah,
+      }));
+      setKayitlar(mapped.sort((a: any, b: any) => new Date(b.tarih).getTime() - new Date(a.tarih).getTime()));
     } catch (e) {
       console.error("Lojistik kayıtları yüklenemedi:", e);
     } finally {
@@ -49,19 +54,9 @@ export const Logistics: React.FC = () => {
     const basKm = Number(baslangicKm) || 0;
     const bitKm = Number(bitisKm) || 0;
     
-    const yeniKayit = {
-      tarih,
-      aracPlaka,
-      kullanici,
-      baslangicKm: basKm,
-      bitisKm: bitKm,
-      farkKm: bitKm - basKm,
-      guzergah
-    };
-
     setLoading(true);
     try {
-      await DataService.insertData('logistics_records', yeniKayit);
+      await DataService.insertLogistics({ tarih, aracPlaka, kullanici, baslangicKm: basKm, bitisKm: bitKm, guzergah });
       await loadRecords();
       setBaslangicKm(bitKm.toString());
       setBitisKm("");

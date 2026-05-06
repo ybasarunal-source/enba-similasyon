@@ -54,6 +54,28 @@ export interface BusinessPlan {
   updated_at?: string;
 }
 
+// --- Mapping Helpers ---
+
+function mapAlis(r: any): StockRecord {
+  return {
+    id: r.id, tarih: r.tarih, tedarikciAdi: r.tedarikci_adi,
+    hammaddeTuru: r.hammadde_turu, brutMiktar: Number(r.brut_miktar) || 0,
+    netMiktar: Number(r.net_miktar) || 0, alisFiyati: Number(r.alis_fiyati) || 0,
+    nakliyeBedeli: Number(r.nakliye_bedeli) || 0, ymFire: Number(r.ym_fire) || 0,
+    nemFire: Number(r.nem_fire) || 0, birimMaliyet: Number(r.birim_maliyet) || 0,
+    notlar: r.notlar,
+  };
+}
+
+function mapSatis(r: any): SalesRecord {
+  return {
+    id: r.id, tarih: r.tarih, musteriAdi: r.musteri_adi, stokTuru: r.stok_turu,
+    hammadde_turu: r.hammadde_turu, mamul_turu: r.mamul_turu,
+    miktar: Number(r.miktar) || 0, satisFiyati: Number(r.satis_fiyati) || 0,
+    nakliyeBedeli: Number(r.nakliye_bedeli) || 0, notlar: r.notlar,
+  };
+}
+
 // --- Servis Metodları ---
 
 export const DataService = {
@@ -189,7 +211,84 @@ export const DataService = {
     }
   },
 
-  // ... Diğer özel kayıt metodları (savePerson, saveAttendance vb.) ihtiyaç duyuldukça buraya eklenecek
+  // --- Stok: snake_case dönüşümlü typed metodlar ---
+
+  async insertAlis(record: Omit<StockRecord, 'id'>): Promise<StockRecord> {
+    const { data: { session } } = await supabase.auth.getSession();
+    const profile = await profileAPI.getMyProfile();
+    const payload: any = {
+      tarih: record.tarih, tedarikci_adi: record.tedarikciAdi,
+      hammadde_turu: record.hammaddeTuru, brut_miktar: record.brutMiktar,
+      net_miktar: record.netMiktar, alis_fiyati: record.alisFiyati,
+      nakliye_bedeli: record.nakliyeBedeli, ym_fire: record.ymFire ?? 0,
+      nem_fire: record.nemFire ?? 0, birim_maliyet: record.birimMaliyet ?? 0,
+      notlar: record.notlar ?? '', user_id: session?.user?.id || null,
+      created_at: new Date().toISOString(),
+    };
+    if (profile?.company_id) payload.company_id = profile.company_id;
+    const { data, error } = await supabase.from('stock_records').insert([payload]).select().single();
+    if (error) throw error;
+    return mapAlis(data);
+  },
+
+  async updateAlis(id: string, record: Partial<StockRecord>): Promise<StockRecord> {
+    const { data, error } = await supabase.from('stock_records').update({
+      tarih: record.tarih, tedarikci_adi: record.tedarikciAdi,
+      hammadde_turu: record.hammaddeTuru, brut_miktar: record.brutMiktar,
+      net_miktar: record.netMiktar, alis_fiyati: record.alisFiyati,
+      nakliye_bedeli: record.nakliyeBedeli, ym_fire: record.ymFire,
+      nem_fire: record.nemFire, birim_maliyet: record.birimMaliyet, notlar: record.notlar,
+    }).eq('id', id).select().single();
+    if (error) throw error;
+    return mapAlis(data);
+  },
+
+  async insertSatis(record: Omit<SalesRecord, 'id'>): Promise<SalesRecord> {
+    const { data: { session } } = await supabase.auth.getSession();
+    const profile = await profileAPI.getMyProfile();
+    const payload: any = {
+      tarih: record.tarih, musteri_adi: record.musteriAdi, stok_turu: record.stokTuru,
+      hammadde_turu: record.hammadde_turu ?? null, mamul_turu: record.mamul_turu ?? null,
+      miktar: record.miktar, satis_fiyati: record.satisFiyati,
+      nakliye_bedeli: record.nakliyeBedeli, notlar: record.notlar ?? '',
+      user_id: session?.user?.id || null, created_at: new Date().toISOString(),
+    };
+    if (profile?.company_id) payload.company_id = profile.company_id;
+    const { data, error } = await supabase.from('sales_records').insert([payload]).select().single();
+    if (error) throw error;
+    return mapSatis(data);
+  },
+
+  async updateSatis(id: string, record: Partial<SalesRecord>): Promise<SalesRecord> {
+    const { data, error } = await supabase.from('sales_records').update({
+      tarih: record.tarih, musteri_adi: record.musteriAdi, stok_turu: record.stokTuru,
+      hammadde_turu: record.hammadde_turu, mamul_turu: record.mamul_turu,
+      miktar: record.miktar, satis_fiyati: record.satisFiyati,
+      nakliye_bedeli: record.nakliyeBedeli, notlar: record.notlar,
+    }).eq('id', id).select().single();
+    if (error) throw error;
+    return mapSatis(data);
+  },
+
+  // --- Lojistik: snake_case dönüşümlü insert ---
+
+  async insertLogistics(record: {
+    tarih: string; aracPlaka: string; kullanici: string;
+    baslangicKm: number; bitisKm: number; guzergah: string;
+  }) {
+    const { data: { session } } = await supabase.auth.getSession();
+    const profile = await profileAPI.getMyProfile();
+    const payload: any = {
+      tarih: record.tarih, arac_plaka: record.aracPlaka, kullanici: record.kullanici,
+      baslangic_km: record.baslangicKm, bitis_km: record.bitisKm,
+      guzergah: record.guzergah, user_id: session?.user?.id || null,
+      created_at: new Date().toISOString(),
+    };
+    if (profile?.company_id) payload.company_id = profile.company_id;
+    const { data, error } = await supabase.from('logistics_records').insert([payload]).select().single();
+    if (error) throw error;
+    return data;
+  },
 };
 
 // Global erişim (Legacy desteği)

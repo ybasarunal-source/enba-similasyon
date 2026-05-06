@@ -171,13 +171,13 @@ export const Stock: React.FC = () => {
     if (!alisForm.tedarikciAdi?.trim() || !alisForm.brutMiktar) return;
     setLoading(true);
     try {
-      const payload = { ...alisForm, netMiktar: alisNetMiktar, birimMaliyet: alisBirimMaliyet };
+      const record = { ...alisForm, netMiktar: alisNetMiktar, birimMaliyet: alisBirimMaliyet };
       if (alisDuzenleId) {
-        const updated = await DataService.updateData('stock_records', alisDuzenleId, payload);
+        const updated = await DataService.updateAlis(alisDuzenleId, record);
         setAlislar(p => p.map(a => a.id === alisDuzenleId ? updated : a));
         setAlisDuzenleId(null);
       } else {
-        const inserted = await DataService.insertData('stock_records', payload);
+        const inserted = await DataService.insertAlis(record);
         setAlislar(p => [inserted, ...p]);
       }
       setAlisForm(BOSH_ALIS());
@@ -190,11 +190,11 @@ export const Stock: React.FC = () => {
     setLoading(true);
     try {
       if (satisDuzenleId) {
-        const updated = await DataService.updateData('sales_records', satisDuzenleId, satisForm);
+        const updated = await DataService.updateSatis(satisDuzenleId, satisForm);
         setSatislar(p => p.map(s => s.id === satisDuzenleId ? updated : s));
         setSatisDuzenleId(null);
       } else {
-        const inserted = await DataService.insertData('sales_records', satisForm);
+        const inserted = await DataService.insertSatis(satisForm);
         setSatislar(p => [inserted, ...p]);
       }
       setSatisForm(BOSH_SATIS());

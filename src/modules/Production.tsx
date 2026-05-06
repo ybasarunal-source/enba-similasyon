@@ -132,9 +132,7 @@ export const Production: React.FC = () => {
       cikan_urun:        cikan,
       sayac_basi:        basi,
       sayac_sonu:        sonu,
-      fire_miktar:       fireMiktar,
-      fire_oran:         fireOran,
-      elektrik_sarfiyat: elektrikSarfiyat,
+      // fire_miktar, fire_oran, elektrik_sarfiyat: DB'de GENERATED kolon — gönderilmez
       calisma_sure_saat: calismaSureSaat,
     };
 
