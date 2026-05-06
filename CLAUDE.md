@@ -260,6 +260,20 @@ VITE_PARASUT_CLIENT_ID / VITE_PARASUT_CLIENT_SECRET
 
 ---
 
+## ⚠️ Veri Güvenliği — KRİTİK KURAL (2026-05-06'dan itibaren)
+
+Uygulama artık gerçek veri girişi aşamasına geçti. **Bundan sonra hiçbir geliştirme mevcut veriyi kaybettiremez.**
+
+Her yeni özellik veya migration öncesinde şunları kontrol et:
+- localStorage'daki mevcut kayıtlar silinmiyor mu? (key rename, format değişikliği)
+- Supabase tablosunda mevcut satırlar etkileniyor mu? (DROP, truncate, ALTER tip değişikliği)
+- Migration geri alınabilir mi? Önce `SELECT` ile test et, sonra `UPDATE/DELETE` uygula
+- Supabase'de destructive işlem öncesi tablo export al (Table Editor → Download CSV)
+
+Veri kaybı riski olan her adımı kullanıcıya açıkça belirt ve onay al.
+
+---
+
 ## Bilinen Sorunlar
 
 - Google OAuth → token yenileme yok, kullanıcı logout olabilir

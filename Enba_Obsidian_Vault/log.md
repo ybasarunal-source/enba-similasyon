@@ -37,7 +37,11 @@ grep "^## \[" log.md | tail -5
 
 **Etki:** SQL şeması her iki hedefi destekleyecek şekilde tasarlanmalı (multi-tenant yapı kritik)
 
-*Yeni girişleri buraya ekle ↓*
+## [2026-05-05 22:50] sorgu | Hafıza senkronizasyonu ve Turuncu Liste incelemesi
+- Soru: Mevcut durum nedir ve Turuncu Liste neleri kapsıyor?
+- Çıkarım: "Kırmızı Liste" (Kritik RLS ve Auth) tamamlanmış. "Turuncu Liste" (Modül geliştirmeleri ve eksik tablo izolasyonları) hedefleniyor.
+- Bir sonraki: Admin izolasyonunun testi için test kullanıcısı hazırlığı.
+- Cevap kaydedildi mi: evet (log.md)
 
 ---
 
@@ -110,3 +114,17 @@ grep "^## \[" log.md | tail -5
 - Admin izolasyonu teknik olarak hazır; doğrulama için önce Supabase'de test kullanıcıları oluşturulmalı: role='admin', geçerli company_id ile bir profil
 
 **Bir sonraki:** Test kullanıcısı oluştur (role=admin, company_id atanmış) → çıkış/giriş → izolasyonu doğrula
+
+---
+
+## [2026-05-06] karar | Gerçek veri girişi aşaması başladı — veri güvenliği kritik
+
+**Karar:** Uygulama artık gerçek operasyonel veri girişi aşamasına geçti. Bundan sonra yapılacak tüm geliştirmelerde veri kaybı sıfır tolerans ile ele alınacak.
+
+**Kurallar (CLAUDE.md'ye eklendi):**
+- localStorage key rename veya format değişikliği yapılmadan önce mevcut veri etkisi değerlendirilecek
+- Supabase'de destructive migration (DROP, TRUNCATE, tip değişikliği) öncesi CSV export alınacak
+- Her migration önce SELECT ile test edilecek, onay alındıktan sonra uygulanacak
+- Veri kaybı riski olan her adım kullanıcıya açıkça bildirilecek ve onay beklenecek
+
+**Etkilenen:** Tüm modüller — özellikle localStorage kullananlar (Stok, Üretim, Lojistik, İK, Nakit Akışı, Planlama)
