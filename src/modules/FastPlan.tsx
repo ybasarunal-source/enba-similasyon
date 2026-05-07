@@ -388,7 +388,7 @@ export const FastPlan: React.FC = () => {
               <p className="text-sm text-gray-400 font-medium mt-2">Yeni Plan Oluştur butonuna tıklayarak ilk planınızı oluşturun.</p>
             </div>
             <button
-              onClick={() => setView('form')}
+              onClick={() => { setDuzenlemId(null); setBaslik(''); setAciklama(''); setParams({ ...VARSAYILAN_PARAMS }); setView('form'); }}
               className="flex items-center gap-3 px-8 py-4 bg-enba-dark text-white rounded-[1.5rem] font-black text-[11px] uppercase tracking-[3px] shadow-xl hover:bg-black transition-all"
             >
               <Plus size={18} /> İlk Planı Oluştur
@@ -460,7 +460,7 @@ export const FastPlan: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between gap-6">
         <div className="flex items-center gap-5">
-          <button onClick={() => setView('cards')} className="w-12 h-12 rounded-2xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition-all">
+          <button onClick={() => { setDuzenlemId(null); setBaslik(''); setAciklama(''); setParams({ ...VARSAYILAN_PARAMS }); setView('cards'); }} className="w-12 h-12 rounded-2xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition-all">
             <ArrowRight size={20} className="rotate-180" />
           </button>
           <div>
@@ -471,7 +471,7 @@ export const FastPlan: React.FC = () => {
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <button onClick={() => setView('cards')} className="px-6 py-3 rounded-2xl border border-gray-200 text-gray-500 hover:bg-gray-50 font-black text-[11px] uppercase tracking-[2px] transition-all">
+          <button onClick={() => { setDuzenlemId(null); setBaslik(''); setAciklama(''); setParams({ ...VARSAYILAN_PARAMS }); setView('cards'); }} className="px-6 py-3 rounded-2xl border border-gray-200 text-gray-500 hover:bg-gray-50 font-black text-[11px] uppercase tracking-[2px] transition-all">
             İptal
           </button>
           <button onClick={planKaydet} className="flex items-center gap-3 px-8 py-3.5 bg-enba-orange text-white rounded-2xl font-black text-[11px] uppercase tracking-[2px] shadow-xl shadow-enba-orange/30 hover:brightness-110 transition-all active:scale-95">

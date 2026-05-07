@@ -1,24 +1,20 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { DataService } from '../api/dataService';
-import { fmt } from '../utils/formatters';
-import { 
-  Archive as ArchiveIcon, 
-  Search, 
-  Upload, 
-  FileText, 
-  FileImage, 
-  FileSpreadsheet, 
-  File, 
-  Download, 
-  Trash2, 
-  FileX, 
-  XCircle, 
-  Eye 
+import { supabase } from '../api/supabase';
+import {
+  Archive as ArchiveIcon,
+  Search,
+  Upload,
+  FileText,
+  FileImage,
+  FileSpreadsheet,
+  File,
+  Download,
+  Trash2,
+  FileX,
+  XCircle,
+  Eye
 } from 'lucide-react';
-
-/**
- * Enba Similasyon - Arşiv & Doküman Yönetimi (TypeScript + Tailwind)
- */
 
 interface ArchiveFile {
   id: string;
@@ -52,17 +48,27 @@ const formatSize = (bytes: number) => {
 export const Archive: React.FC = () => {
   const [dosyalar, setDosyalar] = useState<ArchiveFile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
   const [aramaMetni, setAramaMetni] = useState('');
   const [kategoriFiltre, setKategoriFiltre] = useState('Tümü');
   const [seciliId, setSeciliId] = useState<string | null>(null);
-  const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchData = async () => {
     setLoading(true);
     try {
       const data = await DataService.fetchData<any>('arsiv_files');
-      setDosyalar(data);
+      setDosyalar((data || []).map((r: any) => ({
+        id: r.id,
+        ad: r.ad,
+        mime: r.mime,
+        boyut: Number(r.boyut) || 0,
+        kategori: r.kategori,
+        etiketler: r.etiketler || [],
+        notlar: r.notlar,
+        storage_path: r.storage_path,
+        yuklenmeTarihi: r.yuklenme_tarihi || r.created_at,
+      })));
     } catch (e) {
       console.error("Arşiv verileri çekilemedi:", e);
     } finally {
@@ -71,6 +77,57 @@ export const Archive: React.FC = () => {
   };
 
   useEffect(() => { fetchData(); }, []);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setUploading(true);
+    try {
+      for (const file of files) {
+        const path = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
+        const { error: uploadError } = await supabase.storage.from('arsiv').upload(path, file);
+        if (uploadError) throw uploadError;
+        await DataService.insertData('arsiv_files', {
+          ad: file.name,
+          mime: file.type || 'application/octet-stream',
+          boyut: file.size,
+          kategori: 'Diğer',
+          etiketler: [],
+          storage_path: path,
+          yuklenme_tarihi: new Date().toISOString(),
+        });
+      }
+      await fetchData();
+    } catch (e) {
+      console.error('Yükleme hatası:', e);
+      alert('Dosya yüklenirken hata oluştu');
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleDownload = async (dosya: ArchiveFile) => {
+    try {
+      const { data, error } = await supabase.storage.from('arsiv').createSignedUrl(dosya.storage_path, 3600);
+      if (error) throw error;
+      window.open(data.signedUrl, '_blank');
+    } catch (e) {
+      alert('İndirme hatası oluştu');
+    }
+  };
+
+  const handleDelete = async (dosya: ArchiveFile) => {
+    if (!confirm('Bu dosya kalıcı olarak silinecek. Onaylıyor musunuz?')) return;
+    try {
+      await supabase.storage.from('arsiv').remove([dosya.storage_path]);
+      await DataService.deleteData('arsiv_files', dosya.id);
+      if (seciliId === dosya.id) setSeciliId(null);
+      await fetchData();
+    } catch (e) {
+      alert('Silme hatası oluştu');
+    }
+  };
 
   const filteredFiles = useMemo(() => {
     return dosyalar.filter(d => {
@@ -99,27 +156,28 @@ export const Archive: React.FC = () => {
              </div>
           </div>
         </div>
-        
+
         <div className="flex gap-4 items-center">
           <div className="relative group">
              <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-enba-orange transition-colors" size={20} />
-             <input 
-               type="text" 
+             <input
+               type="text"
                placeholder="MATRİXTE ARA..."
                value={aramaMetni}
                onChange={e => setAramaMetni(e.target.value)}
                className="bg-white border border-gray-100 rounded-[1.8rem] pl-16 pr-8 py-5 text-[11px] font-black text-enba-dark focus:ring-4 focus:ring-enba-orange/5 outline-none w-80 transition-all placeholder:italic uppercase tracking-widest shadow-card"
              />
           </div>
-          <button 
+          <button
             onClick={() => fileInputRef.current?.click()}
-            className="px-10 py-5 bg-enba-dark text-white rounded-[1.8rem] font-black text-[11px] uppercase tracking-[3px] shadow-2xl shadow-black/20 hover:bg-black transition-all flex items-center gap-4 group active:scale-95 border border-white/5"
+            disabled={uploading}
+            className="px-10 py-5 bg-enba-dark text-white rounded-[1.8rem] font-black text-[11px] uppercase tracking-[3px] shadow-2xl shadow-black/20 hover:bg-black transition-all flex items-center gap-4 group active:scale-95 border border-white/5 disabled:opacity-60 disabled:cursor-wait"
           >
             <Upload size={20} className="text-enba-orange transition-transform group-hover:-translate-y-1" />
-            Yeni Kayıt Girişi
+            {uploading ? 'Yükleniyor...' : 'Yeni Kayıt Girişi'}
           </button>
         </div>
-        <input type="file" ref={fileInputRef} className="hidden" multiple />
+        <input type="file" ref={fileInputRef} className="hidden" multiple onChange={handleFileChange} />
       </div>
 
       <div className="flex gap-10 flex-1 min-h-0">
@@ -142,14 +200,14 @@ export const Archive: React.FC = () => {
           {/* Files Grid */}
           <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-8 overflow-y-auto pr-4 custom-scrollbar pb-10">
             {filteredFiles.map(d => (
-              <div 
+              <div
                 key={d.id}
                 onClick={() => setSeciliId(d.id)}
                 className={`group bg-white p-8 rounded-[2.5rem] border-2 transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between min-h-[180px]
                   ${seciliId === d.id ? 'border-enba-orange shadow-2xl' : 'border-transparent shadow-card hover:border-gray-50'}`}
               >
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gray-50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:bg-enba-orange/5 transition-colors"></div>
-                
+
                 <div className="flex items-start gap-6 mb-6 relative z-10">
                   <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center text-3xl shadow-xl transition-transform group-hover:scale-110 duration-500
                     ${d.mime.includes('pdf') ? 'bg-rose-50 text-rose-500' : 'bg-blue-50 text-blue-500'}`}>
@@ -164,24 +222,28 @@ export const Archive: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="flex justify-between items-center relative z-10 pt-4 border-t border-gray-50/50">
                    <div className="flex items-center gap-2">
                        <FileText size={14} className="text-gray-200" />
                        <span className="text-[9px] font-bold text-gray-300 uppercase tracking-widest italic">{new Date(d.yuklenmeTarihi).toLocaleDateString('tr-TR')}</span>
                    </div>
-                   <div className="flex gap-2">
-                      <button className="h-10 w-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-enba-dark hover:text-white transition-all shadow-sm">
+                   <div className="flex gap-2" onClick={ev => ev.stopPropagation()}>
+                      <button
+                        onClick={() => handleDownload(d)}
+                        className="h-10 w-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-enba-dark hover:text-white transition-all shadow-sm">
                         <Download size={18} />
                       </button>
-                      <button className="h-10 w-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-rose-500 hover:text-white transition-all shadow-sm">
+                      <button
+                        onClick={() => handleDelete(d)}
+                        className="h-10 w-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 hover:bg-rose-500 hover:text-white transition-all shadow-sm">
                         <Trash2 size={18} />
                       </button>
                    </div>
                 </div>
               </div>
             ))}
-            
+
             {filteredFiles.length === 0 && !loading && (
               <div className="col-span-full py-40 flex flex-col items-center justify-center text-center">
                  <div className="w-24 h-24 bg-gray-50 rounded-[2.5rem] flex items-center justify-center text-gray-100 border border-gray-50 shadow-inner mb-6">
@@ -235,10 +297,14 @@ export const Archive: React.FC = () => {
              </div>
 
              <div className="mt-auto flex flex-col gap-4">
-                <button className="w-full bg-enba-dark text-white rounded-[1.8rem] py-6 font-black text-xs uppercase tracking-[4px] transition-all hover:bg-black flex items-center justify-center gap-4 shadow-2xl active:scale-95 border border-white/5">
+                <button
+                  onClick={() => handleDownload(seciliDosya)}
+                  className="w-full bg-enba-dark text-white rounded-[1.8rem] py-6 font-black text-xs uppercase tracking-[4px] transition-all hover:bg-black flex items-center justify-center gap-4 shadow-2xl active:scale-95 border border-white/5">
                    <Eye size={20} className="text-enba-orange" /> BELGEYİ GÖRÜNTÜLE
                 </button>
-                <button className="w-full border-2 border-enba-dark text-enba-dark rounded-[1.8rem] py-6 font-black text-xs uppercase tracking-[4px] transition-all hover:bg-gray-50 italic">
+                <button
+                  onClick={() => handleDownload(seciliDosya)}
+                  className="w-full border-2 border-enba-dark text-enba-dark rounded-[1.8rem] py-6 font-black text-xs uppercase tracking-[4px] transition-all hover:bg-gray-50 italic">
                    DOSYAYI İNDİR
                 </button>
              </div>

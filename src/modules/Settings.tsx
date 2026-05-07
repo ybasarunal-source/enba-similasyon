@@ -72,21 +72,18 @@ export const Settings: React.FC<SettingsProps> = ({ profile }) => {
   };
 
   // ── Local Settings State ────────────────────────────────
-  const [settings, setSettings] = useState({
-    currency: 'TRY',
-    unit: 'ton',
-    notifications: true,
-    theme: 'light'
+  const [settings, setSettings] = useState(() => {
+    try {
+      const raw = localStorage.getItem('enba_settings');
+      if (raw) return JSON.parse(raw);
+    } catch { /* ignore */ }
+    return { currency: 'TRY', unit: 'ton', notifications: true, theme: 'light' };
   });
 
   const handleSave = () => {
-    setLoading(true);
-    // Simulate save
-    setTimeout(() => {
-      setLoading(false);
-      setSuccess(true);
-      setTimeout(() => setSuccess(false), 3000);
-    }, 800);
+    localStorage.setItem('enba_settings', JSON.stringify(settings));
+    setSuccess(true);
+    setTimeout(() => setSuccess(false), 3000);
   };
 
   const CARD_STYLE = "bg-white rounded-[2.5rem] border border-gray-100 shadow-card p-10 transition-all hover:shadow-2xl relative overflow-hidden group";
@@ -364,17 +361,12 @@ export const Settings: React.FC<SettingsProps> = ({ profile }) => {
                </div>
              )}
           </div>
-          <button 
+          <button
             onClick={handleSave}
-            disabled={loading}
-            className="px-16 py-6 bg-enba-dark text-white rounded-[2.2rem] font-black text-xs uppercase tracking-[5px] hover:bg-black transition-all shadow-2xl flex items-center gap-4 group disabled:opacity-50 active:scale-95 border border-white/5 relative overflow-hidden"
+            className="px-16 py-6 bg-enba-dark text-white rounded-[2.2rem] font-black text-xs uppercase tracking-[5px] hover:bg-black transition-all shadow-2xl flex items-center gap-4 group active:scale-95 border border-white/5 relative overflow-hidden"
           >
              <div className="absolute inset-0 bg-white/10 -translate-x-full group-hover:translate-x-0 transition-transform duration-700"></div>
-             {loading ? (
-               <RefreshCw size={24} className="animate-spin text-enba-orange" />
-             ) : (
-               <Save size={24} className="text-enba-orange group-hover:rotate-12 transition-transform" />
-             )}
+             <Save size={24} className="text-enba-orange group-hover:rotate-12 transition-transform" />
              {loading ? 'YÜKLENİYOR...' : 'SİSTEMİ GÜNCELLE'}
           </button>
        </div>

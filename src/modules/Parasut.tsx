@@ -12,7 +12,7 @@ import {
   Loader2,
   Search,
 } from 'lucide-react';
-import { parasutService, type ParasutInvoice } from '../api/parasut';
+import { parasutService, type ParasutInvoice, type ParasutItem } from '../api/parasut';
 
 type DatePreset = 'this_month' | 'last_3' | 'this_year' | 'custom';
 type TypeFilter = 'all' | 'income' | 'expense';
@@ -47,15 +47,12 @@ const LoginForm: React.FC<{ onReady: (companyId: string) => void }> = ({ onReady
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('ADIM 1: handleSubmit çalıştı');
     if (!companyId.trim()) { setError('Firma ID zorunludur.'); return; }
     setLoading(true);
+    setError('');
     try {
-      setError('ADIM 1.5: login çağrılıyor...');
       await parasutService.login(email, password);
-      setError('ADIM 2: Login başarılı, token alındı');
       parasutService.saveCompany({ id: companyId.trim(), name: companyId.trim() });
-      setError('ADIM 3: Firma kaydedildi, ready tetikleniyor');
       onReady(companyId.trim());
     } catch (err: any) {
       // Capture detailed error data for the diagnostic UI
@@ -157,11 +154,16 @@ const LoginForm: React.FC<{ onReady: (companyId: string) => void }> = ({ onReady
   );
 };
 
+type ActiveTab = 'invoices' | 'stock';
+
 // ─── Ana Modül ────────────────────────────────────────────────────
 export const Parasut: React.FC = () => {
   const savedCompany = parasutService.getCompany();
   const [ready, setReady]         = useState(parasutService.isLoggedIn() && !!savedCompany);
   const [companyId, setCompanyId] = useState(savedCompany?.id || '');
+  const [activeTab, setActiveTab] = useState<ActiveTab>('invoices');
+
+  // Fatura state
   const [invoices, setInvoices]   = useState<ParasutInvoice[]>([]);
   const [loading, setLoading]     = useState(false);
   const [error, setError]         = useState('');
@@ -173,12 +175,33 @@ export const Parasut: React.FC = () => {
   const [lastSync, setLastSync]   = useState<Date | null>(null);
   const [sortConfig, setSortConfig] = useState<{ key: keyof ParasutInvoice; direction: 'asc' | 'desc' }>({ key: 'issue_date', direction: 'desc' });
 
+  // Stok state
+  const [items, setItems]           = useState<ParasutItem[]>([]);
+  const [itemsLoading, setItemsLoading] = useState(false);
+  const [itemsError, setItemsError] = useState('');
+  const [itemSearch, setItemSearch] = useState('');
+  const [itemsLoaded, setItemsLoaded] = useState(false);
+
   // Custom Dates (New Feature Kept)
   const [dateFrom, setDateFrom] = useState(() => getRange('this_month').from);
   const [dateTo,   setDateTo]   = useState(() => getRange('this_month').to);
 
+  const loadItems = useCallback(async (cid: string) => {
+    if (!cid) return;
+    setItemsLoading(true);
+    setItemsError('');
+    try {
+      const data = await parasutService.getItems(cid);
+      setItems(data);
+      setItemsLoaded(true);
+    } catch (err: any) {
+      setItemsError(err.message || 'Stok verileri alınamadı.');
+    } finally {
+      setItemsLoading(false);
+    }
+  }, []);
+
   const loadData = useCallback(async (cid: string, from: string, to: string) => {
-    console.log('[Parasut] loadData called, cid:', cid, 'from:', from, 'to:', to);
     if (!cid) return;
     setLoading(true);
     setError('');
@@ -206,6 +229,12 @@ export const Parasut: React.FC = () => {
     if (ready && companyId) loadData(companyId, dateFrom, dateTo);
   }, [ready, companyId, dateFrom, dateTo, loadData]);
 
+  useEffect(() => {
+    if (ready && companyId && activeTab === 'stock' && !itemsLoaded) {
+      loadItems(companyId);
+    }
+  }, [ready, companyId, activeTab, itemsLoaded, loadItems]);
+
   const handlePresetChange = (p: DatePreset) => {
     setDatePreset(p);
     if (p !== 'custom') {
@@ -216,32 +245,19 @@ export const Parasut: React.FC = () => {
   };
 
   const handleReady = (cid: string) => {
-    console.log('[Parasut] handleReady called, cid:', cid);
-    console.log('[Parasut] isLoggedIn:', parasutService.isLoggedIn());
     setCompanyId(cid);
     setReady(true);
-    console.log('[Parasut] setReady(true) called');
   };
 
   const handleLogout = () => {
     parasutService.logout();
     setReady(false);
     setInvoices([]);
+    setItems([]);
+    setItemsLoaded(false);
     setError('');
   };
 
-  // Re-added working Debug button
-  const handleDebug = async () => {
-    const token = await parasutService.getToken();
-    if (!token) { setError('DEBUG: Token yok!'); return; }
-    try {
-      const r = await fetch(`/api/parasut-debug?token=${token}&company=${companyId}`);
-      const j = await r.json();
-      setError(`DEBUG: status=${j.header_auth?.status} | token_prefix=${j.token_prefix} | body=${String(j.header_auth?.body || '').slice(0, 150)}`);
-    } catch (e: any) {
-      setError('DEBUG hata: ' + e.message);
-    }
-  };
 
   if (!ready) return <LoginForm onReady={handleReady} />;
 
@@ -324,19 +340,33 @@ export const Parasut: React.FC = () => {
             </div>
             <p className="text-xs text-gray-400 mt-0.5">
               Firma ID: <span className="font-medium text-gray-500">{companyId}</span>
-              {lastSync && <span className="ml-2 text-gray-300">· Güncelleme: {lastSync.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</span>}
+              {lastSync && activeTab === 'invoices' && <span className="ml-2 text-gray-300">· Güncelleme: {lastSync.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</span>}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => loadData(companyId, dateFrom, dateTo)} disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-600 rounded-xl text-xs font-medium hover:bg-gray-200 transition-all">
-            <RefreshCw size={13} className={loading ? 'animate-spin' : ''} /> Yenile
-          </button>
-          <button onClick={handleDebug}
-            className="flex items-center gap-2 px-4 py-2 bg-yellow-100 text-yellow-700 rounded-xl text-xs font-medium hover:bg-yellow-200 transition-all">
-            Debug
-          </button>
+          <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
+            <button onClick={() => setActiveTab('invoices')}
+              className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${activeTab === 'invoices' ? 'bg-white text-enba-dark shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>
+              Faturalar
+            </button>
+            <button onClick={() => setActiveTab('stock')}
+              className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${activeTab === 'stock' ? 'bg-white text-enba-dark shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>
+              Stok
+            </button>
+          </div>
+          {activeTab === 'invoices' && (
+            <button onClick={() => loadData(companyId, dateFrom, dateTo)} disabled={loading}
+              className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-600 rounded-xl text-xs font-medium hover:bg-gray-200 transition-all">
+              <RefreshCw size={13} className={loading ? 'animate-spin' : ''} /> Yenile
+            </button>
+          )}
+          {activeTab === 'stock' && (
+            <button onClick={() => { setItemsLoaded(false); loadItems(companyId); }} disabled={itemsLoading}
+              className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-600 rounded-xl text-xs font-medium hover:bg-gray-200 transition-all">
+              <RefreshCw size={13} className={itemsLoading ? 'animate-spin' : ''} /> Yenile
+            </button>
+          )}
           <button onClick={handleLogout}
             className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-500 rounded-xl text-xs font-medium hover:bg-red-50 hover:text-red-500 transition-all">
             <LogOut size={13} /> Çıkış
@@ -344,6 +374,7 @@ export const Parasut: React.FC = () => {
         </div>
       </div>
 
+      {activeTab === 'invoices' && <>
       {/* Summary Cards */}
       <div className="grid grid-cols-3 gap-4">
         {[
@@ -527,6 +558,83 @@ export const Parasut: React.FC = () => {
           </table>
         )}
       </div>
+      </>}
+
+      {/* ─── Stok Tab ─────────────────────────────────────────────── */}
+      {activeTab === 'stock' && <>
+        {/* Stok arama */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex items-center gap-4">
+          <div className="flex-1 flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-xl px-3 py-2">
+            <Search size={14} className="text-gray-400 flex-shrink-0" />
+            <input type="text" value={itemSearch} onChange={e => setItemSearch(e.target.value)}
+              placeholder="Ürün adı veya kodu..."
+              className="bg-transparent text-xs text-gray-700 placeholder-gray-400 outline-none w-full" />
+          </div>
+          <div className="text-xs text-gray-400 tabular-nums">
+            {items.filter(it => !itemSearch || it.name.toLowerCase().includes(itemSearch.toLowerCase()) || it.code.toLowerCase().includes(itemSearch.toLowerCase())).length} ürün
+          </div>
+        </div>
+
+        {itemsError && (
+          <div className="flex items-center gap-2 p-4 bg-rose-50 border border-rose-100 rounded-xl text-sm text-rose-600">
+            <AlertCircle size={16} className="flex-shrink-0" />{itemsError}
+          </div>
+        )}
+
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          {itemsLoading ? (
+            <div className="flex flex-col items-center justify-center py-24 text-gray-400">
+              <Loader2 size={32} className="animate-spin text-enba-orange mb-3" />
+              <span className="text-sm">Paraşüt'ten stok verileri alınıyor...</span>
+            </div>
+          ) : items.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-24 text-gray-300">
+              <Wallet size={36} className="mb-3 opacity-40" />
+              <span className="text-sm font-medium text-gray-400">Stok kalemi bulunamadı</span>
+            </div>
+          ) : (() => {
+            const filteredItems = items.filter(it =>
+              !itemSearch || it.name.toLowerCase().includes(itemSearch.toLowerCase()) || it.code.toLowerCase().includes(itemSearch.toLowerCase())
+            );
+            return (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-100">
+                    {['Ürün Adı', 'Kod', 'Stok Miktarı', 'Birim', 'Liste Fiyatı', 'Kategori'].map(h => (
+                      <th key={h} className="px-5 py-3.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wider text-left">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredItems.map((item, i) => (
+                    <tr key={item.id} className={`border-b border-gray-50 hover:bg-gray-50/60 transition-colors ${i % 2 === 0 ? '' : 'bg-gray-50/30'}`}>
+                      <td className="px-5 py-3.5">
+                        <div className="text-xs font-semibold text-gray-800">{item.name}</div>
+                      </td>
+                      <td className="px-5 py-3.5 text-xs text-gray-400 font-mono">{item.code || '—'}</td>
+                      <td className="px-5 py-3.5">
+                        <span className={`text-xs font-semibold tabular-nums ${item.stock_count > 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
+                          {item.stock_count.toLocaleString('tr-TR', { maximumFractionDigits: 2 })}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5 text-xs text-gray-500">{item.unit}</td>
+                      <td className="px-5 py-3.5 text-xs font-semibold text-gray-700 tabular-nums">
+                        {item.list_price > 0 ? `${money(item.list_price)} ${item.currency === 'TRL' ? '₺' : item.currency}` : '—'}
+                      </td>
+                      <td className="px-5 py-3.5">
+                        {item.category_name
+                          ? <span className="text-xs font-medium text-gray-600">{item.category_name}</span>
+                          : <span className="text-xs text-gray-300 italic">Kategorisiz</span>
+                        }
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            );
+          })()}
+        </div>
+      </>}
     </div>
   );
 };

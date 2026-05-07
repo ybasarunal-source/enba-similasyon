@@ -51,11 +51,22 @@ export const Cashflow: React.FC<{ aktifPlanlar?: any[] }> = ({ aktifPlanlar = []
     if (!seciliPlanId) return;
     setLoading(true);
     try {
-      // In a real scenario, we fetch params from DB
-      // const p = await DataService.fetchCashflowParams(seciliPlanId);
-      // setParams(p);
+      const saved = await DataService.fetchCashflowParams(seciliPlanId);
+      if (saved) setParams(saved);
     } catch (e) {
       console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveParams = async () => {
+    if (!seciliPlanId) return;
+    setLoading(true);
+    try {
+      await DataService.saveCashflowParams(seciliPlanId, params);
+    } catch (e) {
+      alert('Parametreler kaydedilemedi');
     } finally {
       setLoading(false);
     }
@@ -263,11 +274,11 @@ export const Cashflow: React.FC<{ aktifPlanlar?: any[] }> = ({ aktifPlanlar = []
                     <div className="grid grid-cols-2 gap-4">
                        <div className="space-y-2">
                           <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Müşteri Vadesi (Gün)</label>
-                          <input type="number" defaultValue={30} className="w-full bg-gray-50 border border-transparent rounded-2xl px-6 py-4 text-sm font-black text-enba-dark outline-none" />
+                          <input type="number" value={params.tahsilatVadesi} onChange={e => setParams({...params, tahsilatVadesi: Number(e.target.value)})} className="w-full bg-gray-50 border border-transparent rounded-2xl px-6 py-4 text-sm font-black text-enba-dark outline-none" />
                        </div>
                        <div className="space-y-2">
                           <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Tedarikçi Vadesi (Gün)</label>
-                          <input type="number" defaultValue={30} className="w-full bg-gray-50 border border-transparent rounded-2xl px-6 py-4 text-sm font-black text-enba-dark outline-none" />
+                          <input type="number" value={params.tedarikciVadesi} onChange={e => setParams({...params, tedarikciVadesi: Number(e.target.value)})} className="w-full bg-gray-50 border border-transparent rounded-2xl px-6 py-4 text-sm font-black text-enba-dark outline-none" />
                        </div>
                     </div>
                  </div>
@@ -281,8 +292,9 @@ export const Cashflow: React.FC<{ aktifPlanlar?: any[] }> = ({ aktifPlanlar = []
                     "Nakit akışı verileri, tahsilat vadelerine göre otomatik olarak dağıtılır. Örneğin 45 günlük bir vade tanımladığınızda, sistem o ayki satışın %50'sini içinde bulunulan aya, kalan %50'sini bir sonraki aya tahsilat olarak yazdırmaktadır."
                  </p>
                  <div className="mt-8 pt-8 border-t border-gray-200">
-                    <button className="w-full bg-enba-dark text-white rounded-2xl py-4 font-black text-xs uppercase tracking-[2px] transition-all hover:bg-black">
-                       Tüm Parametreleri Güncelle
+                    <button onClick={handleSaveParams} disabled={loading || !seciliPlanId}
+                      className="w-full bg-enba-dark text-white rounded-2xl py-4 font-black text-xs uppercase tracking-[2px] transition-all hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed">
+                       {loading ? 'Kaydediliyor...' : 'Tüm Parametreleri Güncelle'}
                     </button>
                  </div>
               </div>

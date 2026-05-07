@@ -24,12 +24,24 @@ Her iki hedef multi-tenant yapının sağlam çalışmasını zorunlu kılıyor:
 
 ---
 
-## Geliştirme Öncelikleri
+## Geliştirme Öncelikleri (2026-05-06 güncel)
 
-1. **SQL şeması** — tüm tabloların `company_id` ile doğru izole edilmesi, RLS (Row Level Security) politikaları
-2. **Modül eksikleri** — 21 modül sırayla gözden geçirilip tamamlanacak
-3. **Gerçek veri girişi** — kendi şirket verileri girilecek
-4. **Demo hazırlığı** — demo hesabı için örnek veri seti oluşturulacak
+### Faz 1 — Tamamlandı ✅
+- Tüm 20 modül Supabase'e bağlı, CRUD çalışıyor
+- Multi-tenant RLS v23'e kadar tüm tablolarda
+- localStorage → Supabase göçleri tamamlandı
+
+### Faz 2 — Bir Sonraki (6–8 hafta)
+1. **Bordro hesaplama** — SGK/gelir vergisi/damga formülleri, bordro fişi (dışsal bağımlılık yok, hemen başlanabilir)
+2. **E-fatura** — entegratör seçimi + sözleşme + UBL XML + API (mali mühür gerekli)
+3. **Paraşüt tamamlama** — stok eşleştirmesi, kalan uç noktalar
+4. **Muhasebe motoru** — Tek Düzen Hesap Planı, yevmiye, mizan (en karmaşık, en sona)
+5. **Finansal raporlama** — bilanço, gelir tablosu (muhasebe motoru tamamlandıktan sonra)
+
+### Piyasa Hedefi
+- Faz 2 tamamlandığında SaaS olarak pazarlanabilir
+- Hedef: Türkiye'de 5.000–20.000 geri dönüşüm/plastik/kağıt üreticisi
+- Fiyat aralığı: 2.000–4.000 ₺/ay/şirket
 
 ---
 

@@ -185,11 +185,11 @@ Custom history stack — tüm navigasyon `App.tsx`'te:
 - **URL hiç değişmez** — embed/iframe uyumluluğu için
 
 ### State (Redux/Zustand YOK)
-1. **Supabase** → auth, profiles, tasks, assets, permits, plans, maintenance
-2. **localStorage** → business plans, alış/satış/üretim kayıtları, OAuth tokenlar, tema, dil
+1. **Supabase** → auth, profiles, tasks, assets, permits, plans, HR, arşiv, stok, satış, üretim, lojistik, nakit akışı
+2. **localStorage** → FastPlan/DetailedPlan önbellek (Supabase'e sync edilir), OAuth tokenlar, tema, dil
 3. **useState** → modül bazlı geçici durum
 
-> ⚠️ localStorage key'leri değiştirme: `enba_detailed_plans`, `enba_business_plans`, `enba_alislar`, `enba_satislar`, `enba_uretim_kayitlari`, `enba_language`, `enba_theme`
+> ⚠️ localStorage key'leri değiştirme: `enba_fast_plans_v2`, `enba_detailed_plans`, `enba_language`, `enba_theme`
 
 ### Modüller (21 adet)
 `src/modules/` — bağımsız React component. Props: `navigate`, `profile`, `user`, `onBack?`
@@ -287,10 +287,27 @@ Veri kaybı riski olan her adımı kullanıcıya açıkça belirt ve onay al.
 ## Aktif Görevler
 > Her oturum başında güncelle
 
-- [x] migration_v12 (companies RLS) çalıştırıldı
-- [x] migration_v13 (anon policy fix) çalıştırıldı
-- [ ] **Kullanıcı yapısı hazır değil** — admin izolasyonu test edilemiyor. Supabase'de `role='admin'` + geçerli `company_id` atanmış test hesabı oluşturulmalı
-- [ ] Test hesabı oluşturulunca: çıkış/giriş → header'da şirket adı + başka şirket görünmemeli doğrulanmalı
+### Tamamlanan Migrationlar
+- [x] migration_v12 (companies RLS)
+- [x] migration_v13 (anon policy fix)
+- [x] migration_v20 (arsiv Storage bucket)
+- [x] migration_v21 (tasks constraint + cashflow kolonları)
+- [x] migration_v22 (profiles kişisel bilgi kolonları)
+- [ ] **migration_v23** — `scratch/migration_v23_hr_payments_debts.sql` çalıştırılacak
+
+### Bekleyen Teknik Görevler
+- [ ] **Admin test hesabı** — Supabase'de `role='admin'` + geçerli `company_id` → şirket izolasyonunu doğrula
+- [ ] **Bordro modülü** — HR.tsx'e bordro hesaplama eklenmesi (Faz 2 başlangıç noktası)
+- [ ] **E-fatura** — entegratör seçimi (Nilvera/Logo/Uyumsoft) + mali mühür temini + API entegrasyonu
+- [ ] **Paraşüt tamamlama** — stok eşleştirmesi, kalan uç noktalar
+- [ ] **Muhasebe motoru** — Tek Düzen Hesap Planı, yevmiye, mizan (Faz 2 en karmaşık adım)
+- [ ] **Finansal raporlama** — bilanço + gelir tablosu (muhasebe motoruna bağımlı)
+
+### Bir Sonraki Oturumda İlk Yapılacak
+**Bordro hesaplama** — HR.tsx'e yeni "Bordro" tab'ı:
+- Brüt → Net hesaplama (SGK %14 + %1 işsizlik + kümülatif gelir vergisi + damga)
+- Aylık bordro fişi görüntüleme
+- Dışsal bağımlılık yok, hemen başlanabilir
 
 ---
 

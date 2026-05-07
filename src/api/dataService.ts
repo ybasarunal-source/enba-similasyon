@@ -270,6 +270,49 @@ export const DataService = {
     return mapSatis(data);
   },
 
+  // --- Nakit Akışı Parametreleri ---
+
+  async fetchCashflowParams(planId: string): Promise<any | null> {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return null;
+    const profile = await profileAPI.getMyProfile();
+
+    let query = supabase.from('cashflow_parameters').select('params').eq('plan_id', planId);
+    if (profile?.company_id) {
+      query = query.eq('company_id', profile.company_id);
+    } else {
+      query = query.eq('user_id', session.user.id);
+    }
+
+    const { data, error } = await query.maybeSingle();
+    if (error) throw error;
+    return data?.params ?? null;
+  },
+
+  async saveCashflowParams(planId: string, params: any): Promise<void> {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    const profile = await profileAPI.getMyProfile();
+
+    const payload: any = {
+      plan_id: planId,
+      params,
+      user_id: session.user.id,
+      updated_at: new Date().toISOString(),
+    };
+    if (profile?.company_id) payload.company_id = profile.company_id;
+
+    let delQuery = supabase.from('cashflow_parameters').delete().eq('plan_id', planId);
+    if (profile?.company_id) {
+      delQuery = delQuery.eq('company_id', profile.company_id);
+    } else {
+      delQuery = delQuery.eq('user_id', session.user.id);
+    }
+    await delQuery;
+
+    await supabase.from('cashflow_parameters').insert([{ ...payload, created_at: new Date().toISOString() }]);
+  },
+
   // --- Lojistik: snake_case dönüşümlü insert ---
 
   async insertLogistics(record: {

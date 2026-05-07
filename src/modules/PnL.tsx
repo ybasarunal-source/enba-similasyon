@@ -28,8 +28,6 @@ import { fmt } from '../utils/formatters';
 import { parasutService, ParasutInvoice } from '../api/parasut';
 import { pnlReportsAPI, SupabasePnlReport } from '../api/supabase';
 
-console.log("PnL Debug - PnL.tsx file loaded");
-
 interface PnLData {
   aylar: string[];
   modeller: string[];
@@ -166,7 +164,6 @@ export const PnL: React.FC = () => {
     };
 
     useEffect(() => {
-        console.log("PnL Debug - PnL Component Mounted");
         setParasutConnected(parasutService.isLoggedIn());
         setCompanyId(parasutService.getCompany()?.id || '');
     }, []);
@@ -294,7 +291,6 @@ export const PnL: React.FC = () => {
     };
 
     const parseExcel = (json: any[]): PnLData => {
-        console.log("PnL Debug - parseExcel started with rows:", json.length);
         let aylarSet = new Set<string>();
         let modellerSet = new Set<string>();
         let kategoriMap: Record<string, Record<string, Record<string, number>>> = {}; 
@@ -320,8 +316,6 @@ export const PnL: React.FC = () => {
             let tutarKey = tutarKeyHariç || tutarKeyNet || tutarKeyTL || tutarKeyGenel;
 
             if (json.indexOf(row) === 0) {
-                console.log("PnL Debug - Detected Keys:", { tarihKey, kategoriKey, tutarKey, cariKey });
-                console.log("PnL Debug - First Row:", row);
                 if (!tutarKey) alert("UYARI: Excel'de tutar sütunu (Toplam, Tutar vb.) bulunamadı. Lütfen sütun isimlerini kontrol edin.");
                 if (!kategoriKey) alert("UYARI: Excel'de kategori sütunu bulunamadı.");
             }
@@ -391,10 +385,6 @@ export const PnL: React.FC = () => {
                 }
             }
 
-            if (baseKat === 'M109') {
-                console.log("PnL Debug - M109 (Sales) Match Found:", { rawKat, tutar, rawAy: row.rawAy });
-            }
-
             let model = "Ortak";
             const match = rawKat.match(/^([A-Za-z]+)[-_ \.]?(\d+.*)$/);
             if (match) {
@@ -438,7 +428,6 @@ export const PnL: React.FC = () => {
 
     const dosyaSecildi = (e: React.ChangeEvent<HTMLInputElement>, tip: 'gelir' | 'gider') => {
         const file = e.target.files?.[0];
-        console.log("PnL Debug - File Selected:", file?.name, "Type:", tip);
         if(!file) return;
         
         if(tip === 'gelir') setGelirDosya(file.name);
@@ -513,17 +502,6 @@ export const PnL: React.FC = () => {
             let rawKat = inv.category_name || 'Genel';
             let tutar = inv.net_total || 0;
 
-            console.log(`PnL Debug (Paraşüt) - Invoice [${inv.contact_name}] Category: [${rawKat}] Tutar: ${tutar}`);
-
-            if (invoices.indexOf(inv) < 5) {
-                console.log("PnL Debug (Paraşüt) - Sample Invoice:", { 
-                    contact: inv.contact_name, 
-                    category: inv.category_name, 
-                    total: inv.net_total,
-                    date: inv.issue_date
-                });
-            }
-            
             // Extract Code (Mxxx, Kxxx, Vxxx)
             let baseKat = rawKat;
             const codeMatch = rawKat.match(/([MKV])(\d{3})/i);
@@ -546,7 +524,6 @@ export const PnL: React.FC = () => {
             }
 
             if (baseKat === 'M109') {
-                console.log("PnL Debug (Paraşüt) - M109 Match Found:", { rawKat, tutar, rawAy });
             }
 
             let model = "Ortak";
@@ -1092,8 +1069,7 @@ export const PnL: React.FC = () => {
                     <input 
                         type="file" 
                         accept=".xlsx, .xls, .csv" 
-                        onClick={() => console.log("PnL Debug - Gelir Input Clicked")}
-                        onChange={(e) => dosyaSecildi(e, 'gelir')} 
+                        onChange={(e) => dosyaSecildi(e, 'gelir')}
                         className="absolute inset-0 opacity-0 cursor-pointer z-10" 
                     />
                     <div className="flex items-center gap-4 relative z-0">
@@ -1113,8 +1089,7 @@ export const PnL: React.FC = () => {
                     <input 
                         type="file" 
                         accept=".xlsx, .xls, .csv" 
-                        onClick={() => console.log("PnL Debug - Gider Input Clicked")}
-                        onChange={(e) => dosyaSecildi(e, 'gider')} 
+                        onChange={(e) => dosyaSecildi(e, 'gider')}
                         className="absolute inset-0 opacity-0 cursor-pointer z-10" 
                     />
                     <div className="flex items-center gap-4 relative z-0">

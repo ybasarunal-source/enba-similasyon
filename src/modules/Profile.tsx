@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Upload, Check, X, Linkedin, Twitter, Instagram, Globe, Github, MapPin, Building2, Briefcase, Calendar } from 'lucide-react';
-import { supabase } from '../api/supabase';
+import { supabase, profileAPI } from '../api/supabase';
 
 interface ProfileData {
   // Kişisel
@@ -81,9 +81,26 @@ export const Profile: React.FC = () => {
   useEffect(() => {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      const cloud = user?.user_metadata?.profile_data as Partial<ProfileData> & { avatarUrl?: string } | undefined;
-      if (cloud) {
-        setForm({ ...defaultProfile(), ...cloud, avatar: cloud.avatarUrl || '' });
+      if (!user) return;
+
+      const p = await profileAPI.getMyProfile();
+      if (p) {
+        setForm({
+          name:       p.full_name || '',
+          title:      (p as any).title || '',
+          department: (p as any).department || '',
+          location:   (p as any).location || '',
+          startDate:  (p as any).start_date || '',
+          email:      p.email || user.email || '',
+          phone:      (p as any).phone || '',
+          bio:        (p as any).bio || '',
+          avatar:     p.avatar_url || '',
+          linkedin:   (p as any).linkedin || '',
+          twitter:    (p as any).twitter || '',
+          instagram:  (p as any).instagram || '',
+          github:     (p as any).github || '',
+          website:    (p as any).website || '',
+        });
       }
     })();
   }, []);
@@ -190,15 +207,31 @@ export const Profile: React.FC = () => {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const { name, title, department, location, startDate, email, phone, bio,
-            linkedin, twitter, instagram, github, website, avatar } = form;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
     try {
-      await supabase.auth.updateUser({
-        data: { profile_data: { name, title, department, location, startDate, email, phone, bio,
-                                linkedin, twitter, instagram, github, website, avatarUrl: avatar } }
+      await profileAPI.updateProfile(user.id, {
+        full_name:  form.name,
+        avatar_url: form.avatar,
+        email:      form.email,
+        ...(({
+          title:      form.title,
+          department: form.department,
+          location:   form.location,
+          start_date: form.startDate,
+          phone:      form.phone,
+          bio:        form.bio,
+          linkedin:   form.linkedin,
+          twitter:    form.twitter,
+          instagram:  form.instagram,
+          github:     form.github,
+          website:    form.website,
+        }) as any),
       });
+      profileAPI.clearCache();
     } catch (err) {
-      console.warn('Supabase profil senkronizasyonu başarısız:', err);
+      console.warn('Profil kaydedilemedi:', err);
     }
 
     setSaved(true);

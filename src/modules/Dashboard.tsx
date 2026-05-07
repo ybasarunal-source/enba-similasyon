@@ -3,6 +3,7 @@ import { useTranslation } from '../api/i18n';
 import { microsoftService } from '../api/microsoft';
 import { googleService } from '../api/google';
 import { supabase, tasksAPI, permitsAPI, fixedExpensesAPI } from '../api/supabase';
+import { DataService } from '../api/dataService';
 import {
   PieChart,
   Zap,
@@ -54,23 +55,22 @@ const Dashboard: React.FC<DashboardProps> = ({ navigate, user }) => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
-        const [cloudTasks, cloudPermits, cloudPayments, { data: cloudPlans }] = await Promise.all([
+        const [cloudTasks, cloudPermits, cloudPayments, { data: cloudPlans }, stockData, salesData, productionData] = await Promise.all([
           tasksAPI.getAll(),
           permitsAPI.getAll(),
           fixedExpensesAPI.getAll(),
-          supabase.from('business_plans').select('*').eq('user_id', user.id)
+          supabase.from('business_plans').select('*').eq('user_id', user.id),
+          DataService.fetchData<any>('stock_records'),
+          DataService.fetchData<any>('sales_records'),
+          DataService.fetchData<any>('production_records'),
         ]);
 
-        const alislar = JSON.parse(localStorage.getItem('enba_alislar') || '[]');
-        const satislar = JSON.parse(localStorage.getItem('enba_satislar') || '[]');
-        const uretim = JSON.parse(localStorage.getItem('enba_uretim_kayitlari') || '[]');
-
-        const rawPurchased = alislar.reduce((s: number, a: any) => s + (parseFloat(a.netMiktar) || 0), 0);
-        const rawSold = satislar.filter((s: any) => s.stokTuru === 'hammadde').reduce((s: number, a: any) => s + (parseFloat(a.miktar) || 0), 0);
+        const rawPurchased = stockData.reduce((s: number, a: any) => s + (parseFloat(a.net_miktar) || 0), 0);
+        const rawSold = salesData.filter((s: any) => s.stok_turu === 'hammadde').reduce((s: number, a: any) => s + (parseFloat(a.miktar) || 0), 0);
         const netRaw = Math.max(0, rawPurchased - rawSold);
 
-        const totalProd = uretim.reduce((s: number, a: any) => s + (parseFloat(a.cikanUrun) || 0), 0);
-        const mamulSold = satislar.filter((s: any) => s.stokTuru === 'mamul').reduce((s: number, a: any) => s + (parseFloat(a.miktar) || 0), 0);
+        const totalProd = productionData.reduce((s: number, a: any) => s + (parseFloat(a.cikan_urun) || 0), 0);
+        const mamulSold = salesData.filter((s: any) => s.stok_turu === 'mamul').reduce((s: number, a: any) => s + (parseFloat(a.miktar) || 0), 0);
         const netMamul = Math.max(0, totalProd - mamulSold);
 
         const activePlans = (cloudPlans || []).filter(p => p.status === 'active');
@@ -78,9 +78,9 @@ const Dashboard: React.FC<DashboardProps> = ({ navigate, user }) => {
         let perf = 0;
 
         const thisMonth = new Date().toISOString().slice(0, 7);
-        const monthlyP = uretim
-          .filter((u: any) => u.tarih.startsWith(thisMonth))
-          .reduce((s: number, u: any) => s + (parseFloat(u.cikanUrun) || 0) / 1000, 0);
+        const monthlyP = productionData
+          .filter((u: any) => u.tarih?.startsWith(thisMonth))
+          .reduce((s: number, u: any) => s + (parseFloat(u.cikan_urun) || 0) / 1000, 0);
 
         let targetMonthlyTon = 0;
         activePlans.forEach(p => {
