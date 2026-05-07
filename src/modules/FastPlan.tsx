@@ -2,10 +2,10 @@ import React, { useState, useMemo } from 'react';
 import { usePlanSync } from '../hooks/usePlanSync';
 import { SyncBanner } from '../components/SyncBanner';
 import {
-  Zap, TrendingUp, TrendingDown, Package, Factory,
-  Users, DollarSign, BarChart3, AlertTriangle, CheckCircle2,
-  Plus, Trash2, RefreshCw, Save, ChevronDown, ChevronUp,
-  Play, Pause, Eye, Edit3, Copy, FileText, Layout, ArrowRight
+  Zap, Package, Factory,
+  Users, BarChart3,
+  Plus, Trash2, Save, ChevronDown, ChevronUp,
+  Play, Edit3, Copy, FileText, Layout, ArrowRight
 } from 'lucide-react';
 
 /**
@@ -118,11 +118,11 @@ function hesapla(p: PlanParams): PlanSonuc {
 }
 
 const VARSAYILAN_PARAMS: PlanParams = {
-  aylikTon: 100, alisFiyati: 5000, satisFiyati: 15000,
-  alisNakliye: 500, satisNakliye: 500, uretimFiresi: 3,
-  copOrani: 5, ayiklamaVar: true, elektrikKwFiyat: 4.07,
-  aylikGun: 26, gunlukSaat: 10, vardiyaSayisi: 1,
-  personelListesi: [{ id: 1, unvan: 'İşçi', kisiSayisi: 3, ekMaas: 0, isAyiklama: true }],
+  aylikTon: 0, alisFiyati: 0, satisFiyati: 0,
+  alisNakliye: 0, satisNakliye: 0, uretimFiresi: 0,
+  copOrani: 0, ayiklamaVar: false, elektrikKwFiyat: 0,
+  aylikGun: 26, gunlukSaat: 8, vardiyaSayisi: 1,
+  personelListesi: [],
   ektraGiderler: [], capex: 0, amortismanAy: 36,
 };
 
