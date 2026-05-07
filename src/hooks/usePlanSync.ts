@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../api/supabase';
 
 export type SyncStatus = 'idle' | 'syncing' | 'error' | 'synced';
@@ -13,6 +13,8 @@ export function usePlanSync<T extends { id: string; supabaseId?: string }>(opts:
   const [planlar, setPlanlar] = useState<T[]>([]);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle');
   const [syncError, setSyncError] = useState('');
+  // Silinen supabaseId'leri takip et — Supabase fetch geç gelirse eski planı geri eklemesin
+  const deletedSupabaseIds = useRef<Set<string>>(new Set());
 
   // ── İlk yükleme: localStorage hemen, Supabase sonra ──────────
   useEffect(() => {
@@ -38,6 +40,8 @@ export function usePlanSync<T extends { id: string; supabaseId?: string }>(opts:
         // Supabase kayıtlarını localId → supabaseId eşleşmesiyle birleştir
         const merged = [...prev];
         data.forEach((row: any) => {
+          // Bu oturumda silinen planları geri ekleme
+          if (deletedSupabaseIds.current.has(row.id)) return;
           const localPlan: any = row.data;
           if (!localPlan) return;
           const idx = merged.findIndex(p => p.supabaseId === row.id || p.id === row.id);
@@ -116,6 +120,8 @@ export function usePlanSync<T extends { id: string; supabaseId?: string }>(opts:
     localStorage.setItem(localKey, JSON.stringify(guncel));
 
     if (plan?.supabaseId) {
+      // Geç gelen Supabase fetch'in bu planı geri eklemesini engelle
+      deletedSupabaseIds.current.add(plan.supabaseId);
       try {
         await supabase.from('business_plans').delete().eq('id', plan.supabaseId);
       } catch (err: any) {
