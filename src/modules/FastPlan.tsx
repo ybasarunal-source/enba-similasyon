@@ -66,6 +66,8 @@ interface PlanSonuc {
   toplamSgk: number;
   toplamYemek: number;
   toplamEktra: number;
+  // Kategori bazlı kırılımlar (Standart P&L için)
+  giderKırılım: Record<GiderKalem, number>;
   totalGider: number;
   ebitda: number;
   netKar: number;
@@ -117,6 +119,7 @@ function hesapla(p: PlanParams): PlanSonuc {
   const malAlisGideri = p.aylikTon * p.alisFiyati;
   const alisNakliyeGideri = p.aylikTon * p.alisNakliye;
   const satisNakliyeGideri = satisTon * p.satisNakliye;
+  
   let toplamMaas = 0, toplamSgk = 0, toplamYemek = 0;
   p.personelListesi.forEach(per => {
     const kisi = per.kisiSayisi * p.vardiyaSayisi;
@@ -124,17 +127,28 @@ function hesapla(p: PlanParams): PlanSonuc {
     toplamSgk += ASGARI_SGK * kisi;
     toplamYemek += YEMEK * p.aylikGun * kisi;
   });
-  const toplamEktra = p.ektraGiderler.reduce((s, g) => s + g.tutar, 0);
+
+  const giderKırılım: Record<GiderKalem, number> = {
+    enerji: 0, kira: 0, bakim: 0, pazarlama: 0, yonetim: 0, diger: 0
+  };
+  p.ektraGiderler.forEach(g => {
+    const k = g.kalem || 'diger';
+    giderKırılım[k] = (giderKırılım[k] || 0) + g.tutar;
+  });
+
+  const toplamEktra = Object.values(giderKırılım).reduce((s, v) => s + v, 0);
   const totalGider = malAlisGideri + alisNakliyeGideri + satisNakliyeGideri +
     toplamMaas + toplamSgk + toplamYemek + toplamEktra;
+  
   const aylikAmortisman = p.capex > 0 ? p.capex / p.amortismanAy : 0;
   const ebitda = satisGeliri - totalGider;
   const netKar = ebitda - aylikAmortisman;
   const ebitdaMarji = satisGeliri > 0 ? (ebitda / satisGeliri) * 100 : 0;
   const birimMaliyet = satisTon > 0 ? totalGider / satisTon : 0;
+
   return {
     satisTon, satisGeliri, malAlisGideri, alisNakliyeGideri, satisNakliyeGideri,
-    toplamMaas, toplamSgk, toplamYemek, toplamEktra, totalGider,
+    toplamMaas, toplamSgk, toplamYemek, toplamEktra, giderKırılım, totalGider,
     ebitda, netKar, ebitdaMarji, aylikAmortisman, birimMaliyet,
   };
 }
@@ -1089,51 +1103,125 @@ export const FastPlan: React.FC = () => {
           </div>
 
           {/* P&L Tablosu */}
-          <div className="bg-white rounded-[2.5rem] p-8 shadow-card border border-gray-100 space-y-3">
+          <div className="bg-white rounded-[2.5rem] p-8 shadow-card border border-gray-100 space-y-4">
             <div className="text-[9px] font-black text-gray-400 uppercase tracking-[3px] flex items-center gap-2 mb-2">
-              <BarChart3 size={14} className="text-enba-orange" /> Aylık P&L
+              <BarChart3 size={14} className="text-enba-orange" /> Standart P&L Analizi
             </div>
-            <div className="px-5 py-4 bg-emerald-50 rounded-xl flex justify-between">
-              <span className="text-[10px] font-black text-emerald-700 uppercase tracking-wider">Satış Geliri</span>
-              <span className="font-black text-emerald-700 tabular-nums">₺{fmt(formSonuc.satisGeliri)}</span>
-            </div>
-            {[
-              ['Mal Alış', formSonuc.malAlisGideri],
-              ['Alış Nakliye', formSonuc.alisNakliyeGideri],
-              ['Satış Nakliye', formSonuc.satisNakliyeGideri],
-              ['Personel Maaş', formSonuc.toplamMaas],
-              ['SGK İşveren', formSonuc.toplamSgk],
-              ['Yemek', formSonuc.toplamYemek],
-            ].map(([label, val], i) => (
-              <div key={i} className="flex justify-between px-5 py-1.5 text-sm">
-                <span className="text-gray-400 font-medium">{label as string}</span>
-                <span className="font-black text-rose-400 tabular-nums">-₺{fmt(val as number)}</span>
+
+            {/* I. HASILAT */}
+            <div className="space-y-1.5">
+              <div className="text-[10px] font-black text-enba-dark uppercase tracking-widest bg-gray-50 px-4 py-2 rounded-lg">I. HASILAT</div>
+              <div className="flex justify-between px-5 py-1 text-sm">
+                <span className="text-gray-400 font-medium">Satış Geliri</span>
+                <span className="font-black text-emerald-600 tabular-nums">₺{fmt(formSonuc.satisGeliri)}</span>
               </div>
-            ))}
-            {KALEM_ORDER.map(k => {
-              const toplam = params.ektraGiderler
-                .filter(g => (g.kalem ?? 'diger') === k)
-                .reduce((s, g) => s + g.tutar, 0);
-              if (toplam === 0) return null;
-              return (
-                <div key={k} className="flex justify-between px-5 py-1.5 text-sm">
-                  <span className="text-gray-400 font-medium">{KALEM_LABEL[k]}</span>
-                  <span className="font-black text-rose-400 tabular-nums">-₺{fmt(toplam)}</span>
+              <div className="flex justify-between px-5 py-1 text-sm">
+                <span className="text-gray-400 font-medium">Satış Nakliye</span>
+                <span className="font-black text-rose-400 tabular-nums">-₺{fmt(formSonuc.satisNakliyeGideri)}</span>
+              </div>
+              <div className="flex justify-between px-5 py-2 border-t border-gray-50 font-black text-enba-dark text-[11px]">
+                <span className="uppercase tracking-wider">HASILAT</span>
+                <span className="tabular-nums text-emerald-600">₺{fmt(formSonuc.satisGeliri - formSonuc.satisNakliyeGideri)}</span>
+              </div>
+            </div>
+
+            {/* II. MAL MALİYETLERİ */}
+            <div className="space-y-1.5 pt-2">
+              <div className="text-[10px] font-black text-enba-dark uppercase tracking-widest bg-gray-50 px-4 py-2 rounded-lg">II. MAL MALİYETLERİ</div>
+              <div className="flex justify-between px-5 py-1 text-sm">
+                <span className="text-gray-400 font-medium">Mal Alım</span>
+                <span className="font-black text-rose-400 tabular-nums">-₺{fmt(formSonuc.malAlisGideri)}</span>
+              </div>
+              <div className="flex justify-between px-5 py-1 text-sm">
+                <span className="text-gray-400 font-medium">Alım Nakliye</span>
+                <span className="font-black text-rose-400 tabular-nums">-₺{fmt(formSonuc.alisNakliyeGideri)}</span>
+              </div>
+              <div className="flex justify-between px-5 py-2 border-t border-gray-50 font-black text-enba-dark text-[11px]">
+                <span className="uppercase tracking-wider">KATKI</span>
+                <span className="tabular-nums text-emerald-600">₺{fmt((formSonuc.satisGeliri - formSonuc.satisNakliyeGideri) - (formSonuc.malAlisGideri + formSonuc.alisNakliyeGideri))}</span>
+              </div>
+            </div>
+
+            {/* III. ENERJİ MALİYETLERİ */}
+            {formSonuc.giderKırılım.enerji > 0 && (
+              <div className="space-y-1.5 pt-2">
+                <div className="text-[10px] font-black text-enba-dark uppercase tracking-widest bg-gray-50 px-4 py-2 rounded-lg">III. ENERJİ MALİYETLERİ</div>
+                <div className="flex justify-between px-5 py-1 text-sm">
+                  <span className="text-gray-400 font-medium">Enerji & Hizmetler</span>
+                  <span className="font-black text-rose-400 tabular-nums">-₺{fmt(formSonuc.giderKırılım.enerji)}</span>
                 </div>
-              );
-            })}
-            <div className="h-px bg-gray-100" />
+              </div>
+            )}
+
+            {/* IV. PERSONEL MALİYETLERİ */}
+            <div className="space-y-1.5 pt-2">
+              <div className="text-[10px] font-black text-enba-dark uppercase tracking-widest bg-gray-50 px-4 py-2 rounded-lg">IV. PERSONEL MALİYETLERİ</div>
+              <div className="flex justify-between px-5 py-1 text-sm">
+                <span className="text-gray-400 font-medium">Maaşlar</span>
+                <span className="font-black text-rose-400 tabular-nums">-₺{fmt(formSonuc.toplamMaas)}</span>
+              </div>
+              <div className="flex justify-between px-5 py-1 text-sm">
+                <span className="text-gray-400 font-medium">Sigortalar</span>
+                <span className="font-black text-rose-400 tabular-nums">-₺{fmt(formSonuc.toplamSgk)}</span>
+              </div>
+              <div className="flex justify-between px-5 py-1 text-sm">
+                <span className="text-gray-400 font-medium">Yemek</span>
+                <span className="font-black text-rose-400 tabular-nums">-₺{fmt(formSonuc.toplamYemek)}</span>
+              </div>
+            </div>
+
+            {/* V. DİĞER GİDERLER */}
+            {(formSonuc.giderKırılım.bakim > 0 || formSonuc.giderKırılım.kira > 0 || formSonuc.giderKırılım.pazarlama > 0 || formSonuc.giderKırılım.yonetim > 0 || formSonuc.giderKırılım.diger > 0) && (
+              <div className="space-y-1.5 pt-2">
+                <div className="text-[10px] font-black text-enba-dark uppercase tracking-widest bg-gray-50 px-4 py-2 rounded-lg">V. DİĞER GİDERLER</div>
+                {formSonuc.giderKırılım.bakim > 0 && (
+                  <div className="flex justify-between px-5 py-1 text-sm">
+                    <span className="text-gray-400 font-medium">Bakım Onarım</span>
+                    <span className="font-black text-rose-400 tabular-nums">-₺{fmt(formSonuc.giderKırılım.bakim)}</span>
+                  </div>
+                )}
+                {formSonuc.giderKırılım.kira > 0 && (
+                  <div className="flex justify-between px-5 py-1 text-sm">
+                    <span className="text-gray-400 font-medium">Kira & Tesis</span>
+                    <span className="font-black text-rose-400 tabular-nums">-₺{fmt(formSonuc.giderKırılım.kira)}</span>
+                  </div>
+                )}
+                {formSonuc.giderKırılım.pazarlama > 0 && (
+                  <div className="flex justify-between px-5 py-1 text-sm">
+                    <span className="text-gray-400 font-medium">Pazarlama & Satış</span>
+                    <span className="font-black text-rose-400 tabular-nums">-₺{fmt(formSonuc.giderKırılım.pazarlama)}</span>
+                  </div>
+                )}
+                {formSonuc.giderKırılım.yonetim > 0 && (
+                  <div className="flex justify-between px-5 py-1 text-sm">
+                    <span className="text-gray-400 font-medium">Yönetim & Ofis</span>
+                    <span className="font-black text-rose-400 tabular-nums">-₺{fmt(formSonuc.giderKırılım.yonetim)}</span>
+                  </div>
+                )}
+                {formSonuc.giderKırılım.diger > 0 && (
+                  <div className="flex justify-between px-5 py-1 text-sm">
+                    <span className="text-gray-400 font-medium">Diğer Giderler</span>
+                    <span className="font-black text-rose-400 tabular-nums">-₺{fmt(formSonuc.giderKırılım.diger)}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="h-px bg-gray-100 my-4" />
+
             <div className={`flex justify-between px-5 py-4 rounded-xl ${formSonuc.ebitda >= 0 ? 'bg-emerald-50' : 'bg-rose-50'}`}>
-              <span className="text-[10px] font-black uppercase tracking-[2px] text-gray-600">FAVÖK</span>
+              <span className="text-[10px] font-black uppercase tracking-[2px] text-gray-600">FAVÖK (EBITDA)</span>
               <span className={`font-black tabular-nums ${kpiColor(formSonuc.ebitda)}`}>₺{fmt(formSonuc.ebitda)}</span>
             </div>
+
             {formSonuc.aylikAmortisman > 0 && (
-              <div className="flex justify-between px-5 py-1.5 text-sm">
+              <div className="flex justify-between px-5 py-1 text-sm">
                 <span className="text-gray-400 font-medium">Amortisman</span>
                 <span className="font-black text-gray-400 tabular-nums">-₺{fmt(formSonuc.aylikAmortisman)}</span>
               </div>
             )}
-            <div className={`flex justify-between px-6 py-5 rounded-[1.25rem] ${formSonuc.netKar >= 0 ? 'bg-enba-dark' : 'bg-rose-600'} text-white`}>
+
+            <div className={`flex justify-between px-6 py-5 rounded-[1.25rem] ${formSonuc.netKar >= 0 ? 'bg-enba-dark' : 'bg-rose-600'} text-white shadow-xl`}>
               <span className="text-[10px] font-black uppercase tracking-[2px]">NET KÂR / ZARAR</span>
               <span className="font-black tabular-nums text-lg">₺{fmt(formSonuc.netKar)}</span>
             </div>
