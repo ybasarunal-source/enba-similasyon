@@ -5,7 +5,7 @@ import {
   Zap, Package, Factory,
   Users, BarChart3,
   Plus, Trash2, Save, ChevronDown, ChevronUp,
-  Play, Edit3, Copy, FileText, Layout, ArrowRight
+  Play, Edit3, Copy, FileText, Layout, ArrowRight, Archive, ArchiveRestore, Tag, Scale, X
 } from 'lucide-react';
 
 /**
@@ -22,10 +22,19 @@ interface PersonelItem {
   isAyiklama: boolean;
 }
 
+type GiderKalem = 'enerji' | 'kira' | 'bakim' | 'pazarlama' | 'yonetim' | 'diger';
+
 interface GiderItem {
   id: number;
   ad: string;
   tutar: number;
+  kalem: GiderKalem;
+}
+
+interface PlanVersion {
+  tarih: string;
+  params: PlanParams;
+  sonuc: PlanSonuc;
 }
 
 interface PlanParams {
@@ -70,13 +79,26 @@ interface PlanCard {
   supabaseId?: string;
   baslik: string;
   aciklama: string;
-  status: 'pending' | 'active';
+  etiket?: string;
+  status: 'pending' | 'active' | 'archived';
   createdAt: string;
+  updatedAt?: string;
+  versions?: PlanVersion[];
   params: PlanParams;
   sonuc: PlanSonuc;
 }
 
 // ─── Constants ────────────────────────────────────────────────
+const KALEM_ORDER: GiderKalem[] = ['enerji', 'kira', 'bakim', 'pazarlama', 'yonetim', 'diger'];
+const KALEM_LABEL: Record<GiderKalem, string> = {
+  enerji: 'Enerji & Hizmetler',
+  kira: 'Kira & Tesis',
+  bakim: 'Bakım & Onarım',
+  pazarlama: 'Pazarlama & Satış',
+  yonetim: 'Yönetim & Ofis',
+  diger: 'Diğer Giderler',
+};
+
 const ASGARI_NET = 28075.5;
 const ASGARI_SGK = 12799.13;
 const YEMEK = 200;
@@ -164,10 +186,62 @@ const Panel: React.FC<{
   </div>
 );
 
+// ─── Yardımcı: PlanVersion → görüntüleme için PlanCard'a dönüştür ─────
+function versionToCard(plan: PlanCard, vIdx: number): PlanCard {
+  const v = (plan.versions ?? [])[vIdx];
+  if (!v) return plan;
+  return {
+    ...plan,
+    baslik: `${plan.baslik} — V${vIdx + 1}`,
+    params: v.params,
+    sonuc: v.sonuc,
+    createdAt: v.tarih,
+    updatedAt: undefined,
+    versions: [],
+  };
+}
+
+// ─── Kayıt Seçim Modalı ────────────────────────────────────
+const SaveModal: React.FC<{
+  onYeniVersiyon: () => void;
+  onGuncelle: () => void;
+  onYeniModel: () => void;
+  onIptal: () => void;
+}> = ({ onYeniVersiyon, onGuncelle, onYeniModel, onIptal }) => (
+  <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-6 animate-in fade-in duration-200">
+    <div className="bg-white rounded-[2.5rem] p-10 max-w-md w-full shadow-2xl space-y-5">
+      <div className="text-center">
+        <h2 className="text-xl font-black text-enba-dark uppercase tracking-tight italic">Değişiklikleri Kaydet</h2>
+        <p className="text-sm text-gray-400 mt-2">Bu düzenlemeyi nasıl kaydetmek istersiniz?</p>
+      </div>
+      <div className="space-y-3">
+        <button onClick={onYeniVersiyon} className="w-full text-left px-6 py-4 bg-enba-orange/5 hover:bg-enba-orange/10 border-2 border-enba-orange/30 hover:border-enba-orange rounded-2xl transition-all">
+          <div className="font-black text-enba-dark text-sm">Yeni Versiyon Olarak Kaydet</div>
+          <div className="text-[10px] text-gray-400 mt-0.5">Mevcut hali geçmişe taşır, değişiklikleri yeni sürüm olarak kaydeder</div>
+        </button>
+        <button onClick={onGuncelle} className="w-full text-left px-6 py-4 bg-gray-50 hover:bg-gray-100 border-2 border-transparent rounded-2xl transition-all">
+          <div className="font-black text-enba-dark text-sm">Mevcut Versiyonu Güncelle</div>
+          <div className="text-[10px] text-gray-400 mt-0.5">Geçmişe eklenmez, doğrudan üzerine yazılır</div>
+        </button>
+        <button onClick={onYeniModel} className="w-full text-left px-6 py-4 bg-blue-50 hover:bg-blue-100 border-2 border-blue-100 hover:border-blue-300 rounded-2xl transition-all">
+          <div className="font-black text-enba-dark text-sm">Farklı İş Modeli Olarak Kaydet</div>
+          <div className="text-[10px] text-gray-400 mt-0.5">Ayrı, bağımsız bir plan kartı oluşturur</div>
+        </button>
+      </div>
+      <button onClick={onIptal} className="w-full text-center text-[11px] font-black text-gray-400 hover:text-gray-600 uppercase tracking-[3px] transition-colors pt-1">
+        İptal
+      </button>
+    </div>
+  </div>
+);
+
 // ─── Main Component ──────────────────────────────────────────
 export const FastPlan: React.FC = () => {
-  // Görünüm: 'cards' (plan listesi) veya 'form' (yeni/düzenleme formu)
-  const [view, setView] = useState<'cards' | 'form'>('cards');
+  // Görünüm: 'cards' | 'form' | 'compare'
+  const [view, setView] = useState<'cards' | 'form' | 'compare'>('cards');
+  const [compareIds, setCompareIds] = useState<string[]>([]);
+  const [comparePair, setComparePair] = useState<[PlanCard, PlanCard] | null>(null);
+  const [saveModalOpen, setSaveModalOpen] = useState(false);
   const [duzenlemId, setDuzenlemId] = useState<string | null>(null);
   const { planlar, kaydet, sil: planSilSync, syncStatus, syncError } = usePlanSync<PlanCard>({
     localKey: STORAGE_KEY,
@@ -177,18 +251,35 @@ export const FastPlan: React.FC = () => {
   // Form state
   const [baslik, setBaslik] = useState('');
   const [aciklama, setAciklama] = useState('');
+  const [etiket, setEtiket] = useState('');
   const [params, setParams] = useState<PlanParams>({ ...VARSAYILAN_PARAMS });
   const [yeniPersonel, setYeniPersonel] = useState({ unvan: '', kisiSayisi: 1, ekMaas: 0, isAyiklama: false });
-  const [yeniGider, setYeniGider] = useState({ ad: '', tutar: '' });
+  const [yeniGider, setYeniGider] = useState<{ ad: string; tutar: string; kalem: GiderKalem }>({ ad: '', tutar: '', kalem: 'enerji' });
 
   // Panel açıklıkları
   const [panelOp, setPanelOp] = useState(true);
   const [panelPer, setPanelPer] = useState(true);
   const [panelGider, setPanelGider] = useState(false);
 
+  // Filtre & sıralama
+  const [filterEtiket, setFilterEtiket] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<'tarih' | 'marj_desc' | 'marj_asc'>('tarih');
 
   // ─── Anlık hesaplama (form önizlemesi) ────────────────────
   const formSonuc = useMemo(() => hesapla(params), [params]);
+
+  // ─── Filtre & sıralama hesaplamaları ──────────────────────
+  const tumEtiketler = useMemo(
+    () => [...new Set(planlar.filter(p => p.etiket && p.status !== 'archived').map(p => p.etiket!))],
+    [planlar]
+  );
+
+  const filtrele = (liste: PlanCard[]) => {
+    let result = filterEtiket ? liste.filter(p => p.etiket === filterEtiket) : liste;
+    if (sortBy === 'marj_desc') return [...result].sort((a, b) => b.sonuc.ebitdaMarji - a.sonuc.ebitdaMarji);
+    if (sortBy === 'marj_asc') return [...result].sort((a, b) => a.sonuc.ebitdaMarji - b.sonuc.ebitdaMarji);
+    return [...result].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  };
 
   // ─── Aktif planların konsolide sonucu ─────────────────────
   const aktifPlanlar = planlar.filter(p => p.status === 'active');
@@ -204,35 +295,70 @@ export const FastPlan: React.FC = () => {
   }, [aktifPlanlar]);
 
   // ─── CRUD ────────────────────────────────────────────────
-  const planKaydet = () => {
-    if (!baslik.trim()) { alert('Lütfen plana bir başlık verin.'); return; }
-    const sonuc = hesapla(params);
-    const yeniKart: PlanCard = {
-      id: duzenlemId || Date.now().toString(),
-      baslik: baslik.trim(),
-      aciklama: aciklama.trim(),
-      status: duzenlemId
-        ? (planlar.find(p => p.id === duzenlemId)?.status || 'pending')
-        : 'pending',
-      createdAt: duzenlemId
-        ? (planlar.find(p => p.id === duzenlemId)?.createdAt || new Date().toISOString())
-        : new Date().toISOString(),
-      params: { ...params },
-      sonuc,
-    };
-    const yeniPlanlar = duzenlemId
-      ? planlar.map(p => p.id === duzenlemId ? yeniKart : p)
-      : [...planlar, yeniKart];
-    kaydet(yeniPlanlar);
-    setView('cards');
+  const resetForm = () => {
     setDuzenlemId(null);
-    setBaslik(''); setAciklama(''); setParams({ ...VARSAYILAN_PARAMS });
+    setBaslik(''); setAciklama(''); setEtiket('');
+    setParams({ ...VARSAYILAN_PARAMS });
+    setSaveModalOpen(false);
+    setView('cards');
+  };
+
+  const planKaydetYeni = () => {
+    if (!baslik.trim()) { alert('Lütfen plana bir başlık verin.'); return; }
+    const now = new Date().toISOString();
+    kaydet([...planlar, {
+      id: Date.now().toString(),
+      baslik: baslik.trim(), aciklama: aciklama.trim(),
+      etiket: etiket.trim() || undefined,
+      status: 'pending', createdAt: now,
+      versions: [], params: { ...params }, sonuc: hesapla(params),
+    }]);
+    resetForm();
+  };
+
+  const planKaydetDuzenle = (mod: 'yeni_versiyon' | 'guncelle' | 'yeni_model') => {
+    const now = new Date().toISOString();
+    const sonuc = hesapla(params);
+    const mevcut = planlar.find(p => p.id === duzenlemId);
+    if (!mevcut) { resetForm(); return; }
+
+    if (mod === 'yeni_model') {
+      kaydet([...planlar, {
+        id: Date.now().toString(),
+        baslik: baslik.trim(), aciklama: aciklama.trim(),
+        etiket: etiket.trim() || undefined,
+        status: 'pending', createdAt: now,
+        versions: [], params: { ...params }, sonuc,
+      }]);
+    } else {
+      const yeniKart: PlanCard = {
+        id: mevcut.id,
+        supabaseId: mevcut.supabaseId,
+        baslik: baslik.trim(), aciklama: aciklama.trim(),
+        etiket: etiket.trim() || undefined,
+        status: mevcut.status,
+        createdAt: mevcut.createdAt,
+        updatedAt: now,
+        versions: mod === 'yeni_versiyon'
+          ? [...(mevcut.versions ?? []), { tarih: mevcut.updatedAt || mevcut.createdAt, params: mevcut.params, sonuc: mevcut.sonuc }]
+          : (mevcut.versions ?? []),
+        params: { ...params }, sonuc,
+      };
+      kaydet(planlar.map(p => p.id === mevcut.id ? yeniKart : p));
+    }
+    resetForm();
+  };
+
+  const handleKaydetClick = () => {
+    if (!baslik.trim()) { alert('Lütfen plana bir başlık verin.'); return; }
+    if (duzenlemId) { setSaveModalOpen(true); } else { planKaydetYeni(); }
   };
 
   const planDuzenle = (plan: PlanCard) => {
     setDuzenlemId(plan.id);
     setBaslik(plan.baslik);
     setAciklama(plan.aciklama);
+    setEtiket(plan.etiket || '');
     setParams({ ...plan.params });
     setView('form');
   };
@@ -245,18 +371,47 @@ export const FastPlan: React.FC = () => {
       baslik: `${plan.baslik} (Kopya)`,
       status: 'pending',
       createdAt: new Date().toISOString(),
+      updatedAt: undefined,
+      versions: [],
     };
     kaydet([...planlar, kopya]);
   };
 
   const planSil = (id: string) => {
     if (!window.confirm('Bu plan kartı silinecek. Emin misiniz?')) return;
+    setCompareIds(prev => prev.filter(cid => cid !== id));
     planSilSync(id);
+  };
+
+  const toggleCompare = (id: string) => {
+    setCompareIds(prev => {
+      if (prev.includes(id)) return prev.filter(cid => cid !== id);
+      if (prev.length >= 2) return [prev[1], id];
+      const next = [...prev, id];
+      if (next.length === 2) { setComparePair(null); setTimeout(() => setView('compare'), 0); }
+      return next;
+    });
+  };
+
+  const handleVersionCompare = (planId: string, vIdx: number) => {
+    const plan = planlar.find(p => p.id === planId);
+    if (!plan || (plan.versions?.length ?? 0) === 0) return;
+    const oldCard = versionToCard(plan, vIdx);
+    setComparePair([plan, oldCard]);
+    setView('compare');
   };
 
   const statusToggle = (id: string) => {
     kaydet(planlar.map(p =>
-      p.id === id ? { ...p, status: p.status === 'active' ? 'pending' : 'active' } : p
+      p.id === id && p.status !== 'archived'
+        ? { ...p, status: p.status === 'active' ? 'pending' : 'active' }
+        : p
+    ));
+  };
+
+  const planArsivle = (id: string) => {
+    kaydet(planlar.map(p =>
+      p.id === id ? { ...p, status: p.status === 'archived' ? 'pending' : ('archived' as const) } : p
     ));
   };
 
@@ -275,8 +430,8 @@ export const FastPlan: React.FC = () => {
 
   const giderEkle = () => {
     if (!yeniGider.ad || !yeniGider.tutar) return;
-    setParam('ektraGiderler', [...params.ektraGiderler, { id: Date.now(), ad: yeniGider.ad, tutar: Number(yeniGider.tutar) }]);
-    setYeniGider({ ad: '', tutar: '' });
+    setParam('ektraGiderler', [...params.ektraGiderler, { id: Date.now(), ad: yeniGider.ad, tutar: Number(yeniGider.tutar), kalem: yeniGider.kalem }]);
+    setYeniGider({ ad: '', tutar: '', kalem: 'enerji' });
   };
 
   const giderSil = (id: number) =>
@@ -307,12 +462,48 @@ export const FastPlan: React.FC = () => {
             </div>
           </div>
           <button
-            onClick={() => { setDuzenlemId(null); setBaslik(''); setAciklama(''); setParams({ ...VARSAYILAN_PARAMS }); setView('form'); }}
+            onClick={() => { setDuzenlemId(null); setBaslik(''); setAciklama(''); setEtiket(''); setParams({ ...VARSAYILAN_PARAMS }); setView('form'); }}
             className="flex items-center gap-3 px-8 py-4 bg-enba-orange text-white rounded-[1.5rem] font-black text-[11px] uppercase tracking-[3px] shadow-2xl shadow-enba-orange/30 hover:brightness-110 transition-all active:scale-95"
           >
             <Plus size={20} /> Yeni Plan Oluştur
           </button>
         </div>
+
+        {/* Filtre & Sıralama Çubuğu */}
+        {planlar.filter(p => p.status !== 'archived').length > 0 && (
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Etiket filtresi — yalnızca etiketli plan varsa */}
+            {tumEtiketler.length > 0 && (
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[9px] font-black text-gray-400 uppercase tracking-[2px]">Etiket</span>
+                <button onClick={() => setFilterEtiket(null)}
+                  className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${!filterEtiket ? 'bg-enba-dark text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
+                  Tümü
+                </button>
+                {tumEtiketler.map(t => (
+                  <button key={t} onClick={() => setFilterEtiket(filterEtiket === t ? null : t)}
+                    className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${filterEtiket === t ? 'bg-enba-dark text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
+                    {t}
+                  </button>
+                ))}
+              </div>
+            )}
+            {/* Sıralama */}
+            <div className="flex items-center gap-2 ml-auto">
+              <span className="text-[9px] font-black text-gray-400 uppercase tracking-[2px]">Sırala</span>
+              {([
+                { key: 'tarih', label: 'Tarih' },
+                { key: 'marj_desc', label: 'Marj ↓' },
+                { key: 'marj_asc', label: 'Marj ↑' },
+              ] as const).map(opt => (
+                <button key={opt.key} onClick={() => setSortBy(opt.key)}
+                  className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${sortBy === opt.key ? 'bg-enba-orange text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Konsolide Panel — aktif planlar varsa */}
         {konsolide && aktifPlanlar.length > 0 && (
@@ -380,6 +571,22 @@ export const FastPlan: React.FC = () => {
           </div>
         )}
 
+        {/* Karşılaştırma seçim banner'ı */}
+        {compareIds.length === 1 && (
+          <div className="flex items-center justify-between gap-4 px-8 py-4 bg-blue-50 border border-blue-200 rounded-[2rem]">
+            <div className="flex items-center gap-3">
+              <Scale size={18} className="text-blue-500" />
+              <span className="text-[11px] font-black text-blue-700 uppercase tracking-[2px]">
+                1 Plan Seçildi — Karşılaştırmak için 2. planın <Scale size={11} className="inline" /> butonuna tıklayın
+              </span>
+            </div>
+            <button onClick={() => setCompareIds([])}
+              className="text-[10px] font-black text-blue-400 hover:text-blue-600 uppercase tracking-widest transition-colors">
+              İptal
+            </button>
+          </div>
+        )}
+
         {/* Boş durum */}
         {planlar.length === 0 && (
           <div className="bg-white rounded-[2.5rem] p-20 border border-gray-100 shadow-card flex flex-col items-center gap-6 text-center">
@@ -400,7 +607,7 @@ export const FastPlan: React.FC = () => {
         )}
 
         {/* Plan Kartları Izgara */}
-        {planlar.length > 0 && (
+        {planlar.filter(p => p.status !== 'archived').length > 0 && (
           <>
             {/* Bekleyen Planlar */}
             {planlar.filter(p => p.status === 'pending').length > 0 && (
@@ -408,17 +615,22 @@ export const FastPlan: React.FC = () => {
                 <div className="flex items-center gap-3 mb-5">
                   <div className="w-2.5 h-2.5 rounded-full bg-gray-300" />
                   <span className="text-[10px] font-black text-gray-400 uppercase tracking-[4px]">
-                    Bekleyen Planlar — {planlar.filter(p => p.status === 'pending').length} Kart
+                    Bekleyen Planlar — {filtrele(planlar.filter(p => p.status === 'pending')).length} Kart
+                    {filterEtiket && ` · "${filterEtiket}" filtresi`}
                   </span>
                 </div>
                 <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                  {planlar.filter(p => p.status === 'pending').map(plan => (
+                  {filtrele(planlar.filter(p => p.status === 'pending')).map(plan => (
                     <PlanKartBileseni
                       key={plan.id} plan={plan}
                       onToggle={() => statusToggle(plan.id)}
                       onEdit={() => planDuzenle(plan)}
                       onCopy={() => planKopyala(plan)}
                       onDelete={() => planSil(plan.id)}
+                      onArchive={() => planArsivle(plan.id)}
+                      onCompare={() => toggleCompare(plan.id)}
+                      onVersionCompare={(vIdx) => handleVersionCompare(plan.id, vIdx)}
+                      isSelectedForCompare={compareIds.includes(plan.id)}
                       kpiColor={kpiColor} fmt={fmt} fmtDec={fmtDec}
                     />
                   ))}
@@ -432,17 +644,21 @@ export const FastPlan: React.FC = () => {
                 <div className="flex items-center gap-3 mb-5">
                   <div className="w-2.5 h-2.5 rounded-full bg-enba-orange animate-pulse" />
                   <span className="text-[10px] font-black text-enba-orange uppercase tracking-[4px]">
-                    Aktif Planlar — Konsolide Hesaplamaya Dahil
+                    Aktif Planlar — {filtrele(aktifPlanlar).length} Kart · Konsolide Hesaplamaya Dahil
                   </span>
                 </div>
                 <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                  {aktifPlanlar.map(plan => (
+                  {filtrele(aktifPlanlar).map(plan => (
                     <PlanKartBileseni
                       key={plan.id} plan={plan}
                       onToggle={() => statusToggle(plan.id)}
                       onEdit={() => planDuzenle(plan)}
                       onCopy={() => planKopyala(plan)}
                       onDelete={() => planSil(plan.id)}
+                      onArchive={() => planArsivle(plan.id)}
+                      onCompare={() => toggleCompare(plan.id)}
+                      onVersionCompare={(vIdx) => handleVersionCompare(plan.id, vIdx)}
+                      isSelectedForCompare={compareIds.includes(plan.id)}
                       kpiColor={kpiColor} fmt={fmt} fmtDec={fmtDec}
                     />
                   ))}
@@ -450,6 +666,193 @@ export const FastPlan: React.FC = () => {
               </div>
             )}
           </>
+        )}
+
+        {/* Arşivlenmiş Planlar */}
+        {planlar.filter(p => p.status === 'archived').length > 0 && (
+          <ArşivBolumu
+            planlar={planlar.filter(p => p.status === 'archived')}
+            onRestore={(id) => planArsivle(id)}
+            onDelete={(id) => planSil(id)}
+            fmt={fmt} fmtDec={fmtDec}
+          />
+        )}
+      </div>
+    );
+  }
+
+  // ════════════════════════════════════════════════════════
+  // VIEW: KARŞILAŞTIRMA
+  // ════════════════════════════════════════════════════════
+  if (view === 'compare') {
+    const planA = comparePair ? comparePair[0] : planlar.find(p => p.id === compareIds[0]);
+    const planB = comparePair ? comparePair[1] : planlar.find(p => p.id === compareIds[1]);
+    if (!planA || !planB) { setView('cards'); return null; }
+    const sA = planA.sonuc; const sB = planB.sonuc;
+
+    // Fark hesaplayıcı: pozitif fark, A'nın B'ye göre farkı
+    const fark = (a: number, b: number, yuksekIyi = true) => {
+      const d = a - b;
+      if (d === 0) return { text: '—', cls: 'text-gray-300' };
+      const iyi = yuksekIyi ? d > 0 : d < 0;
+      return { text: `${d > 0 ? '+' : ''}₺${fmt(d)}`, cls: iyi ? 'text-emerald-600' : 'text-rose-500' };
+    };
+    const farkPct = (a: number, b: number, yuksekIyi = true) => {
+      const d = a - b;
+      if (d === 0) return { text: '—', cls: 'text-gray-300' };
+      const iyi = yuksekIyi ? d > 0 : d < 0;
+      return { text: `${d > 0 ? '+' : ''}${fmtDec(d)}pp`, cls: iyi ? 'text-emerald-600' : 'text-rose-500' };
+    };
+
+    // Aynı etikette tüm planlar — trend tablosu için
+    const ortakEtiket = planA.etiket && planB.etiket && planA.etiket === planB.etiket ? planA.etiket : null;
+    const trendPlanlar = ortakEtiket
+      ? [...planlar].filter(p => p.etiket === ortakEtiket && p.status !== 'archived')
+          .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+      : [];
+
+    const KARSILASTIRMA_SATIRLARI: { label: string; vA: number; vB: number; yuksekIyi?: boolean; isPct?: boolean }[] = [
+      { label: 'Aylık Giren Ton', vA: planA.params.aylikTon, vB: planB.params.aylikTon },
+      { label: 'Net Satış Tonu', vA: sA.satisTon, vB: sB.satisTon },
+      { label: 'Alış Fiyatı (₺/ton)', vA: planA.params.alisFiyati, vB: planB.params.alisFiyati, yuksekIyi: false },
+      { label: 'Satış Fiyatı (₺/ton)', vA: planA.params.satisFiyati, vB: planB.params.satisFiyati },
+      { label: 'Alış Nakliyesi (₺/ton)', vA: planA.params.alisNakliye, vB: planB.params.alisNakliye, yuksekIyi: false },
+      { label: 'Satış Nakliyesi (₺/ton)', vA: planA.params.satisNakliye, vB: planB.params.satisNakliye, yuksekIyi: false },
+      { label: 'Satış Geliri', vA: sA.satisGeliri, vB: sB.satisGeliri },
+      { label: 'Mal Alış Gideri', vA: sA.malAlisGideri, vB: sB.malAlisGideri, yuksekIyi: false },
+      { label: 'Nakliye (alış+satış)', vA: sA.alisNakliyeGideri + sA.satisNakliyeGideri, vB: sB.alisNakliyeGideri + sB.satisNakliyeGideri, yuksekIyi: false },
+      { label: 'Personel & SGK', vA: sA.toplamMaas + sA.toplamSgk + sA.toplamYemek, vB: sB.toplamMaas + sB.toplamSgk + sB.toplamYemek, yuksekIyi: false },
+      { label: 'Diğer Giderler', vA: sA.toplamEktra, vB: sB.toplamEktra, yuksekIyi: false },
+      { label: 'Toplam Gider', vA: sA.totalGider, vB: sB.totalGider, yuksekIyi: false },
+      { label: 'FAVÖK', vA: sA.ebitda, vB: sB.ebitda },
+      { label: 'EBITDA Marjı (%)', vA: sA.ebitdaMarji, vB: sB.ebitdaMarji, isPct: true },
+      { label: 'Amortisman', vA: sA.aylikAmortisman, vB: sB.aylikAmortisman, yuksekIyi: false },
+      { label: 'Net Kâr', vA: sA.netKar, vB: sB.netKar },
+    ];
+
+    return (
+      <div className="flex flex-col gap-8 p-10 animate-in fade-in duration-700">
+        {/* Header */}
+        <div className="flex items-center gap-5">
+          <button onClick={() => { setView('cards'); setCompareIds([]); setComparePair(null); }}
+            className="w-12 h-12 rounded-2xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition-all">
+            <ArrowRight size={20} className="rotate-180" />
+          </button>
+          <div>
+            <h1 className="text-3xl font-black text-enba-dark tracking-tighter leading-none italic uppercase">
+              {comparePair ? 'Versiyon Kıyası' : 'Karşılaştırma'}
+            </h1>
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[3px] mt-1">
+              {comparePair ? 'Aynı planın iki versiyonu arasındaki fark' : 'Plan bazlı P&L fark analizi'}
+            </p>
+          </div>
+        </div>
+
+        {/* Plan başlıkları */}
+        <div className="grid grid-cols-3 gap-4">
+          {[planA, planB].map((p, i) => {
+            const label = comparePair
+              ? (i === 0 ? 'Güncel' : 'Eski Versiyon')
+              : (i === 0 ? 'Plan A' : 'Plan B');
+            const borderCls = i === 0 ? 'border-blue-300' : 'border-enba-orange/40';
+            const labelCls = i === 0 ? 'text-blue-500' : 'text-enba-orange';
+            return (
+              <div key={`${p.id}-${i}`} className={`bg-white rounded-[2rem] px-8 py-6 border-2 ${borderCls} shadow-sm`}>
+                <div className={`text-[9px] font-black uppercase tracking-[3px] mb-1 ${labelCls}`}>{label}</div>
+                <div className="font-black text-enba-dark text-sm uppercase truncate">{p.baslik}</div>
+                {p.etiket && <span className="inline-block mt-1 px-2 py-0.5 bg-gray-100 text-gray-500 text-[9px] font-black uppercase rounded-full">{p.etiket}</span>}
+                <div className="text-[9px] text-gray-400 mt-1">{new Date(p.createdAt).toLocaleDateString('tr-TR')}</div>
+              </div>
+            );
+          })}
+          <div className="bg-gray-50 rounded-[2rem] px-8 py-6 border border-gray-100 flex flex-col justify-center">
+            <div className="text-[9px] font-black text-gray-400 uppercase tracking-[2px] mb-1">
+              {comparePair ? 'Fark (Güncel − Eski)' : 'Fark (A − B)'}
+            </div>
+            <div className={`text-lg font-black tabular-nums ${fark(sA.netKar, sB.netKar).cls}`}>{fark(sA.netKar, sB.netKar).text}</div>
+            <div className="text-[9px] text-gray-400 mt-0.5">Net Kâr</div>
+          </div>
+        </div>
+
+        {/* Karşılaştırma tablosu */}
+        <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-gray-100">
+                <th className="px-8 py-4 text-left text-[9px] font-black text-gray-400 uppercase tracking-[2px] w-1/3">Kalem</th>
+                <th className="px-6 py-4 text-right text-[9px] font-black text-blue-500 uppercase tracking-[2px]">{planA.baslik}</th>
+                <th className="px-6 py-4 text-right text-[9px] font-black text-enba-orange uppercase tracking-[2px]">{planB.baslik}</th>
+                <th className="px-8 py-4 text-right text-[9px] font-black text-gray-400 uppercase tracking-[2px]">Fark (A−B)</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {KARSILASTIRMA_SATIRLARI.map((row, i) => {
+                const f = row.isPct
+                  ? farkPct(row.vA, row.vB, row.yuksekIyi ?? true)
+                  : fark(row.vA, row.vB, row.yuksekIyi ?? true);
+                const isSection = ['Satış Geliri', 'FAVÖK', 'Net Kâr'].includes(row.label);
+                return (
+                  <tr key={i} className={isSection ? 'bg-gray-50' : 'hover:bg-gray-50/50'}>
+                    <td className={`px-8 py-3 text-[11px] font-${isSection ? 'black' : 'medium'} text-gray-${isSection ? '700' : '500'} uppercase tracking-wider`}>{row.label}</td>
+                    <td className="px-6 py-3 text-right text-sm font-black text-blue-600 tabular-nums">
+                      {row.isPct ? `%${fmtDec(row.vA)}` : `₺${fmt(row.vA)}`}
+                    </td>
+                    <td className="px-6 py-3 text-right text-sm font-black text-enba-orange tabular-nums">
+                      {row.isPct ? `%${fmtDec(row.vB)}` : `₺${fmt(row.vB)}`}
+                    </td>
+                    <td className={`px-8 py-3 text-right text-sm font-black tabular-nums ${f.cls}`}>{f.text}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Fiyat trendi — yalnızca aynı etikette */}
+        {trendPlanlar.length > 1 && ortakEtiket && (
+          <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">
+            <div className="px-8 py-5 border-b border-gray-100 flex items-center gap-3">
+              <BarChart3 size={16} className="text-enba-orange" />
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-[3px]">
+                {ortakEtiket} — Fiyat Geçmişi ({trendPlanlar.length} Plan)
+              </span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-50">
+                    <th className="px-8 py-3 text-left text-[9px] font-black text-gray-400 uppercase tracking-[2px]">Plan</th>
+                    <th className="px-6 py-3 text-left text-[9px] font-black text-gray-400 uppercase tracking-[2px]">Tarih</th>
+                    <th className="px-6 py-3 text-right text-[9px] font-black text-gray-400 uppercase tracking-[2px]">Alış ₺/ton</th>
+                    <th className="px-6 py-3 text-right text-[9px] font-black text-gray-400 uppercase tracking-[2px]">Satış ₺/ton</th>
+                    <th className="px-6 py-3 text-right text-[9px] font-black text-gray-400 uppercase tracking-[2px]">EBITDA %</th>
+                    <th className="px-8 py-3 text-right text-[9px] font-black text-gray-400 uppercase tracking-[2px]">Net Kâr</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {trendPlanlar.map(p => {
+                    const isSelected = compareIds.includes(p.id);
+                    return (
+                      <tr key={p.id} className={isSelected ? 'bg-blue-50/50' : 'hover:bg-gray-50/50'}>
+                        <td className="px-8 py-3 text-[11px] font-black text-enba-dark truncate max-w-[180px]">
+                          {p.baslik}{isSelected && <span className="ml-2 text-[9px] text-blue-500">● seçili</span>}
+                        </td>
+                        <td className="px-6 py-3 text-[11px] text-gray-400">{new Date(p.createdAt).toLocaleDateString('tr-TR')}</td>
+                        <td className="px-6 py-3 text-right text-sm font-black text-enba-dark tabular-nums">₺{fmt(p.params.alisFiyati)}</td>
+                        <td className="px-6 py-3 text-right text-sm font-black text-enba-dark tabular-nums">₺{fmt(p.params.satisFiyati)}</td>
+                        <td className={`px-6 py-3 text-right text-sm font-black tabular-nums ${p.sonuc.ebitdaMarji >= 15 ? 'text-emerald-600' : p.sonuc.ebitdaMarji >= 5 ? 'text-yellow-600' : 'text-rose-500'}`}>
+                          %{fmtDec(p.sonuc.ebitdaMarji)}
+                        </td>
+                        <td className={`px-8 py-3 text-right text-sm font-black tabular-nums ${p.sonuc.netKar >= 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
+                          ₺{fmt(p.sonuc.netKar)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
         )}
       </div>
     );
@@ -463,7 +866,7 @@ export const FastPlan: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between gap-6">
         <div className="flex items-center gap-5">
-          <button onClick={() => { setDuzenlemId(null); setBaslik(''); setAciklama(''); setParams({ ...VARSAYILAN_PARAMS }); setView('cards'); }} className="w-12 h-12 rounded-2xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition-all">
+          <button onClick={resetForm} className="w-12 h-12 rounded-2xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition-all">
             <ArrowRight size={20} className="rotate-180" />
           </button>
           <div>
@@ -474,10 +877,10 @@ export const FastPlan: React.FC = () => {
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <button onClick={() => { setDuzenlemId(null); setBaslik(''); setAciklama(''); setParams({ ...VARSAYILAN_PARAMS }); setView('cards'); }} className="px-6 py-3 rounded-2xl border border-gray-200 text-gray-500 hover:bg-gray-50 font-black text-[11px] uppercase tracking-[2px] transition-all">
+          <button onClick={resetForm} className="px-6 py-3 rounded-2xl border border-gray-200 text-gray-500 hover:bg-gray-50 font-black text-[11px] uppercase tracking-[2px] transition-all">
             İptal
           </button>
-          <button onClick={planKaydet} className="flex items-center gap-3 px-8 py-3.5 bg-enba-orange text-white rounded-2xl font-black text-[11px] uppercase tracking-[2px] shadow-xl shadow-enba-orange/30 hover:brightness-110 transition-all active:scale-95">
+          <button onClick={handleKaydetClick} className="flex items-center gap-3 px-8 py-3.5 bg-enba-orange text-white rounded-2xl font-black text-[11px] uppercase tracking-[2px] shadow-xl shadow-enba-orange/30 hover:brightness-110 transition-all active:scale-95">
             <Save size={16} /> Planı Kaydet
           </button>
         </div>
@@ -504,6 +907,28 @@ export const FastPlan: React.FC = () => {
               onChange={e => setAciklama(e.target.value)}
               placeholder="Bu plan neyi hedefliyor?"
               className="w-full bg-gray-50 border border-transparent rounded-2xl px-6 py-4 text-base font-medium text-gray-600 focus:bg-white focus:ring-2 focus:ring-enba-orange/20 outline-none transition-all"
+            />
+          </div>
+        </div>
+        {/* Etiket */}
+        <div className="mt-6 pt-6 border-t border-gray-100 space-y-3">
+          <label className="text-[10px] font-black text-gray-400 uppercase tracking-[3px] flex items-center gap-2">
+            <Tag size={12} /> İş Tipi Etiketi
+          </label>
+          <div className="flex items-center gap-2 flex-wrap">
+            {['LDPE', 'HDPE', 'PP', 'PET', 'PVC', 'PS', 'Kağıt', 'Cam', 'Metal', 'Tekstil'].map(t => (
+              <button key={t} type="button"
+                onClick={() => setEtiket(etiket === t ? '' : t)}
+                className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${etiket === t ? 'bg-enba-dark text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
+                {t}
+              </button>
+            ))}
+            <input
+              type="text"
+              value={etiket}
+              onChange={e => setEtiket(e.target.value)}
+              placeholder="veya yazın..."
+              className="flex-1 min-w-28 bg-gray-50 border border-transparent rounded-2xl px-4 py-2 text-sm font-medium text-enba-dark focus:bg-white focus:ring-2 focus:ring-enba-orange/20 outline-none transition-all"
             />
           </div>
         </div>
@@ -612,22 +1037,31 @@ export const FastPlan: React.FC = () => {
             <div className="space-y-3 mb-4">
               {params.ektraGiderler.map(g => (
                 <div key={g.id} className="flex items-center gap-4 px-5 py-4 bg-gray-50 rounded-2xl">
-                  <div className="flex-1 text-sm font-medium text-enba-dark">{g.ad}</div>
-                  <span className="font-black text-rose-500 tabular-nums text-sm">₺{fmt(g.tutar)}</span>
-                  <button onClick={() => giderSil(g.id)} className="w-8 h-8 flex items-center justify-center rounded-xl bg-rose-50 text-rose-400 hover:bg-rose-500 hover:text-white transition-all">
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-enba-dark truncate">{g.ad}</div>
+                    <div className="text-[9px] font-black text-gray-400 uppercase tracking-widest mt-0.5">{KALEM_LABEL[g.kalem ?? 'diger']}</div>
+                  </div>
+                  <span className="font-black text-rose-500 tabular-nums text-sm flex-shrink-0">₺{fmt(g.tutar)}</span>
+                  <button onClick={() => giderSil(g.id)} className="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-xl bg-rose-50 text-rose-400 hover:bg-rose-500 hover:text-white transition-all">
                     <Trash2 size={14} />
                   </button>
                 </div>
               ))}
             </div>
-            <div className="flex gap-3">
+            <div className="grid grid-cols-12 gap-2">
               <input type="text" placeholder="Gider adı..." value={yeniGider.ad}
                 onChange={e => setYeniGider({ ...yeniGider, ad: e.target.value })}
-                className="flex-1 bg-gray-50 rounded-2xl px-5 py-3 text-sm font-medium text-enba-dark outline-none focus:ring-2 focus:ring-enba-orange/20" />
+                className="col-span-4 bg-gray-50 rounded-2xl px-4 py-3 text-sm font-medium text-enba-dark outline-none focus:ring-2 focus:ring-enba-orange/20" />
+              <select value={yeniGider.kalem}
+                onChange={e => setYeniGider({ ...yeniGider, kalem: e.target.value as GiderKalem })}
+                className="col-span-4 bg-gray-50 rounded-2xl px-3 py-3 text-sm font-medium text-enba-dark outline-none focus:ring-2 focus:ring-enba-orange/20 cursor-pointer">
+                {KALEM_ORDER.map(k => <option key={k} value={k}>{KALEM_LABEL[k]}</option>)}
+              </select>
               <input type="number" placeholder="₺" value={yeniGider.tutar}
+                onFocus={e => e.target.select()}
                 onChange={e => setYeniGider({ ...yeniGider, tutar: e.target.value })}
-                className="w-28 bg-gray-50 rounded-2xl px-4 py-3 text-sm font-medium text-enba-dark outline-none focus:ring-2 focus:ring-enba-orange/20" />
-              <button onClick={giderEkle} className="flex items-center gap-2 px-5 py-3 bg-enba-dark text-white rounded-2xl font-black text-[10px] uppercase tracking-[1px] hover:bg-black transition-all">
+                className="col-span-2 bg-gray-50 rounded-2xl px-3 py-3 text-sm font-medium text-enba-dark outline-none focus:ring-2 focus:ring-enba-orange/20" />
+              <button onClick={giderEkle} className="col-span-2 flex items-center justify-center gap-1 bg-enba-dark text-white rounded-2xl font-black text-[10px] uppercase tracking-[1px] hover:bg-black transition-all">
                 <Plus size={14} /> Ekle
               </button>
             </div>
@@ -670,13 +1104,24 @@ export const FastPlan: React.FC = () => {
               ['Personel Maaş', formSonuc.toplamMaas],
               ['SGK İşveren', formSonuc.toplamSgk],
               ['Yemek', formSonuc.toplamYemek],
-              ...(formSonuc.toplamEktra > 0 ? [['Diğer', formSonuc.toplamEktra]] : []),
             ].map(([label, val], i) => (
               <div key={i} className="flex justify-between px-5 py-1.5 text-sm">
                 <span className="text-gray-400 font-medium">{label as string}</span>
                 <span className="font-black text-rose-400 tabular-nums">-₺{fmt(val as number)}</span>
               </div>
             ))}
+            {KALEM_ORDER.map(k => {
+              const toplam = params.ektraGiderler
+                .filter(g => (g.kalem ?? 'diger') === k)
+                .reduce((s, g) => s + g.tutar, 0);
+              if (toplam === 0) return null;
+              return (
+                <div key={k} className="flex justify-between px-5 py-1.5 text-sm">
+                  <span className="text-gray-400 font-medium">{KALEM_LABEL[k]}</span>
+                  <span className="font-black text-rose-400 tabular-nums">-₺{fmt(toplam)}</span>
+                </div>
+              );
+            })}
             <div className="h-px bg-gray-100" />
             <div className={`flex justify-between px-5 py-4 rounded-xl ${formSonuc.ebitda >= 0 ? 'bg-emerald-50' : 'bg-rose-50'}`}>
               <span className="text-[10px] font-black uppercase tracking-[2px] text-gray-600">FAVÖK</span>
@@ -695,6 +1140,14 @@ export const FastPlan: React.FC = () => {
           </div>
         </div>
       </div>
+      {saveModalOpen && (
+        <SaveModal
+          onYeniVersiyon={() => planKaydetDuzenle('yeni_versiyon')}
+          onGuncelle={() => planKaydetDuzenle('guncelle')}
+          onYeniModel={() => planKaydetDuzenle('yeni_model')}
+          onIptal={() => setSaveModalOpen(false)}
+        />
+      )}
     </div>
   );
 };
@@ -706,26 +1159,74 @@ const PlanKartBileseni: React.FC<{
   onEdit: () => void;
   onCopy: () => void;
   onDelete: () => void;
+  onArchive: () => void;
+  onCompare: () => void;
+  onVersionCompare: (vIdx: number) => void;
+  isSelectedForCompare: boolean;
   kpiColor: (v: number) => string;
   fmt: (n: number) => string;
   fmtDec: (n: number) => string;
-}> = ({ plan, onToggle, onEdit, onCopy, onDelete, kpiColor, fmt, fmtDec }) => {
+}> = ({ plan, onToggle, onEdit, onCopy, onDelete, onArchive, onCompare, onVersionCompare, isSelectedForCompare, kpiColor, fmt, fmtDec }) => {
+  const versions = plan.versions ?? [];
+  const [selectedVer, setSelectedVer] = useState<'current' | number>('current');
   const aktif = plan.status === 'active';
-  const s = plan.sonuc;
+
+  // Seçili versiyonun verisi
+  const dispSonuc = selectedVer === 'current' ? plan.sonuc : (versions[selectedVer as number]?.sonuc ?? plan.sonuc);
+  const dispParams = selectedVer === 'current' ? plan.params : (versions[selectedVer as number]?.params ?? plan.params);
+  const dispDate  = selectedVer === 'current' ? (plan.updatedAt || plan.createdAt) : (versions[selectedVer as number]?.tarih ?? plan.createdAt);
+  const s = dispSonuc;
+
+  // Karlılık şeridi rengi
+  const seritRenk = s.ebitdaMarji >= 15 ? 'bg-emerald-400'
+    : s.ebitdaMarji >= 5 ? 'bg-yellow-400'
+    : s.ebitdaMarji > 0 ? 'bg-rose-400'
+    : 'bg-gray-200';
+
   return (
-    <div className={`bg-white rounded-[2.5rem] border-2 transition-all duration-300 overflow-hidden shadow-card ${aktif ? 'border-enba-orange shadow-enba-orange/10' : 'border-transparent'}`}>
+    <div className={`bg-white rounded-[2.5rem] border-2 transition-all duration-300 overflow-hidden shadow-card ${
+      isSelectedForCompare ? 'border-blue-400 shadow-blue-200/50 shadow-lg' : aktif ? 'border-enba-orange shadow-enba-orange/10' : 'border-transparent'
+    }`}>
+      {/* Karlılık şeridi */}
+      <div className={`h-1 ${seritRenk}`} />
+
       <div className={`px-8 py-5 ${aktif ? 'bg-enba-orange/5' : 'bg-gray-50'} border-b border-gray-100 flex items-start justify-between gap-4`}>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-3 mb-1">
             {aktif && <div className="w-2 h-2 rounded-full bg-enba-orange animate-pulse flex-shrink-0" />}
             <h3 className="font-black text-enba-dark text-sm uppercase tracking-tight truncate">{plan.baslik}</h3>
           </div>
+          {plan.etiket && (
+            <span className="inline-flex items-center mt-1 mb-1 px-2.5 py-0.5 bg-enba-dark/5 text-enba-dark text-[9px] font-black uppercase tracking-widest rounded-full">
+              {plan.etiket}
+            </span>
+          )}
           {plan.aciklama && (
             <p className="text-[10px] text-gray-400 font-medium truncate">{plan.aciklama}</p>
           )}
-          <div className="text-[9px] font-black text-gray-300 uppercase tracking-widest mt-1.5">
-            {new Date(plan.createdAt).toLocaleDateString('tr-TR')} · {fmtDec(plan.params.aylikTon)} ton/ay
-          </div>
+          {versions.length === 0 ? (
+            <div className="text-[9px] font-black text-gray-300 uppercase tracking-widest mt-1.5">
+              {new Date(plan.createdAt).toLocaleDateString('tr-TR')} · {fmtDec(dispParams.aylikTon)} ton/ay
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+              <select
+                value={selectedVer === 'current' ? 'current' : String(selectedVer)}
+                onChange={e => setSelectedVer(e.target.value === 'current' ? 'current' : Number(e.target.value))}
+                className="text-[9px] font-black text-enba-orange bg-enba-orange/10 border-none rounded-lg px-2 py-1 outline-none cursor-pointer"
+              >
+                <option value="current">Güncel (V{versions.length + 1}) · {new Date(plan.updatedAt || plan.createdAt).toLocaleDateString('tr-TR')}</option>
+                {[...versions].map((v, i) => (
+                  <option key={i} value={String(i)}>V{i + 1} · {new Date(v.tarih).toLocaleDateString('tr-TR')}</option>
+                )).reverse()}
+              </select>
+              <span className="text-[9px] text-gray-300 font-black">{fmtDec(dispParams.aylikTon)} ton/ay</span>
+              <button onClick={() => onVersionCompare(selectedVer === 'current' ? versions.length - 1 : selectedVer as number)}
+                className="text-[9px] font-black text-gray-400 hover:text-blue-500 uppercase tracking-widest transition-colors">
+                Kıyasla ↔
+              </button>
+            </div>
+          )}
         </div>
         <button
           onClick={onToggle}
@@ -765,11 +1266,76 @@ const PlanKartBileseni: React.FC<{
           <button onClick={onCopy} title="Kopyala" className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-gray-100 text-gray-400 hover:text-enba-dark transition-all">
             <Copy size={15} />
           </button>
+          <button onClick={onCompare} title={isSelectedForCompare ? 'Seçimi Kaldır' : 'Karşılaştır'}
+            className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all ${isSelectedForCompare ? 'bg-blue-500 text-white' : 'hover:bg-blue-50 text-gray-400 hover:text-blue-500'}`}>
+            {isSelectedForCompare ? <X size={15} /> : <Scale size={15} />}
+          </button>
+          <button onClick={onArchive} title="Arşivle" className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-gray-100 text-gray-400 hover:text-enba-dark transition-all">
+            <Archive size={15} />
+          </button>
           <button onClick={onDelete} title="Sil" className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-rose-50 text-gray-400 hover:text-rose-500 transition-all">
             <Trash2 size={15} />
           </button>
         </div>
       </div>
+
+    </div>
+  );
+};
+
+// ─── Arşiv Bölümü ────────────────────────────────────────────
+const ArşivBolumu: React.FC<{
+  planlar: PlanCard[];
+  onRestore: (id: string) => void;
+  onDelete: (id: string) => void;
+  fmt: (n: number) => string;
+  fmtDec: (n: number) => string;
+}> = ({ planlar, onRestore, onDelete, fmt, fmtDec }) => {
+  const [acik, setAcik] = useState(false);
+  return (
+    <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
+      <button onClick={() => setAcik(v => !v)}
+        className="w-full flex items-center justify-between px-8 py-5 hover:bg-gray-50/50 transition-colors">
+        <div className="flex items-center gap-3">
+          <Archive size={16} className="text-gray-400" />
+          <span className="text-[10px] font-black text-gray-400 uppercase tracking-[3px]">
+            Arşivlenmiş Planlar — {planlar.length} Kart
+          </span>
+        </div>
+        {acik ? <ChevronUp size={16} className="text-gray-300" /> : <ChevronDown size={16} className="text-gray-300" />}
+      </button>
+      {acik && (
+        <div className="px-8 pb-8 space-y-3">
+          {planlar.map(plan => {
+            const s = plan.sonuc;
+            return (
+              <div key={plan.id} className="flex items-center gap-4 px-6 py-4 bg-gray-50 rounded-2xl opacity-70">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span className="font-black text-sm text-gray-600 uppercase truncate">{plan.baslik}</span>
+                    {plan.etiket && (
+                      <span className="px-2 py-0.5 bg-gray-200 text-gray-500 text-[9px] font-black uppercase tracking-widest rounded-full flex-shrink-0">
+                        {plan.etiket}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-[9px] text-gray-400 font-medium">
+                    {new Date(plan.createdAt).toLocaleDateString('tr-TR')} · {fmtDec(plan.params.aylikTon)} ton/ay · Net ₺{fmt(s.netKar)} · EBITDA %{fmtDec(s.ebitdaMarji)}
+                  </div>
+                </div>
+                <button onClick={() => onRestore(plan.id)} title="Geri Al"
+                  className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-xl hover:bg-emerald-50 text-gray-400 hover:text-emerald-600 transition-all">
+                  <ArchiveRestore size={15} />
+                </button>
+                <button onClick={() => onDelete(plan.id)} title="Kalıcı Sil"
+                  className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-xl hover:bg-rose-50 text-gray-400 hover:text-rose-500 transition-all">
+                  <Trash2 size={15} />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };
