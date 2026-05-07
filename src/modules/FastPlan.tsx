@@ -574,16 +574,29 @@ export const FastPlan: React.FC = () => {
                 </div>
               ))}
             </div>
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid grid-cols-5 gap-3">
               <input type="text" placeholder="Unvan..." value={yeniPersonel.unvan}
                 onChange={e => setYeniPersonel({ ...yeniPersonel, unvan: e.target.value })}
                 className="col-span-2 bg-gray-50 border border-transparent rounded-2xl px-4 py-3 text-sm font-medium text-enba-dark outline-none focus:ring-2 focus:ring-enba-orange/20" />
               <input type="number" placeholder="Kişi" min={1} value={yeniPersonel.kisiSayisi}
+                onFocus={e => e.target.select()}
                 onChange={e => setYeniPersonel({ ...yeniPersonel, kisiSayisi: Number(e.target.value) })}
                 className="bg-gray-50 border border-transparent rounded-2xl px-4 py-3 text-sm font-medium text-enba-dark outline-none focus:ring-2 focus:ring-enba-orange/20" />
+              <div className="relative">
+                <input type="number" placeholder="0" min={0} value={yeniPersonel.ekMaas || ''}
+                  onFocus={e => e.target.select()}
+                  onChange={e => setYeniPersonel({ ...yeniPersonel, ekMaas: e.target.value === '' ? 0 : Number(e.target.value) })}
+                  className="w-full bg-gray-50 border border-transparent rounded-2xl px-4 py-3 text-sm font-medium text-enba-dark outline-none focus:ring-2 focus:ring-enba-orange/20" />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-gray-400">+₺</span>
+              </div>
               <button onClick={personelEkle} className="flex items-center justify-center gap-1 bg-enba-dark text-white rounded-2xl font-black text-[10px] uppercase tracking-[1px] hover:bg-black transition-all">
                 <Plus size={14} /> Ekle
               </button>
+            </div>
+            <div className="flex gap-2 mt-2 text-[9px] font-black text-gray-300 uppercase tracking-widest px-1">
+              <span className="col-span-2 flex-[2]">Unvan</span>
+              <span className="flex-1 text-center">Kişi</span>
+              <span className="flex-1 text-center">Asgari Üzeri Ek</span>
             </div>
           </Panel>
 
