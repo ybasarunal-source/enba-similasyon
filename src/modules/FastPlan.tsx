@@ -5,7 +5,7 @@ import {
   Zap, Package, Factory,
   Users, BarChart3,
   Plus, Trash2, Save, ChevronDown, ChevronUp,
-  Play, Edit3, Copy, FileText, Layout, ArrowRight, Archive, ArchiveRestore, Tag, Scale, X
+  Play, Edit3, Copy, FileText, Layout, ArrowRight, Archive, ArchiveRestore, Tag, Scale, X, Gem
 } from 'lucide-react';
 
 /**
