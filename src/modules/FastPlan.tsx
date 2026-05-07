@@ -257,8 +257,9 @@ export const FastPlan: React.FC = () => {
       <label className="text-[10px] font-black text-gray-400 uppercase tracking-[2px] flex-shrink-0">{label}</label>
       <div className="flex items-center gap-2">
         <input
-          type="number" value={value} min={min} max={max} step={step}
-          onChange={e => onChange(Number(e.target.value))}
+          type="number" value={value || ''} min={min} max={max} step={step}
+          onChange={e => onChange(e.target.value === '' ? 0 : Number(e.target.value))}
+          onFocus={e => e.target.select()}
           className="w-32 text-right bg-gray-50 border border-transparent rounded-xl px-4 py-2 text-sm font-black text-enba-dark focus:bg-white focus:ring-2 focus:ring-enba-orange/20 outline-none transition-all tabular-nums"
         />
         {suffix && <span className="text-[10px] font-black text-gray-400 uppercase w-10">{suffix}</span>}
