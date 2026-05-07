@@ -59,6 +59,13 @@ interface PlanParams {
   personelListesi: PersonelItem[];
   ektraGiderler: GiderItem[];
   yatirimlar: YatirimItem[];
+  // Sabit Giderler
+  muhasebeGider: number;
+  kiraGider: number;
+  forkliftGider: number;
+  bakimGider: number;
+  elektrikGider: number;
+  cevreMuhGider: number;
   amortismanAy: number;
 }
 
@@ -135,7 +142,12 @@ function hesapla(p: PlanParams): PlanSonuc {
   });
 
   const giderKırılım: Record<GiderKalem, number> = {
-    enerji: 0, kira: 0, bakim: 0, pazarlama: 0, yonetim: 0, diger: 0
+    enerji: p.elektrikGider || 0,
+    kira: (p.kiraGider || 0) + (p.forkliftGider || 0),
+    bakim: p.bakimGider || 0,
+    pazarlama: 0,
+    yonetim: (p.muhasebeGider || 0) + (p.cevreMuhGider || 0),
+    diger: 0
   };
   p.ektraGiderler.forEach(g => {
     const k = g.kalem || 'diger';
@@ -166,7 +178,14 @@ const VARSAYILAN_PARAMS: PlanParams = {
   copOrani: 0, ayiklamaVar: false, elektrikKwFiyat: 0,
   aylikGun: 26, gunlukSaat: 8, vardiyaSayisi: 1,
   personelListesi: [],
-  ektraGiderler: [], yatirimlar: [], amortismanAy: 36,
+  ektraGiderler: [], yatirimlar: [], 
+  muhasebeGider: 20000,
+  kiraGider: 60000,
+  forkliftGider: 35000,
+  bakimGider: 20000,
+  elektrikGider: 160000,
+  cevreMuhGider: 0,
+  amortismanAy: 36,
 };
 
 // ─── InputRow (dışarıda — her render'da yeniden oluşturulmasın) ──
@@ -1097,6 +1116,20 @@ export const FastPlan: React.FC = () => {
           </Panel>
 
           <Panel title="IV. İşletme Giderleri" icon={<Package size={18} />} open={panelGider} onToggle={() => setPanelGider(v => !v)}>
+            {/* Sabit Giderler */}
+            <div className="mb-6 space-y-1">
+              <div className="text-[10px] font-black text-enba-orange uppercase tracking-[3px] mb-3 px-1">Sabit İşletme Giderleri</div>
+              <InputRow label="Elektrik Faturası" value={params.elektrikGider} onChange={v => setParam('elektrikGider', v)} suffix="₺" step={1000} />
+              <InputRow label="Kira (Tesis)" value={params.kiraGider} onChange={v => setParam('kiraGider', v)} suffix="₺" step={1000} />
+              <InputRow label="Forklift Kira/Gider" value={params.forkliftGider} onChange={v => setParam('forkliftGider', v)} suffix="₺" step={500} />
+              <InputRow label="Muhasebe Hizmeti" value={params.muhasebeGider} onChange={v => setParam('muhasebeGider', v)} suffix="₺" step={500} />
+              <InputRow label="Genel Onarım / Bakım" value={params.bakimGider} onChange={v => setParam('bakimGider', v)} suffix="₺" step={500} />
+              <InputRow label="Çevre Mühendisliği" value={params.cevreMuhGider} onChange={v => setParam('cevreMuhGider', v)} suffix="₺" step={500} />
+            </div>
+
+            <div className="h-px bg-gray-100 my-6" />
+
+            <div className="text-[10px] font-black text-enba-orange uppercase tracking-[3px] mb-4 px-1">Değişken / Ekstra Giderler</div>
             <div className="space-y-3 mb-4">
               {params.ektraGiderler.map(g => (
                 <div key={g.id} className="flex items-center gap-4 px-5 py-4 bg-gray-50 rounded-2xl">
