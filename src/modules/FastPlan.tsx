@@ -31,6 +31,12 @@ interface GiderItem {
   kalem: GiderKalem;
 }
 
+interface YatirimItem {
+  id: number;
+  ad: string;
+  tutar: number;
+}
+
 interface PlanVersion {
   tarih: string;
   params: PlanParams;
@@ -52,7 +58,7 @@ interface PlanParams {
   vardiyaSayisi: number;
   personelListesi: PersonelItem[];
   ektraGiderler: GiderItem[];
-  capex: number;
+  yatirimlar: YatirimItem[];
   amortismanAy: number;
 }
 
@@ -140,7 +146,8 @@ function hesapla(p: PlanParams): PlanSonuc {
   const totalGider = malAlisGideri + alisNakliyeGideri + satisNakliyeGideri +
     toplamMaas + toplamSgk + toplamYemek + toplamEktra;
   
-  const aylikAmortisman = p.capex > 0 ? p.capex / p.amortismanAy : 0;
+  const toplamYatirim = p.yatirimlar.reduce((s, y) => s + y.tutar, 0);
+  const aylikAmortisman = toplamYatirim > 0 ? toplamYatirim / p.amortismanAy : 0;
   const ebitda = satisGeliri - totalGider;
   const netKar = ebitda - aylikAmortisman;
   const ebitdaMarji = satisGeliri > 0 ? (ebitda / satisGeliri) * 100 : 0;
@@ -159,7 +166,7 @@ const VARSAYILAN_PARAMS: PlanParams = {
   copOrani: 0, ayiklamaVar: false, elektrikKwFiyat: 0,
   aylikGun: 26, gunlukSaat: 8, vardiyaSayisi: 1,
   personelListesi: [],
-  ektraGiderler: [], capex: 0, amortismanAy: 36,
+  ektraGiderler: [], yatirimlar: [], amortismanAy: 36,
 };
 
 // ─── InputRow (dışarıda — her render'da yeniden oluşturulmasın) ──
@@ -269,10 +276,12 @@ export const FastPlan: React.FC = () => {
   const [params, setParams] = useState<PlanParams>({ ...VARSAYILAN_PARAMS });
   const [yeniPersonel, setYeniPersonel] = useState({ unvan: '', kisiSayisi: 1, ekMaas: 0, isAyiklama: false });
   const [yeniGider, setYeniGider] = useState<{ ad: string; tutar: string; kalem: GiderKalem }>({ ad: '', tutar: '', kalem: 'enerji' });
+  const [yeniYatirim, setYeniYatirim] = useState({ ad: '', tutar: '' });
 
   // Panel açıklıkları
-  const [panelOp, setPanelOp] = useState(true);
-  const [panelPer, setPanelPer] = useState(true);
+  const [panelYatirim, setPanelYatirim] = useState(true);
+  const [panelOp, setPanelOp] = useState(false);
+  const [panelPer, setPanelPer] = useState(false);
   const [panelGider, setPanelGider] = useState(false);
 
   // Filtre & sıralama
@@ -450,6 +459,15 @@ export const FastPlan: React.FC = () => {
 
   const giderSil = (id: number) =>
     setParam('ektraGiderler', params.ektraGiderler.filter(g => g.id !== id));
+
+  const yatirimEkle = () => {
+    if (!yeniYatirim.ad || !yeniYatirim.tutar) return;
+    setParam('yatirimlar', [...params.yatirimlar, { id: Date.now(), ad: yeniYatirim.ad, tutar: Number(yeniYatirim.tutar) }]);
+    setYeniYatirim({ ad: '', tutar: '' });
+  };
+
+  const yatirimSil = (id: number) =>
+    setParam('yatirimlar', params.yatirimlar.filter(y => y.id !== id));
 
   // ─── UI Helpers ──────────────────────────────────────────
   const kpiColor = (val: number) =>
@@ -967,7 +985,45 @@ export const FastPlan: React.FC = () => {
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
         {/* Sol: Giriş Panelleri */}
         <div className="xl:col-span-7 space-y-5">
-          <Panel title="Operasyon Parametreleri" icon={<Factory size={18} />} open={panelOp} onToggle={() => setPanelOp(v => !v)}>
+          <Panel 
+            title="I. Başlangıç Yatırımları (CAPEX)" icon={<Gem size={18} />} open={panelYatirim} 
+            onToggle={() => setPanelYatirim(v => !v)}
+            badge={`₺${fmt(params.yatirimlar.reduce((s, y) => s + y.tutar, 0))}`}
+          >
+            <div className="space-y-3 mb-5">
+              {params.yatirimlar.map(y => (
+                <div key={y.id} className="flex items-center gap-4 px-5 py-4 bg-gray-50 rounded-2xl">
+                  <div className="flex-1">
+                    <div className="font-black text-sm text-enba-dark">{y.ad}</div>
+                  </div>
+                  <span className="text-sm font-black text-enba-orange tabular-nums">₺{fmt(y.tutar)}</span>
+                  <button onClick={() => yatirimSil(y.id)} className="w-8 h-8 flex items-center justify-center rounded-xl bg-rose-50 text-rose-400 hover:bg-rose-500 hover:text-white transition-all">
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-12 gap-3">
+              <input type="text" placeholder="Yatırım kalemi (Örn: Makine, Lisans...)" value={yeniYatirim.ad}
+                onChange={e => setYeniYatirim({ ...yeniYatirim, ad: e.target.value })}
+                className="col-span-7 bg-gray-50 border border-transparent rounded-2xl px-4 py-3 text-sm font-medium text-enba-dark outline-none focus:ring-2 focus:ring-enba-orange/20" />
+              <input type="number" placeholder="Tutar ₺" value={yeniYatirim.tutar}
+                onFocus={e => e.target.select()}
+                onChange={e => setYeniYatirim({ ...yeniYatirim, tutar: e.target.value })}
+                className="col-span-3 bg-gray-50 border border-transparent rounded-2xl px-4 py-3 text-sm font-medium text-enba-dark outline-none focus:ring-2 focus:ring-enba-orange/20" />
+              <button onClick={yatirimEkle} className="col-span-2 flex items-center justify-center gap-1 bg-enba-dark text-white rounded-2xl font-black text-[10px] uppercase tracking-[1px] hover:bg-black transition-all">
+                <Plus size={14} /> Ekle
+              </button>
+            </div>
+            <div className="mt-6 pt-6 border-t border-gray-100">
+               <InputRow label="Amortisman Süresi (Ay)" value={params.amortismanAy} onChange={v => setParam('amortismanAy', v)} suffix="ay" min={1} max={240} />
+               <div className="mt-2 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                 Aylık Amortisman Gideri: <span className="text-enba-orange">₺{fmt(params.yatirimlar.reduce((s, y) => s + y.tutar, 0) / params.amortismanAy)}</span>
+               </div>
+            </div>
+          </Panel>
+
+          <Panel title="II. Operasyon Parametreleri" icon={<Factory size={18} />} open={panelOp} onToggle={() => setPanelOp(v => !v)}>
             <InputRow label="Aylık Giren Ton" value={params.aylikTon} onChange={v => setParam('aylikTon', v)} suffix="ton" step={10} />
             <InputRow label="Alış Fiyatı" value={params.alisFiyati} onChange={v => setParam('alisFiyati', v)} suffix="₺/ton" step={100} />
             <InputRow label="Satış Fiyatı" value={params.satisFiyati} onChange={v => setParam('satisFiyati', v)} suffix="₺/ton" step={100} />
@@ -990,10 +1046,11 @@ export const FastPlan: React.FC = () => {
           </Panel>
 
           <Panel
-            title="Personel" icon={<Users size={18} />} open={panelPer}
+            title="III. Personel" icon={<Users size={18} />} open={panelPer}
             onToggle={() => setPanelPer(v => !v)}
             badge={`${params.personelListesi.reduce((s, p) => s + p.kisiSayisi * params.vardiyaSayisi, 0)} kişi`}
           >
+            {/* ... (Personel listesi içeriği aynı kalıyor) ... */}
             <div className="space-y-3 mb-5">
               {params.personelListesi.map(p => (
                 <div key={p.id} className="flex items-center gap-4 px-5 py-4 bg-gray-50 rounded-2xl">
@@ -1039,15 +1096,7 @@ export const FastPlan: React.FC = () => {
             </div>
           </Panel>
 
-          <Panel title="CAPEX & Diğer Giderler" icon={<Package size={18} />} open={panelGider} onToggle={() => setPanelGider(v => !v)}>
-            <div className="p-5 bg-enba-dark/5 rounded-2xl mb-5 space-y-3">
-              <div className="text-[10px] font-black text-enba-dark uppercase tracking-[2px]">Yatırım Maliyeti (CAPEX)</div>
-              <InputRow label="Toplam CAPEX" value={params.capex} onChange={v => setParam('capex', v)} suffix="₺" step={10000} />
-              <InputRow label="Amortisman (Ay)" value={params.amortismanAy} onChange={v => setParam('amortismanAy', v)} suffix="ay" min={1} max={240} />
-              {params.capex > 0 && (
-                <div className="text-[11px] font-black text-enba-orange">→ Aylık: ₺{fmt(params.capex / params.amortismanAy)}</div>
-              )}
-            </div>
+          <Panel title="IV. İşletme Giderleri" icon={<Package size={18} />} open={panelGider} onToggle={() => setPanelGider(v => !v)}>
             <div className="space-y-3 mb-4">
               {params.ektraGiderler.map(g => (
                 <div key={g.id} className="flex items-center gap-4 px-5 py-4 bg-gray-50 rounded-2xl">
