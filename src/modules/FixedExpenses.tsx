@@ -59,7 +59,6 @@ export const FixedExpenses: React.FC = () => {
         if (localStr && cloudData.length === 0) {
            const localData = JSON.parse(localStr);
            if (Array.isArray(localData) && localData.length > 0) {
-             console.log("Migrating local FixedExpenses to Supabase...");
              for (const item of localData) {
                await fixedExpensesAPI.insert({
                  title: item.title,

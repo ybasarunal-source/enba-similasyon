@@ -177,7 +177,6 @@ export const PnL: React.FC = () => {
                 try {
                     const savedLocal = JSON.parse(savedStr);
                     if (Array.isArray(savedLocal) && savedLocal.length > 0) {
-                        console.log("Migrating PnL Reports to Supabase...");
                         for (const r of savedLocal) {
                             await pnlReportsAPI.insert({
                                 id: r.id,
@@ -486,7 +485,6 @@ export const PnL: React.FC = () => {
     };
 
     const mapParasutInvoicesToPnL = (invoices: ParasutInvoice[]): PnLData => {
-        console.log("PnL Debug (Paraşüt) - Mapping started for invoices:", invoices.length);
         let aylarSet = new Set<string>();
         let modellerSet = new Set<string>();
         let kategoriMap: Record<string, Record<string, Record<string, number>>> = {}; 

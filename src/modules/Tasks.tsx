@@ -107,7 +107,6 @@ export const Tasks: React.FC = () => {
 
         const localTasksStr = localStorage.getItem('enba_tasks');
         if (localTasksStr && cloudTasks.length === 0) {
-          console.log("Migrating Tasks to Supabase...");
           const lTasks = JSON.parse(localTasksStr) || [];
           const lProjects = JSON.parse(localStorage.getItem('enba_projects') || '[]');
           const lGroups = JSON.parse(localStorage.getItem('enba_project_groups') || '[]');
@@ -503,7 +502,6 @@ export const Tasks: React.FC = () => {
   const handleImportFromMs = async () => {
     if (!msAccount) return;
     setIsSyncing(true);
-    console.log('Importing from Microsoft...');
     try {
       const lists = await microsoftService.getTodoLists();
       let importedCount = 0;

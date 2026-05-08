@@ -159,12 +159,6 @@ export const App: React.FC = () => {
       setProfileAvatar(session.user.user_metadata?.profile_data?.avatarUrl || '');
       profileAPI.getMyProfile(true) // force fetch
         .then(profile => {
-          console.log('[ENBA DEBUG] Profil yüklendi:', {
-            id: profile?.id,
-            email: profile?.email,
-            role: profile?.role,
-            permissions: profile?.permissions
-          });
           setUserProfile(profile);
           setProfileLoadError(!profile);
           setIsProfileLoading(false);
@@ -249,17 +243,6 @@ export const App: React.FC = () => {
   ];
 
   const allowedItems = rawMenuItems.filter(item => {
-    // DEBUG — bir kez çalışsın yeter
-    if (item.id === 'modules') {
-      console.log('[ENBA DEBUG] allowedItems hesaplanıyor:', {
-        userProfileRole: userProfile?.role,
-        sessionAppRole: session?.user?.app_metadata?.role,
-        sessionUserMetaRole: session?.user?.user_metadata?.role,
-        computedRole: user.role,
-        isProfileLoading,
-        userProfileNull: userProfile === null
-      });
-    }
     try {
       // Demo kullanıcısı her şeyi görür (Sistem Yönetimi hariç)
       if (session?.user?.email === 'demo@enba.com') {

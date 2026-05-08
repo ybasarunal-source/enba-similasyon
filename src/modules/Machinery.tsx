@@ -66,7 +66,6 @@ export const Machinery: React.FC = () => {
       const kStr = localStorage.getItem('enba_bakim_kayitlari');
 
       if ((mStr || dStr || kStr) && cloudAssets.length === 0 && cloudMaint.length === 0) {
-        console.log("Migrating Machinery to Supabase...");
         const m = mStr ? JSON.parse(mStr) : [];
         const d = dStr ? JSON.parse(dStr) : [];
         const k = kStr ? JSON.parse(kStr) : [];
