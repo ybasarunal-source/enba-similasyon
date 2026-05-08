@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import * as XLSX from 'xlsx';
-import html2pdf from 'html2pdf.js';
 import { 
   BarChart3, 
   Upload, 
@@ -726,29 +725,30 @@ export const PnL: React.FC = () => {
         XLSX.writeFile(wb, "Enba_PNL_Raporu.xlsx");
     };
 
-    const pdfIndir = () => {
+    const pdfIndir = async () => {
         setIsPdfGenerating(true);
-        setTimeout(() => {
-            const printContainer = document.getElementById('pnl-report-container-print');
-            if (!printContainer) return;
+        await new Promise(r => setTimeout(r, 500));
 
-            const opt = {
-                margin:       [10, 10, 10, 10],
-                filename:     'Enba_PNL_Raporu.pdf',
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true },
-                jsPDF:        { unit: 'mm', format: 'a3', orientation: 'landscape' },
-                pagebreak:    { mode: ['css', 'legacy'] }
-            };
+        const printContainer = document.getElementById('pnl-report-container-print');
+        if (!printContainer) { setIsPdfGenerating(false); return; }
 
-            const actions = document.getElementById('pnl-actions');
-            if (actions) actions.style.display = 'none';
+        const opt = {
+            margin:       [10, 10, 10, 10],
+            filename:     'Enba_PNL_Raporu.pdf',
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true },
+            jsPDF:        { unit: 'mm', format: 'a3', orientation: 'landscape' },
+            pagebreak:    { mode: ['css', 'legacy'] }
+        };
 
-            html2pdf().set(opt).from(printContainer).save().then(() => {
-                if (actions) actions.style.display = 'flex';
-                setIsPdfGenerating(false);
-            });
-        }, 500); 
+        const actions = document.getElementById('pnl-actions');
+        if (actions) actions.style.display = 'none';
+
+        const { default: html2pdf } = await import('html2pdf.js');
+        html2pdf().set(opt).from(printContainer).save().then(() => {
+            if (actions) actions.style.display = 'flex';
+            setIsPdfGenerating(false);
+        });
     };
 
     const renderTableDenge = (sAylar: string[], oAylarFull: string[], showTotalCol: boolean, tableIndex: number) => {
