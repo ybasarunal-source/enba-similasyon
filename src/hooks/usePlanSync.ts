@@ -3,6 +3,28 @@ import { supabase } from '../api/supabase';
 
 export type SyncStatus = 'idle' | 'syncing' | 'error' | 'synced';
 
+interface BusinessPlanRow {
+  id: string;
+  user_id: string;
+  company_id: string | null;
+  plan_type: 'fast' | 'detailed';
+  status: string;
+  title: string;
+  year: number;
+  data: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+interface InsertedRow {
+  id: string;
+  data: Record<string, unknown>;
+}
+
+interface EnbaAppMeta {
+  company_id?: string;
+}
+
 interface UsePlanSyncOptions {
   localKey: string;
   planType: 'fast' | 'detailed';
@@ -18,7 +40,14 @@ function markDeleted(key: string, ids: string[]) {
   try { localStorage.setItem(key, JSON.stringify([...set])); } catch { /* ignore */ }
 }
 
-export function usePlanSync<T extends { id: string; supabaseId?: string }>(opts: UsePlanSyncOptions) {
+export function usePlanSync<T extends {
+  id: string;
+  supabaseId?: string;
+  baslik?: string;
+  title?: string;
+  status?: string;
+  year?: number;
+}>(opts: UsePlanSyncOptions) {
   const { localKey, planType } = opts;
   const deletedKey = `${localKey}_deleted`;
 
@@ -48,10 +77,11 @@ export function usePlanSync<T extends { id: string; supabaseId?: string }>(opts:
       setPlanlar(prev => {
         const deleted = deletedIds.current;
         const merged = [...prev];
-        data.forEach((row: any) => {
+        (data as BusinessPlanRow[]).forEach(row => {
           if (deleted.has(row.id)) return;
-          const localPlan: any = row.data;
-          if (!localPlan || deleted.has(localPlan.id)) return;
+          const localPlan = row.data;
+          const localId = localPlan?.id as string | undefined;
+          if (!localPlan || (localId && deleted.has(localId))) return;
           const idx = merged.findIndex(p => p.supabaseId === row.id || p.id === row.id);
           const updated = { ...localPlan, supabaseId: row.id, status: row.status } as T;
           if (idx >= 0) merged[idx] = updated;
@@ -76,10 +106,10 @@ export function usePlanSync<T extends { id: string; supabaseId?: string }>(opts:
 
       // JWT'den company_id al (profil sorgusu gerektirmez)
       const { data: { user } } = await supabase.auth.getUser();
-      const companyId: string | null = (user?.app_metadata as any)?.company_id ?? null;
+      const companyId: string | null = (user?.app_metadata as EnbaAppMeta)?.company_id ?? null;
 
       const now = new Date().toISOString();
-      const makePayload = (plan: any) => ({
+      const makePayload = (plan: T) => ({
         user_id: session.user.id,
         ...(companyId ? { company_id: companyId } : {}),
         plan_type: planType,
@@ -90,8 +120,9 @@ export function usePlanSync<T extends { id: string; supabaseId?: string }>(opts:
         updated_at: now,
       });
 
-      const mevcutlar = guncel.filter(p => (p as any).supabaseId) as any[];
-      const yeniler   = guncel.filter(p => !(p as any).supabaseId) as any[];
+      type PlanWithSupa = T & { supabaseId: string };
+      const mevcutlar = guncel.filter((p): p is PlanWithSupa => Boolean(p.supabaseId));
+      const yeniler   = guncel.filter(p => !p.supabaseId);
 
       // Mevcut planları tek seferde güncelle (upsert)
       if (mevcutlar.length > 0) {
@@ -102,7 +133,7 @@ export function usePlanSync<T extends { id: string; supabaseId?: string }>(opts:
       }
 
       // Yeni planları tek seferde ekle, dönen ID'leri local planla eşleştir
-      const updated = [...guncel] as any[];
+      const updated = [...guncel];
       if (yeniler.length > 0) {
         const { data: inserted, error } = await supabase
           .from('business_plans')
@@ -111,8 +142,8 @@ export function usePlanSync<T extends { id: string; supabaseId?: string }>(opts:
         if (error) throw error;
 
         // data JSONB içindeki local id ile eşleştir
-        (inserted as any[]).forEach(row => {
-          const localId = (row.data as any)?.id;
+        (inserted as InsertedRow[]).forEach(row => {
+          const localId = row.data?.id as string | undefined;
           const idx = updated.findIndex(p => p.id === localId);
           if (idx >= 0) updated[idx].supabaseId = row.id;
         });
@@ -130,13 +161,13 @@ export function usePlanSync<T extends { id: string; supabaseId?: string }>(opts:
 
   // ── Tek plan sil ─────────────────────────────────────────────
   const sil = useCallback(async (id: string) => {
-    const plan = planlar.find(p => p.id === id) as any;
+    const plan = planlar.find(p => p.id === id);
     const guncel = planlar.filter(p => p.id !== id);
 
     setPlanlar(guncel);
     localStorage.setItem(localKey, JSON.stringify(guncel));
 
-    markDeleted(deletedKey, [id, plan?.supabaseId]);
+    markDeleted(deletedKey, [id, ...(plan?.supabaseId ? [plan.supabaseId] : [])]);
     deletedIds.current.add(id);
     if (plan?.supabaseId) deletedIds.current.add(plan.supabaseId);
 

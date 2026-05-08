@@ -49,14 +49,29 @@ export interface BusinessPlan {
   year: number;
   status: string;
   plan_type: 'fast' | 'detailed';
-  data: any;
+  data: Record<string, unknown>;
   created_at?: string;
   updated_at?: string;
 }
 
+// --- Supabase row shapes (snake_case) ---
+
+interface StockRow {
+  id: string; tarih: string; tedarikci_adi: string; hammadde_turu: string;
+  brut_miktar: number; net_miktar: number; alis_fiyati: number;
+  nakliye_bedeli: number; ym_fire?: number; nem_fire?: number;
+  birim_maliyet?: number; notlar?: string;
+}
+
+interface SalesRow {
+  id: string; tarih: string; musteri_adi: string; stok_turu: string;
+  hammadde_turu?: string; mamul_turu?: string; miktar: number;
+  satis_fiyati: number; nakliye_bedeli: number; notlar?: string;
+}
+
 // --- Mapping Helpers ---
 
-function mapAlis(r: any): StockRecord {
+function mapAlis(r: StockRow): StockRecord {
   return {
     id: r.id, tarih: r.tarih, tedarikciAdi: r.tedarikci_adi,
     hammaddeTuru: r.hammadde_turu, brutMiktar: Number(r.brut_miktar) || 0,
@@ -67,7 +82,7 @@ function mapAlis(r: any): StockRecord {
   };
 }
 
-function mapSatis(r: any): SalesRecord {
+function mapSatis(r: SalesRow): SalesRecord {
   return {
     id: r.id, tarih: r.tarih, musteriAdi: r.musteri_adi, stokTuru: r.stok_turu,
     hammadde_turu: r.hammadde_turu, mamul_turu: r.mamul_turu,
@@ -153,10 +168,10 @@ export const DataService = {
 
   // --- Kayıt Ekleme ve Güncelleme ---
 
-  async insertData(table: string, payload: any) {
+  async insertData(table: string, payload: Record<string, unknown>) {
     const { data: { session } } = await supabase.auth.getSession();
     const profile = await profileAPI.getMyProfile();
-    const p: any = {
+    const p: Record<string, unknown> = {
       ...payload,
       user_id: session?.user?.id || null,
       created_at: new Date().toISOString()
@@ -168,7 +183,7 @@ export const DataService = {
     return data?.[0];
   },
 
-  async updateData(table: string, id: string, payload: any) {
+  async updateData(table: string, id: string, payload: Record<string, unknown>) {
     const p = { ...payload, updated_at: new Date().toISOString() };
     const { data, error } = await supabase.from(table).update(p).eq('id', id).select();
     if (error) throw error;
@@ -184,7 +199,7 @@ export const DataService = {
   /**
    * Plan Kaydet (Insert or Update)
    */
-  async savePlan(planData: any) {
+  async savePlan(planData: Record<string, unknown>) {
     const { data: { session } } = await supabase.auth.getSession();
     
     const payload = {
@@ -197,8 +212,9 @@ export const DataService = {
       updated_at: new Date().toISOString()
     };
 
-    if (planData.id && planData.id.length > 30) {
-      const { data, error } = await supabase.from('business_plans').update(payload).eq('id', planData.id).select();
+    const planId = planData.id as string | undefined;
+    if (planId && planId.length > 30) {
+      const { data, error } = await supabase.from('business_plans').update(payload).eq('id', planId).select();
       if (error) throw error;
       const r = data?.[0];
       return r ? { ...r.data, id: r.id, status: r.status } : null;
@@ -216,7 +232,7 @@ export const DataService = {
   async insertAlis(record: Omit<StockRecord, 'id'>): Promise<StockRecord> {
     const { data: { session } } = await supabase.auth.getSession();
     const profile = await profileAPI.getMyProfile();
-    const payload: any = {
+    const payload: Record<string, unknown> = {
       tarih: record.tarih, tedarikci_adi: record.tedarikciAdi,
       hammadde_turu: record.hammaddeTuru, brut_miktar: record.brutMiktar,
       net_miktar: record.netMiktar, alis_fiyati: record.alisFiyati,
@@ -228,7 +244,7 @@ export const DataService = {
     if (profile?.company_id) payload.company_id = profile.company_id;
     const { data, error } = await supabase.from('stock_records').insert([payload]).select().single();
     if (error) throw error;
-    return mapAlis(data);
+    return mapAlis(data as StockRow);
   },
 
   async updateAlis(id: string, record: Partial<StockRecord>): Promise<StockRecord> {
@@ -240,13 +256,13 @@ export const DataService = {
       nem_fire: record.nemFire, birim_maliyet: record.birimMaliyet, notlar: record.notlar,
     }).eq('id', id).select().single();
     if (error) throw error;
-    return mapAlis(data);
+    return mapAlis(data as StockRow);
   },
 
   async insertSatis(record: Omit<SalesRecord, 'id'>): Promise<SalesRecord> {
     const { data: { session } } = await supabase.auth.getSession();
     const profile = await profileAPI.getMyProfile();
-    const payload: any = {
+    const payload: Record<string, unknown> = {
       tarih: record.tarih, musteri_adi: record.musteriAdi, stok_turu: record.stokTuru,
       hammadde_turu: record.hammadde_turu ?? null, mamul_turu: record.mamul_turu ?? null,
       miktar: record.miktar, satis_fiyati: record.satisFiyati,
@@ -256,7 +272,7 @@ export const DataService = {
     if (profile?.company_id) payload.company_id = profile.company_id;
     const { data, error } = await supabase.from('sales_records').insert([payload]).select().single();
     if (error) throw error;
-    return mapSatis(data);
+    return mapSatis(data as SalesRow);
   },
 
   async updateSatis(id: string, record: Partial<SalesRecord>): Promise<SalesRecord> {
@@ -267,12 +283,13 @@ export const DataService = {
       nakliye_bedeli: record.nakliyeBedeli, notlar: record.notlar,
     }).eq('id', id).select().single();
     if (error) throw error;
-    return mapSatis(data);
+    return mapSatis(data as SalesRow);
   },
 
   // --- Nakit Akışı Parametreleri ---
 
-  async fetchCashflowParams(planId: string): Promise<any | null> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async fetchCashflowParams(planId: string): Promise<any> {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return null;
     const profile = await profileAPI.getMyProfile();
@@ -289,12 +306,13 @@ export const DataService = {
     return data?.params ?? null;
   },
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async saveCashflowParams(planId: string, params: any): Promise<void> {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
     const profile = await profileAPI.getMyProfile();
 
-    const payload: any = {
+    const payload: Record<string, unknown> = {
       plan_id: planId,
       params,
       user_id: session.user.id,
@@ -321,7 +339,7 @@ export const DataService = {
   }) {
     const { data: { session } } = await supabase.auth.getSession();
     const profile = await profileAPI.getMyProfile();
-    const payload: any = {
+    const payload: Record<string, unknown> = {
       tarih: record.tarih, arac_plaka: record.aracPlaka, kullanici: record.kullanici,
       baslangic_km: record.baslangicKm, bitis_km: record.bitisKm,
       guzergah: record.guzergah, user_id: session?.user?.id || null,
