@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useSupabaseQuery } from '../hooks/useSupabaseQuery';
 import { useTranslation } from '../api/i18n';
 import { 
   Award, 
@@ -36,44 +37,31 @@ interface Permit {
 export const Licensing: React.FC = () => {
   const { t } = useTranslation();
 
-  // ── Data States ──────────────────────────────────────────
-  const [kayitlar, setKayitlar] = useState<SupabasePermit[]>([]);
+  // ── Data ─────────────────────────────────────────────────
+  const { data: kayitlar, loading, refetch: yenile } = useSupabaseQuery(
+    () => permitsAPI.getAll(),
+    [] as SupabasePermit[]
+  );
 
-  const [loading, setLoading] = useState(false);
-
-  // ── Sync with Supabase ───────────────────────────────
+  // Tek seferlik localStorage → Supabase migration
   useEffect(() => {
-    async function loadData() {
-      const cloudPermits = await permitsAPI.getAll();
-
-      const savedStr = localStorage.getItem('enba_lisans_kayitlari');
-      if (savedStr && cloudPermits.length === 0) {
-        console.log("Migrating Licensing to Supabase...");
-        const saved = JSON.parse(savedStr);
-        for (const k of saved) {
-          await permitsAPI.insert({
-            ad: k.ad,
-            kategori: k.kategori,
-            kurum: k.kurum,
-            alinis_tarihi: k.alinisTarihi,
-            yenileme_tarihi: k.yenilemeTarihi,
-            is_suresiz: k.isSuresiz,
-            maliyet: k.maliyet,
-            file_id: k.fileId,
-            file_name: k.fileName
-          } as SupabasePermit);
-        }
-
-        const migrated = await permitsAPI.getAll();
-        setKayitlar(migrated);
-        localStorage.removeItem('enba_lisans_kayitlari');
-        return;
+    if (loading || kayitlar.length > 0) return;
+    const savedStr = localStorage.getItem('enba_lisans_kayitlari');
+    if (!savedStr) return;
+    (async () => {
+      const saved = JSON.parse(savedStr);
+      for (const k of saved) {
+        await permitsAPI.insert({
+          ad: k.ad, kategori: k.kategori, kurum: k.kurum,
+          alinis_tarihi: k.alinisTarihi, yenileme_tarihi: k.yenilemeTarihi,
+          is_suresiz: k.isSuresiz, maliyet: k.maliyet,
+          file_id: k.fileId, file_name: k.fileName,
+        } as SupabasePermit);
       }
-
-      setKayitlar(cloudPermits);
-    }
-    loadData();
-  }, []);
+      localStorage.removeItem('enba_lisans_kayitlari');
+      yenile();
+    })();
+  }, [loading, kayitlar.length, yenile]);
 
   // ── UI States ────────────────────────────────────────────
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -105,12 +93,11 @@ export const Licensing: React.FC = () => {
     if (!formData.ad) return;
 
     if (editingId) {
-      const updated = await permitsAPI.update(editingId, formData);
-      if (updated) setKayitlar(prev => prev.map(k => k.id === editingId ? updated : k));
+      await permitsAPI.update(editingId, formData);
     } else {
-      const newRecord = await permitsAPI.insert(formData as SupabasePermit);
-      if (newRecord) setKayitlar(prev => [...prev, newRecord]);
+      await permitsAPI.insert(formData as SupabasePermit);
     }
+    yenile();
 
     setIsFormOpen(false);
     setEditingId(null);
@@ -244,7 +231,7 @@ export const Licensing: React.FC = () => {
                                  <button onClick={async () => {
                                     if (confirm("Bu kaydı silmek istediğinize emin misiniz?")) {
                                       const success = await permitsAPI.delete(k.id);
-                                      if (success) setKayitlar(prev => prev.filter(x => x.id !== k.id));
+                                      if (success) yenile();
                                     }
                                   }} className="w-10 h-10 rounded-xl bg-rose-50 text-rose-500 border border-rose-100 flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all shadow-sm active:scale-90">
                                     <Trash2 size={18} />
