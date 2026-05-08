@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { microsoftService } from '../api/microsoft';
 import { googleService } from '../api/google';
+import { tasksAPI } from '../api/supabase';
 
 interface CalendarEvent {
   id: string;
@@ -88,21 +89,20 @@ export const Calendar: React.FC = () => {
       const results = await Promise.all(fetchers);
       const apiEvents = results.flat() as CalendarEvent[];
       
-      // Load Tasks from LocalStorage
+      // Load Tasks from Supabase
       let taskEvents: CalendarEvent[] = [];
       try {
-        const savedTasks = localStorage.getItem('enba_tasks');
-        const tasks: any[] = savedTasks ? JSON.parse(savedTasks) : [];
+        const tasks = await tasksAPI.getAll();
         taskEvents = tasks
           .filter(t => t.deadline && t.status !== 'done')
           .map(t => ({
             id: 'task-' + t.id,
             subject: '[GÖREV] ' + t.title,
-            bodyPreview: t.desc || '',
+            bodyPreview: t.description || '',
             start: { dateTime: t.deadline + 'T09:00:00', timeZone: '' },
             end: { dateTime: t.deadline + 'T10:00:00', timeZone: '' },
             isAllDay: true,
-            source: 'task',
+            source: 'task' as const,
             priority: t.priority,
             status: t.status
           }));
