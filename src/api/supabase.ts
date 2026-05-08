@@ -765,7 +765,7 @@ export const maintenanceAPI = {
     if (!user) return [];
 
     const profile = await profileAPI.getMyProfile();
-    const query = supabase.from('maintenance_records').select('*');
+    const query = supabase.from('maintenance').select('*');
     
     if (profile?.company_id) {
       query.eq('company_id', profile.company_id);
@@ -791,7 +791,7 @@ export const maintenanceAPI = {
     if (profile?.company_id) payload.company_id = profile.company_id;
 
     const { data, error } = await supabase
-      .from('maintenance_records')
+      .from('maintenance')
       .insert(payload)
       .select()
       .single();
@@ -805,7 +805,7 @@ export const maintenanceAPI = {
 
   async delete(id: string): Promise<boolean> {
     const { error } = await supabase
-      .from('maintenance_records')
+      .from('maintenance')
       .delete()
       .eq('id', id);
 

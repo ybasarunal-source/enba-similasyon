@@ -4,11 +4,10 @@ import { supabase } from '../api/supabase';
 export type SyncStatus = 'idle' | 'syncing' | 'error' | 'synced';
 
 interface UsePlanSyncOptions {
-  localKey: string;       // localStorage key
+  localKey: string;
   planType: 'fast' | 'detailed';
 }
 
-// Silinen plan ID'lerini localStorage'da kalıcı tut (component remount'ta kaybolmasın)
 function getDeletedSet(key: string): Set<string> {
   try { return new Set(JSON.parse(localStorage.getItem(key) || '[]')); }
   catch { return new Set(); }
@@ -26,18 +25,15 @@ export function usePlanSync<T extends { id: string; supabaseId?: string }>(opts:
   const [planlar, setPlanlar] = useState<T[]>([]);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle');
   const [syncError, setSyncError] = useState('');
-  // In-memory set for same-session hız (localStorage'ı okumaktan daha hızlı)
   const deletedIds = useRef<Set<string>>(getDeletedSet(deletedKey));
 
   // ── İlk yükleme: localStorage hemen, Supabase sonra ──────────
   useEffect(() => {
-    // 1. localStorage'dan anında göster
     try {
       const raw = localStorage.getItem(localKey);
       if (raw) setPlanlar(JSON.parse(raw));
     } catch { /* ignore */ }
 
-    // 2. Supabase'den çek, daha güncel varsa birleştir
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
@@ -53,7 +49,6 @@ export function usePlanSync<T extends { id: string; supabaseId?: string }>(opts:
         const deleted = deletedIds.current;
         const merged = [...prev];
         data.forEach((row: any) => {
-          // Bu kullanıcının bu oturumda veya önceden sildiği planları geri ekleme
           if (deleted.has(row.id)) return;
           const localPlan: any = row.data;
           if (!localPlan || deleted.has(localPlan.id)) return;
@@ -68,7 +63,7 @@ export function usePlanSync<T extends { id: string; supabaseId?: string }>(opts:
     })();
   }, [localKey, planType, deletedKey]);
 
-  // ── Kayıt: localStorage önce, Supabase arka planda ──────────
+  // ── Kayıt: localStorage önce, Supabase toplu upsert/insert ──
   const kaydet = useCallback(async (guncel: T[]) => {
     setPlanlar(guncel);
     localStorage.setItem(localKey, JSON.stringify(guncel));
@@ -79,33 +74,48 @@ export function usePlanSync<T extends { id: string; supabaseId?: string }>(opts:
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Oturum bulunamadı');
 
-      const updated: T[] = [...guncel];
-      for (let i = 0; i < guncel.length; i++) {
-        const plan = guncel[i] as any;
-        const payload = {
-          user_id: session.user.id,
-          plan_type: planType,
-          status: plan.status || 'pending',
-          title: plan.baslik || plan.title || 'Adsız Plan',
-          year: plan.year || new Date().getFullYear(),
-          data: plan,
-          updated_at: new Date().toISOString(),
-        };
-        if (plan.supabaseId) {
-          const { error } = await supabase
-            .from('business_plans')
-            .update(payload)
-            .eq('id', plan.supabaseId);
-          if (error) throw error;
-        } else {
-          const { data, error } = await supabase
-            .from('business_plans')
-            .insert({ ...payload, created_at: new Date().toISOString() })
-            .select('id')
-            .single();
-          if (error) throw error;
-          (updated[i] as any).supabaseId = data.id;
-        }
+      // JWT'den company_id al (profil sorgusu gerektirmez)
+      const { data: { user } } = await supabase.auth.getUser();
+      const companyId: string | null = (user?.app_metadata as any)?.company_id ?? null;
+
+      const now = new Date().toISOString();
+      const makePayload = (plan: any) => ({
+        user_id: session.user.id,
+        ...(companyId ? { company_id: companyId } : {}),
+        plan_type: planType,
+        status: plan.status || 'pending',
+        title: plan.baslik || plan.title || 'Adsız Plan',
+        year: plan.year || new Date().getFullYear(),
+        data: plan,
+        updated_at: now,
+      });
+
+      const mevcutlar = guncel.filter(p => (p as any).supabaseId) as any[];
+      const yeniler   = guncel.filter(p => !(p as any).supabaseId) as any[];
+
+      // Mevcut planları tek seferde güncelle (upsert)
+      if (mevcutlar.length > 0) {
+        const { error } = await supabase
+          .from('business_plans')
+          .upsert(mevcutlar.map(p => ({ id: p.supabaseId, ...makePayload(p) })));
+        if (error) throw error;
+      }
+
+      // Yeni planları tek seferde ekle, dönen ID'leri local planla eşleştir
+      const updated = [...guncel] as any[];
+      if (yeniler.length > 0) {
+        const { data: inserted, error } = await supabase
+          .from('business_plans')
+          .insert(yeniler.map(p => ({ ...makePayload(p), created_at: now })))
+          .select('id, data');
+        if (error) throw error;
+
+        // data JSONB içindeki local id ile eşleştir
+        (inserted as any[]).forEach(row => {
+          const localId = (row.data as any)?.id;
+          const idx = updated.findIndex(p => p.id === localId);
+          if (idx >= 0) updated[idx].supabaseId = row.id;
+        });
       }
 
       setPlanlar(updated);
@@ -126,7 +136,6 @@ export function usePlanSync<T extends { id: string; supabaseId?: string }>(opts:
     setPlanlar(guncel);
     localStorage.setItem(localKey, JSON.stringify(guncel));
 
-    // Hem local id hem supabaseId'yi kalıcı olarak işaretle
     markDeleted(deletedKey, [id, plan?.supabaseId]);
     deletedIds.current.add(id);
     if (plan?.supabaseId) deletedIds.current.add(plan.supabaseId);
