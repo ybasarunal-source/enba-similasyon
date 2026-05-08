@@ -140,11 +140,13 @@ export const profileAPI = {
       .from('profiles')
       .update(updates)
       .eq('id', id);
-      
+
     if (error) {
       console.error("Profil güncellenemedi:", error);
       return false;
     }
+    cachedProfile = null;
+    lastFetchTime = 0;
     return true;
   },
 
@@ -171,6 +173,8 @@ export const profileAPI = {
       console.error('Error updating profile as admin:', error);
       throw error;
     }
+    cachedProfile = null;
+    lastFetchTime = 0;
     return data;
   },
 
