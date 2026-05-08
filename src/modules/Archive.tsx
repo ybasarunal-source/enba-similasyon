@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { DataService } from '../api/dataService';
+import { useSupabaseQuery } from '../hooks/useSupabaseQuery';
 import { supabase } from '../api/supabase';
 import {
   Archive as ArchiveIcon,
@@ -46,19 +47,9 @@ const formatSize = (bytes: number) => {
 };
 
 export const Archive: React.FC = () => {
-  const [dosyalar, setDosyalar] = useState<ArchiveFile[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
-  const [aramaMetni, setAramaMetni] = useState('');
-  const [kategoriFiltre, setKategoriFiltre] = useState('Tümü');
-  const [seciliId, setSeciliId] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const data = await DataService.fetchData<any>('arsiv_files');
-      setDosyalar((data || []).map((r: any) => ({
+  const { data: dosyalar, loading, refetch: fetchData } = useSupabaseQuery(
+    () => DataService.fetchData<any>('arsiv_files').then(data =>
+      (data || []).map((r: any): ArchiveFile => ({
         id: r.id,
         ad: r.ad,
         mime: r.mime,
@@ -68,15 +59,16 @@ export const Archive: React.FC = () => {
         notlar: r.notlar,
         storage_path: r.storage_path,
         yuklenmeTarihi: r.yuklenme_tarihi || r.created_at,
-      })));
-    } catch (e) {
-      console.error("Arşiv verileri çekilemedi:", e);
-    } finally {
-      setLoading(false);
-    }
-  };
+      }))
+    ),
+    [] as ArchiveFile[]
+  );
 
-  useEffect(() => { fetchData(); }, []);
+  const [uploading, setUploading] = useState(false);
+  const [aramaMetni, setAramaMetni] = useState('');
+  const [kategoriFiltre, setKategoriFiltre] = useState('Tümü');
+  const [seciliId, setSeciliId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);

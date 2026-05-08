@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { DataService } from '../api/dataService';
+import { useSupabaseQuery } from '../hooks/useSupabaseQuery';
 import { fmt } from '../utils/formatters';
 import { Contact as ContactIcon, UserPlus, Pencil, Trash2, X, Clock, CreditCard, TrendingDown } from 'lucide-react';
 
@@ -20,8 +21,23 @@ const labelCls = 'text-[10px] font-black text-gray-400 uppercase tracking-[4px] 
 
 export const HR: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'personnel' | 'attendance' | 'payments' | 'debts'>('personnel');
-  const [loading, setLoading] = useState(true);
-  const [personel, setPersonel] = useState<Person[]>([]);
+
+  const { data: personel, loading, refetch: fetchPersonnel } = useSupabaseQuery(
+    () => DataService.fetchData<any>('personnel', '*').then(p => (p || []) as Person[]),
+    [] as Person[]
+  );
+  const { data: attendanceList, refetch: fetchAttendance } = useSupabaseQuery(
+    () => DataService.fetchData<any>('attendance', '*').then(d => d || []),
+    [] as any[]
+  );
+  const { data: paymentList, refetch: fetchPayments } = useSupabaseQuery(
+    () => DataService.fetchData<any>('personnel_payments', '*').then(d => d || []),
+    [] as any[]
+  );
+  const { data: debtList, refetch: fetchDebts } = useSupabaseQuery(
+    () => DataService.fetchData<any>('personnel_debts', '*').then(d => d || []),
+    [] as any[]
+  );
 
   // ── Personnel modal ──────────────────────────────────────────
   const [showModal, setShowModal] = useState(false);
@@ -35,7 +51,6 @@ export const HR: React.FC = () => {
   const [saving, setSaving] = useState(false);
 
   // ── Attendance ───────────────────────────────────────────────
-  const [attendanceList, setAttendanceList] = useState<any[]>([]);
   const [showAttModal, setShowAttModal] = useState(false);
   const [attPersonId, setAttPersonId] = useState('');
   const [attMonth, setAttMonth] = useState(new Date().getMonth() + 1);
@@ -46,7 +61,6 @@ export const HR: React.FC = () => {
   const [savingAtt, setSavingAtt] = useState(false);
 
   // ── Payments ─────────────────────────────────────────────────
-  const [paymentList, setPaymentList] = useState<any[]>([]);
   const [showPayModal, setShowPayModal] = useState(false);
   const [payPersonId, setPayPersonId] = useState('');
   const [payDate, setPayDate] = useState(new Date().toISOString().split('T')[0]);
@@ -55,7 +69,6 @@ export const HR: React.FC = () => {
   const [savingPay, setSavingPay] = useState(false);
 
   // ── Debts ────────────────────────────────────────────────────
-  const [debtList, setDebtList] = useState<any[]>([]);
   const [showDebtModal, setShowDebtModal] = useState(false);
   const [debtPersonId, setDebtPersonId] = useState('');
   const [debtDate, setDebtDate] = useState(new Date().toISOString().split('T')[0]);
@@ -63,36 +76,6 @@ export const HR: React.FC = () => {
   const [debtType, setDebtType] = useState('avans');
   const [debtDesc, setDebtDesc] = useState('');
   const [savingDebt, setSavingDebt] = useState(false);
-
-  // ── Fetch ────────────────────────────────────────────────────
-  const fetchPersonnel = async () => {
-    setLoading(true);
-    try {
-      const p = await DataService.fetchData<any>('personnel', '*');
-      setPersonel(p || []);
-    } catch (e) {
-      console.error('İK verileri çekilemedi:', e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchAttendance = async () => {
-    try { setAttendanceList(await DataService.fetchData<any>('attendance', '*')); } catch { /* ignore */ }
-  };
-  const fetchPayments = async () => {
-    try { setPaymentList(await DataService.fetchData<any>('personnel_payments', '*')); } catch { /* ignore */ }
-  };
-  const fetchDebts = async () => {
-    try { setDebtList(await DataService.fetchData<any>('personnel_debts', '*')); } catch { /* ignore */ }
-  };
-
-  useEffect(() => {
-    fetchPersonnel();
-    fetchAttendance();
-    fetchPayments();
-    fetchDebts();
-  }, []);
 
   // ── Personnel CRUD ───────────────────────────────────────────
   const resetForm = () => {
