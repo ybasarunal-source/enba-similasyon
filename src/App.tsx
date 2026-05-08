@@ -7,28 +7,28 @@ import { Login } from './modules/Login';
 import type { Session } from '@supabase/supabase-js';
 import { profileAPI, companiesAPI, type UserProfile, type UserRole } from './api/supabase';
 import { parasutService } from './api/parasut';
-import Dashboard from './modules/Dashboard';
-import { Stock } from './modules/Stock';
-import { Production } from './modules/Production';
-import { Logistics } from './modules/Logistics';
-import { HR } from './modules/HR';
-import { Archive } from './modules/Archive';
-import { Cashflow } from './modules/Cashflow';
-import { Machinery } from './modules/Machinery';
-import { Tasks } from './modules/Tasks';
-import { Licensing } from './modules/Licensing';
-import { PnL } from './modules/PnL';
-import { Settings } from './modules/Settings';
-import { Profile } from './modules/Profile';
-import { DetailedPlanManager } from './modules/planning/DetailedPlanManager';
-import { FastPlan } from './modules/FastPlan';
-import { Calendar as CalendarModule } from './modules/Calendar';
-import { Parasut } from './modules/Parasut';
-import { ModulesOverview } from './modules/ModulesOverview';
-import { Mail } from './modules/Mail';
-import { FixedExpenses } from './modules/FixedExpenses';
-import { SuperAdmin } from './modules/SuperAdmin';
-import { CompanyAdmin } from './modules/CompanyAdmin';
+const Dashboard         = React.lazy(() => import('./modules/Dashboard'));
+const Stock             = React.lazy(() => import('./modules/Stock').then(m => ({ default: m.Stock })));
+const Production        = React.lazy(() => import('./modules/Production').then(m => ({ default: m.Production })));
+const Logistics         = React.lazy(() => import('./modules/Logistics').then(m => ({ default: m.Logistics })));
+const HR                = React.lazy(() => import('./modules/HR').then(m => ({ default: m.HR })));
+const Archive           = React.lazy(() => import('./modules/Archive').then(m => ({ default: m.Archive })));
+const Cashflow          = React.lazy(() => import('./modules/Cashflow').then(m => ({ default: m.Cashflow })));
+const Machinery         = React.lazy(() => import('./modules/Machinery').then(m => ({ default: m.Machinery })));
+const Tasks             = React.lazy(() => import('./modules/Tasks').then(m => ({ default: m.Tasks })));
+const Licensing         = React.lazy(() => import('./modules/Licensing').then(m => ({ default: m.Licensing })));
+const PnL               = React.lazy(() => import('./modules/PnL').then(m => ({ default: m.PnL })));
+const Settings          = React.lazy(() => import('./modules/Settings').then(m => ({ default: m.Settings })));
+const Profile           = React.lazy(() => import('./modules/Profile').then(m => ({ default: m.Profile })));
+const DetailedPlanManager = React.lazy(() => import('./modules/planning/DetailedPlanManager').then(m => ({ default: m.DetailedPlanManager })));
+const FastPlan          = React.lazy(() => import('./modules/FastPlan').then(m => ({ default: m.FastPlan })));
+const CalendarModule    = React.lazy(() => import('./modules/Calendar').then(m => ({ default: m.Calendar })));
+const Parasut           = React.lazy(() => import('./modules/Parasut').then(m => ({ default: m.Parasut })));
+const ModulesOverview   = React.lazy(() => import('./modules/ModulesOverview').then(m => ({ default: m.ModulesOverview })));
+const Mail              = React.lazy(() => import('./modules/Mail').then(m => ({ default: m.Mail })));
+const FixedExpenses     = React.lazy(() => import('./modules/FixedExpenses').then(m => ({ default: m.FixedExpenses })));
+const SuperAdmin        = React.lazy(() => import('./modules/SuperAdmin').then(m => ({ default: m.SuperAdmin })));
+const CompanyAdmin      = React.lazy(() => import('./modules/CompanyAdmin').then(m => ({ default: m.CompanyAdmin })));
 import {
   Home,
   LayoutGrid,
@@ -743,30 +743,34 @@ export const App: React.FC = () => {
         {/* ─── Module Content ──────────────────────────────── */}
         <div className="flex-1 overflow-y-auto custom-scrollbar">
           <div className="max-w-[1200px] mx-auto min-h-full">
-            {/* Hafif modüller: sadece aktifken render edilir */}
-            {activeModule === 'modules'    && <ModulesOverview key="v1.3" navigate={navigate} menuItems={menuItems} />}
-            {activeModule === 'dashboard'  && <Dashboard navigate={navigate} user={{ name: 'Admin' }} />}
-            {activeModule === 'stock'      && <Stock />}
-            {activeModule === 'production' && <Production />}
-            {activeModule === 'logistics'  && <Logistics />}
-            {activeModule === 'hr'         && <HR />}
-            {activeModule === 'archive'    && <Archive />}
-            {activeModule === 'cashflow'   && <Cashflow aktifPlanlar={JSON.parse(localStorage.getItem('enba_detailed_plans') || '[]')} />}
-            {activeModule === 'machinery'  && <Machinery />}
-            {activeModule === 'tasks'      && <Tasks />}
-            {activeModule === 'calendar'   && <CalendarModule />}
-            {activeModule === 'licensing'  && <Licensing />}
-            {activeModule === 'settings'   && <Settings profile={userProfile ? { ...userProfile, role: user.role } : { role: user.role } as any} />}
-            {activeModule === 'profile'    && <Profile />}
-            {activeModule === 'mail'       && <Mail />}
-            {activeModule === 'fixedexpenses' && <FixedExpenses />}
-            {activeModule === 'super_admin'   && <SuperAdmin />}
-            {activeModule === 'company_admin' && <CompanyAdmin />}
-
-            {activeModule === 'pnl'      && <PnL />}
-            {activeModule === 'fastplan' && <FastPlan />}
-            {activeModule === 'planning' && <DetailedPlanManager />}
-            {activeModule === 'parasut'  && <Parasut />}
+            <React.Suspense fallback={
+              <div className="flex items-center justify-center h-64">
+                <div className="w-8 h-8 border-2 border-enba-orange border-t-transparent rounded-full animate-spin" />
+              </div>
+            }>
+              {activeModule === 'modules'    && <ModulesOverview key="v1.3" navigate={navigate} menuItems={menuItems} />}
+              {activeModule === 'dashboard'  && <Dashboard navigate={navigate} user={{ name: 'Admin' }} />}
+              {activeModule === 'stock'      && <Stock />}
+              {activeModule === 'production' && <Production />}
+              {activeModule === 'logistics'  && <Logistics />}
+              {activeModule === 'hr'         && <HR />}
+              {activeModule === 'archive'    && <Archive />}
+              {activeModule === 'cashflow'   && <Cashflow aktifPlanlar={JSON.parse(localStorage.getItem('enba_detailed_plans') || '[]')} />}
+              {activeModule === 'machinery'  && <Machinery />}
+              {activeModule === 'tasks'      && <Tasks />}
+              {activeModule === 'calendar'   && <CalendarModule />}
+              {activeModule === 'licensing'  && <Licensing />}
+              {activeModule === 'settings'   && <Settings profile={userProfile ? { ...userProfile, role: user.role } : { role: user.role } as any} />}
+              {activeModule === 'profile'    && <Profile />}
+              {activeModule === 'mail'       && <Mail />}
+              {activeModule === 'fixedexpenses' && <FixedExpenses />}
+              {activeModule === 'super_admin'   && <SuperAdmin />}
+              {activeModule === 'company_admin' && <CompanyAdmin />}
+              {activeModule === 'pnl'      && <PnL />}
+              {activeModule === 'fastplan' && <FastPlan />}
+              {activeModule === 'planning' && <DetailedPlanManager />}
+              {activeModule === 'parasut'  && <Parasut />}
+            </React.Suspense>
           </div>
         </div>
       </main>
