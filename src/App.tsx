@@ -7,6 +7,7 @@ import { Login } from './modules/Login';
 import type { Session } from '@supabase/supabase-js';
 import { profileAPI, companiesAPI, type UserProfile, type UserRole } from './api/supabase';
 import { parasutService } from './api/parasut';
+import { ErrorBoundary } from './components/ErrorBoundary';
 const Dashboard         = React.lazy(() => import('./modules/Dashboard'));
 const Stock             = React.lazy(() => import('./modules/Stock').then(m => ({ default: m.Stock })));
 const Production        = React.lazy(() => import('./modules/Production').then(m => ({ default: m.Production })));
@@ -743,34 +744,36 @@ export const App: React.FC = () => {
         {/* ─── Module Content ──────────────────────────────── */}
         <div className="flex-1 overflow-y-auto custom-scrollbar">
           <div className="max-w-[1200px] mx-auto min-h-full">
-            <React.Suspense fallback={
-              <div className="flex items-center justify-center h-64">
-                <div className="w-8 h-8 border-2 border-enba-orange border-t-transparent rounded-full animate-spin" />
-              </div>
-            }>
-              {activeModule === 'modules'    && <ModulesOverview key="v1.3" navigate={navigate} menuItems={menuItems} />}
-              {activeModule === 'dashboard'  && <Dashboard navigate={navigate} user={{ name: 'Admin' }} />}
-              {activeModule === 'stock'      && <Stock />}
-              {activeModule === 'production' && <Production />}
-              {activeModule === 'logistics'  && <Logistics />}
-              {activeModule === 'hr'         && <HR />}
-              {activeModule === 'archive'    && <Archive />}
-              {activeModule === 'cashflow'   && <Cashflow aktifPlanlar={JSON.parse(localStorage.getItem('enba_detailed_plans') || '[]')} />}
-              {activeModule === 'machinery'  && <Machinery />}
-              {activeModule === 'tasks'      && <Tasks />}
-              {activeModule === 'calendar'   && <CalendarModule />}
-              {activeModule === 'licensing'  && <Licensing />}
-              {activeModule === 'settings'   && <Settings profile={userProfile ? { ...userProfile, role: user.role } : { role: user.role } as any} />}
-              {activeModule === 'profile'    && <Profile />}
-              {activeModule === 'mail'       && <Mail />}
-              {activeModule === 'fixedexpenses' && <FixedExpenses />}
-              {activeModule === 'super_admin'   && <SuperAdmin />}
-              {activeModule === 'company_admin' && <CompanyAdmin />}
-              {activeModule === 'pnl'      && <PnL />}
-              {activeModule === 'fastplan' && <FastPlan />}
-              {activeModule === 'planning' && <DetailedPlanManager />}
-              {activeModule === 'parasut'  && <Parasut />}
-            </React.Suspense>
+            <ErrorBoundary>
+              <React.Suspense fallback={
+                <div className="flex items-center justify-center h-64">
+                  <div className="w-8 h-8 border-2 border-enba-orange border-t-transparent rounded-full animate-spin" />
+                </div>
+              }>
+                {activeModule === 'modules'    && <ModulesOverview key="v1.3" navigate={navigate} menuItems={menuItems} />}
+                {activeModule === 'dashboard'  && <Dashboard navigate={navigate} user={{ name: 'Admin' }} />}
+                {activeModule === 'stock'      && <Stock />}
+                {activeModule === 'production' && <Production />}
+                {activeModule === 'logistics'  && <Logistics />}
+                {activeModule === 'hr'         && <HR />}
+                {activeModule === 'archive'    && <Archive />}
+                {activeModule === 'cashflow'   && <Cashflow aktifPlanlar={JSON.parse(localStorage.getItem('enba_detailed_plans') || '[]')} />}
+                {activeModule === 'machinery'  && <Machinery />}
+                {activeModule === 'tasks'      && <Tasks />}
+                {activeModule === 'calendar'   && <CalendarModule />}
+                {activeModule === 'licensing'  && <Licensing />}
+                {activeModule === 'settings'   && <Settings profile={userProfile ? { ...userProfile, role: user.role } : { role: user.role } as any} />}
+                {activeModule === 'profile'    && <Profile />}
+                {activeModule === 'mail'       && <Mail />}
+                {activeModule === 'fixedexpenses' && <FixedExpenses />}
+                {activeModule === 'super_admin'   && <SuperAdmin />}
+                {activeModule === 'company_admin' && <CompanyAdmin />}
+                {activeModule === 'pnl'      && <PnL />}
+                {activeModule === 'fastplan' && <FastPlan />}
+                {activeModule === 'planning' && <DetailedPlanManager />}
+                {activeModule === 'parasut'  && <Parasut />}
+              </React.Suspense>
+            </ErrorBoundary>
           </div>
         </div>
       </main>
