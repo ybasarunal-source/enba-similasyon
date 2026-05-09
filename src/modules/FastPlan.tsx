@@ -3,7 +3,7 @@ import { usePlanSync } from '../hooks/usePlanSync';
 import { SyncBanner } from '../components/SyncBanner';
 import {
   Zap, Package, Factory,
-  Users, BarChart3,
+  Users, BarChart3, TrendingUp,
   Plus, Trash2, Save, ChevronDown, ChevronUp,
   Play, Edit3, Copy, FileText, Layout, ArrowRight, Archive, ArchiveRestore, Tag, Scale, X, Gem
 } from 'lucide-react';
@@ -41,6 +41,7 @@ interface PlanVersion {
   tarih: string;
   params: PlanParams;
   sonuc: PlanSonuc;
+  not?: string;
 }
 
 interface PlanParams {
@@ -87,6 +88,8 @@ interface PlanSonuc {
   ebitdaMarji: number;
   aylikAmortisman: number;
   birimMaliyet: number;
+  basabasNokta: number; // ton/ay — Infinity ise kâra geçilemiyor
+  geriOdemeSuresi: number | null; // ay — null ise CAPEX yok veya zarar
 }
 
 interface PlanCard {
@@ -165,10 +168,24 @@ function hesapla(p: PlanParams): PlanSonuc {
   const ebitdaMarji = satisGeliri > 0 ? (ebitda / satisGeliri) * 100 : 0;
   const birimMaliyet = satisTon > 0 ? totalGider / satisTon : 0;
 
+  // Başabaş noktası: ton cinsinden minimum satış hacmi
+  // Sabit giderler / (satış fiyatı - değişken maliyet/ton)
+  const degiskenMaliyetPerTon = satisTon > 0
+    ? (malAlisGideri + alisNakliyeGideri + satisNakliyeGideri) / satisTon
+    : 0;
+  const sabitGiderler = toplamMaas + toplamSgk + toplamYemek + toplamEktra + aylikAmortisman;
+  const basabasNokta = p.satisFiyati > degiskenMaliyetPerTon
+    ? sabitGiderler / (p.satisFiyati - degiskenMaliyetPerTon)
+    : Infinity;
+
+  // Geri ödeme süresi: toplam CAPEX / aylık net kâr
+  const geriOdemeSuresi = toplamYatirim > 0 && netKar > 0 ? toplamYatirim / netKar : null;
+
   return {
     satisTon, satisGeliri, malAlisGideri, alisNakliyeGideri, satisNakliyeGideri,
     toplamMaas, toplamSgk, toplamYemek, toplamEktra, giderKırılım, totalGider,
     ebitda, netKar, ebitdaMarji, aylikAmortisman, birimMaliyet,
+    basabasNokta, geriOdemeSuresi,
   };
 }
 
@@ -243,37 +260,50 @@ function versionToCard(plan: PlanCard, vIdx: number): PlanCard {
 
 // ─── Kayıt Seçim Modalı ────────────────────────────────────
 const SaveModal: React.FC<{
-  onYeniVersiyon: () => void;
-  onGuncelle: () => void;
-  onYeniModel: () => void;
+  onYeniVersiyon: (not: string) => void;
+  onGuncelle: (not: string) => void;
+  onYeniModel: (not: string) => void;
   onIptal: () => void;
-}> = ({ onYeniVersiyon, onGuncelle, onYeniModel, onIptal }) => (
-  <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-6 animate-in fade-in duration-200">
-    <div className="bg-white rounded-[2.5rem] p-10 max-w-md w-full shadow-2xl space-y-5">
-      <div className="text-center">
-        <h2 className="text-xl font-black text-enba-dark uppercase tracking-tight italic">Değişiklikleri Kaydet</h2>
-        <p className="text-sm text-gray-400 mt-2">Bu düzenlemeyi nasıl kaydetmek istersiniz?</p>
+}> = ({ onYeniVersiyon, onGuncelle, onYeniModel, onIptal }) => {
+  const [not, setNot] = useState('');
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-6 animate-in fade-in duration-200">
+      <div className="bg-white rounded-[2.5rem] p-10 max-w-md w-full shadow-2xl space-y-5">
+        <div className="text-center">
+          <h2 className="text-xl font-black text-enba-dark uppercase tracking-tight italic">Değişiklikleri Kaydet</h2>
+          <p className="text-sm text-gray-400 mt-2">Bu düzenlemeyi nasıl kaydetmek istersiniz?</p>
+        </div>
+        <div>
+          <label className="text-[10px] font-black text-gray-400 uppercase tracking-[2px]">Versiyon Notu (opsiyonel)</label>
+          <input
+            type="text"
+            value={not}
+            onChange={e => setNot(e.target.value)}
+            placeholder="Bu versiyonda ne değişti?"
+            className="mt-2 w-full bg-gray-50 border border-transparent rounded-2xl px-5 py-3 text-sm font-medium text-enba-dark focus:bg-white focus:ring-2 focus:ring-enba-orange/20 outline-none transition-all"
+          />
+        </div>
+        <div className="space-y-3">
+          <button onClick={() => onYeniVersiyon(not)} className="w-full text-left px-6 py-4 bg-enba-orange/5 hover:bg-enba-orange/10 border-2 border-enba-orange/30 hover:border-enba-orange rounded-2xl transition-all">
+            <div className="font-black text-enba-dark text-sm">Yeni Versiyon Olarak Kaydet</div>
+            <div className="text-[10px] text-gray-400 mt-0.5">Mevcut hali geçmişe taşır, değişiklikleri yeni sürüm olarak kaydeder</div>
+          </button>
+          <button onClick={() => onGuncelle(not)} className="w-full text-left px-6 py-4 bg-gray-50 hover:bg-gray-100 border-2 border-transparent rounded-2xl transition-all">
+            <div className="font-black text-enba-dark text-sm">Mevcut Versiyonu Güncelle</div>
+            <div className="text-[10px] text-gray-400 mt-0.5">Geçmişe eklenmez, doğrudan üzerine yazılır</div>
+          </button>
+          <button onClick={() => onYeniModel(not)} className="w-full text-left px-6 py-4 bg-blue-50 hover:bg-blue-100 border-2 border-blue-100 hover:border-blue-300 rounded-2xl transition-all">
+            <div className="font-black text-enba-dark text-sm">Farklı İş Modeli Olarak Kaydet</div>
+            <div className="text-[10px] text-gray-400 mt-0.5">Ayrı, bağımsız bir plan kartı oluşturur</div>
+          </button>
+        </div>
+        <button onClick={onIptal} className="w-full text-center text-[11px] font-black text-gray-400 hover:text-gray-600 uppercase tracking-[3px] transition-colors pt-1">
+          İptal
+        </button>
       </div>
-      <div className="space-y-3">
-        <button onClick={onYeniVersiyon} className="w-full text-left px-6 py-4 bg-enba-orange/5 hover:bg-enba-orange/10 border-2 border-enba-orange/30 hover:border-enba-orange rounded-2xl transition-all">
-          <div className="font-black text-enba-dark text-sm">Yeni Versiyon Olarak Kaydet</div>
-          <div className="text-[10px] text-gray-400 mt-0.5">Mevcut hali geçmişe taşır, değişiklikleri yeni sürüm olarak kaydeder</div>
-        </button>
-        <button onClick={onGuncelle} className="w-full text-left px-6 py-4 bg-gray-50 hover:bg-gray-100 border-2 border-transparent rounded-2xl transition-all">
-          <div className="font-black text-enba-dark text-sm">Mevcut Versiyonu Güncelle</div>
-          <div className="text-[10px] text-gray-400 mt-0.5">Geçmişe eklenmez, doğrudan üzerine yazılır</div>
-        </button>
-        <button onClick={onYeniModel} className="w-full text-left px-6 py-4 bg-blue-50 hover:bg-blue-100 border-2 border-blue-100 hover:border-blue-300 rounded-2xl transition-all">
-          <div className="font-black text-enba-dark text-sm">Farklı İş Modeli Olarak Kaydet</div>
-          <div className="text-[10px] text-gray-400 mt-0.5">Ayrı, bağımsız bir plan kartı oluşturur</div>
-        </button>
-      </div>
-      <button onClick={onIptal} className="w-full text-center text-[11px] font-black text-gray-400 hover:text-gray-600 uppercase tracking-[3px] transition-colors pt-1">
-        İptal
-      </button>
     </div>
-  </div>
-);
+  );
+};
 
 // ─── Main Component ──────────────────────────────────────────
 export const FastPlan: React.FC = () => {
@@ -309,6 +339,15 @@ export const FastPlan: React.FC = () => {
 
   // ─── Anlık hesaplama (form önizlemesi) ────────────────────
   const formSonuc = useMemo(() => hesapla(params), [params]);
+
+  // ─── Duyarlılık tablosu: satış fiyatı ±%20 senaryoları ───
+  const duyarlilik = useMemo(() =>
+    [-20, -10, 0, 10, 20].map(pct => ({
+      pct,
+      sonuc: hesapla({ ...params, satisFiyati: params.satisFiyati * (1 + pct / 100) }),
+    })),
+    [params]
+  );
 
   // ─── Filtre & sıralama hesaplamaları ──────────────────────
   const tumEtiketler = useMemo(
@@ -358,7 +397,7 @@ export const FastPlan: React.FC = () => {
     resetForm();
   };
 
-  const planKaydetDuzenle = (mod: 'yeni_versiyon' | 'guncelle' | 'yeni_model') => {
+  const planKaydetDuzenle = (mod: 'yeni_versiyon' | 'guncelle' | 'yeni_model', not?: string) => {
     const now = new Date().toISOString();
     const sonuc = hesapla(params);
     const mevcut = planlar.find(p => p.id === duzenlemId);
@@ -382,7 +421,12 @@ export const FastPlan: React.FC = () => {
         createdAt: mevcut.createdAt,
         updatedAt: now,
         versions: mod === 'yeni_versiyon'
-          ? [...(mevcut.versions ?? []), { tarih: mevcut.updatedAt || mevcut.createdAt, params: mevcut.params, sonuc: mevcut.sonuc }]
+          ? [...(mevcut.versions ?? []), {
+              tarih: mevcut.updatedAt || mevcut.createdAt,
+              params: mevcut.params,
+              sonuc: mevcut.sonuc,
+              not: not?.trim() || undefined,
+            }]
           : (mevcut.versions ?? []),
         params: { ...params }, sonuc,
       };
@@ -754,6 +798,14 @@ export const FastPlan: React.FC = () => {
       const iyi = yuksekIyi ? d > 0 : d < 0;
       return { text: `${d > 0 ? '+' : ''}${fmtDec(d)}pp`, cls: iyi ? 'text-emerald-600' : 'text-rose-500' };
     };
+    // Göreli % fark: (A - B) / |B| * 100
+    const farkRel = (a: number, b: number, yuksekIyi = true) => {
+      if (b === 0) return { text: '—', cls: 'text-gray-300' };
+      const pct = ((a - b) / Math.abs(b)) * 100;
+      if (Math.abs(pct) < 0.05) return { text: '—', cls: 'text-gray-300' };
+      const iyi = yuksekIyi ? pct > 0 : pct < 0;
+      return { text: `${pct > 0 ? '+' : ''}${fmtDec(pct, 1)}%`, cls: iyi ? 'text-emerald-600' : 'text-rose-500' };
+    };
 
     // Aynı etikette tüm planlar — trend tablosu için
     const ortakEtiket = planA.etiket && planB.etiket && planA.etiket === planB.etiket ? planA.etiket : null;
@@ -830,10 +882,11 @@ export const FastPlan: React.FC = () => {
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-100">
-                <th className="px-8 py-4 text-left text-[9px] font-black text-gray-400 uppercase tracking-[2px] w-1/3">Kalem</th>
-                <th className="px-6 py-4 text-right text-[9px] font-black text-blue-500 uppercase tracking-[2px]">{planA.baslik}</th>
-                <th className="px-6 py-4 text-right text-[9px] font-black text-enba-orange uppercase tracking-[2px]">{planB.baslik}</th>
-                <th className="px-8 py-4 text-right text-[9px] font-black text-gray-400 uppercase tracking-[2px]">Fark (A−B)</th>
+                <th className="px-8 py-4 text-left text-[9px] font-black text-gray-400 uppercase tracking-[2px] w-1/4">Kalem</th>
+                <th className="px-4 py-4 text-right text-[9px] font-black text-blue-500 uppercase tracking-[1px]">{planA.baslik}</th>
+                <th className="px-4 py-4 text-right text-[9px] font-black text-enba-orange uppercase tracking-[1px]">{planB.baslik}</th>
+                <th className="px-4 py-4 text-right text-[9px] font-black text-gray-400 uppercase tracking-[1px]">Fark (A−B)</th>
+                <th className="px-6 py-4 text-right text-[9px] font-black text-gray-400 uppercase tracking-[1px]">%</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -841,17 +894,21 @@ export const FastPlan: React.FC = () => {
                 const f = row.isPct
                   ? farkPct(row.vA, row.vB, row.yuksekIyi ?? true)
                   : fark(row.vA, row.vB, row.yuksekIyi ?? true);
+                const fr = row.isPct
+                  ? farkPct(row.vA, row.vB, row.yuksekIyi ?? true)
+                  : farkRel(row.vA, row.vB, row.yuksekIyi ?? true);
                 const isSection = ['Satış Geliri', 'FAVÖK', 'Net Kâr'].includes(row.label);
                 return (
                   <tr key={i} className={isSection ? 'bg-gray-50' : 'hover:bg-gray-50/50'}>
                     <td className={`px-8 py-3 text-[11px] font-${isSection ? 'black' : 'medium'} text-gray-${isSection ? '700' : '500'} uppercase tracking-wider`}>{row.label}</td>
-                    <td className="px-6 py-3 text-right text-sm font-black text-blue-600 tabular-nums">
+                    <td className="px-4 py-3 text-right text-sm font-black text-blue-600 tabular-nums">
                       {row.isPct ? `%${fmtDec(row.vA)}` : `₺${fmt(row.vA)}`}
                     </td>
-                    <td className="px-6 py-3 text-right text-sm font-black text-enba-orange tabular-nums">
+                    <td className="px-4 py-3 text-right text-sm font-black text-enba-orange tabular-nums">
                       {row.isPct ? `%${fmtDec(row.vB)}` : `₺${fmt(row.vB)}`}
                     </td>
-                    <td className={`px-8 py-3 text-right text-sm font-black tabular-nums ${f.cls}`}>{f.text}</td>
+                    <td className={`px-4 py-3 text-right text-sm font-black tabular-nums ${f.cls}`}>{f.text}</td>
+                    <td className={`px-6 py-3 text-right text-xs font-black tabular-nums ${fr.cls}`}>{fr.text}</td>
                   </tr>
                 );
               })}
@@ -1308,13 +1365,112 @@ export const FastPlan: React.FC = () => {
               <span className="font-black tabular-nums text-lg">₺{fmt(formSonuc.netKar)}</span>
             </div>
           </div>
+
+          {/* Gider Dağılım Çizelgesi */}
+          {formSonuc.totalGider > 0 && (
+            <div className="bg-white rounded-[2.5rem] p-8 shadow-card border border-gray-100">
+              <div className="text-[9px] font-black text-gray-400 uppercase tracking-[3px] mb-5">Gider Dağılımı</div>
+              {[
+                { label: 'Mal Alım', value: formSonuc.malAlisGideri, color: 'bg-rose-400' },
+                { label: 'Nakliye', value: formSonuc.alisNakliyeGideri + formSonuc.satisNakliyeGideri, color: 'bg-orange-400' },
+                { label: 'Personel', value: formSonuc.toplamMaas + formSonuc.toplamSgk + formSonuc.toplamYemek, color: 'bg-blue-400' },
+                { label: 'Enerji', value: formSonuc.giderKırılım.enerji, color: 'bg-yellow-400' },
+                { label: 'Diğer', value: formSonuc.toplamEktra - formSonuc.giderKırılım.enerji, color: 'bg-gray-300' },
+              ].filter(item => item.value > 0).map(item => {
+                const pct = (item.value / formSonuc.totalGider) * 100;
+                return (
+                  <div key={item.label} className="mb-4 last:mb-0">
+                    <div className="flex justify-between mb-1.5">
+                      <span className="text-[9px] font-black text-gray-500 uppercase tracking-[1px]">{item.label}</span>
+                      <span className="text-[9px] font-black text-gray-600 tabular-nums">%{fmtDec(pct, 0)} · ₺{fmt(item.value)}</span>
+                    </div>
+                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div className={`h-full ${item.color} rounded-full transition-all duration-500`} style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Yatırım Analizi */}
+          {params.yatirimlar.length > 0 && (
+            <div className="bg-white rounded-[2.5rem] p-8 shadow-card border border-gray-100">
+              <div className="text-[9px] font-black text-gray-400 uppercase tracking-[3px] flex items-center gap-2 mb-5">
+                <TrendingUp size={14} className="text-enba-orange" /> Yatırım Analizi
+              </div>
+              <div className="flex justify-between items-center py-3 border-b border-gray-50">
+                <span className="text-[10px] font-black text-gray-400 uppercase tracking-[1px]">Toplam CAPEX</span>
+                <span className="font-black text-enba-dark tabular-nums">₺{fmt(params.yatirimlar.reduce((s, y) => s + y.tutar, 0))}</span>
+              </div>
+              <div className="flex justify-between items-center py-3 border-b border-gray-50">
+                <span className="text-[10px] font-black text-gray-400 uppercase tracking-[1px]">Başabaş Noktası</span>
+                <span className={`font-black tabular-nums ${formSonuc.basabasNokta === Infinity ? 'text-rose-500' : 'text-enba-dark'}`}>
+                  {formSonuc.basabasNokta === Infinity ? '— kâra geçilemiyor' : `${fmtDec(formSonuc.basabasNokta, 1)} ton/ay`}
+                </span>
+              </div>
+              <div className="flex justify-between items-center py-3 border-b border-gray-50">
+                <span className="text-[10px] font-black text-gray-400 uppercase tracking-[1px]">Kapasite Kullanımı (BB)</span>
+                <span className={`font-black tabular-nums ${formSonuc.basabasNokta <= params.aylikTon ? 'text-emerald-600' : 'text-rose-500'}`}>
+                  {formSonuc.basabasNokta === Infinity || params.aylikTon === 0 ? '—'
+                    : `%${fmtDec((formSonuc.basabasNokta / params.aylikTon) * 100, 1)}`}
+                </span>
+              </div>
+              <div className="flex justify-between items-center py-3">
+                <span className="text-[10px] font-black text-gray-400 uppercase tracking-[1px]">Geri Ödeme Süresi</span>
+                <span className={`font-black tabular-nums ${formSonuc.geriOdemeSuresi === null ? 'text-gray-300' : formSonuc.geriOdemeSuresi <= 36 ? 'text-emerald-600' : formSonuc.geriOdemeSuresi <= 60 ? 'text-yellow-600' : 'text-rose-500'}`}>
+                  {formSonuc.geriOdemeSuresi === null ? '— (zarar)' : `${fmtDec(formSonuc.geriOdemeSuresi, 1)} ay`}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Duyarlılık Tablosu */}
+          {params.satisFiyati > 0 && (
+            <div className="bg-white rounded-[2.5rem] p-8 shadow-card border border-gray-100 overflow-hidden">
+              <div className="text-[9px] font-black text-gray-400 uppercase tracking-[3px] flex items-center gap-2 mb-5">
+                <BarChart3 size={14} className="text-enba-orange" /> Duyarlılık — Satış Fiyatı
+              </div>
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-100">
+                    <th className="pb-2 text-left text-[8px] font-black text-gray-400 uppercase tracking-[1px]">Senaryo</th>
+                    <th className="pb-2 text-right text-[8px] font-black text-gray-400 uppercase tracking-[1px]">₺/ton</th>
+                    <th className="pb-2 text-right text-[8px] font-black text-gray-400 uppercase tracking-[1px]">FAVÖK</th>
+                    <th className="pb-2 text-right text-[8px] font-black text-gray-400 uppercase tracking-[1px]">Marj</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {duyarlilik.map(({ pct, sonuc: ds }) => {
+                    const isCurrent = pct === 0;
+                    return (
+                      <tr key={pct} className={isCurrent ? 'bg-enba-orange/5' : 'hover:bg-gray-50/50'}>
+                        <td className={`py-2.5 text-[10px] font-black ${pct < 0 ? 'text-rose-500' : pct > 0 ? 'text-emerald-600' : 'text-enba-orange'}`}>
+                          {pct === 0 ? 'Baz' : `${pct > 0 ? '+' : ''}${pct}%`}
+                        </td>
+                        <td className="py-2.5 text-right text-[10px] font-black text-gray-600 tabular-nums">
+                          ₺{fmt(params.satisFiyati * (1 + pct / 100))}
+                        </td>
+                        <td className={`py-2.5 text-right text-[10px] font-black tabular-nums ${kpiColor(ds.ebitda)}`}>
+                          ₺{fmt(ds.ebitda)}
+                        </td>
+                        <td className={`py-2.5 text-right text-[10px] font-black tabular-nums ${ds.ebitdaMarji >= 10 ? 'text-emerald-600' : ds.ebitdaMarji >= 0 ? 'text-yellow-600' : 'text-rose-500'}`}>
+                          %{fmtDec(ds.ebitdaMarji)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
       {saveModalOpen && (
         <SaveModal
-          onYeniVersiyon={() => planKaydetDuzenle('yeni_versiyon')}
-          onGuncelle={() => planKaydetDuzenle('guncelle')}
-          onYeniModel={() => planKaydetDuzenle('yeni_model')}
+          onYeniVersiyon={(not) => planKaydetDuzenle('yeni_versiyon', not)}
+          onGuncelle={(not) => planKaydetDuzenle('guncelle', not)}
+          onYeniModel={(not) => planKaydetDuzenle('yeni_model', not)}
           onIptal={() => setSaveModalOpen(false)}
         />
       )}
@@ -1387,7 +1543,9 @@ const PlanKartBileseni: React.FC<{
               >
                 <option value="current">Güncel (V{versions.length + 1}) · {new Date(plan.updatedAt || plan.createdAt).toLocaleDateString('tr-TR')}</option>
                 {[...versions].map((v, i) => (
-                  <option key={i} value={String(i)}>V{i + 1} · {new Date(v.tarih).toLocaleDateString('tr-TR')}</option>
+                  <option key={i} value={String(i)}>
+                    V{i + 1} · {new Date(v.tarih).toLocaleDateString('tr-TR')}{v.not ? ` · ${v.not}` : ''}
+                  </option>
                 )).reverse()}
               </select>
               <span className="text-[9px] text-gray-300 font-black">{fmtDec(dispParams.aylikTon)} ton/ay</span>
@@ -1424,10 +1582,15 @@ const PlanKartBileseni: React.FC<{
 
       {/* Marj + Actions */}
       <div className="px-8 py-5 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${s.ebitdaMarji >= 15 ? 'bg-emerald-100 text-emerald-700' : s.ebitdaMarji >= 5 ? 'bg-yellow-100 text-yellow-700' : 'bg-rose-100 text-rose-700'}`}>
             EBITDA %{fmtDec(s.ebitdaMarji)}
           </div>
+          {s.birimMaliyet > 0 && (
+            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest tabular-nums">
+              ₺{fmt(s.birimMaliyet)}/ton
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-1">
           <button onClick={onEdit} title="Düzenle" className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-gray-100 text-gray-400 hover:text-enba-dark transition-all">

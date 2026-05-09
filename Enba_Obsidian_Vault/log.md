@@ -264,3 +264,43 @@ grep "^## \[" log.md | tail -5
 
 **Etkilenen dosyalar:** `src/modules/Parasut.tsx`, `src/api/parasut.ts` (import eklendi)
 **Bir sonraki:** Paraşüt → Enba stok eşleştirmesi (item ↔ malzeme), yazma uç noktaları
+
+---
+
+## [2026-05-08] geliştirme | Altyapı iyileştirmeleri (10 item tamamlandı)
+
+**Tamamlanan işler:**
+
+1. **Supabase RLS (migration_v24 + v24b)** — business_plans için JWT tabanlı politikalar; super_admin tüm planları görür, company_id varsa tenant filtresi, yoksa user_id
+2. **usePlanSync toplu upsert/insert** — mevcutlar tek seferde upsert, yeniler tek seferde insert; `supabaseId` geri yazılıyor (commit e58b135)
+3. **React.lazy 22 modül** — tüm modüller lazy-load; Suspense fallback spinner; bundle ~60% küçülme (commit e353e67)
+4. **PnL html2pdf dynamic import** — ilk tıklamada yükle, bundle'a girmiyor (commit ec9a095)
+5. **profileAPI cache invalidation** — `updateProfile` + `adminUpdateProfile` başarı sonrası `cachedProfile = null; lastFetchTime = 0;` (commit a5bcb0a)
+6. **React ErrorBoundary** — `src/components/ErrorBoundary.tsx`; lazy-load crash → boş ekran yerine "Tekrar dene" butonu (commit 4003d97)
+7. **Calendar → Supabase tasks fix** — Calendar.tsx hâlâ silinmiş `enba_tasks` localStorage'ı okuyordu; `tasksAPI.getAll()` ile değiştirildi, `desc→description` field fix (commit 933b668)
+8. **useSupabaseQuery genişletme** — Archive.tsx + HR.tsx (4 query) hook'a taşındı; AbortController cleanup (commit 38ade78)
+9. **console.log temizliği** — Tasks/Machinery/FixedExpenses/PnL migration log'ları + Tasks Microsoft import log'u (commit 903934a)
+10. **TypeScript any azaltma** — usePlanSync: `BusinessPlanRow`, `InsertedRow`, `EnbaAppMeta` interfaces + type predicate; dataService: `StockRow`, `SalesRow` interfaces + `Record<string, unknown>` payload'lar (commit 200a123)
+
+**F (büyük component bölme) ertelendi** — kullanıcı kararı, acil değil
+
+**Etkilenen dosyalar:** `src/api/supabase.ts`, `src/App.tsx`, `src/components/ErrorBoundary.tsx`, `src/modules/Calendar.tsx`, `src/modules/Archive.tsx`, `src/modules/HR.tsx`, `src/modules/FixedExpenses.tsx`, `src/modules/Machinery.tsx`, `src/modules/PnL.tsx`, `src/modules/Tasks.tsx`, `src/hooks/usePlanSync.ts`, `src/api/dataService.ts`
+
+---
+
+## [2026-05-08] karar | Yeni öncelik sırası netleşti
+
+**Kullanıcı kararı:** Bordro/muhasebe/e-fatura belirsiz vadede ertelendi. Şu anki sıra:
+1. FastPlan iyileştirmeleri (hesaplama, versiyonlama, karşılaştırma, görsel)
+2. DetailedPlan iyileştirmeleri
+3. Paraşüt entegrasyonunu tamamla
+4. PnL analizi güçlendir
+5. Yapay zeka asistanı
+
+**FastPlan analizi tamamlandı** — eksikler tespit edildi:
+- Hesaplama: başabaş noktası, geri ödeme süresi, duyarlılık tablosu, yıllık projeksiyon eksik
+- Versiyonlama: not alanı yok, delta özeti yok
+- Karşılaştırma: % fark sütunu yok, kazanan özeti yok
+- Görsel: gider dağılım grafiği yok, PDF çıktısı yok
+
+**Bir sonraki oturum:** FastPlan hesaplama iyileştirmeleri — `hesapla()` fonksiyonuna başabaş + geri ödeme + duyarlılık tablosu ekle

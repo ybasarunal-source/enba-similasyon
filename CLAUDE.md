@@ -293,21 +293,41 @@ Veri kaybı riski olan her adımı kullanıcıya açıkça belirt ve onay al.
 - [x] migration_v20 (arsiv Storage bucket)
 - [x] migration_v21 (tasks constraint + cashflow kolonları)
 - [x] migration_v22 (profiles kişisel bilgi kolonları)
-- [ ] **migration_v23** — `scratch/migration_v23_hr_payments_debts.sql` çalıştırılacak
+- [x] migration_v23 (personnel_payments + personnel_debts RLS)
+- [x] migration_v24 + v24b (business_plans RLS, JWT tabanlı politikalar)
+
+### Tamamlanan Altyapı İyileştirmeleri (2026-05-08)
+- [x] usePlanSync toplu upsert/insert (commit e58b135)
+- [x] React.lazy 22 modül + Suspense (commit e353e67)
+- [x] PnL html2pdf dynamic import (commit ec9a095)
+- [x] useSupabaseQuery hook + Licensing/Archive/HR refactor (commitler 62bebe2, 38ade78)
+- [x] profileAPI cache invalidation fix (commit a5bcb0a)
+- [x] React ErrorBoundary (commit 4003d97)
+- [x] Calendar → Supabase tasks (commit 933b668)
+- [x] console.log temizliği (commit 903934a)
+- [x] TypeScript any azaltma: usePlanSync + dataService (commit 200a123)
+
+### Kullanıcı Öncelik Sırası
+1. **FastPlan iyileştirmeleri** — başabaş, geri ödeme, duyarlılık, versiyon notları, gider grafiği, PDF
+2. **DetailedPlan iyileştirmeleri**
+3. **Paraşüt tamamlama** — Enba stok ↔ Paraşüt item eşleştirmesi, yazma uç noktaları
+4. **PnL analizi güçlendirme**
+5. **Yapay zeka asistanı** — siteye entegre AI chat
 
 ### Bekleyen Teknik Görevler
 - [ ] **Admin test hesabı** — Supabase'de `role='admin'` + geçerli `company_id` → şirket izolasyonunu doğrula
-- [ ] **Bordro modülü** — HR.tsx'e bordro hesaplama eklenmesi (Faz 2 başlangıç noktası)
-- [ ] **E-fatura** — entegratör seçimi (Nilvera/Logo/Uyumsoft) + mali mühür temini + API entegrasyonu
 - [ ] **Paraşüt tamamlama** — stok eşleştirmesi, kalan uç noktalar
-- [ ] **Muhasebe motoru** — Tek Düzen Hesap Planı, yevmiye, mizan (Faz 2 en karmaşık adım)
-- [ ] **Finansal raporlama** — bilanço + gelir tablosu (muhasebe motoruna bağımlı)
+- [ ] **E-fatura** — ertelendi (müşteri talebi olursa)
+- [ ] **Bordro/muhasebe** — ertelendi (müşteri talebi olursa)
 
 ### Bir Sonraki Oturumda İlk Yapılacak
-**Bordro hesaplama** — HR.tsx'e yeni "Bordro" tab'ı:
-- Brüt → Net hesaplama (SGK %14 + %1 işsizlik + kümülatif gelir vergisi + damga)
-- Aylık bordro fişi görüntüleme
-- Dışsal bağımlılık yok, hemen başlanabilir
+**FastPlan hesaplama iyileştirmeleri** — `hesapla()` fonksiyonuna ekle + form sağ panel'e göster:
+1. **Başabaş noktası** — sabit giderler ÷ (satış fiyatı/ton - değişken maliyet/ton) = başabaş ton/ay
+2. **Geri ödeme süresi** — toplam CAPEX ÷ aylık net kâr = kaç ay
+3. **Duyarlılık tablosu** — alış/satış fiyatı ±%10, ±%20 → net kâr senaryoları
+4. **Versiyon notları** — PlanVersion'a `not?: string` ekle, SaveModal'da not giriş alanı
+5. **Gider dağılım bar chart** — CSS tabanlı, harici kütüphane yok
+6. **PDF çıktısı** — html2pdf ile plan özeti A4 çıktısı
 
 ---
 
