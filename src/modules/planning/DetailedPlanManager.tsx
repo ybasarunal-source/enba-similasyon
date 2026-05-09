@@ -7,6 +7,7 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import { PlanningWizard } from './PlanningWizard';
+import { calculateDetailedPlan } from '../../utils/detailedPlanCalculations';
 
 /**
  * Enba Similasyon - Detaylı İş Planı Yönetim Ekranı
@@ -15,12 +16,29 @@ import { PlanningWizard } from './PlanningWizard';
  */
 
 // ── Types ──────────────────────────────────────────────────────
+interface PlanVersion {
+  tarih: string;
+  planData: any;
+  summary: {
+    yillikGelir: number;
+    yillikOpex: number;
+    yillikEbitda: number;
+    yillikNet: number;
+    toplamYatirim: number;
+    birimMaliyet: number;
+    basabasNokta: number;
+    geriOdemeSuresi: number | null;
+  };
+  not?: string;
+}
+
 interface DetailedPlanCard {
   id: string;
   supabaseId?: string;
   title: string;
   status: 'pending' | 'active';
   createdAt: string;
+  updatedAt?: string;
   planData: any; // PlanningWizard's full planData object
   // Özet - 12 aylık toplamlar
   summary: {
@@ -29,66 +47,76 @@ interface DetailedPlanCard {
     yillikEbitda: number;
     yillikNet: number;
     toplamYatirim: number;
+    birimMaliyet: number;
+    basabasNokta: number;
+    geriOdemeSuresi: number | null;
   };
+  versions?: PlanVersion[];
 }
 
 const STORAGE_KEY = 'enba_detailed_plans_v2';
 
 // ── Finansal hesap (ReportStep mantığının basitleştirilmiş versiyonu) ──────────
 function planOzetiHesapla(planData: any) {
-  let yillikGelir = 0, yillikOpex = 0, yillikEbitda = 0, yillikNet = 0;
-
-  for (let i = 0; i < 12; i++) {
-    let revenue = 0;
-    Object.values(planData.monthlyData?.[i]?.musteriler || {}).forEach((s: any) => {
-      revenue += (parseFloat(s.miktar || 0) * parseFloat(s.fiyat || 0));
-    });
-
-    let cogs = 0;
-    Object.values(planData.monthlyData?.[i]?.tedarikler || {}).forEach((t: any) => {
-      cogs += parseFloat(t.miktar || 0) * (parseFloat(t.fiyat || 0) + parseFloat(t.nakliye || 0));
-    });
-
-    let opex = 0;
-    Object.values(planData.monthlyData?.[i]?.giderler || {}).forEach((g: any) => {
-      opex += parseFloat(g) || 0;
-    });
-
-    (planData.personnelList || []).forEach((role: any) => {
-      for (let v = 1; v <= (planData.shifts || 1); v++) {
-        const count = planData.monthlyData?.[i]?.personeller?.[`${role.id}_v${v}`] || 0;
-        opex += count * ((planData.baseNetSalary || 17002) + (role.ekMaas || 0));
-        opex += count * ((planData.baseSgk || 5000) + (role.ekSgk || 0));
-        opex += count * (planData.workDays || 26) * (planData.dailyMealCost || 200);
-      }
-    });
-
-    const shiftHrs = Object.values(planData.shiftHours || { 1: 8 })
-      .slice(0, planData.shifts || 1)
-      .reduce((a: any, b: any) => a + b, 0) as number;
-    const monthlyHrs = shiftHrs * (planData.workDays || 26);
-    let powerCost = 0;
-    (planData.selectedMachines || []).forEach(() => { powerCost += 2.5 * monthlyHrs; });
-    opex += powerCost * (planData.electricPrice || 2.5) * 0.4;
-
-    const totalInvestment = (planData.investments || [])
-      .reduce((acc: number, inv: any) => acc + (parseFloat(inv.maliyet) || 0), 0);
-    const monthlyAmort = totalInvestment > 0 ? totalInvestment / 60 : 0;
-
-    const ebitda = revenue - (cogs + opex);
-    const net = ebitda - monthlyAmort;
-
-    yillikGelir += revenue;
-    yillikOpex += cogs + opex;
-    yillikEbitda += ebitda;
-    yillikNet += net;
-  }
-
-  const toplamYatirim = (planData.investments || [])
-    .reduce((acc: number, inv: any) => acc + (parseFloat(inv.maliyet) || 0), 0);
-
-  return { yillikGelir, yillikOpex, yillikEbitda, yillikNet, toplamYatirim };
+  const result = calculateDetailedPlan(planData);
+  return {
+    yillikGelir: result.yearlySum.revenue,
+    yillikOpex: result.yearlySum.opex + result.yearlySum.cogs,
+    yillikEbitda: result.yearlySum.ebitda,
+    yillikNet: result.yearlySum.netProfit,
+    toplamYatirim: result.investmentAnalysis.toplamYatirim,
+    birimMaliyet: result.yearlySum.satisTon > 0 ? (result.yearlySum.cogs + result.yearlySum.opex) / result.yearlySum.satisTon : 0,
+    basabasNokta: result.investmentAnalysis.basabasNokta,
+    geriOdemeSuresi: result.investmentAnalysis.geriOdemeSuresi
+  };
 }
+
+// ── Kayıt Seçim Modalı ────────────────────────────────────
+const SaveModal: React.FC<{
+  onYeniVersiyon: (not: string) => void;
+  onGuncelle: (not: string) => void;
+  onYeniModel: (not: string) => void;
+  onIptal: () => void;
+}> = ({ onYeniVersiyon, onGuncelle, onYeniModel, onIptal }) => {
+  const [not, setNot] = useState('');
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-6 animate-in fade-in duration-200">
+      <div className="bg-white rounded-[2.5rem] p-10 max-w-md w-full shadow-2xl space-y-5">
+        <div className="text-center">
+          <h2 className="text-xl font-black text-enba-dark uppercase tracking-tight italic">Değişiklikleri Kaydet</h2>
+          <p className="text-sm text-gray-400 mt-2">Bu düzenlemeyi nasıl kaydetmek istersiniz?</p>
+        </div>
+        <div>
+          <label className="text-[10px] font-black text-gray-400 uppercase tracking-[2px]">Versiyon Notu (opsiyonel)</label>
+          <input
+            type="text"
+            value={not}
+            onChange={e => setNot(e.target.value)}
+            placeholder="Bu versiyonda ne değişti?"
+            className="mt-2 w-full bg-gray-50 border border-transparent rounded-2xl px-5 py-3 text-sm font-medium text-enba-dark focus:bg-white focus:ring-2 focus:ring-enba-orange/20 outline-none transition-all"
+          />
+        </div>
+        <div className="space-y-3">
+          <button onClick={() => onYeniVersiyon(not)} className="w-full text-left px-6 py-4 bg-enba-orange/5 hover:bg-enba-orange/10 border-2 border-enba-orange/30 hover:border-enba-orange rounded-2xl transition-all">
+            <div className="font-black text-enba-dark text-sm">Yeni Versiyon Olarak Kaydet</div>
+            <div className="text-[10px] text-gray-400 mt-0.5">Mevcut hali geçmişe taşır, değişiklikleri yeni sürüm olarak kaydeder</div>
+          </button>
+          <button onClick={() => onGuncelle(not)} className="w-full text-left px-6 py-4 bg-gray-50 hover:bg-gray-100 border-2 border-transparent rounded-2xl transition-all">
+            <div className="font-black text-enba-dark text-sm">Mevcut Versiyonu Güncelle</div>
+            <div className="text-[10px] text-gray-400 mt-0.5">Geçmişe eklenmez, doğrudan üzerine yazılır</div>
+          </button>
+          <button onClick={() => onYeniModel(not)} className="w-full text-left px-6 py-4 bg-blue-50 hover:bg-blue-100 border-2 border-blue-100 hover:border-blue-300 rounded-2xl transition-all">
+            <div className="font-black text-enba-dark text-sm">Farklı İş Modeli Olarak Kaydet</div>
+            <div className="text-[10px] text-gray-400 mt-0.5">Ayrı, bağımsız bir plan kartı oluşturur</div>
+          </button>
+        </div>
+        <button onClick={onIptal} className="w-full text-center text-[11px] font-black text-gray-400 hover:text-gray-600 uppercase tracking-[3px] transition-colors pt-1">
+          İptal
+        </button>
+      </div>
+    </div>
+  );
+};
 
 // ── Helpers ────────────────────────────────────────────────────
 const fmt = (n: number) =>
@@ -102,6 +130,9 @@ const kpiColor = (v: number) =>
 export const DetailedPlanManager: React.FC = () => {
   const [view, setView] = useState<'cards' | 'wizard'>('cards');
   const [editingCard, setEditingCard] = useState<DetailedPlanCard | null>(null);
+  const [saveModalOpen, setSaveModalOpen] = useState(false);
+  const [pendingPlanData, setPendingPlanData] = useState<any>(null);
+
   const { planlar, kaydet, sil: planSilSync, syncStatus, syncError } = usePlanSync<DetailedPlanCard>({
     localKey: STORAGE_KEY,
     planType: 'detailed',
@@ -109,21 +140,62 @@ export const DetailedPlanManager: React.FC = () => {
 
   // ── Wizard'dan gelen save callback'i ──────────────────────
   const handleWizardSave = (planData: any) => {
-    const summary = planOzetiHesapla(planData);
-    const yeniKart: DetailedPlanCard = {
-      id: editingCard?.id || Date.now().toString(),
-      title: planData.title || 'İsimsiz Plan',
-      status: editingCard?.status || 'pending',
-      createdAt: editingCard?.createdAt || new Date().toISOString(),
-      planData,
-      summary,
-    };
-    const guncel = editingCard
-      ? planlar.map(p => p.id === editingCard.id ? yeniKart : p)
-      : [...planlar, yeniKart];
-    kaydet(guncel);
-    setView('cards');
+    if (editingCard) {
+      setPendingPlanData(planData);
+      setSaveModalOpen(true);
+    } else {
+      const summary = planOzetiHesapla(planData);
+      const yeniKart: DetailedPlanCard = {
+        id: Date.now().toString(),
+        title: planData.title || 'İsimsiz Plan',
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+        planData,
+        summary,
+        versions: [],
+      };
+      kaydet([...planlar, yeniKart]);
+      setView('cards');
+    }
+  };
+
+  const planKaydetDuzenle = (mod: 'yeni_versiyon' | 'guncelle' | 'yeni_model', not?: string) => {
+    const now = new Date().toISOString();
+    const summary = planOzetiHesapla(pendingPlanData);
+    const mevcut = editingCard;
+    if (!mevcut) return;
+
+    if (mod === 'yeni_model') {
+      kaydet([...planlar, {
+        id: Date.now().toString(),
+        title: pendingPlanData.title || 'İsimsiz Plan',
+        status: 'pending', createdAt: now,
+        planData: { ...pendingPlanData },
+        summary,
+        versions: [],
+      }]);
+    } else {
+      const yeniKart: DetailedPlanCard = {
+        ...mevcut,
+        title: pendingPlanData.title || 'İsimsiz Plan',
+        updatedAt: now,
+        versions: mod === 'yeni_versiyon'
+          ? [...(mevcut.versions || []), {
+              tarih: mevcut.updatedAt || mevcut.createdAt,
+              planData: mevcut.planData,
+              summary: mevcut.summary,
+              not: not?.trim() || undefined,
+            }]
+          : (mevcut.versions || []),
+        planData: { ...pendingPlanData },
+        summary,
+      };
+      kaydet(planlar.map(p => p.id === mevcut.id ? yeniKart : p));
+    }
+    setSaveModalOpen(false);
+    setPendingPlanData(null);
     setEditingCard(null);
+    setView('cards');
   };
 
   const statusToggle = (id: string) => {
@@ -156,7 +228,7 @@ export const DetailedPlanManager: React.FC = () => {
   };
 
   // ── Geçerli planlar (eski format Supabase kayıtlarına karşı guard) ──
-  const DEFAULT_SUMMARY = { yillikGelir: 0, yillikOpex: 0, yillikEbitda: 0, yillikNet: 0, toplamYatirim: 0 };
+  const DEFAULT_SUMMARY = { yillikGelir: 0, yillikOpex: 0, yillikEbitda: 0, yillikNet: 0, toplamYatirim: 0, birimMaliyet: 0, basabasNokta: 0, geriOdemeSuresi: null };
   const gecerliPlanlar = planlar.map(p => ({
     ...p,
     summary: p.summary || (p.planData ? planOzetiHesapla(p.planData) : DEFAULT_SUMMARY),
@@ -251,6 +323,7 @@ export const DetailedPlanManager: React.FC = () => {
                         {p.title}
                       </th>
                     ))}
+                    <th className="py-3 px-4 text-[9px] font-black text-gray-300 text-right uppercase tracking-[1px]">% Fark</th>
                     <th className="py-3 px-4 text-[9px] font-black text-enba-orange text-right uppercase tracking-[2px]">TOPLAM</th>
                   </tr>
                 </thead>
@@ -263,6 +336,11 @@ export const DetailedPlanManager: React.FC = () => {
                     { label: 'CAPEX', key: 'toplamYatirim' as keyof typeof aktifPlanlar[0]['summary'] },
                   ].map(row => {
                     const toplam = aktifPlanlar.reduce((s, p) => s + (p.summary[row.key] as number), 0);
+                    // İlk iki plan arasındaki fark %
+                    const vA = aktifPlanlar[0].summary[row.key] as number;
+                    const vB = aktifPlanlar[1].summary[row.key] as number;
+                    const farkRel = vB !== 0 ? ((vA - vB) / Math.abs(vB)) * 100 : 0;
+
                     return (
                       <tr key={row.key} className="hover:bg-white/5 transition-colors">
                         <td className="py-3 text-[11px] font-black text-gray-400 uppercase tracking-[1px]">{row.label}</td>
@@ -271,6 +349,9 @@ export const DetailedPlanManager: React.FC = () => {
                             ₺{fmt(p.summary[row.key] as number)}
                           </td>
                         ))}
+                        <td className={`py-3 px-4 text-right text-[10px] font-black tabular-nums ${farkRel > 0 ? 'text-emerald-400' : farkRel < 0 ? 'text-rose-400' : 'text-gray-500'}`}>
+                          {farkRel !== 0 ? `${farkRel > 0 ? '+' : ''}${fmtDec(farkRel)}%` : '—'}
+                        </td>
                         <td className={`py-3 px-4 text-right text-sm font-black tabular-nums ${kpiColor(toplam)}`}>
                           ₺{fmt(toplam)}
                         </td>
@@ -282,6 +363,15 @@ export const DetailedPlanManager: React.FC = () => {
             </div>
           )}
         </div>
+      )}
+
+      {saveModalOpen && (
+        <SaveModal
+          onYeniVersiyon={(not) => planKaydetDuzenle('yeni_versiyon', not)}
+          onGuncelle={(not) => planKaydetDuzenle('guncelle', not)}
+          onYeniModel={(not) => planKaydetDuzenle('yeni_model', not)}
+          onIptal={() => { setSaveModalOpen(false); setPendingPlanData(null); }}
+        />
       )}
 
       {/* Boş durum */}
@@ -322,6 +412,11 @@ export const DetailedPlanManager: React.FC = () => {
                 onEdit={() => planDuzenle(plan)}
                 onCopy={() => planKopyala(plan)}
                 onDelete={() => planSil(plan.id)}
+                onRestoreVersion={(vIdx) => {
+                  const v = plan.versions?.[vIdx];
+                  if (!v) return;
+                  kaydet(planlar.map(p => p.id === plan.id ? { ...p, planData: v.planData, summary: v.summary } : p));
+                }}
               />
             ))}
           </div>
@@ -345,6 +440,11 @@ export const DetailedPlanManager: React.FC = () => {
                 onEdit={() => planDuzenle(plan)}
                 onCopy={() => planKopyala(plan)}
                 onDelete={() => planSil(plan.id)}
+                onRestoreVersion={(vIdx) => {
+                  const v = plan.versions?.[vIdx];
+                  if (!v) return;
+                  kaydet(planlar.map(p => p.id === plan.id ? { ...p, planData: v.planData, summary: v.summary } : p));
+                }}
               />
             ))}
           </div>
@@ -361,10 +461,12 @@ const DetailedKartBileseni: React.FC<{
   onEdit: () => void;
   onCopy: () => void;
   onDelete: () => void;
-}> = ({ plan, onToggle, onEdit, onCopy, onDelete }) => {
+  onRestoreVersion: (vIdx: number) => void;
+}> = ({ plan, onToggle, onEdit, onCopy, onDelete, onRestoreVersion }) => {
   const aktif = plan.status === 'active';
   const s = plan.summary;
   const ebitdaMarj = s.yillikGelir > 0 ? (s.yillikEbitda / s.yillikGelir) * 100 : 0;
+  const [vOpen, setVOpen] = useState(false);
 
   return (
     <div className={`bg-white rounded-[2.5rem] border-2 transition-all duration-300 overflow-hidden shadow-card ${aktif ? 'border-enba-orange shadow-enba-orange/10' : 'border-transparent'}`}>
@@ -375,9 +477,15 @@ const DetailedKartBileseni: React.FC<{
             {aktif && <div className="w-2 h-2 rounded-full bg-enba-orange animate-pulse flex-shrink-0" />}
             <h3 className="font-black text-enba-dark text-sm uppercase tracking-tight truncate">{plan.title}</h3>
           </div>
-          <div className="text-[9px] font-black text-gray-300 uppercase tracking-widest mt-1.5">
-            {new Date(plan.createdAt).toLocaleDateString('tr-TR')} ·{' '}
-            {plan.planData?.currency || 'TRY'} · {plan.planData?.startYear || '—'}
+          <div className="text-[9px] font-black text-gray-300 uppercase tracking-widest mt-1.5 flex items-center gap-2">
+            <span>{new Date(plan.createdAt).toLocaleDateString('tr-TR')}</span>
+            <span>·</span>
+            <span>{plan.planData?.currency || 'TRY'}</span>
+            {plan.versions && plan.versions.length > 0 && (
+              <button onClick={() => setVOpen(!vOpen)} className="flex items-center gap-1 px-2 py-0.5 bg-enba-dark text-white rounded-md hover:bg-black transition-colors">
+                V{plan.versions.length + 1} {vOpen ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
+              </button>
+            )}
           </div>
         </div>
         <button
@@ -388,6 +496,22 @@ const DetailedKartBileseni: React.FC<{
           <Play size={16} className={aktif ? 'fill-white' : ''} />
         </button>
       </div>
+
+      {/* Versiyon Listesi Dropdown */}
+      {vOpen && plan.versions && (
+        <div className="bg-gray-900 text-white p-4 space-y-3 animate-in slide-in-from-top duration-300">
+          <div className="text-[9px] font-black text-gray-500 uppercase tracking-widest border-b border-white/5 pb-2">Geçmiş Versiyonlar</div>
+          {plan.versions.map((v, idx) => (
+            <div key={idx} className="flex items-center justify-between gap-4 group">
+              <div className="flex-1 min-w-0">
+                <div className="text-[10px] font-black text-gray-300">V{idx + 1} · {new Date(v.tarih).toLocaleDateString('tr-TR')}</div>
+                <div className="text-[9px] text-gray-500 truncate mt-0.5">{v.not || 'Not eklenmemiş'}</div>
+              </div>
+              <button onClick={() => { onRestoreVersion(idx); setVOpen(false); }} className="px-3 py-1 bg-white/5 hover:bg-white/10 rounded-lg text-[9px] font-black uppercase tracking-widest transition-colors">Geri Yükle</button>
+            </div>
+          )).reverse()}
+        </div>
+      )}
 
       {/* KPI Izgara (Yıllık) */}
       <div className="grid grid-cols-2 gap-px bg-gray-100">
@@ -404,17 +528,29 @@ const DetailedKartBileseni: React.FC<{
         ))}
       </div>
 
+      {/* Ek KPI'lar: Başabaş & Geri Ödeme */}
+      <div className="grid grid-cols-2 gap-px bg-gray-100 border-t border-gray-100">
+        <div className="bg-white px-6 py-4 border-r border-gray-50">
+           <div className="text-[8px] font-black text-gray-400 uppercase tracking-[2px]">Başabaş Noktası</div>
+           <div className="text-[11px] font-black text-enba-dark mt-1">{s.basabasNokta === Infinity ? '∞' : `${fmt(s.basabasNokta)} ton/ay`}</div>
+        </div>
+        <div className="bg-white px-6 py-4">
+           <div className="text-[8px] font-black text-gray-400 uppercase tracking-[2px]">Geri Ödeme</div>
+           <div className={`text-[11px] font-black mt-1 ${!s.geriOdemeSuresi ? 'text-gray-400' : s.geriOdemeSuresi <= 36 ? 'text-emerald-500' : s.geriOdemeSuresi <= 60 ? 'text-yellow-500' : 'text-rose-500'}`}>
+              {s.geriOdemeSuresi ? `${fmtDec(s.geriOdemeSuresi)} ay` : '—'}
+           </div>
+        </div>
+      </div>
+
       {/* Marj + Eylemler */}
-      <div className="px-8 py-5 flex items-center justify-between">
+      <div className="px-8 py-5 flex items-center justify-between border-t border-gray-50">
         <div className="flex items-center gap-3">
           <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${ebitdaMarj >= 15 ? 'bg-emerald-100 text-emerald-700' : ebitdaMarj >= 5 ? 'bg-yellow-100 text-yellow-700' : 'bg-rose-100 text-rose-700'}`}>
             EBITDA %{fmtDec(ebitdaMarj)}
           </div>
-          {s.toplamYatirim > 0 && (
-            <div className="px-3 py-1 rounded-full bg-gray-100 text-gray-500 text-[9px] font-black uppercase tracking-widest">
-              CAPEX ₺{fmt(s.toplamYatirim / 1000000)}M
-            </div>
-          )}
+          <div className="px-3 py-1 rounded-full bg-enba-dark/5 text-enba-dark text-[9px] font-black uppercase tracking-widest">
+            ₺{fmt(s.birimMaliyet)}/ton
+          </div>
         </div>
         <div className="flex items-center gap-1">
           <button onClick={onEdit} title="Düzenle" className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-gray-100 text-gray-400 hover:text-enba-dark transition-all">

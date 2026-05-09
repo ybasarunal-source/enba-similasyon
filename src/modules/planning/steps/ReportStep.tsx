@@ -1,19 +1,26 @@
 import React, { useState, useMemo } from 'react';
 import { useTranslation } from '../../../api/i18n';
 import { 
-  TrendingUp as ChartLineUp, 
-  TrendingUp, 
-  TrendingDown, 
-  FileDown, 
-  FileText as FilePdf, 
-  Table, 
-  Banknote as CurrencyDollar,
+  ArrowUpRight,
+  TrendingUp,
+  TrendingDown,
+  Activity,
+  Zap,
+  Truck,
+  Users,
+  Settings,
+  BarChart3,
   Percent,
-  Calculator,
+  CircleDollarSign as CurrencyDollar,
   HardHat,
   Factory,
-  ArrowUpRight
+  Calculator,
+  Table,
+  FileDown,
+  FileText as FilePdf,
+  Layout
 } from 'lucide-react';
+import { calculateDetailedPlan } from '../../../utils/detailedPlanCalculations';
 
 interface ReportStepProps {
   planData: any;
@@ -40,57 +47,7 @@ const ReportStep: React.FC<ReportStepProps> = ({ planData, back }) => {
   });
 
   const calculations = useMemo(() => {
-    const monthlyResults = Array.from({ length: 12 }).map((_, i) => {
-      // 1. Revenue
-      let revenue = 0;
-      Object.values(planData.monthlyData[i]?.musteriler || {}).forEach((s: any) => revenue += (parseFloat(s.miktar || 0) * parseFloat(s.fiyat || 0)));
-
-      // 2. Direct Costs (Cogs)
-      let cogs = 0;
-      Object.values(planData.monthlyData[i]?.tedarikler || {}).forEach((t: any) => cogs += (parseFloat(t.miktar || 0) * (parseFloat(t.fiyat || 0) + parseFloat(t.nakliye || 0))));
-
-      // 3. OPEX (Fixed + Dynamic)
-      let opex = 0;
-      Object.values(planData.monthlyData[i]?.giderler || {}).forEach((g: any) => opex += (parseFloat(g) || 0));
-      
-      // Add Personnel
-      (planData.personnelList || []).forEach((role: any) => {
-        for(let v=1; v<= (planData.shifts || 1); v++) {
-           const count = planData.monthlyData[i]?.personeller?.[`${role.id}_v${v}`] || 0;
-           opex += count * ((planData.baseNetSalary || 17002) + (role.ekMaas || 0)); // Net
-           opex += count * ((planData.baseSgk || 5000) + (role.ekSgk || 0)); // SGK
-           opex += count * (planData.workDays || 26) * (planData.dailyMealCost || 200); // Meal
-        }
-      });
-
-      // Power calculation consistent with ExpensesStep
-       const shiftHrs = Object.values(planData.shiftHours || {}).slice(0, planData.shifts).reduce((a, b) => (a as any) + (b as any), 0) as number;
-       const monthlyHrs = shiftHrs * (planData.workDays || 26);
-       let powerCap = 0;
-       (planData.selectedMachines || []).forEach((sm: any) => { powerCap += 2.5 * monthlyHrs; });
-       opex += powerCap * (planData.electricPrice || 2.5) * 0.4;
-
-      const ebitda = revenue - (cogs + opex);
-      
-      // Amortization (Total Investment / 60 months)
-      const totalInvestment = (planData.investments || []).reduce((acc: number, inv: any) => acc + (parseFloat(inv.maliyet) || 0), 0);
-      const monthlyAmort = totalInvestment / 60;
-
-      const netProfit = ebitda - monthlyAmort;
-
-      return { revenue, cogs, opex, ebitda, netProfit, monthlyAmort };
-    });
-
-    const yearlySum = monthlyResults.reduce((acc, curr) => ({
-      revenue: acc.revenue + curr.revenue,
-      cogs: acc.cogs + curr.cogs,
-      opex: acc.opex + curr.opex,
-      ebitda: acc.ebitda + curr.ebitda,
-      netProfit: acc.netProfit + curr.netProfit,
-      amort: acc.amort + curr.monthlyAmort
-    }), { revenue: 0, cogs: 0, opex: 0, ebitda: 0, netProfit: 0, amort: 0 });
-
-    return { monthlyResults, yearlySum };
+    return calculateDetailedPlan(planData);
   }, [planData]);
 
   const fmt = (v: number) => (v || 0).toLocaleString('tr-TR', { maximumFractionDigits: 0 });
@@ -169,18 +126,18 @@ const ReportStep: React.FC<ReportStepProps> = ({ planData, back }) => {
           <div className="p-10 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-8 bg-gray-50/40">
              <div className="flex items-center gap-6">
                 <div className="w-16 h-16 bg-enba-dark rounded-[1.5rem] flex items-center justify-center text-enba-orange shadow-2xl border border-white/10 group">
-                   <ChartLineUp size={36} className="transition-transform group-hover:scale-110 group-hover:rotate-6" />
+                   <Layout size={36} className="transition-transform group-hover:scale-110 group-hover:rotate-6" />
                 </div>
-                <div>
-                   <h3 className="text-2xl font-black text-enba-dark italic uppercase tracking-tighter leading-none">Finansal P&L Matrisi</h3>
-                   <p className="text-[10px] text-gray-400 font-black uppercase tracking-[4px] mt-2">İş Geliştirme ve Yatırım Geri Dönüş Raporu</p>
-                </div>
-             </div>
-             <div className="flex items-center gap-4">
-                <button className="flex items-center gap-4 px-8 py-4 bg-gray-900 text-white rounded-[1.2rem] text-[10px] font-black uppercase tracking-[3px] hover:bg-black transition-all shadow-xl group border border-white/5 active:scale-95">
-                   <Table size={18} className="text-enba-orange" />
-                   Excel Raporu
-                </button>
+                  <div>
+                    <h3 className="text-2xl font-black text-enba-dark italic uppercase tracking-tighter leading-none">Finansal P&L Matrisi</h3>
+                    <p className="text-[10px] text-gray-400 font-black uppercase tracking-[4px] mt-2">İş Geliştirme ve Yatırım Geri Dönüş Raporu</p>
+                 </div>
+              </div>
+              <div className="flex items-center gap-4">
+                 <button className="flex items-center gap-4 px-8 py-4 bg-gray-900 text-white rounded-[1.2rem] text-[10px] font-black uppercase tracking-[3px] hover:bg-black transition-all shadow-xl group border border-white/5 active:scale-95">
+                    <Settings size={18} className="text-enba-orange" />
+                    Analiz Araçları
+                 </button>
              </div>
           </div>
 
@@ -200,7 +157,6 @@ const ReportStep: React.FC<ReportStepProps> = ({ planData, back }) => {
                    </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                   {/* Revenue */}
                    <tr className="bg-emerald-50/10 group hover:bg-emerald-50/30 transition-all">
                       <td className="sticky left-0 bg-white/95 backdrop-blur-sm p-8 border-r border-gray-100 z-10 group-hover:bg-emerald-50/50 transition-all">
                          <div className="flex items-center gap-4">
@@ -216,7 +172,6 @@ const ReportStep: React.FC<ReportStepProps> = ({ planData, back }) => {
                       <td className="p-8 text-right text-[14px] font-black text-emerald-900 border-l-4 border-enba-orange/10 bg-emerald-50/50 tabular-nums">{fmt(calculations.yearlySum.revenue)} ₺</td>
                    </tr>
 
-                   {/* COGS & OPEX Group */}
                    <tr className="group hover:bg-gray-50/50 transition-all">
                       <td className="sticky left-0 bg-white/95 p-8 border-r border-gray-100 z-10 group-hover:bg-gray-50 transition-all">
                          <div className="flex items-center gap-4 text-gray-400">
@@ -247,7 +202,6 @@ const ReportStep: React.FC<ReportStepProps> = ({ planData, back }) => {
                       <td className="p-8 text-right text-[14px] font-bold text-gray-400 border-l-4 border-enba-orange/10 bg-gray-50/30 tabular-nums">{fmt(calculations.yearlySum.opex)} ₺</td>
                    </tr>
 
-                   {/* EBITDA Highlight */}
                    <tr className="bg-orange-50/30 group hover:bg-orange-50/50 transition-all border-y-2 border-enba-orange/5">
                       <td className="sticky left-0 bg-white/95 backdrop-blur-sm p-8 border-r border-gray-100 z-10 group-hover:bg-orange-50/50 transition-all shadow-sm">
                          <div className="flex items-center gap-4">
@@ -265,7 +219,6 @@ const ReportStep: React.FC<ReportStepProps> = ({ planData, back }) => {
                       <td className="p-10 text-right text-[18px] font-black text-white bg-enba-orange border-l-4 border-white/20 tabular-nums shadow-inner shadow-black/10 transition-transform group-hover:scale-[1.02]">{fmt(calculations.yearlySum.ebitda)} ₺</td>
                    </tr>
 
-                   {/* Amortismab - Italic Subdued */}
                    <tr className="group hover:bg-gray-50/30 transition-all opacity-50 hover:opacity-100">
                       <td className="sticky left-0 bg-white/95 p-8 border-r border-gray-100 z-10 italic">
                          <div className="flex items-center gap-4 text-gray-300">
@@ -279,7 +232,6 @@ const ReportStep: React.FC<ReportStepProps> = ({ planData, back }) => {
                       <td className="p-8 text-right text-[13px] font-bold text-gray-400 border-l-4 border-enba-orange/10 bg-gray-50/20 italic tabular-nums">{fmt(calculations.yearlySum.amort)} ₺</td>
                    </tr>
 
-                   {/* Net Profit - Main Total Bar */}
                    <tr className="border-t-4 border-enba-dark bg-enba-dark group">
                       <td className="sticky left-0 bg-black/95 p-10 border-r border-white/5 z-10 group-hover:bg-black transition-all">
                          <div className="flex items-center gap-5">
@@ -304,6 +256,76 @@ const ReportStep: React.FC<ReportStepProps> = ({ planData, back }) => {
                    </tr>
                 </tbody>
              </table>
+          </div>
+      </div>
+
+      {/* Duyarlılık Analizi & Gider Dağılımı */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
+          <div className="bg-white p-10 rounded-[2.5rem] border border-gray-100 shadow-card">
+              <div className="flex items-center gap-4 mb-8">
+                 <div className="w-12 h-12 bg-enba-orange/10 text-enba-orange rounded-2xl flex items-center justify-center">
+                    <Activity size={24} />
+                 </div>
+                 <div>
+                    <h4 className="text-xl font-black text-enba-dark italic uppercase tracking-tighter">Duyarlılık Analizi</h4>
+                    <p className="text-[10px] text-gray-400 font-black uppercase tracking-[3px] mt-1">Satış Fiyatı Değişim Senaryoları</p>
+                 </div>
+              </div>
+              <div className="space-y-4">
+                 <div className="grid grid-cols-3 p-4 bg-gray-50 rounded-2xl text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                    <div>Değişim %</div>
+                    <div className="text-right">FAVÖK (EBITDA)</div>
+                    <div className="text-right">Net Kâr</div>
+                 </div>
+                 {calculations.sensitivityAnalysis.map((s, i) => (
+                    <div key={i} className={`grid grid-cols-3 p-5 rounded-[1.5rem] text-sm font-black transition-all ${s.pct === 0 ? 'bg-enba-orange/5 border-2 border-enba-orange/20' : 'bg-white border-2 border-gray-50 hover:border-gray-200'}`}>
+                       <div className={s.pct > 0 ? 'text-emerald-600' : s.pct < 0 ? 'text-rose-600' : 'text-enba-dark'}>{s.pct > 0 ? '+' : ''}{s.pct}%</div>
+                       <div className="text-right tabular-nums">₺{fmt(s.ebitda)}</div>
+                       <div className={`text-right tabular-nums ${s.netProfit >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>₺{fmt(s.netProfit)}</div>
+                    </div>
+                 ))}
+              </div>
+          </div>
+
+          <div className="bg-white p-10 rounded-[2.5rem] border border-gray-100 shadow-card">
+              <div className="flex items-center gap-4 mb-8">
+                 <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center">
+                    <BarChart3 size={24} />
+                 </div>
+                 <div>
+                    <h4 className="text-xl font-black text-enba-dark italic uppercase tracking-tighter">Gider Dağılım Analizi</h4>
+                    <p className="text-[10px] text-gray-400 font-black uppercase tracking-[3px] mt-1">Yıllık Kümülatif Maliyet Dağılımı</p>
+                 </div>
+              </div>
+              <div className="space-y-6">
+                 {[
+                   { label: 'Mal Alımı', val: calculations.expenseDistribution.malAlim, color: 'bg-enba-dark', icon: <Factory size={12} /> },
+                   { label: 'Nakliye / Lojistik', val: calculations.expenseDistribution.nakliye, color: 'bg-enba-orange', icon: <Truck size={12} /> },
+                   { label: 'Personel Gideri', val: calculations.expenseDistribution.personel, color: 'bg-blue-500', icon: <Users size={12} /> },
+                   { label: 'Enerji / Güç', val: calculations.expenseDistribution.enerji, color: 'bg-emerald-500', icon: <Zap size={12} /> },
+                   { label: 'Diğer OPEX', val: calculations.expenseDistribution.diger, color: 'bg-gray-400', icon: <Activity size={12} /> },
+                 ].map((item, i) => {
+                   const total = Object.values(calculations.expenseDistribution).reduce((a, b) => a + b, 0);
+                   const pct = (item.val / total) * 100;
+                   return (
+                     <div key={i} className="space-y-2">
+                        <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-gray-500">
+                           <div className="flex items-center gap-2">
+                              {item.icon}
+                              {item.label}
+                           </div>
+                           <div className="flex items-center gap-3">
+                              <span className="text-enba-dark">₺{fmt(item.val)}</span>
+                              <span className="text-gray-300">%{pct.toFixed(1)}</span>
+                           </div>
+                        </div>
+                        <div className="h-3 w-full bg-gray-50 rounded-full overflow-hidden">
+                           <div className={`h-full ${item.color} transition-all duration-1000`} style={{ width: `${pct}%` }}></div>
+                        </div>
+                     </div>
+                   );
+                 })}
+              </div>
           </div>
       </div>
 
