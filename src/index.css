@@ -59,6 +59,60 @@
     --highlight-warning-text:   #FBBF24;
   }
 
+  /* --- Forest Theme (Premium Green) --- */
+  [data-theme='forest'] {
+    --bg-main:          #F0F4F1;
+    --bg-surface:       #FFFFFF;
+    --bg-surface-low:   #E4ECE6;
+    --bg-surface-high:  #D8E4DC;
+    
+    --text-primary:     #0F291E;
+    --text-secondary:   #344C42;
+    --text-muted:       #6B8E7B;
+    
+    --enba-orange:      #2D6A4F;
+    --enba-orange-dark: #1B4332;
+    
+    --border-subtle:    #D8E4DC;
+    --border-strong:    #B7C9BE;
+  }
+
+  /* --- Sunset Theme (Warm / Purple) --- */
+  [data-theme='sunset'] {
+    --bg-main:          #FAF5F2;
+    --bg-surface:       #FFFFFF;
+    --bg-surface-low:   #F5ECE6;
+    --bg-surface-high:  #EDDED5;
+    
+    --text-primary:     #2D1B2D;
+    --text-secondary:   #5C3D5C;
+    --text-muted:       #9E849E;
+    
+    --enba-orange:      #8E44AD;
+    --enba-orange-dark: #6C3483;
+    
+    --border-subtle:    #EDDED5;
+    --border-strong:    #D9C5B8;
+  }
+
+  /* --- Steel Theme (Modern High-Tech) --- */
+  [data-theme='steel'] {
+    --bg-main:          #E9EFF5;
+    --bg-surface:       #FFFFFF;
+    --bg-surface-low:   #DAE4ED;
+    --bg-surface-high:  #CCD9E6;
+    
+    --text-primary:     #1E293B;
+    --text-secondary:   #475569;
+    --text-muted:       #94A3B8;
+    
+    --enba-orange:      #0F172A;
+    --enba-orange-dark: #000000;
+    
+    --border-subtle:    #CCD9E6;
+    --border-strong:    #B3C2D1;
+  }
+
   body {
     @apply antialiased;
     background-color: var(--bg-main);
@@ -97,6 +151,15 @@
     background: linear-gradient(160deg, rgba(46, 21, 5, 0.98) 0%, rgba(22, 10, 0, 1) 100%);
     [data-theme='dark'] & {
       background: linear-gradient(160deg, #0f172a 0%, #020617 100%);
+    }
+    [data-theme='forest'] & {
+      background: linear-gradient(160deg, #1b4332 0%, #081c15 100%);
+    }
+    [data-theme='sunset'] & {
+      background: linear-gradient(160deg, #4a235a 0%, #2e1534 100%);
+    }
+    [data-theme='steel'] & {
+      background: linear-gradient(160deg, #334155 0%, #0f172a 100%);
     }
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);

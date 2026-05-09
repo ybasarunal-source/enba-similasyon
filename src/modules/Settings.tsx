@@ -15,14 +15,17 @@ import {
   ShieldCheck, 
   Ruler, 
   Weight, 
-  CheckCircle 
+  CheckCircle,
+  Palette
 } from 'lucide-react';
 
 interface SettingsProps {
   profile?: UserProfile | null;
+  currentTheme?: string;
+  onThemeChange?: (theme: string) => void;
 }
 
-export const Settings: React.FC<SettingsProps> = ({ profile }) => {
+export const Settings: React.FC<SettingsProps> = ({ profile, currentTheme, onThemeChange }) => {
   const { t, language, setLanguage } = useTranslation();
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -176,6 +179,42 @@ export const Settings: React.FC<SettingsProps> = ({ profile }) => {
                        </div>
                     </div>
                     {settings.unit === unit.id && <CheckCircle size={24} className="text-enba-orange" />}
+                  </button>
+                ))}
+             </div>
+          </div>
+
+          {/* Theme Selector Section */}
+          <div className={`${CARD_STYLE} md:col-span-2`}>
+             <div className="absolute top-0 right-0 w-64 h-64 bg-enba-orange/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+             <h3 className={TITLE_STYLE}>
+                <Palette size={20} className="text-enba-orange" /> Görsel Tasarım & Temalar
+             </h3>
+             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 relative z-10">
+                {[
+                  { id: 'light', label: 'Modern Light', colors: ['bg-white', 'bg-[#F7F7F7]', 'bg-[#E35205]'], desc: 'Varsayılan Temiz Görünüm' },
+                  { id: 'dark', label: 'Midnight Blue', colors: ['bg-[#0F172A]', 'bg-[#020617]', 'bg-[#E35205]'], desc: 'Göz Yormayan Koyu Mod' },
+                  { id: 'forest', label: 'Premium Forest', colors: ['bg-white', 'bg-[#F0F4F1]', 'bg-[#2D6A4F]'], desc: 'Doğa ve Huzur Odaklı' },
+                  { id: 'sunset', label: 'Warm Sunset', colors: ['bg-white', 'bg-[#FAF5F2]', 'bg-[#8E44AD]'], desc: 'Sıcak ve Enerjik Tonlar' },
+                  { id: 'steel', label: 'Industrial Steel', colors: ['bg-white', 'bg-[#E9EFF5]', 'bg-[#0F172A]'], desc: 'Modern ve Teknolojik' },
+                ].map(theme => (
+                  <button 
+                    key={theme.id}
+                    onClick={() => onThemeChange?.(theme.id)}
+                    className={`p-6 rounded-[2rem] border-2 transition-all flex flex-col items-center gap-4 group/theme active:scale-95 ${currentTheme === theme.id ? 'border-enba-orange bg-orange-50 shadow-xl' : 'border-gray-50 bg-gray-50/50 hover:border-gray-200 hover:bg-white'}`}
+                  >
+                    <div className="flex -space-x-3 mb-2">
+                       {theme.colors.map((c, i) => (
+                         <div key={i} className={`w-10 h-10 rounded-full border-4 border-white shadow-lg ${c} group-hover/theme:scale-110 transition-transform`} style={{ zIndex: 3-i }}></div>
+                       ))}
+                    </div>
+                    <div className="text-center">
+                       <div className={`text-[11px] font-black uppercase tracking-widest ${currentTheme === theme.id ? 'text-enba-dark' : 'text-gray-400'}`}>{theme.label}</div>
+                       <div className="text-[8px] font-bold text-gray-300 uppercase tracking-widest mt-1">{theme.desc}</div>
+                    </div>
+                    {currentTheme === theme.id && (
+                       <div className="mt-2 px-3 py-1 bg-enba-orange text-white text-[8px] font-black rounded-full shadow-lg">AKTİF</div>
+                    )}
                   </button>
                 ))}
              </div>

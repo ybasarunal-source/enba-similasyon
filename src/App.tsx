@@ -759,7 +759,13 @@ export const App: React.FC = () => {
                 {activeModule === 'tasks'      && <Tasks />}
                 {activeModule === 'calendar'   && <CalendarModule />}
                 {activeModule === 'licensing'  && <Licensing />}
-                {activeModule === 'settings'   && <Settings profile={userProfile ? { ...userProfile, role: user.role } : { role: user.role } as any} />}
+                {activeModule === 'settings'   && (
+                  <Settings 
+                    profile={userProfile ? { ...userProfile, role: user.role } : { role: user.role } as any} 
+                    currentTheme={theme}
+                    onThemeChange={(newTheme: string) => setTheme(newTheme)}
+                  />
+                )}
                 {activeModule === 'profile'    && <Profile />}
                 {activeModule === 'mail'       && <Mail />}
                 {activeModule === 'fixedexpenses' && <FixedExpenses />}
