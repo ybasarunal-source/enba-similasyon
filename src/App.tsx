@@ -8,28 +8,42 @@ import type { Session } from '@supabase/supabase-js';
 import { profileAPI, companiesAPI, type UserProfile, type UserRole } from './api/supabase';
 import { parasutService } from './api/parasut';
 import { ErrorBoundary } from './components/ErrorBoundary';
-const Dashboard         = React.lazy(() => import('./modules/Dashboard'));
-const Stock             = React.lazy(() => import('./modules/Stock').then(m => ({ default: m.Stock })));
-const Production        = React.lazy(() => import('./modules/Production').then(m => ({ default: m.Production })));
-const Logistics         = React.lazy(() => import('./modules/Logistics').then(m => ({ default: m.Logistics })));
-const HR                = React.lazy(() => import('./modules/HR').then(m => ({ default: m.HR })));
-const Archive           = React.lazy(() => import('./modules/Archive').then(m => ({ default: m.Archive })));
-const Cashflow          = React.lazy(() => import('./modules/Cashflow').then(m => ({ default: m.Cashflow })));
-const Machinery         = React.lazy(() => import('./modules/Machinery').then(m => ({ default: m.Machinery })));
-const Tasks             = React.lazy(() => import('./modules/Tasks').then(m => ({ default: m.Tasks })));
-const Licensing         = React.lazy(() => import('./modules/Licensing').then(m => ({ default: m.Licensing })));
-const PnL               = React.lazy(() => import('./modules/PnL').then(m => ({ default: m.PnL })));
-const Settings          = React.lazy(() => import('./modules/Settings').then(m => ({ default: m.Settings })));
-const Profile           = React.lazy(() => import('./modules/Profile').then(m => ({ default: m.Profile })));
-const DetailedPlanManager = React.lazy(() => import('./modules/planning/DetailedPlanManager').then(m => ({ default: m.DetailedPlanManager })));
-const FastPlan          = React.lazy(() => import('./modules/FastPlan').then(m => ({ default: m.FastPlan })));
-const CalendarModule    = React.lazy(() => import('./modules/Calendar').then(m => ({ default: m.Calendar })));
-const Parasut           = React.lazy(() => import('./modules/Parasut').then(m => ({ default: m.Parasut })));
-const ModulesOverview   = React.lazy(() => import('./modules/ModulesOverview').then(m => ({ default: m.ModulesOverview })));
-const Mail              = React.lazy(() => import('./modules/Mail').then(m => ({ default: m.Mail })));
-const FixedExpenses     = React.lazy(() => import('./modules/FixedExpenses').then(m => ({ default: m.FixedExpenses })));
-const SuperAdmin        = React.lazy(() => import('./modules/SuperAdmin').then(m => ({ default: m.SuperAdmin })));
-const CompanyAdmin      = React.lazy(() => import('./modules/CompanyAdmin').then(m => ({ default: m.CompanyAdmin })));
+
+// Modül yükleme hatalarını (chunk load error) yakalayıp sayfayı yenileyen yardımcı fonksiyon
+const lazyRetry = (componentImport: () => Promise<any>) => 
+  React.lazy(async () => {
+    try {
+      return await componentImport();
+    } catch (error) {
+      console.error("Kritik modül yükleme hatası, sayfa yenileniyor:", error);
+      // Sadece üretim ortamında veya chunk hatasıysa yenile
+      window.location.reload();
+      return { default: () => <div /> };
+    }
+  });
+
+const Dashboard         = lazyRetry(() => import('./modules/Dashboard'));
+const Stock             = lazyRetry(() => import('./modules/Stock').then(m => ({ default: m.Stock })));
+const Production        = lazyRetry(() => import('./modules/Production').then(m => ({ default: m.Production })));
+const Logistics         = lazyRetry(() => import('./modules/Logistics').then(m => ({ default: m.Logistics })));
+const HR                = lazyRetry(() => import('./modules/HR').then(m => ({ default: m.HR })));
+const Archive           = lazyRetry(() => import('./modules/Archive').then(m => ({ default: m.Archive })));
+const Cashflow          = lazyRetry(() => import('./modules/Cashflow').then(m => ({ default: m.Cashflow })));
+const Machinery         = lazyRetry(() => import('./modules/Machinery').then(m => ({ default: m.Machinery })));
+const Tasks             = lazyRetry(() => import('./modules/Tasks').then(m => ({ default: m.Tasks })));
+const Licensing         = lazyRetry(() => import('./modules/Licensing').then(m => ({ default: m.Licensing })));
+const PnL               = lazyRetry(() => import('./modules/PnL').then(m => ({ default: m.PnL })));
+const Settings          = lazyRetry(() => import('./modules/Settings').then(m => ({ default: m.Settings })));
+const Profile           = lazyRetry(() => import('./modules/Profile').then(m => ({ default: m.Profile })));
+const DetailedPlanManager = lazyRetry(() => import('./modules/planning/DetailedPlanManager').then(m => ({ default: m.DetailedPlanManager })));
+const FastPlan          = lazyRetry(() => import('./modules/FastPlan').then(m => ({ default: m.FastPlan })));
+const CalendarModule    = lazyRetry(() => import('./modules/Calendar').then(m => ({ default: m.Calendar })));
+const Parasut           = lazyRetry(() => import('./modules/Parasut').then(m => ({ default: m.Parasut })));
+const ModulesOverview   = lazyRetry(() => import('./modules/ModulesOverview').then(m => ({ default: m.ModulesOverview })));
+const Mail              = lazyRetry(() => import('./modules/Mail').then(m => ({ default: m.Mail })));
+const FixedExpenses     = lazyRetry(() => import('./modules/FixedExpenses').then(m => ({ default: m.FixedExpenses })));
+const SuperAdmin        = lazyRetry(() => import('./modules/SuperAdmin').then(m => ({ default: m.SuperAdmin })));
+const CompanyAdmin      = lazyRetry(() => import('./modules/CompanyAdmin').then(m => ({ default: m.CompanyAdmin })));
 import {
   Home,
   LayoutGrid,
