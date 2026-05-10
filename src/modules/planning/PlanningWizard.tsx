@@ -12,6 +12,7 @@ import {
   FileUp
 } from 'lucide-react';
 
+import { ASGARI_NET, ASGARI_SGK, DEFAULT_DAILY_MEAL, DEFAULT_WORK_DAYS, DEFAULT_ELECTRIC_PRICE } from '../../utils/constants';
 import InvestmentStep from './steps/InvestmentStep';
 import SupplyStep from './steps/SupplyStep';
 import OperationsStep from './steps/OperationsStep';
@@ -35,13 +36,13 @@ export const DEFAULT_PLAN_DATA = {
     ay: i, tedarikler: {}, musteriler: {}, giderler: {}, personeller: {}
   })),
   personnelList: [] as any[],
-  baseNetSalary: 28075.5,
-  baseSgk: 12799.13,
-  dailyMealCost: 200,
+  baseNetSalary: ASGARI_NET,
+  baseSgk: ASGARI_SGK,
+  dailyMealCost: DEFAULT_DAILY_MEAL,
   shifts: 1,
   shiftHours: { 1: 8, 2: 8, 3: 8 },
-  workDays: 26,
-  electricPrice: 2.5,
+  workDays: DEFAULT_WORK_DAYS,
+  electricPrice: DEFAULT_ELECTRIC_PRICE,
   growth: { tonnage: 5, price: 10, fixedCost: 8, variableCost: 10 }
 };
 

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { ASGARI_NET, ASGARI_SGK, DEFAULT_DAILY_MEAL } from '../../../utils/constants';
 import {
   Users,
   Plus,
@@ -114,7 +115,7 @@ const PersonnelStep: React.FC<PersonnelStepProps> = ({ planData, onUpdate, next,
             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1">Taban Net Maaş (₺)</label>
             <input 
               type="number" 
-              value={planData.baseNetSalary || 28075.5}
+              value={planData.baseNetSalary || ASGARI_NET}
               onChange={e => onUpdate({...planData, baseNetSalary: Number(e.target.value)})}
               className="w-full bg-gray-50 border-none rounded-2xl px-6 py-4 text-sm font-black text-enba-dark focus:bg-white focus:ring-2 focus:ring-emerald-100 outline-none transition-all"
             />
@@ -123,7 +124,7 @@ const PersonnelStep: React.FC<PersonnelStepProps> = ({ planData, onUpdate, next,
             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1">SGK İşveren Yükü (₺)</label>
             <input 
               type="number" 
-              value={planData.baseSgk || 12799.13}
+              value={planData.baseSgk || ASGARI_SGK}
               onChange={e => onUpdate({...planData, baseSgk: Number(e.target.value)})}
               className="w-full bg-gray-50 border-none rounded-2xl px-6 py-4 text-sm font-black text-enba-dark focus:bg-white focus:ring-2 focus:ring-emerald-100 outline-none transition-all"
             />
@@ -132,7 +133,7 @@ const PersonnelStep: React.FC<PersonnelStepProps> = ({ planData, onUpdate, next,
             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1">Günlük Yemek / Yan Hak (₺)</label>
             <input 
               type="number" 
-              value={planData.dailyMealCost || 200}
+              value={planData.dailyMealCost || DEFAULT_DAILY_MEAL}
               onChange={e => onUpdate({...planData, dailyMealCost: Number(e.target.value)})}
               className="w-full bg-gray-50 border-none rounded-2xl px-6 py-4 text-sm font-black text-enba-dark focus:bg-white focus:ring-2 focus:ring-emerald-100 outline-none transition-all"
             />

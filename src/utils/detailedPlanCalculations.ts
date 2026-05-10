@@ -2,6 +2,7 @@
  * Enba Similasyon - Detaylı İş Planı Hesaplama Motoru
  * ReportStep ve DetailedPlanManager tarafından ortak kullanılır.
  */
+import { ASGARI_NET, ASGARI_SGK, DEFAULT_DAILY_MEAL, DEFAULT_WORK_DAYS, DEFAULT_ELECTRIC_PRICE } from './constants';
 
 export interface DetailedPlanResult {
   monthlyResults: any[];
@@ -77,18 +78,18 @@ export function calculateDetailedPlan(planData: any): DetailedPlanResult {
     (planData.personnelList || []).forEach((role: any) => {
       for(let v=1; v<= (planData.shifts || 1); v++) {
          const count = planData.monthlyData?.[i]?.personeller?.[`${role.id}_v${v}`] || 0;
-         personelGider += count * ((planData.baseNetSalary || 28075.5) + (role.ekMaas || 0)); // Net
-         personelGider += count * ((planData.baseSgk || 12799.13) + (role.ekSgk || 0)); // SGK
-         personelGider += count * (planData.workDays || 26) * (planData.dailyMealCost || 200); // Yemek
+         personelGider += count * ((planData.baseNetSalary || ASGARI_NET) + (role.ekMaas || 0));
+         personelGider += count * ((planData.baseSgk || ASGARI_SGK) + (role.ekSgk || 0));
+         personelGider += count * (planData.workDays || DEFAULT_WORK_DAYS) * (planData.dailyMealCost || DEFAULT_DAILY_MEAL);
       }
     });
 
     // Enerji (Elektrik)
     const shiftHrs = Object.values(planData.shiftHours || {}).slice(0, planData.shifts).reduce((a, b) => (a as any) + (b as any), 0) as number;
-    const monthlyHrs = shiftHrs * (planData.workDays || 26);
+    const monthlyHrs = shiftHrs * (planData.workDays || DEFAULT_WORK_DAYS);
     let powerCap = 0;
     (planData.selectedMachines || []).forEach(() => { powerCap += 2.5 * monthlyHrs; });
-    const enerjiGider = powerCap * (planData.electricPrice || 2.5) * 0.4;
+    const enerjiGider = powerCap * (planData.electricPrice || DEFAULT_ELECTRIC_PRICE) * 0.4;
 
     opex = personelGider + enerjiGider + digerOpex + satisNakliye + alisNakliye;
 

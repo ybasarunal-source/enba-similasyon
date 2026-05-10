@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { usePlanSync } from '../hooks/usePlanSync';
 import { SyncBanner } from '../components/SyncBanner';
+import { ASGARI_NET, ASGARI_SGK, DEFAULT_DAILY_MEAL } from '../utils/constants';
 import {
   Zap, Package, Factory,
   Users, BarChart3, TrendingUp,
@@ -117,9 +118,7 @@ const KALEM_LABEL: Record<GiderKalem, string> = {
   diger: 'Diğer Giderler',
 };
 
-const ASGARI_NET = 28075.5;
-const ASGARI_SGK = 12799.13;
-const YEMEK = 200;
+const YEMEK = DEFAULT_DAILY_MEAL;
 const STORAGE_KEY = 'enba_fast_plans_v2';
 
 // ─── Helpers ────────────────────────────────────────────────
