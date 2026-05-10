@@ -757,12 +757,12 @@ export const PnL: React.FC = () => {
               <table id={`pnl-table-report-${tableIndex}`} className="w-full border-collapse border border-gray-200 bg-white">
                   <thead>
                       <tr className="bg-gray-100 text-enba-dark border-b border-gray-300">
-                          <th rowSpan={2} className="p-4 text-center text-[10px] font-black uppercase tracking-widest w-[80px] border-b-4 border-enba-orange border-r border-gray-300">Kod</th>
-                          <th rowSpan={2} className="p-6 text-left text-[10px] font-black uppercase tracking-[3px] w-[220px] border-b-4 border-enba-orange">Kategori</th>
+                          <th rowSpan={2} className="p-2 text-center text-[9px] font-black uppercase tracking-widest w-[60px] border-b-4 border-enba-orange border-r border-gray-300">Kod</th>
+                          <th rowSpan={2} className="p-3 text-left text-[9px] font-black uppercase tracking-[2px] w-[180px] border-b-4 border-enba-orange">Kategori</th>
                           {sAylar.map(ay => (
-                              <th key={ay} colSpan={modelDetayAcik ? modeller.length + 1 : 1} className="p-4 text-center text-[11px] font-black uppercase tracking-widest border-l border-gray-300">{ay}</th>
+                              <th key={ay} colSpan={modelDetayAcik ? modeller.length + 1 : 1} className="p-2 text-center text-[10px] font-black uppercase tracking-widest border-l border-gray-300">{ay}</th>
                           ))}
-                          {showTotalCol && <th rowSpan={2} className="p-6 text-right text-[10px] font-black uppercase tracking-[3px] border-l border-gray-300 border-b-4 border-enba-orange text-enba-orange">Toplam</th>}
+                          {showTotalCol && <th rowSpan={2} className="p-3 text-right text-[9px] font-black uppercase tracking-[2px] border-l border-gray-300 border-b-4 border-enba-orange text-enba-orange">Toplam</th>}
                       </tr>
                       <tr className="bg-gray-50 text-gray-600">
                           {sAylar.map(ay => {
@@ -770,13 +770,13 @@ export const PnL: React.FC = () => {
                                   return (
                                       <React.Fragment key={`th-${ay}`}>
                                           {modeller.map(mod => (
-                                              <th key={`${ay}-${mod}`} className="p-3 text-right text-[9px] font-black uppercase border-l border-gray-200">{mod}</th>
+                                              <th key={`${ay}-${mod}`} className="p-2 text-right text-[8px] font-black uppercase border-l border-gray-200">{mod}</th>
                                           ))}
-                                          <th key={`${ay}-toplam`} className="p-3 text-right text-[9px] font-black uppercase border-l border-gray-300 bg-gray-200 text-enba-dark">Top</th>
+                                          <th key={`${ay}-toplam`} className="p-2 text-right text-[8px] font-black uppercase border-l border-gray-300 bg-gray-200 text-enba-dark">Top</th>
                                       </React.Fragment>
                                   )
                               } else {
-                                  return <th key={`${ay}-toplam`} className="p-3 text-right text-[9px] font-black uppercase border-l border-gray-300 bg-gray-200 text-enba-dark">Top</th>
+                                  return <th key={`${ay}-toplam`} className="p-2 text-right text-[8px] font-black uppercase border-l border-gray-300 bg-gray-200 text-enba-dark">Top</th>
                               }
                           })}
                       </tr>
@@ -790,10 +790,10 @@ export const PnL: React.FC = () => {
                                       className={`cursor-pointer transition-colors border-b border-gray-200 ${isOpen ? 'bg-gray-50/80 hover:bg-gray-100' : 'bg-gray-200 text-enba-dark hover:bg-gray-300'}`}
                                       onClick={() => toggleSection(section.section)}
                                   >
-                                      <td className={`p-4 text-center border-r ${isOpen ? 'border-gray-100' : 'border-gray-300'}`}>
-                                          {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                                      <td className={`p-2 text-center border-r ${isOpen ? 'border-gray-100' : 'border-gray-300'}`}>
+                                          {isOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                                       </td>
-                                      <td className="p-4 font-black text-[11px] uppercase tracking-[2px]">
+                                      <td className="p-2 font-black text-[10px] uppercase tracking-[1px]">
                                           {section.section}
                                       </td>
                                       {sAylar.map(ay => {
@@ -815,25 +815,25 @@ export const PnL: React.FC = () => {
                                               return (
                                                   <React.Fragment key={`section-ay-${ay}`}>
                                                       {modeller.map(mod => (
-                                                          <td key={`sec-${ay}-${mod}`} className={`p-4 text-right text-[10px] font-bold border-l ${isOpen ? 'border-gray-100' : 'border-gray-300'} opacity-70`}>
+                                                          <td key={`sec-${ay}-${mod}`} className={`p-2 text-right text-[10px] font-bold border-l ${isOpen ? 'border-gray-100' : 'border-gray-300'} opacity-70`}>
                                                               {!isOpen && ayTop !== 0 ? fmt(getHucreselTutar(unifiedData, summaryId, ay, mod)) : ''}
                                                           </td>
                                                       ))}
-                                                      <td className={`p-4 text-right text-xs font-black border-l ${isOpen ? 'border-gray-200 bg-gray-50/50' : 'border-gray-400 bg-gray-300/50'}`}>
+                                                      <td className={`p-2 text-right text-[10px] font-black border-l ${isOpen ? 'border-gray-200 bg-gray-50/50' : 'border-gray-400 bg-gray-300/50'}`}>
                                                           {!isOpen && ayTop !== 0 ? fmt(ayTop) : ''}
                                                       </td>
                                                   </React.Fragment>
                                               );
                                           } else {
                                               return (
-                                                  <td key={`section-ay-top-${ay}`} className={`p-4 text-right text-xs font-black border-l ${isOpen ? 'border-gray-200 bg-gray-50/50' : 'border-gray-400 bg-gray-300/50'}`}>
+                                                  <td key={`section-ay-top-${ay}`} className={`p-2 text-right text-[10px] font-black border-l ${isOpen ? 'border-gray-200 bg-gray-50/50' : 'border-gray-400 bg-gray-300/50'}`}>
                                                       {!isOpen && ayTop !== 0 ? fmt(ayTop) : ''}
                                                   </td>
                                               );
                                           }
                                       })}
                                       {showTotalCol && (
-                                          <td className={`p-4 text-right text-xs font-black border-l ${isOpen ? 'border-gray-200 bg-gray-50/50' : 'border-gray-400 bg-gray-300/50'}`}>
+                                          <td className={`p-2 text-right text-[10px] font-black border-l ${isOpen ? 'border-gray-200 bg-gray-50/50' : 'border-gray-400 bg-gray-300/50'}`}>
                                               {/* Total section total if needed */}
                                           </td>
                                       )}
@@ -849,13 +849,13 @@ export const PnL: React.FC = () => {
                                                 className={`border-b border-gray-100 transition-colors hover:bg-gray-50/50 cursor-pointer ${item.isTotal ? 'bg-gray-50 font-bold' : ''}`}
                                                 onClick={() => !item.isTotal && toggleRowDetay(item.id)}
                                             >
-                                                <td className="p-4 border-r border-gray-100 bg-gray-50/30 text-center w-[80px] min-w-[80px]">
+                                                <td className="p-2 border-r border-gray-100 bg-gray-50/30 text-center w-[80px] min-w-[80px]">
                                                     <span className="text-[9px] font-black px-2 py-0.5 bg-white border border-gray-200 text-gray-500 rounded uppercase tracking-wider shadow-sm">{item.id}</span>
                                                 </td>
-                                                <td className="p-4 w-[220px] min-w-[220px]">
+                                                <td className="p-2 w-[220px] min-w-[220px]">
                                                     <div className="flex items-center gap-2">
                                                         {!item.isTotal && (isRowOpen ? <ChevronDown size={12} className="text-enba-orange" /> : <ChevronRight size={12} className="text-gray-300" />)}
-                                                        <span className={`text-xs ${item.isTotal ? 'font-black text-enba-dark' : 'font-bold text-gray-600'}`}>
+                                                        <span className={`text-[10px] ${item.isTotal ? 'font-black text-enba-dark' : 'font-bold text-gray-600'}`}>
                                                             {item.label}
                                                         </span>
                                                     </div>
@@ -866,7 +866,7 @@ export const PnL: React.FC = () => {
                                                         const val = getHucreselTutar(unifiedData, item.id, ay, mod);
                                                         ayTop += val;
                                                         return (
-                                                            <td key={`${ay}-${mod}`} className={`p-4 text-right text-xs font-medium border-l border-gray-50 ${mod === modeller[0] ? 'border-l-gray-200' : ''}`}>
+                                                            <td key={`${ay}-${mod}`} className={`p-2 text-right text-[10px] font-medium border-l border-gray-50 ${mod === modeller[0] ? 'border-l-gray-200' : ''}`}>
                                                                 {val !== 0 ? fmt(val) : '-'}
                                                             </td>
                                                         );
@@ -876,21 +876,21 @@ export const PnL: React.FC = () => {
                                                         return (
                                                             <React.Fragment key={`frag-${item.id}-${ay}`}>
                                                                 {modCells}
-                                                                <td className={`p-4 text-right text-xs font-black border-l border-gray-200 ${item.isRevenue ? 'text-emerald-700' : 'text-red-700'} ${item.isTotal ? 'bg-gray-100/50' : 'bg-gray-50/30'}`}>
+                                                                <td className={`p-2 text-right text-[10px] font-black border-l border-gray-200 ${item.isRevenue ? 'text-emerald-700' : 'text-red-700'} ${item.isTotal ? 'bg-gray-100/50' : 'bg-gray-50/30'}`}>
                                                                     {ayTop !== 0 ? fmt(ayTop) : '-'}
                                                                 </td>
                                                             </React.Fragment>
                                                         );
                                                     } else {
                                                         return (
-                                                            <td key={`top-${item.id}-${ay}`} className={`p-4 text-right text-xs font-black border-l-2 border-gray-100 ${item.isRevenue ? 'text-emerald-700' : 'text-red-700'} ${item.isTotal ? 'bg-gray-100/50' : 'bg-gray-50/30'}`}>
+                                                            <td key={`top-${item.id}-${ay}`} className={`p-2 text-right text-[10px] font-black border-l-2 border-gray-100 ${item.isRevenue ? 'text-emerald-700' : 'text-red-700'} ${item.isTotal ? 'bg-gray-100/50' : 'bg-gray-50/30'}`}>
                                                                 {ayTop !== 0 ? fmt(ayTop) : '-'}
                                                             </td>
                                                         );
                                                     }
                                                 })}
                                                 {showTotalCol && (
-                                                    <td className={`p-4 text-right text-xs font-black border-l-2 border-gray-200 ${item.isRevenue ? 'text-emerald-800 bg-emerald-50/30' : 'text-red-800 bg-red-50/30'}`}>
+                                                    <td className={`p-2 text-right text-[10px] font-black border-l-2 border-gray-200 ${item.isRevenue ? 'text-emerald-800 bg-emerald-50/30' : 'text-red-800 bg-red-50/30'}`}>
                                                         {fmt(rowTotal)} ₺
                                                     </td>
                                                 )}
@@ -898,7 +898,7 @@ export const PnL: React.FC = () => {
                                             {isRowOpen && !isPdfGenerating && (
                                                 <tr>
                                                     <td colSpan={2 + sAylar.length * (modelDetayAcik ? modeller.length + 1 : 1) + (showTotalCol ? 1 : 0)} className="p-0 bg-gray-50/30">
-                                                        <div className="max-h-[300px] overflow-y-auto custom-scrollbar p-6">
+                                                        <div className="max-h-[300px] overflow-y-auto custom-scrollbar p-3">
                                                             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                                                                 <table className="w-full text-left border-collapse">
                                                                     <thead className="bg-gray-50">
@@ -918,13 +918,13 @@ export const PnL: React.FC = () => {
                                                                                     }
                                                                                 });
                                                                             });
-                                                                            if (items.length === 0) return <tr><td colSpan={3} className="p-6 text-center text-xs text-gray-400 italic">Bu kategori için işlem detayı bulunamadı.</td></tr>;
+                                                                            if (items.length === 0) return <tr><td colSpan={3} className="p-3 text-center text-[10px] text-gray-400 italic">Bu kategori için işlem detayı bulunamadı.</td></tr>;
                                                                             
                                                                             return items.map((raw, rIdx) => (
                                                                                 <tr key={rIdx} className="border-b border-gray-50 hover:bg-gray-50/50">
-                                                                                    <td className="p-3 text-xs font-bold text-enba-dark">{raw.desc}</td>
-                                                                                    <td className="p-3 text-xs text-gray-500 text-center">{raw.date}</td>
-                                                                                    <td className="p-3 text-xs font-black text-enba-dark text-right">{fmt(raw.amount)} ₺</td>
+                                                                                    <td className="p-3 text-[10px] font-bold text-enba-dark">{raw.desc}</td>
+                                                                                    <td className="p-3 text-[10px] text-gray-500 text-center">{raw.date}</td>
+                                                                                    <td className="p-3 text-[10px] font-black text-enba-dark text-right">{fmt(raw.amount)} ₺</td>
                                                                                 </tr>
                                                                             ));
                                                                         })()}
@@ -948,264 +948,197 @@ export const PnL: React.FC = () => {
     }
 
     return (
-        <div className="flex flex-col gap-10 p-10 animate-in fade-in duration-1000 pb-20">
-            {/* Header */}
-            <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-10">
-                <div className="flex flex-col gap-3">
-                    <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 bg-enba-dark rounded-[1.2rem] flex items-center justify-center text-enba-orange shadow-2xl border border-white/5">
-                            <BarChart3 size={28} />
-                        </div>
-                        <div>
-                            <h2 className="text-3xl font-black text-enba-dark tracking-tighter uppercase leading-none">Kâr / Zarar Analizi</h2>
-                            <p className="text-[10px] text-gray-400 font-black uppercase tracking-[4px] mt-2">Excel Tablosu Yükle · Model Bazlı P&L</p>
-                        </div>
+        <div className="flex flex-col gap-4 p-6 animate-in fade-in duration-700 max-w-full mx-auto pb-10">
+            {/* Header: Title & Main Actions */}
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-4 rounded-3xl border border-gray-100 shadow-sm">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-enba-dark rounded-xl flex items-center justify-center text-enba-orange shadow-lg border border-white/5">
+                        <BarChart3 size={20} />
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-black text-enba-dark tracking-tight uppercase leading-none">P&L Analizi</h2>
+                        <p className="text-[9px] text-gray-400 font-bold uppercase tracking-[2px] mt-1">Muhasebe & Kar/Zarar Projeksiyonu</p>
                     </div>
                 </div>
-            </div>
-            
-            {/* Paraşüt Sync Panel */}
-            <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-card overflow-hidden relative">
-                <div className="absolute top-0 right-0 p-10 opacity-[0.03] pointer-events-none">
-                    <RefreshCw size={120} />
-                </div>
-                
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 relative z-10">
-                    <div className="flex items-start gap-4">
-                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg ${parasutConnected ? 'bg-emerald-50 text-emerald-500' : 'bg-gray-50 text-gray-400'}`}>
-                            <LinkIcon size={24} />
-                        </div>
-                        <div>
-                            <h3 className="text-lg font-black text-enba-dark tracking-tight">Paraşüt Veri Senkronizasyonu</h3>
-                            <p className="text-xs text-gray-400 font-medium mt-1">
-                                {parasutConnected 
-                                    ? "Seçilen tarih aralığındaki faturaları otomatik olarak analiz et." 
-                                    : "Bu özelliği kullanmak için önce Paraşüt modülünden giriş yapmalısınız."}
-                            </p>
-                        </div>
-                    </div>
 
-                    {parasutConnected && (
-                        <div className="flex flex-wrap items-center gap-4 bg-gray-50/50 p-2 rounded-2xl border border-gray-100">
-                            <div className="flex items-center gap-2 px-3">
-                                <CalendarIcon size={14} className="text-gray-400" />
-                                <input 
-                                    type="date" 
-                                    value={startDate} 
-                                    onChange={(e) => setStartDate(e.target.value)}
-                                    className="bg-transparent border-none text-xs font-bold text-enba-dark outline-none cursor-pointer"
-                                />
-                                <span className="text-gray-300 mx-1">-</span>
-                                <input 
-                                    type="date" 
-                                    value={endDate} 
-                                    onChange={(e) => setEndDate(e.target.value)}
-                                    className="bg-transparent border-none text-xs font-bold text-enba-dark outline-none cursor-pointer"
-                                />
-                            </div>
-
-                            <button
-                                onClick={handleParasutSync}
-                                disabled={isSyncing}
-                                className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${isSyncing ? 'bg-gray-100 text-gray-400' : 'bg-enba-orange text-white hover:bg-enba-dark shadow-lg shadow-enba-orange/20'}`}
-                            >
-                                {isSyncing ? <RefreshCw size={14} className="animate-spin" /> : <RefreshCw size={14} />}
-                                {isSyncing ? 'Veriler Çekiliyor...' : 'Senkronize Et'}
-                            </button>
-                            <div className="flex items-center gap-3 ml-4 border-l border-gray-200 pl-4">
+                <div className="flex items-center gap-2">
+                    {/* Action Buttons */}
+                    {(gelirData || pGiderData) && (
+                        <div className="flex items-center gap-2 border-r border-gray-100 pr-4 mr-2">
+                            <div className="flex items-center bg-gray-50 p-1 rounded-xl border border-gray-100">
                                 <input 
                                     type="text" 
-                                    placeholder="Kategori filtrele..."
-                                    value={katFiltre}
-                                    onChange={(e) => setKatFiltre(e.target.value)}
-                                    className="bg-white border border-gray-200 rounded-xl px-4 py-2 text-xs font-bold text-enba-dark outline-none focus:ring-2 focus:ring-enba-orange/20 transition-all w-48"
+                                    value={raporAdi} 
+                                    onChange={(e) => setRaporAdi(e.target.value)} 
+                                    placeholder="Rapor ismi..." 
+                                    className="bg-transparent border-none px-3 py-1 text-[11px] font-bold text-enba-dark outline-none w-32"
                                 />
+                                <button 
+                                    onClick={raporuKaydet} 
+                                    className="bg-enba-dark text-white p-1.5 rounded-lg hover:bg-black transition-all"
+                                    title="Analizi Kaydet"
+                                >
+                                    <Save size={14} />
+                                </button>
                             </div>
+                            <button onClick={excelIndir} className="p-2 bg-white border border-gray-100 rounded-xl text-emerald-600 hover:bg-emerald-50 transition-all shadow-sm" title="Excel İndir">
+                                <FileSpreadsheet size={18} />
+                            </button>
+                            <button onClick={pdfIndir} className="p-2 bg-white border border-gray-100 rounded-xl text-red-500 hover:bg-red-50 transition-all shadow-sm" title="PDF İndir">
+                                <FileText size={18} />
+                            </button>
                         </div>
                     )}
-
-                    {!parasutConnected && (
-                        <button className="px-6 py-3 bg-gray-100 text-gray-500 rounded-xl text-[10px] font-black uppercase tracking-widest opacity-50 cursor-not-allowed">
-                            Bağlantı Bekleniyor
-                        </button>
-                    )}
-                </div>
-            </div>
-            
-            {/* Saved Reports Section */}
-            {savedReports.length > 0 && (
-                <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-card">
-                  <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[3px] mb-4 flex items-center gap-2">
-                    <Terminal size={14} /> Kayıtlı Analizler
-                  </h3>
-                  <div className="flex flex-wrap gap-3">
-                    {savedReports.map(rep => (
-                      <div key={rep.id} className="flex items-center bg-gray-50 rounded-xl overflow-hidden group border border-transparent hover:border-enba-orange/20 transition-all">
-                        <button 
-                          onClick={() => raporuYukle(rep)}
-                          className="px-5 py-3 text-xs font-bold text-enba-dark hover:bg-white transition-all flex flex-col items-start"
-                        >
-                          {rep.name}
-                          <span className="text-[9px] text-gray-400 font-medium">{rep.date}</span>
-                        </button>
-                        <button 
-                          onClick={() => raporuSil(rep.id)}
-                          className="p-3 bg-red-50 text-red-400 hover:bg-red-500 hover:text-white transition-all border-l border-gray-100"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-            )}
-
-            {/* Compact Upload Area */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-                {/* Gelir Upload */}
-                <div className={`relative overflow-hidden bg-white p-6 rounded-[1.5rem] border-2 border-dashed transition-all group ${gelirData ? 'border-emerald-200 bg-emerald-50/10' : 'border-emerald-400/30 hover:border-emerald-500/50'}`}>
-                    <input 
-                        type="file" 
-                        accept=".xlsx, .xls, .csv" 
-                        onChange={(e) => dosyaSecildi(e, 'gelir')}
-                        className="absolute inset-0 opacity-0 cursor-pointer z-10" 
-                    />
-                    <div className="flex items-center gap-4 relative z-0">
-                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${gelirData ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-emerald-50 text-emerald-500'}`}>
-                            <ArrowUpCircle size={24} />
-                        </div>
-                        <div className="flex-1">
-                            <h3 className="text-sm font-black text-enba-dark tracking-tight">{gelirDosya ? gelirDosya : "Satış Verisi Yükle"}</h3>
-                            <p className="text-[10px] text-gray-400 font-medium italic">Gelir tablosunu buraya sürükleyin</p>
-                        </div>
-                        {gelirData && <div className="px-2 py-1 bg-emerald-100 text-emerald-600 rounded-lg text-[9px] font-black uppercase tracking-widest">Hazır</div>}
-                    </div>
-                </div>
-
-                {/* Gider Upload */}
-                <div className={`relative overflow-hidden bg-white p-6 rounded-[1.5rem] border-2 border-dashed transition-all group ${giderData ? 'border-red-200 bg-red-50/10' : 'border-red-400/30 hover:border-red-500/50'}`}>
-                    <input 
-                        type="file" 
-                        accept=".xlsx, .xls, .csv" 
-                        onChange={(e) => dosyaSecildi(e, 'gider')}
-                        className="absolute inset-0 opacity-0 cursor-pointer z-10" 
-                    />
-                    <div className="flex items-center gap-4 relative z-0">
-                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${giderData ? 'bg-red-500 text-white shadow-lg shadow-red-500/20' : 'bg-red-50 text-red-500'}`}>
-                            <ArrowDownCircle size={24} />
-                        </div>
-                        <div className="flex-1">
-                            <h3 className="text-sm font-black text-enba-dark tracking-tight">{giderDosya ? giderDosya : "Gider Verisi Yükle"}</h3>
-                            <p className="text-[10px] text-gray-400 font-medium italic">Harcama tablosunu buraya sürükleyin</p>
-                        </div>
-                        {giderData && <div className="px-2 py-1 bg-red-100 text-red-600 rounded-lg text-[9px] font-black uppercase tracking-widest">Hazır</div>}
-                    </div>
-                </div>
-            </div>
-            
-            {/* Top Expenses Insight (Collapsible) */}
-            {pGiderData && topExpenses.length > 0 && (
-                <div className="bg-white rounded-[1.5rem] border border-gray-100 shadow-sm overflow-hidden">
-                    <button 
-                        onClick={() => setInsightAcik(!insightAcik)}
-                        className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-all"
-                    >
-                        <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-red-50 text-red-500 rounded-lg flex items-center justify-center">
-                                <TrendingDown size={16} />
-                            </div>
-                            <h3 className="text-sm font-black text-enba-dark tracking-tight">Gider Analiz Özeti</h3>
-                        </div>
-                        {insightAcik ? <ChevronDown size={16} className="text-gray-400" /> : <ChevronRight size={16} className="text-gray-400" />}
-                    </button>
                     
-                    {insightAcik && (
-                        <div className="p-6 pt-0 animate-in slide-in-from-top-2 duration-300">
-                            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                    {/* Model Toggle */}
+                    <button 
+                        onClick={() => setModelDetayAcik(!modelDetayAcik)}
+                        className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${modelDetayAcik ? 'bg-enba-dark text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                    >
+                        {modelDetayAcik ? <EyeOff size={14} /> : <Eye size={14} />} 
+                        {modelDetayAcik ? 'Model Gizle' : 'Model Detay'}
+                    </button>
+                </div>
+            </div>
+
+            {/* Control Center: Paraşüt, Upload & Saved */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                {/* Paraşüt & Upload (Left/Top) */}
+                <div className="lg:col-span-8 flex flex-col gap-4">
+                    <div className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm flex flex-wrap items-center justify-between gap-4 relative overflow-hidden">
+                        <div className="flex items-center gap-3 relative z-10">
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${parasutConnected ? 'bg-emerald-50 text-emerald-500' : 'bg-gray-50 text-gray-400'}`}>
+                                <LinkIcon size={16} />
+                            </div>
+                            <h3 className="text-xs font-black text-enba-dark uppercase tracking-wider">Paraşüt</h3>
+                            
+                            {parasutConnected && (
+                                <div className="flex items-center gap-2 bg-gray-50 rounded-xl px-2 py-1 border border-gray-100 ml-2">
+                                    <input 
+                                        type="date" 
+                                        value={startDate} 
+                                        onChange={(e) => setStartDate(e.target.value)}
+                                        className="bg-transparent border-none text-[10px] font-bold text-enba-dark outline-none cursor-pointer"
+                                    />
+                                    <span className="text-gray-300">-</span>
+                                    <input 
+                                        type="date" 
+                                        value={endDate} 
+                                        onChange={(e) => setEndDate(e.target.value)}
+                                        className="bg-transparent border-none text-[10px] font-bold text-enba-dark outline-none cursor-pointer"
+                                    />
+                                    <button
+                                        onClick={handleParasutSync}
+                                        disabled={isSyncing}
+                                        className={`ml-2 p-1.5 rounded-lg transition-all ${isSyncing ? 'bg-gray-100 text-gray-400' : 'bg-enba-orange text-white hover:bg-enba-dark'}`}
+                                    >
+                                        <RefreshCw size={12} className={isSyncing ? 'animate-spin' : ''} />
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Upload Minimalist */}
+                        <div className="flex items-center gap-2 relative z-10">
+                            <div className={`relative group px-3 py-2 rounded-xl border border-dashed transition-all cursor-pointer ${gelirData ? 'border-emerald-200 bg-emerald-50/50' : 'border-gray-200 hover:border-emerald-400'}`}>
+                                <input type="file" accept=".xlsx, .xls, .csv" onChange={(e) => dosyaSecildi(e, 'gelir')} className="absolute inset-0 opacity-0 cursor-pointer" />
+                                <div className="flex items-center gap-2">
+                                    <ArrowUpCircle size={14} className={gelirData ? 'text-emerald-500' : 'text-gray-400'} />
+                                    <span className="text-[10px] font-bold text-enba-dark truncate max-w-[100px]">{gelirDosya || "Gelir Yükle"}</span>
+                                </div>
+                            </div>
+                            <div className={`relative group px-3 py-2 rounded-xl border border-dashed transition-all cursor-pointer ${giderData ? 'border-red-200 bg-red-50/50' : 'border-gray-200 hover:border-red-400'}`}>
+                                <input type="file" accept=".xlsx, .xls, .csv" onChange={(e) => dosyaSecildi(e, 'gider')} className="absolute inset-0 opacity-0 cursor-pointer" />
+                                <div className="flex items-center gap-2">
+                                    <ArrowDownCircle size={14} className={giderData ? 'text-red-500' : 'text-gray-400'} />
+                                    <span className="text-[10px] font-bold text-enba-dark truncate max-w-[100px]">{giderDosya || "Gider Yükle"}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* CAPEX Compact */}
+                        <div className="flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-1.5 border border-gray-100">
+                            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">CAPEX:</span>
+                            <input 
+                              type="number" 
+                              value={capexVade} 
+                              onChange={(e) => setCapexVade(Number(e.target.value) || 1)} 
+                              disabled={capexActive}
+                              className="w-10 bg-white border border-gray-200 rounded-lg px-1 py-0.5 text-[10px] font-black text-center outline-none"
+                            />
+                            <button 
+                                onClick={() => setCapexActive(!capexActive)}
+                                className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase transition-all ${capexActive ? 'bg-enba-orange text-white' : 'bg-white text-gray-400'}`}
+                            >
+                                {capexActive ? 'AKTİF' : 'AÇ'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Saved Reports (Right/Side) */}
+                <div className="lg:col-span-4">
+                    <div className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm h-full flex flex-col justify-center">
+                        <div className="flex items-center gap-2 mb-2">
+                            <Terminal size={12} className="text-gray-400" />
+                            <h3 className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Geçmiş Analizler</h3>
+                        </div>
+                        <div className="flex gap-2 overflow-x-auto pb-1 custom-scrollbar">
+                            {savedReports.length === 0 ? (
+                                <span className="text-[9px] text-gray-300 italic">Henüz rapor kaydedilmedi</span>
+                            ) : (
+                                savedReports.map(rep => (
+                                    <div key={rep.id} className="flex-shrink-0 flex items-center bg-gray-50 rounded-lg overflow-hidden border border-transparent hover:border-enba-orange/20 transition-all">
+                                        <button 
+                                            onClick={() => raporuYukle(rep)}
+                                            className="px-3 py-1.5 text-[10px] font-bold text-enba-dark hover:bg-white transition-all flex flex-col"
+                                        >
+                                            {rep.name}
+                                        </button>
+                                        <button 
+                                            onClick={() => raporuSil(rep.id)}
+                                            className="p-1.5 text-red-300 hover:text-red-500 transition-all"
+                                        >
+                                            <Trash2 size={10} />
+                                        </button>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            {/* Main Report Table Area */}
+            {(gelirData || pGiderData) ? (
+                <div id="pnl-report-container" className="flex flex-col gap-4 animate-in slide-in-from-bottom-4 duration-500 flex-1">
+                    {/* Insight Summary (Always Compact) */}
+                    {pGiderData && insightAcik && topExpenses.length > 0 && (
+                         <div className="bg-white p-4 rounded-3xl border border-gray-100 shadow-sm animate-in slide-in-from-top-2">
+                            <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-2">
+                                    <TrendingDown size={14} className="text-red-500" />
+                                    <h3 className="text-[10px] font-black text-enba-dark uppercase tracking-wider">Kritik Gider Kalemleri</h3>
+                                </div>
+                                <button onClick={() => setInsightAcik(false)} className="text-gray-300 hover:text-gray-500"><EyeOff size={14} /></button>
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-5 lg:grid-cols-10 gap-2">
                                 {topExpenses.map((exp, idx) => (
-                                    <div key={exp.kat} className="bg-gray-50/50 p-3 rounded-xl border border-gray-100 flex flex-col gap-1">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-[8px] font-black text-gray-400">#{idx + 1}</span>
-                                            <span className="text-[9px] font-black text-red-500 bg-red-50 px-1.5 py-0.5 rounded">
-                                                %{Math.round((exp.total / (pGiderData?.aylikToplam[aylar[aylar.length-1]]?.Toplam || 1)) * 100) || '-'}
-                                            </span>
-                                        </div>
-                                        <div className="text-[10px] font-bold text-gray-800 truncate">
-                                            {exp.kat}
-                                        </div>
-                                        <div className="text-xs font-black text-enba-dark">
-                                            {fmt(exp.total)} ₺
-                                        </div>
+                                    <div key={exp.kat} className="bg-gray-50/50 p-2 rounded-xl border border-gray-50 flex flex-col">
+                                        <span className="text-[8px] font-black text-gray-400 truncate">{exp.kat}</span>
+                                        <span className="text-[10px] font-black text-enba-dark">{fmt(exp.total)} ₺</span>
                                     </div>
                                 ))}
                             </div>
-                        </div>
+                         </div>
                     )}
-                </div>
-            )}
-            
-            {/* Report Area */}
-            {(gelirData || pGiderData) && (
-                <div id="pnl-report-container" className="flex flex-col gap-6 animate-in slide-in-from-bottom-10 duration-1000">
-                    
-                    {/* Toolbar */}
-                    <div id="pnl-actions" className="bg-white p-6 rounded-[2.5rem] shadow-card border border-gray-100 flex flex-wrap justify-between items-center gap-6">
-                        <div className="flex items-center gap-4">
-                            <button 
-                                onClick={() => setModelDetayAcik(!modelDetayAcik)}
-                                className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${modelDetayAcik ? 'bg-enba-dark text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
-                            >
-                                {modelDetayAcik ? <EyeOff size={16} /> : <Eye size={16} />} 
-                                {modelDetayAcik ? 'Model Detaylarını Gizle' : 'V/Ortak Detayları Gör'}
-                            </button>
+                    {!insightAcik && pGiderData && (
+                        <button onClick={() => setInsightAcik(true)} className="self-start text-[9px] font-black text-gray-400 hover:text-enba-orange flex items-center gap-1 ml-4 italic underline underline-offset-2">
+                            <TrendingDown size={10} /> Gider Analizini Göster
+                        </button>
+                    )}
 
-                            {/* CAPEX Control */}
-                            <div className="flex items-center gap-3 bg-gray-50 rounded-2xl px-4 py-2 border border-gray-100">
-                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">CAPEX Amortisman:</span>
-                                <input 
-                                  type="number" 
-                                  value={capexVade} 
-                                  onChange={(e) => setCapexVade(Number(e.target.value) || 1)} 
-                                  disabled={capexActive}
-                                  className="w-16 bg-white border border-gray-200 rounded-xl px-2 py-1.5 text-xs font-black text-center outline-none focus:border-enba-orange transition-all disabled:opacity-40"
-                                />
-                                <button 
-                                    onClick={() => setCapexActive(!capexActive)}
-                                    className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${capexActive ? 'bg-enba-orange text-white' : 'bg-white text-gray-400'}`}
-                                >
-                                    <Hourglass size={14} className={capexActive ? 'animate-spin' : ''} /> 
-                                    {capexActive ? 'Aktif' : 'Pasif'}
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                            <div className="flex items-center bg-gray-50 p-1 rounded-2xl border border-gray-100 mr-2">
-                              <input 
-                                type="text" 
-                                value={raporAdi} 
-                                onChange={(e) => setRaporAdi(e.target.value)} 
-                                placeholder="Kaydetmek için isim..." 
-                                className="bg-transparent border-none px-4 py-2 text-xs font-bold text-enba-dark outline-none w-48"
-                              />
-                              <button 
-                                onClick={raporuKaydet} 
-                                className="bg-enba-dark text-white p-2.5 rounded-xl block hover:bg-black transition-all"
-                              >
-                                <Save size={16} />
-                              </button>
-                            </div>
-
-                            <button onClick={excelIndir} className="p-3 bg-white border border-gray-100 rounded-2xl text-emerald-600 hover:bg-emerald-50 transition-all shadow-sm">
-                                <FileSpreadsheet size={20} />
-                            </button>
-                            <button onClick={pdfIndir} className="p-3 bg-white border border-gray-100 rounded-2xl text-red-500 hover:bg-red-50 transition-all shadow-sm">
-                                <FileText size={20} />
-                            </button>
-                        </div>
-                    </div>
-
-                    <div id="pnl-report-container-print" className="bg-white rounded-[2.5rem] shadow-card border border-gray-100 overflow-hidden">
+                    <div id="pnl-report-container-print" className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden flex-1">
                         {(() => {
                             if (!isPdfGenerating) {
                                 return renderTableDenge(aylar, aylar, true, 0);
@@ -1226,33 +1159,33 @@ export const PnL: React.FC = () => {
                         })()}
                     </div>
                 </div>
-            )}
-            
-            {/* Empty State */}
-            {!gelirData && !giderData && (
-              <div className="flex flex-col items-center justify-center py-32 bg-white rounded-[2.5rem] border border-gray-100 shadow-card">
-                  <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mb-6 text-gray-200">
-                    <BarChart3 size={48} />
-                  </div>
-                  <h3 className="text-xl font-black text-enba-dark">Analiz Başlatılmadı</h3>
-                  <p className="text-gray-400 text-sm mt-2 max-w-sm text-center">Rapor oluşturmak için lütfen muhasebe sisteminizden aldığınız Gelir ve Gider tablolarını yükleyin.</p>
-                  
-                  <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-3xl px-10">
-                     {[
-                       { icon: Upload, title: 'Dosyaları Seç', desc: 'Excel veya CSV tablolarını yükle' },
-                       { icon: Info, title: 'Detayları İncele', desc: 'Model bazlı karlılığı gör' },
-                       { icon: Download, title: 'Rapor Al', desc: 'PDF veya Excel olarak dışa aktar' }
-                     ].map((step, i) => (
-                       <div key={i} className="flex flex-col items-center text-center gap-2">
-                          <div className="w-10 h-10 rounded-xl bg-enba-orange/10 text-enba-orange flex items-center justify-center">
-                            <step.icon size={20} />
-                          </div>
-                          <span className="text-[10px] font-black uppercase tracking-widest text-enba-dark">{step.title}</span>
-                          <span className="text-[10px] font-bold text-gray-400 leading-tight">{step.desc}</span>
-                       </div>
-                     ))}
-                  </div>
-              </div>
+            ) : (
+                /* Empty State - Modernized */
+                <div className="flex flex-col items-center justify-center py-20 bg-white rounded-[2.5rem] border border-gray-100 shadow-sm flex-1">
+                    <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mb-4 text-gray-200">
+                        <BarChart3 size={32} />
+                    </div>
+                    <h3 className="text-lg font-black text-enba-dark tracking-tight">Veri Analizi Bekleniyor</h3>
+                    <p className="text-gray-400 text-xs mt-1 max-w-xs text-center leading-relaxed">
+                        Üst paneldeki <span className="text-enba-orange font-bold uppercase">Paraşüt</span> veya <span className="text-emerald-500 font-bold uppercase">Excel</span> butonlarını kullanarak analize başlayın.
+                    </p>
+                    
+                    <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-2xl px-10">
+                        {[
+                            { icon: Upload, title: 'Hızlı Yükleme', desc: 'Sürükle bırak veya seç' },
+                            { icon: LinkIcon, title: 'API Bağlantısı', desc: 'Otomatik muhasebe aktarımı' },
+                            { icon: Gem, title: 'Detaylı Analiz', desc: 'Birim bazlı kâr projeksiyonu' }
+                        ].map((step, i) => (
+                            <div key={i} className="flex flex-col items-center text-center gap-2">
+                                <div className="w-8 h-8 rounded-lg bg-gray-50 text-gray-400 flex items-center justify-center">
+                                    <step.icon size={16} />
+                                </div>
+                                <span className="text-[9px] font-black uppercase tracking-widest text-enba-dark">{step.title}</span>
+                                <span className="text-[9px] font-bold text-gray-400 leading-tight">{step.desc}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
             )}
         </div>
     );

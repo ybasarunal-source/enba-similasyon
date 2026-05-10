@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Wiki/SQL-Sema-Analizi.md",
+                "file": "CLAUDE.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "SQL-Sema-Analizi"
+              "title": "CLAUDE"
             }
           }
         ]
@@ -183,17 +183,22 @@
   },
   "active": "548e60b89a167ad9",
   "lastOpenFiles": [
+    "index.md",
+    "log.md",
+    "Wiki/Entegrasyon-Mimarisi.md",
+    "Snippets/Supabase-Pattern.md",
+    "Proje/Ana-Proje.md",
+    "Moduller/00-Modul-Listesi.md",
     "Memory/MEMORY.md",
     "Memory/feedback_claude_md_edit_only.md",
-    "Wiki/SQL-Sema-Analizi.md",
-    "Wiki/Is-Modeli.md",
-    "Wiki/Entegrasyon-Mimarisi.md",
+    "Kaynaklar/Claude-Code-Entegrasyon.md",
+    "Kararlar/Mimari-Kararlar.md",
+    "Kararlar/2026-05-RLS-Dersleri.md",
     "Kararlar/2026-05-Auth-Sorunlari.md",
     "Ham-Kaynaklar/Karpathy-LLM-Wiki.md",
-    "Memory",
     "Gunluk/_Sablon-Gunluk.md",
-    "Kararlar/Mimari-Kararlar.md",
-    "Moduller/00-Modul-Listesi.md",
-    "Proje/Ana-Proje.md"
+    "Wiki/SQL-Sema-Analizi.md",
+    "Wiki/Is-Modeli.md",
+    "Memory"
   ]
 }
