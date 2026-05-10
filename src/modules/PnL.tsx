@@ -1035,20 +1035,35 @@ export const PnL: React.FC = () => {
                             )}
                         </div>
 
-                        {/* Upload Minimalist */}
-                        <div className="flex items-center gap-2 relative z-10">
-                            <div className={`relative group px-3 py-2 rounded-xl border border-dashed transition-all cursor-pointer ${gelirData ? 'border-emerald-200 bg-emerald-50/50' : 'border-gray-200 hover:border-emerald-400'}`}>
-                                <input type="file" accept=".xlsx, .xls, .csv" onChange={(e) => dosyaSecildi(e, 'gelir')} className="absolute inset-0 opacity-0 cursor-pointer" />
-                                <div className="flex items-center gap-2">
-                                    <ArrowUpCircle size={14} className={gelirData ? 'text-emerald-500' : 'text-gray-400'} />
-                                    <span className="text-[10px] font-bold text-enba-dark truncate max-w-[100px]">{gelirDosya || "Gelir Yükle"}</span>
+                        {/* Upload Explicit */}
+                        <div className="flex items-center gap-3 relative z-10">
+                            <div className={`relative group px-4 py-2 rounded-xl border-2 border-dashed transition-all cursor-pointer ${gelirData ? 'border-emerald-200 bg-emerald-50/50' : 'border-emerald-100 hover:border-emerald-400 bg-white'}`}>
+                                <input type="file" accept=".xlsx, .xls, .csv" onChange={(e) => dosyaSecildi(e, 'gelir')} className="absolute inset-0 opacity-0 cursor-pointer" title="Gelir Dosyası Yükle" />
+                                <div className="flex items-center gap-3">
+                                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${gelirData ? 'bg-emerald-500 text-white' : 'bg-emerald-50 text-emerald-500'}`}>
+                                        <ArrowUpCircle size={16} />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-[8px] font-black text-emerald-600 uppercase tracking-tighter">Gelir Tablosu</span>
+                                        <span className="text-[10px] font-bold text-enba-dark truncate max-w-[140px]">
+                                            {gelirDosya || "Dosya Seçilmedi"}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
-                            <div className={`relative group px-3 py-2 rounded-xl border border-dashed transition-all cursor-pointer ${giderData ? 'border-red-200 bg-red-50/50' : 'border-gray-200 hover:border-red-400'}`}>
-                                <input type="file" accept=".xlsx, .xls, .csv" onChange={(e) => dosyaSecildi(e, 'gider')} className="absolute inset-0 opacity-0 cursor-pointer" />
-                                <div className="flex items-center gap-2">
-                                    <ArrowDownCircle size={14} className={giderData ? 'text-red-500' : 'text-gray-400'} />
-                                    <span className="text-[10px] font-bold text-enba-dark truncate max-w-[100px]">{giderDosya || "Gider Yükle"}</span>
+
+                            <div className={`relative group px-4 py-2 rounded-xl border-2 border-dashed transition-all cursor-pointer ${giderData ? 'border-red-200 bg-red-50/50' : 'border-red-100 hover:border-red-400 bg-white'}`}>
+                                <input type="file" accept=".xlsx, .xls, .csv" onChange={(e) => dosyaSecildi(e, 'gider')} className="absolute inset-0 opacity-0 cursor-pointer" title="Gider Dosyası Yükle" />
+                                <div className="flex items-center gap-3">
+                                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${giderData ? 'bg-red-500 text-white' : 'bg-red-50 text-red-500'}`}>
+                                        <ArrowDownCircle size={16} />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-[8px] font-black text-red-600 uppercase tracking-tighter">Gider Tablosu</span>
+                                        <span className="text-[10px] font-bold text-enba-dark truncate max-w-[140px]">
+                                            {giderDosya || "Dosya Seçilmedi"}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
