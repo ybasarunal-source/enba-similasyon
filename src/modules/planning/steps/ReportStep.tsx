@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useTranslation } from '../../../api/i18n';
-import { 
+import {
   ArrowUpRight,
   TrendingUp,
   TrendingDown,
@@ -15,7 +14,6 @@ import {
   HardHat,
   Factory,
   Calculator,
-  Table,
   FileDown,
   FileText as FilePdf,
   Layout
@@ -28,8 +26,6 @@ interface ReportStepProps {
 }
 
 const ReportStep: React.FC<ReportStepProps> = ({ planData, back }) => {
-  const { t } = useTranslation();
-  
   // Projection settings
   const [tonageGrowth, setTonageGrowth] = useState(10);
   const [priceInflation, setPriceInflation] = useState(25);
@@ -51,6 +47,12 @@ const ReportStep: React.FC<ReportStepProps> = ({ planData, back }) => {
   }, [planData]);
 
   const fmt = (v: number) => (v || 0).toLocaleString('tr-TR', { maximumFractionDigits: 0 });
+  const fmtDec = (v: number, d = 2) => (v || 0).toLocaleString('tr-TR', { minimumFractionDigits: d, maximumFractionDigits: d });
+
+  const { yearlySum, investmentAnalysis, monthlyResults } = calculations;
+  const avgBirimMaliyet = yearlySum.satisTon > 0 ? (yearlySum.cogs + yearlySum.opex) / yearlySum.satisTon : 0;
+  const avgBirimSatis = yearlySum.satisTon > 0 ? yearlySum.revenue / yearlySum.satisTon : 0;
+  const avgKatki = avgBirimSatis - avgBirimMaliyet;
 
   return (
     <div className="flex flex-col gap-10 p-10 animate-in slide-in-from-bottom duration-1000">
@@ -327,6 +329,112 @@ const ReportStep: React.FC<ReportStepProps> = ({ planData, back }) => {
                  })}
               </div>
           </div>
+      </div>
+
+      {/* Yatırım Analizi & Birim Maliyet */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
+
+        {/* Yatırım Analizi */}
+        <div className="bg-white p-10 rounded-[2.5rem] border border-gray-100 shadow-card">
+          <div className="flex items-center gap-4 mb-8">
+            <div className="w-12 h-12 bg-enba-dark/5 text-enba-dark rounded-2xl flex items-center justify-center">
+              <HardHat size={24} />
+            </div>
+            <div>
+              <h4 className="text-xl font-black text-enba-dark italic uppercase tracking-tighter">Yatırım Analizi</h4>
+              <p className="text-[10px] text-gray-400 font-black uppercase tracking-[3px] mt-1">CAPEX Geri Ödeme ve Başabaş</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-5">
+            <div className="bg-gray-50 rounded-[1.5rem] p-7 flex flex-col gap-2">
+              <span className="text-[9px] font-black text-gray-400 uppercase tracking-[3px]">Başabaş Noktası</span>
+              <span className="text-2xl font-black text-enba-dark italic tabular-nums">
+                {investmentAnalysis.basabasNokta === Infinity ? '∞' : fmtDec(investmentAnalysis.basabasNokta, 1)}
+                <span className="text-xs font-bold text-gray-400 ml-1">ton/ay</span>
+              </span>
+            </div>
+            <div className="bg-gray-50 rounded-[1.5rem] p-7 flex flex-col gap-2">
+              <span className="text-[9px] font-black text-gray-400 uppercase tracking-[3px]">Geri Ödeme Süresi</span>
+              <span className="text-2xl font-black text-enba-dark italic tabular-nums">
+                {investmentAnalysis.geriOdemeSuresi === null ? '—' : fmtDec(investmentAnalysis.geriOdemeSuresi, 1)}
+                <span className="text-xs font-bold text-gray-400 ml-1">ay</span>
+              </span>
+            </div>
+            <div className="bg-enba-orange/5 border-2 border-enba-orange/10 rounded-[1.5rem] p-7 flex flex-col gap-2">
+              <span className="text-[9px] font-black text-gray-400 uppercase tracking-[3px]">Kapasite Kullanımı</span>
+              <span className="text-2xl font-black text-enba-orange italic tabular-nums">
+                %{fmtDec(investmentAnalysis.kapasiteKullanim, 1)}
+              </span>
+            </div>
+            <div className="bg-gray-50 rounded-[1.5rem] p-7 flex flex-col gap-2">
+              <span className="text-[9px] font-black text-gray-400 uppercase tracking-[3px]">Toplam Yatırım (CAPEX)</span>
+              <span className="text-2xl font-black text-enba-dark italic tabular-nums">
+                {fmt(investmentAnalysis.toplamYatirim)}
+                <span className="text-xs font-bold text-gray-400 ml-1">₺</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Birim Maliyet Analizi */}
+        <div className="bg-white p-10 rounded-[2.5rem] border border-gray-100 shadow-card">
+          <div className="flex items-center gap-4 mb-8">
+            <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center">
+              <Calculator size={24} />
+            </div>
+            <div>
+              <h4 className="text-xl font-black text-enba-dark italic uppercase tracking-tighter">Birim Maliyet Analizi</h4>
+              <p className="text-[10px] text-gray-400 font-black uppercase tracking-[3px] mt-1">₺/Ton Kırılımı ve Katkı Payı</p>
+            </div>
+          </div>
+
+          {/* Yearly avg KPIs */}
+          <div className="grid grid-cols-3 gap-4 mb-8">
+            <div className="bg-gray-50 rounded-[1.2rem] p-5 flex flex-col gap-1">
+              <span className="text-[9px] font-black text-gray-400 uppercase tracking-[2px]">Ort. Satış ₺/ton</span>
+              <span className="text-xl font-black text-emerald-600 tabular-nums">{fmtDec(avgBirimSatis)}</span>
+            </div>
+            <div className="bg-gray-50 rounded-[1.2rem] p-5 flex flex-col gap-1">
+              <span className="text-[9px] font-black text-gray-400 uppercase tracking-[2px]">Ort. Maliyet ₺/ton</span>
+              <span className="text-xl font-black text-rose-500 tabular-nums">{fmtDec(avgBirimMaliyet)}</span>
+            </div>
+            <div className="bg-enba-orange/5 border border-enba-orange/20 rounded-[1.2rem] p-5 flex flex-col gap-1">
+              <span className="text-[9px] font-black text-gray-400 uppercase tracking-[2px]">Katkı Payı ₺/ton</span>
+              <span className={`text-xl font-black tabular-nums ${avgKatki >= 0 ? 'text-enba-orange' : 'text-rose-600'}`}>{fmtDec(avgKatki)}</span>
+            </div>
+          </div>
+
+          {/* Monthly table */}
+          <div className="overflow-auto max-h-[260px] custom-scrollbar">
+            <table className="w-full text-left border-collapse text-[11px]">
+              <thead className="sticky top-0 bg-white">
+                <tr className="border-b border-gray-100">
+                  <th className="py-3 font-black text-gray-400 uppercase tracking-widest">Ay</th>
+                  <th className="py-3 text-right font-black text-gray-400 uppercase tracking-widest">Satış (ton)</th>
+                  <th className="py-3 text-right font-black text-gray-400 uppercase tracking-widest">₺/ton Sat.</th>
+                  <th className="py-3 text-right font-black text-gray-400 uppercase tracking-widest">₺/ton Mal.</th>
+                  <th className="py-3 text-right font-black text-gray-400 uppercase tracking-widest">Katkı/ton</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {monthlyResults.map((r, i) => {
+                  const bSatis = r.satisTon > 0 ? r.revenue / r.satisTon : 0;
+                  const bMal = r.satisTon > 0 ? (r.cogs + r.opex) / r.satisTon : 0;
+                  const katki = bSatis - bMal;
+                  return (
+                    <tr key={i} className="hover:bg-gray-50/50 transition-all">
+                      <td className="py-3 font-black text-enba-dark">{ayBasliklari[i]?.label ?? `Ay ${i + 1}`}</td>
+                      <td className="py-3 text-right tabular-nums text-gray-500">{fmtDec(r.satisTon, 2)}</td>
+                      <td className="py-3 text-right tabular-nums text-emerald-600 font-bold">{fmtDec(bSatis)}</td>
+                      <td className="py-3 text-right tabular-nums text-rose-500 font-bold">{fmtDec(bMal)}</td>
+                      <td className={`py-3 text-right tabular-nums font-black ${katki >= 0 ? 'text-enba-orange' : 'text-rose-600'}`}>{fmtDec(katki)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       {/* Advanced Projections Row */}

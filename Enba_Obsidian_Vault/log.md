@@ -304,3 +304,23 @@ grep "^## \[" log.md | tail -5
 - Görsel: gider dağılım grafiği yok, PDF çıktısı yok
 
 **Bir sonraki oturum:** FastPlan hesaplama iyileştirmeleri — `hesapla()` fonksiyonuna başabaş + geri ödeme + duyarlılık tablosu ekle
+
+---
+
+## [2026-05-09] geliştirme | FastPlan iyileştirmeleri + DetailedPlan bug fix + birim maliyet analizi
+
+**Yapılan:**
+- FastPlan: başabaş noktası, geri ödeme süresi, duyarlılık tablosu, gider dağılım bar chart, versiyon notu, % fark sütunu
+- `detailedPlanCalculations.ts`: asgari ücret düzeltmesi (17002→28075.5 net, 5000→12799.13 SGK), amortisman hardcode kaldırıldı (per-investment `geriOdeme` kullanılıyor)
+- `PlanningWizard.tsx` + `PersonnelStep.tsx`: DEFAULT_PLAN_DATA asgari ücret güncellendi
+- `ReportStep.tsx`: birim maliyet analizi eklendi (Yatırım Analizi kartı + Birim Maliyet aylık tablo + katkı payı KPI'ları)
+- Tüm dosyalarda kullanılmayan import temizliği
+
+**Etkilenen dosyalar:**
+- `src/modules/FastPlan.tsx`
+- `src/utils/detailedPlanCalculations.ts`
+- `src/modules/planning/PlanningWizard.tsx`
+- `src/modules/planning/steps/PersonnelStep.tsx`
+- `src/modules/planning/steps/ReportStep.tsx`
+
+**Bir sonraki:** Kayıt mekanizması derinleştirme (DetailedPlan versiyonlama + Supabase sync)
