@@ -42,9 +42,8 @@ const PNL_CONFIG = [
     section: "I. HASILAT", 
     items: [
       { id: "M109", label: "Mal Satışı (Toplam)", isRevenue: true },
-      { id: "M149", label: "Al Sat Toplam", isRevenue: true },
       { id: "M159", label: "Diğer Satışlar", isRevenue: true },
-      { id: "M179", label: "Toplam Satış", isTotal: true, formula: ["M109", "M149", "M159"], isRevenue: true },
+      { id: "M179", label: "Toplam Satış", isTotal: true, formula: ["M109", "M159"], isRevenue: true },
       { id: "M249", label: "SATIŞ Harcamaları", isRevenue: false },
       { id: "M209", label: "Nakliye", isRevenue: false },
       { id: "M299", label: "Hasılat", isTotal: true, formula: ["M179", "-M249", "-M209"], isRevenue: true },
@@ -371,7 +370,6 @@ export const PnL: React.FC = () => {
             } else {
                 // Specific common Paraşüt mappings
                 if (rawKat.includes('600')) baseKat = 'M109';
-                else if (rawKat.includes('150')) baseKat = 'M149';
                 else if (rawKat.toLowerCase().includes('yönetim gider')) baseKat = 'M670';
                 else {
                     // Try to find code by label matching (Smarter bidirectional match)
@@ -508,7 +506,6 @@ export const PnL: React.FC = () => {
             } else {
                 // Specific common Paraşüt mappings
                 if (rawKat.includes('600')) baseKat = 'M109';
-                else if (rawKat.includes('150')) baseKat = 'M149';
                 else if (rawKat.toLowerCase().includes('yönetim gider')) baseKat = 'M670';
                 else {
                     // Try to find code by label matching (Smarter bidirectional match)
