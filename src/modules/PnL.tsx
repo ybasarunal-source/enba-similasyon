@@ -793,47 +793,56 @@ export const PnL: React.FC = () => {
                                       <td className="p-2 font-black text-[10px] uppercase tracking-[1px]">
                                           {section.section}
                                       </td>
-                                      {sAylar.map(ay => {
-                                          const summaryId = {
-                                              "I. HASILAT": "M299",
-                                              "II. MAL MALİYETLERİ": "M339",
-                                              "III. ENERJİ MALİYETLERİ": "M419",
-                                              "IV. PERSONEL MALİYETLERİ": "M489",
-                                              "V. DİĞER GİDERLER": "M689",
-                                              "SONUÇ": "M769"
-                                          }[section.section] || "";
+                                      {(() => {
+                                           const summaryIdMap: Record<string, string> = {
+                                               "I. HASILAT": "M299",
+                                               "II. MAL MALİYETLERİ": "M339",
+                                               "III. ENERJİ MALİYETLERİ": "M419",
+                                               "IV. PERSONEL MALİYETLERİ": "M489",
+                                               "V. DİĞER GİDERLER": "M689",
+                                               "SONUÇ": "M769"
+                                           };
+                                           const summaryId = summaryIdMap[section.section] || "";
 
-                                          let ayTop = 0;
-                                          modeller.forEach(mod => {
-                                              ayTop += getHucreselTutar(unifiedData, summaryId, ay, mod);
-                                          });
+                                           return (
+                                               <>
+                                                   {sAylar.map(ay => {
+                                                       let ayTop = 0;
+                                                       modeller.forEach(m => { ayTop += getHucreselTutar(unifiedData, summaryId, ay, m) });
 
-                                          if (modelDetayAcik) {
-                                              return (
-                                                  <React.Fragment key={`section-ay-${ay}`}>
-                                                      {modeller.map(mod => (
-                                                          <td key={`sec-${ay}-${mod}`} className={`p-2 text-right text-[10px] font-bold border-l ${isOpen ? 'border-gray-100' : 'border-gray-300'} opacity-70`}>
-                                                              {!isOpen && ayTop !== 0 ? fmt(getHucreselTutar(unifiedData, summaryId, ay, mod)) : ''}
-                                                          </td>
-                                                      ))}
-                                                      <td className={`p-2 text-right text-[10px] font-black border-l ${isOpen ? 'border-gray-200 bg-gray-50/50' : 'border-gray-400 bg-gray-300/50'}`}>
-                                                          {!isOpen && ayTop !== 0 ? fmt(ayTop) : ''}
-                                                      </td>
-                                                  </React.Fragment>
-                                              );
-                                          } else {
-                                              return (
-                                                  <td key={`section-ay-top-${ay}`} className={`p-2 text-right text-[10px] font-black border-l ${isOpen ? 'border-gray-200 bg-gray-50/50' : 'border-gray-400 bg-gray-300/50'}`}>
-                                                      {!isOpen && ayTop !== 0 ? fmt(ayTop) : ''}
-                                                  </td>
-                                              );
-                                          }
-                                      })}
-                                      {showTotalCol && (
-                                          <td className={`p-2 text-right text-[10px] font-black border-l ${isOpen ? 'border-gray-200 bg-gray-50/50' : 'border-gray-400 bg-gray-300/50'}`}>
-                                              {/* Total section total if needed */}
-                                          </td>
-                                      )}
+                                                       if (modelDetayAcik) {
+                                                           return (
+                                                               <React.Fragment key={`section-ay-${ay}`}>
+                                                                   {modeller.map(mod => (
+                                                                       <td key={`sec-${ay}-${mod}`} className={`p-2 text-right text-[9px] font-bold border-l ${isOpen ? 'border-gray-100' : 'border-gray-300'} opacity-70`}>
+                                                                           {!isOpen && ayTop !== 0 ? fmt(getHucreselTutar(unifiedData, summaryId, ay, mod)) : ''}
+                                                                       </td>
+                                                                   ))}
+                                                                   <td className={`p-2 text-right text-[10px] font-black border-l ${isOpen ? 'border-gray-200 bg-gray-50/50' : 'border-gray-400 bg-gray-300/50'}`}>
+                                                                       {!isOpen && ayTop !== 0 ? fmt(ayTop) : ''}
+                                                                   </td>
+                                                               </React.Fragment>
+                                                           );
+                                                       } else {
+                                                           return (
+                                                               <td key={`section-ay-top-${ay}`} className={`p-2 text-right text-[10px] font-black border-l ${isOpen ? 'border-gray-200 bg-gray-50/50' : 'border-gray-400 bg-gray-300/50'}`}>
+                                                                   {!isOpen && ayTop !== 0 ? fmt(ayTop) : ''}
+                                                               </td>
+                                                           );
+                                                       }
+                                                   })}
+                                                   {showTotalCol && (
+                                                       <td className={`p-2 text-right text-[10px] font-black border-l-2 border-gray-200 ${isOpen ? 'bg-gray-100/50' : 'bg-gray-300/50'}`}>
+                                                           {fmt(oAylarFull.reduce((acc, ay) => {
+                                                               let ayVal = 0;
+                                                               modeller.forEach(m => { ayVal += getHucreselTutar(unifiedData, summaryId, ay, m) });
+                                                               return acc + ayVal;
+                                                           }, 0))} ₺
+                                                       </td>
+                                                   )}
+                                               </>
+                                           );
+                                       })()}
                                   </tr>
                                   {isOpen && section.items.map(item => {
                                       let rowTotal = 0;
