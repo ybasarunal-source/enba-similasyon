@@ -77,8 +77,8 @@ export function calculateDetailedPlan(planData: any): DetailedPlanResult {
     (planData.personnelList || []).forEach((role: any) => {
       for(let v=1; v<= (planData.shifts || 1); v++) {
          const count = planData.monthlyData?.[i]?.personeller?.[`${role.id}_v${v}`] || 0;
-         personelGider += count * ((planData.baseNetSalary || 17002) + (role.ekMaas || 0)); // Net
-         personelGider += count * ((planData.baseSgk || 5000) + (role.ekSgk || 0)); // SGK
+         personelGider += count * ((planData.baseNetSalary || 28075.5) + (role.ekMaas || 0)); // Net
+         personelGider += count * ((planData.baseSgk || 12799.13) + (role.ekSgk || 0)); // SGK
          personelGider += count * (planData.workDays || 26) * (planData.dailyMealCost || 200); // Yemek
       }
     });
@@ -87,16 +87,18 @@ export function calculateDetailedPlan(planData: any): DetailedPlanResult {
     const shiftHrs = Object.values(planData.shiftHours || {}).slice(0, planData.shifts).reduce((a, b) => (a as any) + (b as any), 0) as number;
     const monthlyHrs = shiftHrs * (planData.workDays || 26);
     let powerCap = 0;
-    (planData.selectedMachines || []).forEach((sm: any) => { powerCap += 2.5 * monthlyHrs; });
+    (planData.selectedMachines || []).forEach(() => { powerCap += 2.5 * monthlyHrs; });
     const enerjiGider = powerCap * (planData.electricPrice || 2.5) * 0.4;
 
     opex = personelGider + enerjiGider + digerOpex + satisNakliye + alisNakliye;
 
     const ebitda = revenue - (cogs + opex);
     
-    // Amortisman (Total Investment / 60 months)
-    const totalInvestment = (planData.investments || []).reduce((acc: number, inv: any) => acc + (parseFloat(inv.maliyet) || 0), 0);
-    const monthlyAmort = totalInvestment / 60;
+    // Amortisman: her yatırımın kendi geriOdeme süresi kullanılır (varsayılan 60 ay)
+    const monthlyAmort = (planData.investments || []).reduce(
+      (acc: number, inv: any) => acc + ((parseFloat(inv.maliyet) || 0) / (parseFloat(inv.geriOdeme) || 60)),
+      0
+    );
 
     const netProfit = ebitda - monthlyAmort;
 

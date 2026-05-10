@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useTranslation } from '../../api/i18n';
 import {
   ArrowLeft,
   Zap,
@@ -36,8 +35,8 @@ export const DEFAULT_PLAN_DATA = {
     ay: i, tedarikler: {}, musteriler: {}, giderler: {}, personeller: {}
   })),
   personnelList: [] as any[],
-  baseNetSalary: 17002,
-  baseSgk: 5000,
+  baseNetSalary: 28075.5,
+  baseSgk: 12799.13,
   dailyMealCost: 200,
   shifts: 1,
   shiftHours: { 1: 8, 2: 8, 3: 8 },
@@ -53,7 +52,6 @@ interface PlanningWizardProps {
 }
 
 export const PlanningWizard: React.FC<PlanningWizardProps> = ({ onCancel, onSave, editData }) => {
-  const { t } = useTranslation();
   const [activeStep, setActiveStep] = useState(1);
   const [planData, setPlanData] = useState<any>(
     editData ? { ...DEFAULT_PLAN_DATA, ...editData } : { ...DEFAULT_PLAN_DATA }

@@ -1,15 +1,12 @@
 import React, { useState } from 'react';
-import { useTranslation } from '../../../api/i18n';
-import { 
-  Users, 
-  Plus, 
-  Trash2, 
-  Contact, 
-  Banknote, 
-  ChevronDown, 
+import {
+  Users,
+  Plus,
+  Trash2,
+  Contact,
+  Banknote,
   ChevronRight,
   UserPlus,
-  ExternalLink,
   Copy
 } from 'lucide-react';
 
@@ -29,7 +26,6 @@ interface PersonnelStepProps {
 }
 
 const PersonnelStep: React.FC<PersonnelStepProps> = ({ planData, onUpdate, next, back }) => {
-  const { t } = useTranslation();
   const [expandedMonths, setExpandedMonths] = useState<Record<number, boolean>>({});
   
   const [newRole, setNewRole] = useState({
@@ -118,7 +114,7 @@ const PersonnelStep: React.FC<PersonnelStepProps> = ({ planData, onUpdate, next,
             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1">Taban Net Maaş (₺)</label>
             <input 
               type="number" 
-              value={planData.baseNetSalary || 17002}
+              value={planData.baseNetSalary || 28075.5}
               onChange={e => onUpdate({...planData, baseNetSalary: Number(e.target.value)})}
               className="w-full bg-gray-50 border-none rounded-2xl px-6 py-4 text-sm font-black text-enba-dark focus:bg-white focus:ring-2 focus:ring-emerald-100 outline-none transition-all"
             />
@@ -127,7 +123,7 @@ const PersonnelStep: React.FC<PersonnelStepProps> = ({ planData, onUpdate, next,
             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1">SGK İşveren Yükü (₺)</label>
             <input 
               type="number" 
-              value={planData.baseSgk || 5000}
+              value={planData.baseSgk || 12799.13}
               onChange={e => onUpdate({...planData, baseSgk: Number(e.target.value)})}
               className="w-full bg-gray-50 border-none rounded-2xl px-6 py-4 text-sm font-black text-enba-dark focus:bg-white focus:ring-2 focus:ring-emerald-100 outline-none transition-all"
             />
