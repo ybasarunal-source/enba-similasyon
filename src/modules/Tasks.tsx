@@ -557,311 +557,243 @@ export const Tasks: React.FC = () => {
       });
   }, [tasks, selectedProjectId, searchTerm]);
 
-  const TaskCard = ({ task }: { task: Task }) => {
-    const isDone = task.status === 'done';
-    
-    return (
-      <div className={`group bg-white p-2.5 rounded-xl border border-gray-100 shadow-sm transition-all animate-fade-in relative overflow-hidden flex items-center gap-3 ${isDone ? 'opacity-50 grayscale-[0.5]' : 'hover:shadow-md'}`}>
-        <div className={`absolute top-0 left-0 w-1 h-full ${task.priority === 'high' ? 'bg-rose-500' : task.priority === 'medium' ? 'bg-amber-500' : 'bg-blue-500'}`} />
-        
-        {/* Checkbox */}
-        <button 
-          onClick={() => toggleTask(task.id)}
-          className={`w-5 h-5 flex-shrink-0 rounded-full border-2 flex items-center justify-center transition-all ${isDone ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-gray-200 text-transparent hover:border-emerald-500'}`}
-        >
-          <Check size={12} strokeWidth={4} />
-        </button>
+  // ── Derived lists ─────────────────────────────────────────
+  const importantTasks = filteredTasks.filter(t => t.status !== 'done' && (t.priority === 'high' || t.isPinned));
+  const regularTasks   = filteredTasks.filter(t => !importantTasks.find(i => i.id === t.id));
 
+  const statChips = [
+    { label: 'Bekleyen',      val: tasks.filter(t => t.status !== 'done').length,                                                                              bg: 'bg-gray-100',    color: 'text-enba-dark' },
+    { label: 'Acil',          val: tasks.filter(t => t.priority === 'high' && t.status !== 'done').length,                                                     bg: 'bg-rose-50',     color: 'text-rose-600' },
+    { label: 'Bugün Bitiyor', val: tasks.filter(t => { const d = new Date(t.deadline); const n = new Date(); return t.deadline && d.toDateString() === n.toDateString() && t.status !== 'done'; }).length, bg: 'bg-amber-50', color: 'text-amber-600' },
+    { label: 'Tamamlanan',    val: tasks.filter(t => t.status === 'done').length,                                                                               bg: 'bg-emerald-50',  color: 'text-emerald-600' },
+  ];
+
+  // ── Önemli Görev Kartı ─────────────────────────────────────
+  const ImportantTaskCard = ({ task }: { task: Task }) => {
+    const isOverdue = task.deadline && new Date(task.deadline) < new Date();
+    return (
+      <div className={`relative bg-enba-dark rounded-[2rem] p-7 overflow-hidden group transition-all hover:scale-[1.015] border ${task.priority === 'high' ? 'border-rose-500/20' : 'border-enba-orange/20'}`}>
+        <div className={`absolute top-0 left-0 right-0 h-1 ${task.priority === 'high' ? 'bg-gradient-to-r from-rose-500 to-rose-400' : 'bg-gradient-to-r from-enba-orange to-amber-400'}`} />
+
+        <div className="flex items-start justify-between mb-4 gap-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            {task.priority === 'high' && <span className="px-2.5 py-1 bg-rose-500/20 text-rose-400 rounded-lg text-[9px] font-black uppercase tracking-widest">ACİL</span>}
+            {task.isPinned     && <span className="px-2.5 py-1 bg-enba-orange/20 text-enba-orange rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center gap-1"><Pin size={9} className="fill-current" /> SABİTLENDİ</span>}
+            {isOverdue         && <span className="px-2.5 py-1 bg-amber-500/20 text-amber-400 rounded-lg text-[9px] font-black uppercase tracking-widest">GECİKMİŞ</span>}
+          </div>
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+            <button onClick={() => togglePin(task.id)} className={`p-1.5 rounded-lg transition-colors ${task.isPinned ? 'bg-enba-orange/20 text-enba-orange' : 'hover:bg-white/10 text-white/30 hover:text-white'}`}><Pin size={12} className={task.isPinned ? 'fill-current' : ''} /></button>
+            <button onClick={() => { setEditingTask(task); setFormData(task); setShowTaskForm(true); }} className="p-1.5 hover:bg-white/10 rounded-lg text-white/30 hover:text-white transition-colors"><Pencil size={12} /></button>
+            <button onClick={() => handleDeleteTask(task)} className="p-1.5 hover:bg-rose-500/20 rounded-lg text-white/30 hover:text-rose-400 transition-colors"><Trash2 size={12} /></button>
+          </div>
+        </div>
+
+        <h3 className="text-base font-black text-white leading-snug mb-2">{task.title}</h3>
+        {task.desc && <p className="text-[11px] text-white/40 font-medium leading-relaxed mb-4 line-clamp-2">{task.desc}</p>}
+
+        <div className="flex items-center justify-between mt-5">
+          <div className="flex items-center gap-2">
+            <Calendar size={12} className={isOverdue ? 'text-rose-400' : 'text-white/30'} />
+            <span className={`text-[10px] font-black uppercase tracking-widest ${isOverdue ? 'text-rose-400' : 'text-white/40'}`}>
+              {task.deadline ? new Date(task.deadline).toLocaleDateString('tr-TR') : 'SÜRESİZ'}
+            </span>
+          </div>
+          <button onClick={() => toggleTask(task.id)} className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-emerald-500/20 hover:text-emerald-400 text-white/50 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border border-white/5 hover:border-emerald-500/20 active:scale-95">
+            <Check size={11} strokeWidth={3} /> Tamamlandı
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  // ── Normal Görev Kartı ─────────────────────────────────────
+  const TaskCard = ({ task }: { task: Task }) => {
+    const isDone    = task.status === 'done';
+    const isOverdue = task.deadline && new Date(task.deadline) < new Date() && !isDone;
+    return (
+      <div className={`group bg-white px-5 py-4 rounded-2xl border transition-all flex items-center gap-4 ${isDone ? 'opacity-40 border-transparent' : 'border-gray-100 hover:border-gray-200 hover:shadow-sm'}`}>
+        <div className={`w-1 h-8 rounded-full flex-shrink-0 ${task.priority === 'high' ? 'bg-rose-400' : task.priority === 'medium' ? 'bg-amber-400' : 'bg-blue-300'}`} />
+        <button onClick={() => toggleTask(task.id)} className={`w-5 h-5 flex-shrink-0 rounded-full border-2 flex items-center justify-center transition-all ${isDone ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-gray-200 hover:border-emerald-400 text-transparent'}`}>
+          <Check size={11} strokeWidth={4} />
+        </button>
         <div className="flex-1 min-w-0">
-          <div className="flex justify-between items-center mb-0.5">
-            <h4 className={`text-[12px] font-bold text-enba-dark truncate pr-2 ${isDone ? 'line-through text-gray-400' : ''}`}>{task.title}</h4>
-            <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 items-center">
-              <select
-                value={task.projectId}
-                onChange={e => handleMoveTask(task.id, e.target.value)}
-                onClick={e => e.stopPropagation()}
-                className="text-[9px] font-black text-gray-400 bg-transparent border-none outline-none cursor-pointer hover:text-enba-orange max-w-[80px] truncate"
-                title="Listeye taşı"
-              >
-                {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
-              <button onClick={() => togglePin(task.id)} className={`p-0.5 rounded transition-colors ${task.isPinned ? 'bg-orange-50 text-enba-orange' : 'hover:bg-gray-100 text-gray-400'}`} title={task.isPinned ? 'Sabitlemeyi Kaldır' : 'Başa Sabitle'}>
-                <Pin size={11} className={task.isPinned ? 'fill-current' : ''} />
-              </button>
-              <button onClick={() => { setEditingTask(task); setFormData(task); setShowTaskForm(true); }} className="p-0.5 hover:bg-gray-100 rounded text-gray-400 hover:text-enba-dark transition-colors"><Pencil size={11} /></button>
-              <button onClick={() => handleDeleteTask(task)} className="p-0.5 hover:bg-rose-50 rounded text-gray-400 hover:text-rose-600 transition-colors"><Trash2 size={11} /></button>
-            </div>
+          <div className="flex items-center gap-2 mb-0.5">
+            {task.isPinned && <Pin size={10} className="text-enba-orange fill-current flex-shrink-0" />}
+            <span className={`text-[13px] font-bold truncate ${isDone ? 'line-through text-gray-300' : 'text-enba-dark'}`}>{task.title}</span>
           </div>
-          
-          <div className="flex items-center gap-2 text-[9px] text-gray-400 font-bold uppercase tracking-tighter">
-            <Calendar size={10} className={new Date(task.deadline) < new Date() && task.status !== 'done' ? 'text-rose-500' : ''} />
-            <span>{task.deadline ? new Date(task.deadline).toLocaleDateString('tr-TR') : 'SÜRESİZ'}</span>
-            <div className={`w-1.5 h-1.5 rounded-full ${task.priority === 'high' ? 'bg-rose-500' : task.priority === 'medium' ? 'bg-amber-500' : 'bg-blue-500'}`} />
-            {task.source === 'outlook' && (
-              <svg className="w-2.5 h-2.5 ml-auto" viewBox="0 0 24 24" fill="none"><path d="M22.5 12C22.5 6.2 17.8 1.5 12 1.5 6.2 1.5 1.5 6.2 1.5 12 1.5 17.8 6.2 22.5 12 22.5 17.8 22.5 22.5 17.8 22.5 12" fill="#0078D4"/><path d="M14.2 15.6l2.1-7.1h1.7l-3 10H13.4l-3-10h1.7l2.1 7.1" fill="#fff"/></svg>
-            )}
-            {task.source === 'google' && (
-              <svg className="w-2.5 h-2.5 ml-auto" viewBox="0 0 48 48"><path fill="#4285F4" d="M24 48c6.48 0 12.35-2.4 16.89-6.35L33.31 35.8C30.69 37.64 27.56 38.67 24 38.67c-6.19 0-11.45-4.14-13.33-9.74l-7.78 6.03C7.3 40.54 15.02 48 24 48z"/><path fill="#34A853" d="M40.89 41.65l-7.58-5.85C35.63 34.05 37.33 31.25 38 28.16L24 28.16v8.62h8.56c-.37 1.89-1.44 3.51-2.92 4.67l7.58 5.85c4.43-4.09 7.15-10.12 7.15-17.3 0-1.51-.14-3-.41-4.45H24v8.62h13.91c-.62 3.12-2.39 5.8-5.02 7.55z"/><path fill="#FBBC05" d="M10.67 28.93c-.48-1.42-.75-2.94-.75-4.53s.27-3.11.75-4.53l-7.78-6.03C1.04 17.34 0 20.55 0 24s1.04 6.66 2.89 10.15l7.78-6.22z"/><path fill="#EA4335" d="M24 9.33c3.54 0 6.72 1.22 9.21 3.22l6.89-6.89C35.83 2.1 30.34 0 24 0 15.02 0 7.3 7.46 2.89 13.85l7.78 6.03C12.55 13.47 17.81 9.33 24 9.33z"/></svg>
-            )}
+          <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-tight">
+            <Calendar size={10} className={isOverdue ? 'text-rose-400' : 'text-gray-300'} />
+            <span className={isOverdue ? 'text-rose-400' : 'text-gray-400'}>{task.deadline ? new Date(task.deadline).toLocaleDateString('tr-TR') : 'Süresiz'}</span>
+            {task.source === 'outlook' && <span className="text-blue-400">· MS</span>}
+            {task.source === 'google'  && <span className="text-emerald-500">· Google</span>}
           </div>
+        </div>
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+          <select value={task.projectId} onChange={e => handleMoveTask(task.id, e.target.value)} onClick={e => e.stopPropagation()} className="text-[9px] font-black text-gray-400 bg-gray-50 border-none rounded-lg px-2 py-1 cursor-pointer hover:text-enba-orange max-w-[80px] truncate outline-none">
+            {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+          <button onClick={() => togglePin(task.id)} className={`p-1.5 rounded-lg transition-colors ${task.isPinned ? 'bg-orange-50 text-enba-orange' : 'hover:bg-gray-100 text-gray-300'}`}><Pin size={11} className={task.isPinned ? 'fill-current' : ''} /></button>
+          <button onClick={() => { setEditingTask(task); setFormData(task); setShowTaskForm(true); }} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-300 hover:text-enba-dark transition-colors"><Pencil size={11} /></button>
+          <button onClick={() => handleDeleteTask(task)} className="p-1.5 hover:bg-rose-50 rounded-lg text-gray-300 hover:text-rose-500 transition-colors"><Trash2 size={11} /></button>
         </div>
       </div>
     );
   };
 
   return (
-    <div className="flex h-screen bg-[#FAFAFA] animate-fade-in overflow-hidden">
-      {/* ─── LEFT SIDEBAR ─────────────────────────────────── */}
-      <aside className="w-72 bg-white border-r border-gray-100 flex flex-col flex-shrink-0 relative z-10 shadow-sm overflow-hidden">
-        <div className="p-8 pb-4">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-enba-dark rounded-xl flex items-center justify-center text-enba-orange shadow-lg">
-              <ClipboardList size={20} />
+    <div className="flex flex-col h-screen bg-slate-50 animate-fade-in overflow-hidden">
+
+      {/* ── TOP HEADER ─────────────────────────────────────── */}
+      <header className="bg-white border-b border-gray-100 px-8 pt-6 pb-0 shadow-sm flex-shrink-0">
+        {/* Row 1: title + actions */}
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-enba-dark rounded-[1.2rem] flex items-center justify-center text-enba-orange shadow-xl shadow-enba-dark/20">
+              <ClipboardList size={24} />
             </div>
             <div>
-              <h2 className="text-sm font-black text-enba-dark tracking-tight uppercase">Operasyon</h2>
-              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">Matrix v2.0</p>
+              <h1 className="text-2xl font-black text-enba-dark tracking-tighter uppercase italic leading-none">Görev & İş Takibi</h1>
+              <p className="text-[10px] text-gray-400 font-black uppercase tracking-[3px] mt-1">{tasks.filter(t => t.status !== 'done').length} Aktif Görev</p>
             </div>
           </div>
-
-          <button 
-            onClick={() => setShowTaskForm(true)} 
-            className="w-full py-4 bg-enba-orange text-white rounded-2xl font-black text-[10px] uppercase tracking-[2px] shadow-lg shadow-enba-orange/20 hover:brightness-110 hover:-translate-y-0.5 active:scale-95 transition-all flex items-center justify-center gap-2 mb-6"
-          >
-            <PlusCircle size={16} /> Yeni Atama
-          </button>
-          
-          <button onClick={() => setSelectedProjectId('all')} className={`w-full flex items-center justify-between p-3.5 rounded-2xl transition-all mb-4 ${selectedProjectId === 'all' ? 'bg-enba-dark text-white shadow-xl shadow-gray-200' : 'text-gray-400 hover:bg-gray-50'}`}>
-            <div className="flex items-center gap-3">
-              <Layers size={18} className={selectedProjectId === 'all' ? 'text-enba-orange' : ''} />
-              <span className="text-xs font-bold uppercase tracking-wide">Tüm Görevler</span>
-            </div>
-            <span className="text-[10px] font-black opacity-50">{tasks.length}</span>
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto px-4 sidebar-scrollbar custom-scrollbar pb-10">
-          {groups.map(group => {
-            const groupProjects = projects.filter(p => p.groupId === group.id || (!p.groupId && group.id === 'g2'));
-            
-            return (
-              <div key={group.id} className="mb-8">
-                <div className="px-4 mb-3 flex items-center justify-between group">
-                  <h3 className="text-[10px] font-black text-gray-300 uppercase tracking-[2px]">{group.name}</h3>
-                </div>
-                <div className="space-y-1">
-                  {groupProjects.map(project => (
-                    <div
-                      key={project.id}
-                      className={`group/proj flex items-center rounded-xl transition-all ${selectedProjectId === project.id ? 'bg-orange-50' : 'hover:bg-gray-50'}`}
-                    >
-                      <button
-                        onClick={() => setSelectedProjectId(project.id)}
-                        className={`flex-1 flex items-center gap-3 p-3.5 overflow-hidden ${selectedProjectId === project.id ? 'text-enba-orange' : 'text-gray-500'}`}
-                      >
-                        <FolderPlus size={16} className="flex-shrink-0" />
-                        <span className="text-[11px] font-bold uppercase truncate">{project.name}</span>
-                        <span className={`ml-auto text-[9px] font-black ${selectedProjectId === project.id ? 'text-enba-orange/50' : 'text-gray-600'}`}>
-                          {tasks.filter(t => t.projectId === project.id).length}
-                        </span>
-                      </button>
-                      <div className="flex gap-0.5 pr-2 opacity-0 group-hover/proj:opacity-100 transition-opacity flex-shrink-0">
-                        <button
-                          onClick={() => { setEditingProject(project); setEditingProjectName(project.name); }}
-                          className="p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-enba-dark"
-                          title="Yeniden adlandır"
-                        ><Pencil size={11} /></button>
-                        <button
-                          onClick={() => { setDeletingProject(project); setDeleteTargetId('none'); }}
-                          className="p-1 rounded hover:bg-rose-100 text-gray-400 hover:text-rose-500"
-                          title="Listeyi sil"
-                        ><Trash2 size={11} /></button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="p-6 border-t border-gray-50 flex flex-col gap-3">
-          <button 
-            onClick={() => {
-              if (confirm('TÜM görevleri silmek istediğinize emin misiniz? Bu işlem geri alınamaz.')) {
-                setTasks([]);
-              }
-            }} 
-            className="w-full py-3 border border-rose-100 bg-rose-50/30 rounded-xl text-[10px] font-black text-rose-400 uppercase tracking-[2px] hover:bg-rose-50 hover:text-rose-600 transition-all flex items-center justify-center gap-2"
-          >
-            <Trash2 size={14} /> Tümünü Temizle
-          </button>
-
-          <button onClick={() => setShowProjectForm(true)} className="w-full py-3 border border-dashed border-gray-200 rounded-xl text-[10px] font-black text-gray-400 uppercase tracking-[2px] hover:border-enba-orange hover:text-enba-orange transition-all flex items-center justify-center gap-2">
-            <PlusCircle size={14} /> Proje Ekle
-          </button>
-          
-          <div className="bg-gray-50 rounded-2xl p-4">
-            <div className={`flex items-center justify-between mb-3 ${msAccount && !msAccount.needsReconnect ? 'text-emerald-600' : msAccount?.needsReconnect ? 'text-amber-500' : 'text-gray-400'}`}>
-              <div className="flex items-center gap-3">
-                <Share2 size={16} />
-                <span className="text-[10px] font-black uppercase tracking-widest">
-                  {msAccount && !msAccount.needsReconnect ? 'Bulut Bağlı' : msAccount?.needsReconnect ? 'Yeniden Bağlan' : 'Bağlı Değil'}
-                </span>
-              </div>
-              {msAccount && !msAccount.needsReconnect && (
-                <button onClick={() => microsoftService.logout()} className="text-[9px] font-black text-rose-500 hover:underline uppercase">Kes</button>
-              )}
-            </div>
-            {msAccount?.username && (
-              <p className="text-[9px] text-gray-400 font-bold truncate mb-2">{msAccount.username}</p>
-            )}
-            {(!msAccount || msAccount.needsReconnect) ? (
-              <button
-                onClick={handleConnectMs}
-                disabled={isConnecting}
-                className={`w-full py-2.5 bg-[#0078d4] text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-blue-900/10 active:scale-95 transition-all ${isConnecting ? 'opacity-70 cursor-not-allowed' : 'hover:bg-blue-600'}`}
-              >
-                {isConnecting ? <RotateCw size={14} className="animate-spin" /> : null}
-                {isConnecting ? 'Bağlanıyor...' : msAccount?.needsReconnect ? 'Yeniden Bağlan' : 'Microsoft To Do Bağla'}
-              </button>
-            ) : (
-              <div className="flex gap-2">
-                <button onClick={handleImportFromMs} disabled={isSyncing} className="flex-1 py-2.5 bg-enba-dark text-white rounded-xl flex items-center justify-center text-[10px] font-black uppercase tracking-widest gap-2 shadow-md hover:bg-black transition-all">
-                  <Download size={14} className={isSyncing ? 'animate-bounce' : ''} /> Görevleri Çek
-                </button>
-              </div>
-            )}
-
-            {/* Google Tasks Section */}
-            <div className="mt-4 pt-4 border-t border-gray-100">
-              <div className={`flex items-center justify-between mb-3 ${googleAccount ? 'text-blue-600' : 'text-gray-400'}`}>
-                <div className="flex items-center gap-3">
-                  <RefreshCw size={16} className={isSyncing ? 'animate-spin' : ''} />
-                  <span className="text-[10px] font-black uppercase tracking-widest">
-                    {googleAccount ? 'Google Bağlı' : 'Google Boşta'}
-                  </span>
-                </div>
-                {googleAccount && (
-                  <button onClick={() => { googleService.logout(); setGoogleAccount(null); }} className="text-[9px] font-black text-rose-500 hover:underline uppercase">Kes</button>
-                )}
-              </div>
-              {!googleAccount ? (
-                <button
-                  onClick={handleConnectGoogle}
-                  className="w-full py-2.5 bg-[#4285F4] text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-blue-900/10 hover:bg-blue-600 active:scale-95 transition-all"
-                >
-                  <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.66l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-                  Google Tasks Bağla
-                </button>
-              ) : (
-                <button onClick={handleSyncGoogle} disabled={isSyncing} className="w-full py-2.5 bg-enba-dark text-white rounded-xl flex items-center justify-center text-[10px] font-black uppercase tracking-widest gap-2 shadow-md hover:bg-black transition-all">
-                  <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} /> Görevleri Eşleştir
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      </aside>
-
-      {/* ─── MAIN CONTENT AREA ────────────────────────────── */}
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-        {/* Sub Header */}
-        <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-6 flex-shrink-0 shadow-sm relative z-0">
-          <div className="flex items-center gap-4">
-            <div className="flex flex-col border-r border-gray-100 pr-4">
-              <h1 className="text-[9px] font-black text-enba-dark tracking-tight leading-none uppercase italic truncate max-w-[150px]">
-                {selectedProjectId === 'all' ? 'Tüm Operasyonlar' : projects.find(p => p.id === selectedProjectId)?.name}
-              </h1>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest italic">{filteredTasks.length} Aktif</span>
-                <div className="w-0.5 h-0.5 rounded-full bg-gray-200" />
-                <span className="text-[9px] text-enba-orange/60 font-black uppercase tracking-widest italic">Matrix v2</span>
-              </div>
-            </div>
-
-              <div className="flex bg-gray-100 p-0.5 rounded-lg">
-                <button onClick={() => setViewMode('board')} className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'board' ? 'bg-white text-enba-dark shadow-sm' : 'text-gray-400 hover:text-gray-600'}`} title="Board Görünümü">
-                  <Kanban size={12} /> Matrix
-                </button>
-                <button onClick={() => setViewMode('list')} className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-[9px] font-black uppercase tracking-widest transition-all ${viewMode === 'list' ? 'bg-white text-enba-dark shadow-sm' : 'text-gray-400 hover:text-gray-600'}`} title="Liste Görünümü">
-                  <ListIcon size={12} /> Sıralı
-                </button>
-              </div>
-
-              <div className="flex bg-gray-100 p-0.5 rounded-lg ml-2">
-                {[
-                  { id: 'all', label: 'TÜMÜ' },
-                  { id: 'google', label: 'GOOGLE' },
-                  { id: 'outlook', label: 'OUTLOOK' }
-                ].map(tab => (
-                  <button 
-                    key={tab.id}
-                    onClick={() => setSourceFilter(tab.id as any)}
-                    className={`px-3 py-1 rounded-md text-[9px] font-black uppercase tracking-widest transition-all ${sourceFilter === tab.id ? 'bg-white text-enba-dark shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-
-            <button 
-              onClick={() => setIsCompact(!isCompact)}
-              className={`flex items-center justify-center w-10 h-9 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${isCompact ? 'bg-enba-orange/10 text-enba-orange border border-enba-orange/20' : 'bg-gray-50 text-gray-400 border border-transparent hover:bg-gray-100'}`}
-              title={isCompact ? 'Geniş Görünüm' : 'Dar Görünüm'}
-            >
-              {isCompact ? <Maximize size={14} /> : <Minimize size={14} />}
-            </button>
-          </div>
-
-          <div className="flex items-center gap-2 flex-shrink-0 overflow-visible ml-2">
+          <div className="flex items-center gap-3">
+            {syncStatus && <span className="text-[9px] text-enba-orange font-black uppercase animate-pulse hidden md:block">{syncStatus}</span>}
             <div className="relative hidden sm:block">
-              <input 
-                type="text" 
-                placeholder="Ara..." 
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                className="bg-gray-50 border-none rounded-lg px-8 py-2 text-[10px] font-medium text-enba-dark focus:ring-2 focus:ring-enba-orange/20 w-28 focus:w-40 transition-all"
-              />
+              <input type="text" placeholder="Ara..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="bg-gray-50 border-none rounded-xl px-8 py-2.5 text-[11px] font-medium text-enba-dark focus:ring-2 focus:ring-enba-orange/20 w-32 focus:w-48 transition-all outline-none" />
               <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-300" />
             </div>
-            <div className="flex items-center gap-1.5 flex-shrink-0">
-              {syncStatus && <span className="text-[7px] text-enba-orange font-black uppercase animate-pulse hidden md:inline ml-1">{syncStatus}</span>}
-              <button 
-                onClick={() => handleSyncAll()}
-                className={`p-2 rounded-xl border border-gray-100 text-gray-400 hover:text-enba-orange hover:bg-orange-50 transition-all ${isSyncing ? 'animate-spin border-enba-orange/20 text-enba-orange' : ''}`}
-                title="Senkronize Et"
-                disabled={!msAccount || isSyncing}
-              >
-                <RotateCw size={16} />
+            <button onClick={() => handleSyncAll()} disabled={!msAccount || isSyncing} className={`w-10 h-10 flex items-center justify-center rounded-xl border border-gray-100 text-gray-400 hover:text-enba-orange hover:bg-orange-50 transition-all disabled:opacity-30 ${isSyncing ? 'animate-spin text-enba-orange' : ''}`} title="Senkronize Et"><RotateCw size={16} /></button>
+            <button onClick={() => setShowTaskForm(true)} className="flex items-center gap-2 px-6 py-2.5 bg-enba-orange text-white rounded-xl font-black text-[10px] uppercase tracking-[2px] shadow-lg shadow-enba-orange/20 hover:brightness-110 active:scale-95 transition-all">
+              <PlusCircle size={15} /> Yeni Görev
+            </button>
+          </div>
+        </div>
+
+        {/* Row 2: stat chips */}
+        <div className="flex items-center gap-3 mb-5">
+          {statChips.map((s, i) => (
+            <div key={i} className={`${s.bg} ${s.color} px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2`}>
+              <span className="text-lg font-black leading-none">{s.val}</span>
+              <span className="opacity-60">{s.label}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Row 3: project tabs + controls */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-3 custom-scrollbar">
+          <button onClick={() => setSelectedProjectId('all')} className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${selectedProjectId === 'all' ? 'bg-enba-dark text-white shadow-lg' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}>
+            <Layers size={13} /> Tümü <span className="opacity-50">{tasks.length}</span>
+          </button>
+          {projects.map(p => (
+            <div key={p.id} className={`flex-shrink-0 group/tab flex items-center rounded-xl transition-all ${selectedProjectId === p.id ? 'bg-enba-orange/10 text-enba-orange border border-enba-orange/20' : 'bg-gray-100 text-gray-400 hover:bg-gray-200 border border-transparent'}`}>
+              <button onClick={() => setSelectedProjectId(p.id)} className="flex items-center gap-2 px-4 py-2 text-[10px] font-black uppercase tracking-widest">
+                <Hash size={11} />{p.name}<span className="opacity-50">{tasks.filter(t => t.projectId === p.id).length}</span>
               </button>
-            </div>
-            </div>
-        </header>
-
-        {/* Unitfed High-Density List View */}
-        <div className="flex-1 overflow-hidden h-full">
-            <div className="max-w-4xl mx-auto h-[calc(100vh-200px)] flex flex-col p-8">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex flex-col">
-                  <h3 className="text-sm font-black text-enba-dark uppercase tracking-widest italic">Operasyon Akışı</h3>
-                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-[2px] mt-0.5">Tüm Görevler (Sıralı)</p>
-                </div>
-                <div className="bg-white px-4 py-2 rounded-xl border border-gray-100 shadow-sm text-[10px] font-black text-enba-orange italic uppercase">
-                  {filteredTasks.filter(t => t.status !== 'done').length} Bekleyen Görev
-                </div>
-              </div>
-
-              <div className="flex-1 overflow-y-auto space-y-2 pr-4 custom-scrollbar pb-10">
-                {filteredTasks.map(task => <TaskCard key={task.id} task={task} />)}
-                {filteredTasks.length === 0 && (
-                  <div className="py-20 border-2 border-dashed border-gray-100 rounded-[3rem] flex flex-col items-center justify-center text-gray-300">
-                    <ClipboardList size={32} className="opacity-20 mb-4" />
-                    <span className="text-[10px] font-black uppercase tracking-[4px] italic">Kayıtlı Görev Bulunmuyor</span>
-                  </div>
-                )}
+              <div className="pr-2 flex gap-0.5 opacity-0 group-hover/tab:opacity-100 transition-opacity">
+                <button onClick={() => { setEditingProject(p); setEditingProjectName(p.name); }} className="p-1 rounded hover:bg-black/5 text-current opacity-50 hover:opacity-100"><Pencil size={9} /></button>
+                <button onClick={() => { setDeletingProject(p); setDeleteTargetId('none'); }} className="p-1 rounded hover:bg-rose-100 text-current opacity-50 hover:text-rose-500 hover:opacity-100"><Trash2 size={9} /></button>
               </div>
             </div>
+          ))}
+          <button onClick={() => setShowProjectForm(true)} className="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 border border-dashed border-gray-200 rounded-xl text-[10px] font-black text-gray-400 uppercase tracking-widest hover:border-enba-orange hover:text-enba-orange transition-all">
+            <PlusCircle size={11} /> Proje
+          </button>
+          <div className="ml-auto flex items-center gap-2 flex-shrink-0">
+            <div className="flex bg-gray-100 p-0.5 rounded-xl">
+              {([{id:'all',label:'Tümü'},{id:'google',label:'Google'},{id:'outlook',label:'MS'}] as const).map(tab => (
+                <button key={tab.id} onClick={() => setSourceFilter(tab.id as any)} className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${sourceFilter === tab.id ? 'bg-white text-enba-dark shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>{tab.label}</button>
+              ))}
+            </div>
+            <button onClick={() => setIsCompact(!isCompact)} className={`w-9 h-9 flex items-center justify-center rounded-xl border transition-all ${isCompact ? 'border-enba-orange/20 bg-enba-orange/10 text-enba-orange' : 'border-gray-100 bg-white text-gray-400 hover:bg-gray-50'}`} title={isCompact ? 'Geniş Görünüm' : 'Dar Görünüm'}>
+              {isCompact ? <Maximize size={13} /> : <Minimize size={13} />}
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* ── ENTEGRASYON BAR ────────────────────────────────── */}
+      <div className="bg-white border-b border-gray-100 px-8 py-2.5 flex items-center gap-4 flex-shrink-0">
+        <span className="text-[9px] font-black text-gray-300 uppercase tracking-[2px]">Entegrasyonlar</span>
+        <div className="flex items-center gap-2">
+          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${msAccount && !msAccount.needsReconnect ? 'bg-blue-500' : 'bg-gray-200'}`} />
+          <span className={`text-[9px] font-black uppercase tracking-widest ${msAccount && !msAccount.needsReconnect ? 'text-blue-600' : 'text-gray-400'}`}>
+            {msAccount && !msAccount.needsReconnect ? (msAccount.username || 'Microsoft Bağlı') : 'Microsoft'}
+          </span>
+          {(!msAccount || msAccount.needsReconnect)
+            ? <button onClick={handleConnectMs} disabled={isConnecting} className="text-[9px] font-black text-blue-500 hover:underline uppercase">{isConnecting ? 'Bağlanıyor...' : 'Bağla'}</button>
+            : <><button onClick={handleImportFromMs} disabled={isSyncing} className="text-[9px] font-black text-gray-400 hover:text-enba-dark uppercase flex items-center gap-1"><Download size={10} />Çek</button><button onClick={() => microsoftService.logout()} className="text-[9px] font-black text-rose-400 hover:underline uppercase">Kes</button></>
+          }
+        </div>
+        <div className="w-px h-3 bg-gray-100 flex-shrink-0" />
+        <div className="flex items-center gap-2">
+          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${googleAccount ? 'bg-emerald-500' : 'bg-gray-200'}`} />
+          <span className={`text-[9px] font-black uppercase tracking-widest ${googleAccount ? 'text-emerald-600' : 'text-gray-400'}`}>{googleAccount ? 'Google Bağlı' : 'Google'}</span>
+          {!googleAccount
+            ? <button onClick={handleConnectGoogle} className="text-[9px] font-black text-blue-500 hover:underline uppercase">Bağla</button>
+            : <><button onClick={handleSyncGoogle} disabled={isSyncing} className="text-[9px] font-black text-emerald-500 hover:underline uppercase flex items-center gap-1"><RefreshCw size={10} className={isSyncing ? 'animate-spin' : ''} />Eşleştir</button><button onClick={() => { googleService.logout(); setGoogleAccount(null); }} className="text-[9px] font-black text-rose-400 hover:underline uppercase">Kes</button></>
+          }
+        </div>
+        <div className="ml-auto">
+          <button onClick={() => { if (confirm('TÜM görevleri silmek istediğinize emin misiniz? Bu işlem geri alınamaz.')) setTasks([]); }} className="flex items-center gap-1.5 text-[9px] font-black text-gray-300 hover:text-rose-500 uppercase tracking-widest transition-colors">
+            <Trash2 size={10} /> Tümünü Temizle
+          </button>
+        </div>
+      </div>
+
+      {/* ── MAIN CONTENT ───────────────────────────────────── */}
+      <main className="flex-1 overflow-y-auto custom-scrollbar">
+        <div className="max-w-4xl mx-auto p-8 space-y-8 pb-16">
+
+          {isLoading && (
+            <div className="py-24 text-center">
+              <RotateCw size={24} className="animate-spin text-enba-orange/30 mx-auto mb-4" />
+              <p className="text-[10px] font-black text-gray-300 uppercase tracking-[4px]">Yükleniyor...</p>
+            </div>
+          )}
+
+          {/* ── ÖNEMLİ GÖREVLER SPOTLIGHT ── */}
+          {!isLoading && importantTasks.length > 0 && (
+            <section>
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-9 h-9 bg-rose-500/10 text-rose-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <AlertTriangle size={17} />
+                </div>
+                <div>
+                  <h2 className="text-sm font-black text-enba-dark uppercase tracking-widest italic leading-none">Önemli & Acil</h2>
+                  <p className="text-[9px] text-gray-400 font-black uppercase tracking-[2px] mt-0.5">{importantTasks.length} Görev Öne Çıkarıldı</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {importantTasks.map(task => <ImportantTaskCard key={task.id} task={task} />)}
+              </div>
+            </section>
+          )}
+
+          {/* ── DİĞER GÖREVLER ── */}
+          {!isLoading && (
+            <section>
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-3">
+                  <h2 className="text-sm font-black text-enba-dark uppercase tracking-widest italic">
+                    {importantTasks.length > 0 ? 'Diğer Görevler' : 'Tüm Görevler'}
+                  </h2>
+                  <span className="px-3 py-1 bg-gray-100 text-gray-400 rounded-lg text-[9px] font-black uppercase tracking-widest">
+                    {regularTasks.filter(t => t.status !== 'done').length} Bekleyen
+                  </span>
+                </div>
+              </div>
+              {regularTasks.length > 0 ? (
+                <div className="space-y-2">
+                  {regularTasks.map(task => <TaskCard key={task.id} task={task} />)}
+                </div>
+              ) : importantTasks.length === 0 && (
+                <div className="py-24 border-2 border-dashed border-gray-100 rounded-[3rem] flex flex-col items-center justify-center text-gray-300">
+                  <ClipboardList size={36} className="opacity-20 mb-4" />
+                  <span className="text-[10px] font-black uppercase tracking-[4px] italic">Kayıtlı Görev Bulunmuyor</span>
+                </div>
+              )}
+            </section>
+          )}
         </div>
       </main>
 
