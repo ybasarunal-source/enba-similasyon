@@ -1,32 +1,17 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useTranslation } from '../api/i18n';
-import { 
-  ClipboardList, 
-  PlusCircle, 
-  FolderPlus, 
-  Clock, 
-  CheckCircle, 
-  RotateCw, 
-  Layout, 
-  Hash, 
-  Calendar, 
-  Trash2, 
-  Pencil, 
-  ArrowRight, 
-  ArrowLeft,
+import {
+  ClipboardList,
+  PlusCircle,
+  RotateCw,
+  Hash,
+  Calendar,
+  Trash2,
+  Pencil,
   AlertTriangle,
-  Package,
-  Share2,
   RefreshCw,
   Download,
-  LogOut as LogOutIcon,
-  ChevronRight,
   Search,
-  Kanban,
-  List as ListIcon,
-  MoreVertical,
   Layers,
-  Filter,
   Check,
   Maximize,
   Minimize,
@@ -34,7 +19,7 @@ import {
 } from 'lucide-react';
 import { microsoftService } from '../api/microsoft';
 import { googleService } from '../api/google';
-import { profileAPI, projectGroupsAPI, projectsAPI, tasksAPI, SupabaseTask, SupabaseProject, SupabaseProjectGroup } from '../api/supabase';
+import { profileAPI, projectGroupsAPI, projectsAPI, tasksAPI, SupabaseTask } from '../api/supabase';
 
 const toSupabaseTask = (t: Task): SupabaseTask => ({ id: t.id.toString(), title: t.title, description: t.desc, priority: t.priority, deadline: t.deadline, project_id: t.projectId, module_ref: t.moduleRef, status: t.status, source: t.source, ms_todo_id: t.msTodoId, ms_list_id: t.msListId, g_task_id: t.gTaskId, g_list_id: t.gListId, is_pinned: t.isPinned });
 const fromSupabaseTask = (t: SupabaseTask): Task => ({ id: t.id, title: t.title, desc: t.description || '', priority: t.priority as any, deadline: t.deadline || '', projectId: t.project_id || '', moduleRef: t.module_ref || '', status: t.status as any, createdAt: t.created_at || '', source: t.source as any, msTodoId: t.ms_todo_id, msListId: t.ms_list_id, gTaskId: t.g_task_id, gListId: t.g_list_id, isPinned: t.is_pinned });
@@ -69,7 +54,6 @@ interface ProjectGroup {
 }
 
 export const Tasks: React.FC = () => {
-  const { t } = useTranslation();
 
   // ── Data States ──────────────────────────────────────────
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -82,7 +66,6 @@ export const Tasks: React.FC = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState<string>('');
   const [isConnecting, setIsConnecting] = useState(false);
-  const [viewMode, setViewMode] = useState<'board' | 'list'>('board');
   const [selectedProjectId, setSelectedProjectId] = useState<string>('all');
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [editingProjectName, setEditingProjectName] = useState('');
@@ -266,14 +249,6 @@ export const Tasks: React.FC = () => {
     title: '', desc: '', priority: 'medium', deadline: '', projectId: projects[0]?.id || 'p1', moduleRef: 'genel'
   });
 
-  const categories = [
-    { id: 'genel', label: 'GENEL', color: '#94a3b8' },
-    { id: 'isPlanlama', label: 'İŞ PLANLAMA', color: '#f59e0b' },
-    { id: 'uretimTakip', label: 'ÜRETİM', color: '#8b5cf6' },
-    { id: 'lojistikTakip', label: 'LOJİSTİK', color: '#ea580c' },
-    { id: 'lisansTakip', label: 'LİSANS/BELGE', color: '#ef4444' },
-    { id: 'stok', label: 'STOK', color: '#3b82f6' }
-  ];
 
   // ── Handlers ─────────────────────────────────────────────
   const handleAddTask = async (e: React.FormEvent) => {
@@ -562,45 +537,61 @@ export const Tasks: React.FC = () => {
   const regularTasks   = filteredTasks.filter(t => !importantTasks.find(i => i.id === t.id));
 
   const statChips = [
-    { label: 'Bekleyen',      val: tasks.filter(t => t.status !== 'done').length,                                                                              bg: 'bg-gray-100',    color: 'text-enba-dark' },
-    { label: 'Acil',          val: tasks.filter(t => t.priority === 'high' && t.status !== 'done').length,                                                     bg: 'bg-rose-50',     color: 'text-rose-600' },
-    { label: 'Bugün Bitiyor', val: tasks.filter(t => { const d = new Date(t.deadline); const n = new Date(); return t.deadline && d.toDateString() === n.toDateString() && t.status !== 'done'; }).length, bg: 'bg-amber-50', color: 'text-amber-600' },
-    { label: 'Tamamlanan',    val: tasks.filter(t => t.status === 'done').length,                                                                               bg: 'bg-emerald-50',  color: 'text-emerald-600' },
+    { label: 'Bekleyen',      val: tasks.filter(t => t.status !== 'done').length,                                                                              bg: 'bg-[var(--bg-surface-low)]',       color: 'text-[var(--text-secondary)]' },
+    { label: 'Acil',          val: tasks.filter(t => t.priority === 'high' && t.status !== 'done').length,                                                     bg: 'bg-[var(--highlight-error-bg)]',   color: 'text-[var(--highlight-error-text)]' },
+    { label: 'Bugün Bitiyor', val: tasks.filter(t => { const d = new Date(t.deadline); const n = new Date(); return t.deadline && d.toDateString() === n.toDateString() && t.status !== 'done'; }).length, bg: 'bg-[var(--highlight-warning-bg)]', color: 'text-[var(--highlight-warning-text)]' },
+    { label: 'Tamamlanan',    val: tasks.filter(t => t.status === 'done').length,                                                                               bg: 'bg-[var(--highlight-success-bg)]', color: 'text-[var(--highlight-success-text)]' },
   ];
 
   // ── Önemli Görev Kartı ─────────────────────────────────────
   const ImportantTaskCard = ({ task }: { task: Task }) => {
     const isOverdue = task.deadline && new Date(task.deadline) < new Date();
+    const accentColor = task.priority === 'high' ? '#ef4444' : 'var(--enba-orange)';
     return (
-      <div className={`relative bg-enba-dark rounded-[2rem] p-7 overflow-hidden group transition-all hover:scale-[1.015] border ${task.priority === 'high' ? 'border-rose-500/20' : 'border-enba-orange/20'}`}>
-        <div className={`absolute top-0 left-0 right-0 h-1 ${task.priority === 'high' ? 'bg-gradient-to-r from-rose-500 to-rose-400' : 'bg-gradient-to-r from-enba-orange to-amber-400'}`} />
-
-        <div className="flex items-start justify-between mb-4 gap-3">
-          <div className="flex items-center gap-2 flex-wrap">
-            {task.priority === 'high' && <span className="px-2.5 py-1 bg-rose-500/20 text-rose-400 rounded-lg text-[9px] font-black uppercase tracking-widest">ACİL</span>}
-            {task.isPinned     && <span className="px-2.5 py-1 bg-enba-orange/20 text-enba-orange rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center gap-1"><Pin size={9} className="fill-current" /> SABİTLENDİ</span>}
-            {isOverdue         && <span className="px-2.5 py-1 bg-amber-500/20 text-amber-400 rounded-lg text-[9px] font-black uppercase tracking-widest">GECİKMİŞ</span>}
+      <div
+        className="relative bg-[var(--bg-surface)] rounded-2xl overflow-hidden group transition-all hover:shadow-elevated border border-[var(--border-subtle)] hover:border-[var(--border-strong)]"
+        style={{ borderTop: `3px solid ${accentColor}` }}
+      >
+        <div className="p-5">
+          <div className="flex items-start gap-2 mb-3 flex-wrap">
+            {task.priority === 'high' && (
+              <span className="px-2 py-0.5 bg-[var(--highlight-error-bg)] text-[var(--highlight-error-text)] rounded-md text-[9px] font-bold uppercase tracking-widest">ACİL</span>
+            )}
+            {task.isPinned && (
+              <span className="px-2 py-0.5 bg-[var(--bg-surface-low)] text-[var(--enba-orange)] rounded-md text-[9px] font-bold uppercase tracking-widest flex items-center gap-1">
+                <Pin size={8} className="fill-current" /> SABİT
+              </span>
+            )}
+            {isOverdue && (
+              <span className="px-2 py-0.5 bg-[var(--highlight-warning-bg)] text-[var(--highlight-warning-text)] rounded-md text-[9px] font-bold uppercase tracking-widest">GECİKMİŞ</span>
+            )}
+            <div className="ml-auto flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+              <button onClick={() => togglePin(task.id)} className={`p-1.5 rounded-lg transition-colors ${task.isPinned ? 'bg-[var(--bg-surface-high)] text-[var(--enba-orange)]' : 'hover:bg-[var(--bg-surface-low)] text-[var(--text-muted)]'}`}>
+                <Pin size={11} className={task.isPinned ? 'fill-current' : ''} />
+              </button>
+              <button onClick={() => { setEditingTask(task); setFormData(task); setShowTaskForm(true); }} className="p-1.5 hover:bg-[var(--bg-surface-low)] rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
+                <Pencil size={11} />
+              </button>
+              <button onClick={() => handleDeleteTask(task)} className="p-1.5 hover:bg-[var(--highlight-error-bg)] rounded-lg text-[var(--text-muted)] hover:text-[var(--highlight-error-text)] transition-colors">
+                <Trash2 size={11} />
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-            <button onClick={() => togglePin(task.id)} className={`p-1.5 rounded-lg transition-colors ${task.isPinned ? 'bg-enba-orange/20 text-enba-orange' : 'hover:bg-white/10 text-white/30 hover:text-white'}`}><Pin size={12} className={task.isPinned ? 'fill-current' : ''} /></button>
-            <button onClick={() => { setEditingTask(task); setFormData(task); setShowTaskForm(true); }} className="p-1.5 hover:bg-white/10 rounded-lg text-white/30 hover:text-white transition-colors"><Pencil size={12} /></button>
-            <button onClick={() => handleDeleteTask(task)} className="p-1.5 hover:bg-rose-500/20 rounded-lg text-white/30 hover:text-rose-400 transition-colors"><Trash2 size={12} /></button>
-          </div>
-        </div>
 
-        <h3 className="text-base font-black text-white leading-snug mb-2">{task.title}</h3>
-        {task.desc && <p className="text-[11px] text-white/40 font-medium leading-relaxed mb-4 line-clamp-2">{task.desc}</p>}
+          <h3 className="text-sm font-bold text-[var(--text-primary)] leading-snug mb-1.5">{task.title}</h3>
+          {task.desc && <p className="text-[11px] text-[var(--text-muted)] leading-relaxed mb-4 line-clamp-2">{task.desc}</p>}
 
-        <div className="flex items-center justify-between mt-5">
-          <div className="flex items-center gap-2">
-            <Calendar size={12} className={isOverdue ? 'text-rose-400' : 'text-white/30'} />
-            <span className={`text-[10px] font-black uppercase tracking-widest ${isOverdue ? 'text-rose-400' : 'text-white/40'}`}>
-              {task.deadline ? new Date(task.deadline).toLocaleDateString('tr-TR') : 'SÜRESİZ'}
-            </span>
+          <div className="flex items-center justify-between mt-4 pt-3 border-t border-[var(--border-subtle)]">
+            <div className="flex items-center gap-1.5">
+              <Calendar size={11} className={isOverdue ? 'text-[var(--highlight-error-text)]' : 'text-[var(--text-muted)]'} />
+              <span className={`text-[10px] font-bold uppercase tracking-wide ${isOverdue ? 'text-[var(--highlight-error-text)]' : 'text-[var(--text-muted)]'}`}>
+                {task.deadline ? new Date(task.deadline).toLocaleDateString('tr-TR') : 'Süresiz'}
+              </span>
+            </div>
+            <button onClick={() => toggleTask(task.id)} className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--highlight-success-bg)] hover:opacity-80 text-[var(--highlight-success-text)] rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all active:scale-95">
+              <Check size={10} strokeWidth={3} /> Tamamlandı
+            </button>
           </div>
-          <button onClick={() => toggleTask(task.id)} className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-emerald-500/20 hover:text-emerald-400 text-white/50 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border border-white/5 hover:border-emerald-500/20 active:scale-95">
-            <Check size={11} strokeWidth={3} /> Tamamlandı
-          </button>
         </div>
       </div>
     );
@@ -610,41 +601,56 @@ export const Tasks: React.FC = () => {
   const TaskCard = ({ task }: { task: Task }) => {
     const isDone    = task.status === 'done';
     const isOverdue = task.deadline && new Date(task.deadline) < new Date() && !isDone;
+    const priorityAccent: Record<string, string> = { high: '#ef4444', medium: '#f59e0b', low: '#94a3b8' };
     return (
-      <div className={`group bg-white px-5 py-4 rounded-2xl border transition-all flex items-center gap-4 ${isDone ? 'opacity-40 border-transparent' : 'border-gray-100 hover:border-gray-200 hover:shadow-sm'}`}>
-        <div className={`w-1 h-8 rounded-full flex-shrink-0 ${task.priority === 'high' ? 'bg-rose-400' : task.priority === 'medium' ? 'bg-amber-400' : 'bg-blue-300'}`} />
-        <button onClick={() => toggleTask(task.id)} className={`w-5 h-5 flex-shrink-0 rounded-full border-2 flex items-center justify-center transition-all ${isDone ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-gray-200 hover:border-emerald-400 text-transparent'}`}>
-          <Check size={11} strokeWidth={4} />
+      <div
+        className={`group bg-[var(--bg-surface)] px-5 py-3.5 rounded-xl border transition-all flex items-center gap-3.5 ${
+          isDone
+            ? 'opacity-50 border-[var(--border-subtle)]'
+            : 'border-[var(--border-subtle)] hover:border-[var(--border-strong)] hover:shadow-card'
+        }`}
+        style={isDone ? undefined : { borderLeft: `3px solid ${priorityAccent[task.priority]}` }}
+      >
+        <button onClick={() => toggleTask(task.id)} className={`w-5 h-5 flex-shrink-0 rounded-full border-2 flex items-center justify-center transition-all ${isDone ? 'bg-[var(--highlight-success-text)] border-[var(--highlight-success-text)] text-white' : 'border-[var(--border-strong)] hover:border-[var(--highlight-success-text)] text-transparent'}`}>
+          <Check size={10} strokeWidth={4} />
         </button>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5">
-            {task.isPinned && <Pin size={10} className="text-enba-orange fill-current flex-shrink-0" />}
-            <span className={`text-[13px] font-bold truncate ${isDone ? 'line-through text-gray-300' : 'text-enba-dark'}`}>{task.title}</span>
+            {task.isPinned && <Pin size={10} className="text-[var(--enba-orange)] fill-current flex-shrink-0" />}
+            <span className={`text-[13px] font-semibold truncate ${isDone ? 'line-through text-[var(--text-muted)]' : 'text-[var(--text-primary)]'}`}>{task.title}</span>
           </div>
-          <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-tight">
-            <Calendar size={10} className={isOverdue ? 'text-rose-400' : 'text-gray-300'} />
-            <span className={isOverdue ? 'text-rose-400' : 'text-gray-400'}>{task.deadline ? new Date(task.deadline).toLocaleDateString('tr-TR') : 'Süresiz'}</span>
-            {task.source === 'outlook' && <span className="text-blue-400">· MS</span>}
-            {task.source === 'google'  && <span className="text-emerald-500">· Google</span>}
+          <div className="flex items-center gap-2 text-[10px] font-medium">
+            <Calendar size={10} className={isOverdue ? 'text-[var(--highlight-error-text)]' : 'text-[var(--text-muted)]'} />
+            <span className={isOverdue ? 'text-[var(--highlight-error-text)]' : 'text-[var(--text-muted)]'}>
+              {task.deadline ? new Date(task.deadline).toLocaleDateString('tr-TR') : 'Süresiz'}
+            </span>
+            {task.source === 'outlook' && <span className="text-blue-500">· MS</span>}
+            {task.source === 'google'  && <span className="text-rose-400">· Google</span>}
           </div>
         </div>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-          <select value={task.projectId} onChange={e => handleMoveTask(task.id, e.target.value)} onClick={e => e.stopPropagation()} className="text-[9px] font-black text-gray-400 bg-gray-50 border-none rounded-lg px-2 py-1 cursor-pointer hover:text-enba-orange max-w-[80px] truncate outline-none">
+          <select value={task.projectId} onChange={e => handleMoveTask(task.id, e.target.value)} onClick={e => e.stopPropagation()} className="text-[9px] font-bold text-[var(--text-muted)] bg-[var(--bg-surface-low)] border-none rounded-lg px-2 py-1 cursor-pointer hover:text-[var(--enba-orange)] max-w-[80px] truncate outline-none">
             {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
-          <button onClick={() => togglePin(task.id)} className={`p-1.5 rounded-lg transition-colors ${task.isPinned ? 'bg-orange-50 text-enba-orange' : 'hover:bg-gray-100 text-gray-300'}`}><Pin size={11} className={task.isPinned ? 'fill-current' : ''} /></button>
-          <button onClick={() => { setEditingTask(task); setFormData(task); setShowTaskForm(true); }} className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-300 hover:text-enba-dark transition-colors"><Pencil size={11} /></button>
-          <button onClick={() => handleDeleteTask(task)} className="p-1.5 hover:bg-rose-50 rounded-lg text-gray-300 hover:text-rose-500 transition-colors"><Trash2 size={11} /></button>
+          <button onClick={() => togglePin(task.id)} className={`p-1.5 rounded-lg transition-colors ${task.isPinned ? 'bg-[var(--bg-surface-high)] text-[var(--enba-orange)]' : 'hover:bg-[var(--bg-surface-low)] text-[var(--text-muted)]'}`}>
+            <Pin size={11} className={task.isPinned ? 'fill-current' : ''} />
+          </button>
+          <button onClick={() => { setEditingTask(task); setFormData(task); setShowTaskForm(true); }} className="p-1.5 hover:bg-[var(--bg-surface-low)] rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
+            <Pencil size={11} />
+          </button>
+          <button onClick={() => handleDeleteTask(task)} className="p-1.5 hover:bg-[var(--highlight-error-bg)] rounded-lg text-[var(--text-muted)] hover:text-[var(--highlight-error-text)] transition-colors">
+            <Trash2 size={11} />
+          </button>
         </div>
       </div>
     );
   };
 
   return (
-    <div className="flex flex-col h-screen bg-slate-50 animate-fade-in overflow-hidden">
+    <div className="flex flex-col h-screen bg-[var(--bg-main)] animate-fade-in overflow-hidden">
 
       {/* ── TOP HEADER ─────────────────────────────────────── */}
-      <header className="bg-white border-b border-gray-100 px-8 pt-6 pb-0 shadow-sm flex-shrink-0">
+      <header className="bg-[var(--bg-surface)] border-b border-[var(--border-subtle)] px-8 pt-6 pb-0 shadow-sm flex-shrink-0">
         {/* Row 1: title + actions */}
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-4">
@@ -652,17 +658,17 @@ export const Tasks: React.FC = () => {
               <ClipboardList size={24} />
             </div>
             <div>
-              <h1 className="text-2xl font-black text-enba-dark tracking-tighter uppercase italic leading-none">Görev & İş Takibi</h1>
-              <p className="text-[10px] text-gray-400 font-black uppercase tracking-[3px] mt-1">{tasks.filter(t => t.status !== 'done').length} Aktif Görev</p>
+              <h1 className="text-2xl font-black text-[var(--text-primary)] tracking-tighter uppercase italic leading-none">Görev & İş Takibi</h1>
+              <p className="text-[10px] text-[var(--text-muted)] font-black uppercase tracking-[3px] mt-1">{tasks.filter(t => t.status !== 'done').length} Aktif Görev</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             {syncStatus && <span className="text-[9px] text-enba-orange font-black uppercase animate-pulse hidden md:block">{syncStatus}</span>}
             <div className="relative hidden sm:block">
-              <input type="text" placeholder="Ara..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="bg-gray-50 border-none rounded-xl px-8 py-2.5 text-[11px] font-medium text-enba-dark focus:ring-2 focus:ring-enba-orange/20 w-32 focus:w-48 transition-all outline-none" />
-              <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-300" />
+              <input type="text" placeholder="Ara..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="bg-[var(--bg-surface-low)] border-none rounded-xl px-8 py-2.5 text-[11px] font-medium text-[var(--text-primary)] focus:ring-2 focus:ring-[var(--enba-orange)]/20 w-32 focus:w-48 transition-all outline-none" />
+              <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
             </div>
-            <button onClick={() => handleSyncAll()} disabled={!msAccount || isSyncing} className={`w-10 h-10 flex items-center justify-center rounded-xl border border-gray-100 text-gray-400 hover:text-enba-orange hover:bg-orange-50 transition-all disabled:opacity-30 ${isSyncing ? 'animate-spin text-enba-orange' : ''}`} title="Senkronize Et"><RotateCw size={16} /></button>
+            <button onClick={() => handleSyncAll()} disabled={!msAccount || isSyncing} className={`w-10 h-10 flex items-center justify-center rounded-xl border border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-[var(--enba-orange)] hover:bg-[var(--bg-surface-low)] transition-all disabled:opacity-30 ${isSyncing ? 'animate-spin text-[var(--enba-orange)]' : ''}`} title="Senkronize Et"><RotateCw size={16} /></button>
             <button onClick={() => setShowTaskForm(true)} className="flex items-center gap-2 px-6 py-2.5 bg-enba-orange text-white rounded-xl font-black text-[10px] uppercase tracking-[2px] shadow-lg shadow-enba-orange/20 hover:brightness-110 active:scale-95 transition-all">
               <PlusCircle size={15} /> Yeni Görev
             </button>
@@ -681,11 +687,11 @@ export const Tasks: React.FC = () => {
 
         {/* Row 3: project tabs + controls */}
         <div className="flex items-center gap-2 overflow-x-auto pb-3 custom-scrollbar">
-          <button onClick={() => setSelectedProjectId('all')} className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${selectedProjectId === 'all' ? 'bg-enba-dark text-white shadow-lg' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}`}>
+          <button onClick={() => setSelectedProjectId('all')} className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${selectedProjectId === 'all' ? 'bg-[var(--text-primary)] text-[var(--bg-surface)] shadow-lg' : 'bg-[var(--bg-surface-low)] text-[var(--text-muted)] hover:bg-[var(--bg-surface-high)]'}`}>
             <Layers size={13} /> Tümü <span className="opacity-50">{tasks.length}</span>
           </button>
           {projects.map(p => (
-            <div key={p.id} className={`flex-shrink-0 group/tab flex items-center rounded-xl transition-all ${selectedProjectId === p.id ? 'bg-enba-orange/10 text-enba-orange border border-enba-orange/20' : 'bg-gray-100 text-gray-400 hover:bg-gray-200 border border-transparent'}`}>
+            <div key={p.id} className={`flex-shrink-0 group/tab flex items-center rounded-xl transition-all ${selectedProjectId === p.id ? 'bg-[var(--bg-surface-low)] text-[var(--enba-orange)] border border-[var(--border-strong)]' : 'bg-[var(--bg-surface-low)] text-[var(--text-muted)] hover:bg-[var(--bg-surface-high)] border border-transparent'}`}>
               <button onClick={() => setSelectedProjectId(p.id)} className="flex items-center gap-2 px-4 py-2 text-[10px] font-black uppercase tracking-widest">
                 <Hash size={11} />{p.name}<span className="opacity-50">{tasks.filter(t => t.projectId === p.id).length}</span>
               </button>
@@ -695,16 +701,16 @@ export const Tasks: React.FC = () => {
               </div>
             </div>
           ))}
-          <button onClick={() => setShowProjectForm(true)} className="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 border border-dashed border-gray-200 rounded-xl text-[10px] font-black text-gray-400 uppercase tracking-widest hover:border-enba-orange hover:text-enba-orange transition-all">
+          <button onClick={() => setShowProjectForm(true)} className="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 border border-dashed border-[var(--border-strong)] rounded-xl text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest hover:border-[var(--enba-orange)] hover:text-[var(--enba-orange)] transition-all">
             <PlusCircle size={11} /> Proje
           </button>
           <div className="ml-auto flex items-center gap-2 flex-shrink-0">
-            <div className="flex bg-gray-100 p-0.5 rounded-xl">
+            <div className="flex bg-[var(--bg-surface-low)] p-0.5 rounded-xl">
               {([{id:'all',label:'Tümü'},{id:'google',label:'Google'},{id:'outlook',label:'MS'}] as const).map(tab => (
-                <button key={tab.id} onClick={() => setSourceFilter(tab.id as any)} className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${sourceFilter === tab.id ? 'bg-white text-enba-dark shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}>{tab.label}</button>
+                <button key={tab.id} onClick={() => setSourceFilter(tab.id as any)} className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${sourceFilter === tab.id ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-sm' : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'}`}>{tab.label}</button>
               ))}
             </div>
-            <button onClick={() => setIsCompact(!isCompact)} className={`w-9 h-9 flex items-center justify-center rounded-xl border transition-all ${isCompact ? 'border-enba-orange/20 bg-enba-orange/10 text-enba-orange' : 'border-gray-100 bg-white text-gray-400 hover:bg-gray-50'}`} title={isCompact ? 'Geniş Görünüm' : 'Dar Görünüm'}>
+            <button onClick={() => setIsCompact(!isCompact)} className={`w-9 h-9 flex items-center justify-center rounded-xl border transition-all ${isCompact ? 'border-[var(--border-strong)] bg-[var(--bg-surface-low)] text-[var(--enba-orange)]' : 'border-[var(--border-subtle)] bg-[var(--bg-surface)] text-[var(--text-muted)] hover:bg-[var(--bg-surface-low)]'}`} title={isCompact ? 'Geniş Görünüm' : 'Dar Görünüm'}>
               {isCompact ? <Maximize size={13} /> : <Minimize size={13} />}
             </button>
           </div>
