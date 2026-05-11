@@ -64,6 +64,8 @@ import {
   BarChart3,
   ChevronRight,
   ChevronLeft,
+  ChevronDown,
+  ChevronUp,
   LogOut,
   SlidersHorizontal,
   Calendar as CalendarIcon,
@@ -97,6 +99,7 @@ export const App: React.FC = () => {
   const [history, setHistory] = useState<ModuleType[]>(['dashboard']);
   const [historyIndex, setHistoryIndex] = useState(0);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [profileAvatar, setProfileAvatar] = useState('');
   const [renderError, setRenderError] = useState<string | null>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -400,17 +403,28 @@ export const App: React.FC = () => {
 
             if (groupItems.length === 0) return null;
 
+            const isCollapsed = collapsedGroups.has(group.id);
+            const toggleCollapse = () => setCollapsedGroups(prev => {
+              const next = new Set(prev);
+              next.has(group.id) ? next.delete(group.id) : next.add(group.id);
+              return next;
+            });
+
             return (
               <div key={group.id} className="mb-3">
                 {isSidebarOpen ? (
-                  <div className={`px-3 mb-1 text-[9px] font-black uppercase tracking-[2px] text-white/30 ${gIdx === 0 ? 'mt-0' : 'mt-2'}`}>
-                    {group.title}
-                  </div>
+                  <button
+                    onClick={toggleCollapse}
+                    className={`w-full flex items-center justify-between px-3 mb-1 text-[9px] font-black uppercase tracking-[2px] text-white/30 hover:text-white/60 transition-colors ${gIdx === 0 ? 'mt-0' : 'mt-2'}`}
+                  >
+                    <span>{group.title}</span>
+                    {isCollapsed ? <ChevronRight size={10} /> : <ChevronDown size={10} />}
+                  </button>
                 ) : (
                   gIdx > 0 && <div className="w-6 mx-auto h-[1px] bg-white/10 my-3 rounded-full" />
                 )}
-                
-                <div className="flex flex-col gap-0.5">
+
+                {!isCollapsed && <div className="flex flex-col gap-0.5">
                   {groupItems.map(item => {
                     const active = activeModule === item.id;
                     return (
@@ -464,7 +478,7 @@ export const App: React.FC = () => {
                       </button>
                     );
                   })}
-                </div>
+                </div>}
               </div>
             );
           })}
