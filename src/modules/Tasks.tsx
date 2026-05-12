@@ -442,7 +442,7 @@ export const Tasks: React.FC = () => {
   const [deleteTargetId, setDeleteTargetId] = useState('none');
   const [formData, setFormData] = useState<Partial<Task>>({ title:'', desc:'', priority:'medium', deadline:'', projectId:'', moduleRef:'genel' });
   const [leftPanel, setLeftPanel] = useState<'open'|'slim'>('open');
-  const [rightPanel, setRightPanel] = useState<'open'|'slim'|'hidden'>('open');
+  const [rightPanel, setRightPanel] = useState<'open'|'slim'|'hidden'>('hidden');
   const [showRestructureSelect, setShowRestructureSelect] = useState(false);
   const [restructureAllProjects, setRestructureAllProjects] = useState(true);
   const [restructureProjectIds, setRestructureProjectIds] = useState<Set<string>>(new Set());
