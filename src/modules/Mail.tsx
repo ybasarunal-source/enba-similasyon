@@ -10,9 +10,8 @@ import {
   PenSquare,
   Search,
   X,
-  ChevronRight,
-  Maximize,
-  Minimize
+  Plug,
+  CheckCircle2
 } from 'lucide-react';
 
 interface Email {
@@ -43,14 +42,19 @@ export const Mail: React.FC = () => {
 
   const [msConnected, setMsConnected] = useState(false);
   const [googleConnected, setGoogleConnected] = useState(false);
+  const [isCheckingConnections, setIsCheckingConnections] = useState(true);
+  const [msConnecting, setMsConnecting] = useState(false);
+  const [googleConnecting, setGoogleConnecting] = useState(false);
 
   const checkConnections = async () => {
+    setIsCheckingConnections(true);
     const msToken = await microsoftService.getToken(['User.Read', 'Mail.ReadWrite', 'Mail.Send']);
     setMsConnected(!!msToken);
 
     const gToken = googleService.getAccessToken();
     setGoogleConnected(!!gToken);
-    
+    setIsCheckingConnections(false);
+
     if (msToken || gToken) {
       fetchEmails();
     }
@@ -86,15 +90,28 @@ export const Mail: React.FC = () => {
   };
 
   const handleConnectMs = async () => {
+    setMsConnecting(true);
     try {
       await microsoftService.loginRedirect();
+      const msToken = await microsoftService.getToken(['User.Read', 'Mail.ReadWrite', 'Mail.Send']);
+      setMsConnected(!!msToken);
+      if (msToken) fetchEmails();
     } catch (err) {
       console.error(err);
+    } finally {
+      setMsConnecting(false);
     }
   };
 
   const handleConnectGoogle = () => {
+    setGoogleConnecting(true);
     googleService.loginRedirect();
+    setTimeout(() => {
+      const gToken = googleService.getAccessToken();
+      setGoogleConnected(!!gToken);
+      setGoogleConnecting(false);
+      if (gToken) fetchEmails();
+    }, 3000);
   };
 
   const handleSendEmail = async (e: React.FormEvent) => {
@@ -153,6 +170,104 @@ export const Mail: React.FC = () => {
       }
     }
   };
+
+  if (isCheckingConnections) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[#FAFAFA]">
+        <RefreshCw size={24} className="animate-spin text-gray-300" />
+      </div>
+    );
+  }
+
+  if (!msConnected && !googleConnected) {
+    return (
+      <div className="flex h-screen bg-[#FAFAFA] animate-fade-in overflow-hidden items-center justify-center p-8">
+        <div className="w-full max-w-2xl">
+          <div className="text-center mb-12">
+            <div className="w-16 h-16 bg-enba-dark rounded-2xl flex items-center justify-center text-enba-orange shadow-xl mx-auto mb-5">
+              <MailIcon size={28} />
+            </div>
+            <h1 className="text-2xl font-black text-enba-dark tracking-tight">E-Posta Hesabınızı Bağlayın</h1>
+            <p className="text-sm text-gray-400 mt-2 font-medium">Microsoft veya Google hesabınızı bağlayarak tüm e-postalarınızı bu ekrandan yönetin.</p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            {/* Microsoft */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col gap-5 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-xl bg-[#0078d4]/10 flex items-center justify-center flex-shrink-0">
+                  <svg viewBox="0 0 23 23" className="w-6 h-6">
+                    <rect x="1" y="1" width="10" height="10" fill="#f25022"/>
+                    <rect x="12" y="1" width="10" height="10" fill="#7fba00"/>
+                    <rect x="1" y="12" width="10" height="10" fill="#00a4ef"/>
+                    <rect x="12" y="12" width="10" height="10" fill="#ffb900"/>
+                  </svg>
+                </div>
+                <div>
+                  <h2 className="text-sm font-black text-enba-dark">Microsoft</h2>
+                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Outlook / Office 365</p>
+                </div>
+              </div>
+              <ul className="space-y-2">
+                {['Gelen kutusu ve gönderilen e-postalar', 'Office 365 kurumsal hesaplar', 'Hotmail, Live, Outlook.com'].map(f => (
+                  <li key={f} className="flex items-center gap-2 text-xs text-gray-500">
+                    <CheckCircle2 size={13} className="text-[#0078d4] flex-shrink-0" />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <button
+                onClick={handleConnectMs}
+                disabled={msConnecting}
+                className="mt-auto w-full py-3 bg-[#0078d4] text-white rounded-xl text-xs font-black uppercase tracking-widest shadow shadow-blue-200 hover:bg-blue-600 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-60"
+              >
+                {msConnecting ? <RefreshCw size={14} className="animate-spin" /> : <Plug size={14} />}
+                {msConnecting ? 'Bağlanıyor...' : 'Microsoft ile Bağlan'}
+              </button>
+            </div>
+
+            {/* Google */}
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col gap-5 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0">
+                  <svg viewBox="0 0 48 48" className="w-6 h-6">
+                    <path fill="#EA4335" d="M24 9.5c3.54 0 6.72 1.22 9.21 3.22l6.89-6.89C35.83 2.1 30.34 0 24 0 15.02 0 7.3 5.24 3.55 12.9l7.98 6.21C13.34 13.31 18.28 9.5 24 9.5z"/>
+                    <path fill="#4285F4" d="M46.5 24.5c0-1.65-.15-3.25-.43-4.79H24v9.07h12.65c-.55 2.93-2.2 5.41-4.67 7.07l7.22 5.61C43.36 37.55 46.5 31.5 46.5 24.5z"/>
+                    <path fill="#FBBC05" d="M11.53 28.51A14.5 14.5 0 0 1 9.5 24c0-1.57.26-3.09.73-4.51L2.25 13.28A23.96 23.96 0 0 0 0 24c0 3.86.91 7.51 2.55 10.73l8.98-6.22z"/>
+                    <path fill="#34A853" d="M24 48c6.48 0 11.92-2.15 15.9-5.85l-7.22-5.61c-2.02 1.36-4.6 2.16-8.68 2.16-5.72 0-10.66-3.81-12.47-9.1l-7.98 6.21C7.3 42.76 15.02 48 24 48z"/>
+                  </svg>
+                </div>
+                <div>
+                  <h2 className="text-sm font-black text-enba-dark">Google</h2>
+                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Gmail / Workspace</p>
+                </div>
+              </div>
+              <ul className="space-y-2">
+                {['Gmail ve Google Workspace', 'Özel domain e-posta (@sirketiniz.com)', 'Wix ile bağlı Google hesapları'].map(f => (
+                  <li key={f} className="flex items-center gap-2 text-xs text-gray-500">
+                    <CheckCircle2 size={13} className="text-[#34A853] flex-shrink-0" />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <button
+                onClick={handleConnectGoogle}
+                disabled={googleConnecting}
+                className="mt-auto w-full py-3 bg-[#4285F4] text-white rounded-xl text-xs font-black uppercase tracking-widest shadow shadow-blue-200 hover:bg-blue-600 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-60"
+              >
+                {googleConnecting ? <RefreshCw size={14} className="animate-spin" /> : <Plug size={14} />}
+                {googleConnecting ? 'Bağlanıyor...' : 'Google ile Bağlan'}
+              </button>
+            </div>
+          </div>
+
+          <p className="text-center text-[10px] text-gray-300 font-bold uppercase tracking-widest mt-8">
+            Birden fazla hesap ekleyebilirsiniz — her hesap ayrı filtre olarak görünür
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-[#FAFAFA] animate-fade-in overflow-hidden">
