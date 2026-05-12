@@ -44,6 +44,7 @@ export const Mail: React.FC = () => {
   const [googleConnected, setGoogleConnected] = useState(false);
   const [isCheckingConnections, setIsCheckingConnections] = useState(true);
   const [msConnecting, setMsConnecting] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   const checkConnections = async () => {
     setIsCheckingConnections(true);
@@ -72,6 +73,7 @@ export const Mail: React.FC = () => {
     const useGoogleConnected = override?.google ?? googleConnected;
 
     setIsLoading(true);
+    setFetchError(null);
     let allEmails: Email[] = [];
 
     try {
@@ -81,14 +83,35 @@ export const Mail: React.FC = () => {
       }
 
       if (useGoogleConnected) {
-        const gEmails = await googleService.getRecentEmails(30);
-        allEmails = [...allEmails, ...gEmails];
+        // Token'ı doğrudan test et
+        const token = googleService.getAccessToken();
+        if (!token) {
+          setFetchError('Google token bulunamadı — lütfen yeniden bağlanın.');
+          setGoogleConnected(false);
+        } else {
+          const testRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/profile', {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (!testRes.ok) {
+            const errBody = await testRes.json().catch(() => ({}));
+            const msg = errBody?.error?.message || testRes.statusText;
+            setFetchError(`Gmail API hatası ${testRes.status}: ${msg}`);
+            if (testRes.status === 401) {
+              googleService.logout();
+              setGoogleConnected(false);
+            }
+          } else {
+            const gEmails = await googleService.getRecentEmails(30);
+            allEmails = [...allEmails, ...gEmails];
+          }
+        }
       }
 
-      // Sort by date descending
       allEmails.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       setEmails(allEmails);
     } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setFetchError(`Bağlantı hatası: ${msg}`);
       console.error('Fetch emails error:', err);
     } finally {
       setIsLoading(false);
@@ -365,6 +388,15 @@ export const Mail: React.FC = () => {
 
         <div className="flex-1 overflow-y-auto bg-[#FAFAFA] p-6">
           <div className="max-w-4xl mx-auto flex flex-col gap-3">
+            {fetchError && (
+              <div className="bg-rose-50 border border-rose-200 rounded-xl px-5 py-4 text-sm text-rose-700 font-medium flex items-start gap-3">
+                <span className="flex-shrink-0 text-rose-400 mt-0.5">⚠</span>
+                <div>
+                  <div className="font-black text-rose-800 text-xs uppercase tracking-widest mb-1">Bağlantı Hatası</div>
+                  {fetchError}
+                </div>
+              </div>
+            )}
             {isLoading && emails.length === 0 ? (
               <div className="flex items-center justify-center p-10">
                 <RefreshCw size={24} className="animate-spin text-gray-300" />
