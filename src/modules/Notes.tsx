@@ -199,9 +199,15 @@ export const Notes: React.FC = () => {
     setCreateError('');
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_H3QZ8w1SForuOFFsJzYwVQ_RFtjNu6L';
+      const authToken = session?.access_token ?? anonKey;
       const res = await fetch(EDGE_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+          'apikey': anonKey,
+        },
         body: JSON.stringify({
           noteContent: selectedNote.content,
           noteTitle: selectedNote.title,
