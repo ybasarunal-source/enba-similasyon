@@ -17,12 +17,9 @@ export const ModulesOverview: React.FC<ModulesOverviewProps> = ({ navigate, menu
 
   return (
     <div className="p-8 animate-fade-in bg-[var(--enba-bg)] min-h-full space-y-8">
-      <div className="flex justify-between items-end">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-800 mb-1">Ana Sayfa</h1>
-          <p className="text-xs font-medium text-gray-400">Platformdaki tüm uygulama ve araçlara hızlı erişim sağlayın.</p>
-        </div>
-        <div className="text-[9px] text-gray-300 font-bold mb-1 tracking-widest opacity-50">VER 1.4</div>
+      <div className="flex justify-between items-center">
+        <h1 className="text-lg font-semibold text-gray-800 m-0">Ana Sayfa</h1>
+        <div className="text-[9px] text-gray-300 font-bold tracking-widest opacity-50">VER 1.4</div>
       </div>
 
       {/* Search Bar */}
