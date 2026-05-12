@@ -101,7 +101,7 @@ export const App: React.FC = () => {
   // Sayfa geçmişi — geri/ileri navigasyon için
   const [history, setHistory] = useState<ModuleType[]>(['dashboard']);
   const [historyIndex, setHistoryIndex] = useState(0);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [profileAvatar, setProfileAvatar] = useState('');
   const [renderError, setRenderError] = useState<string | null>(null);
