@@ -214,7 +214,10 @@ export const Notes: React.FC = () => {
           projects: projectsWithColor.map(p => ({ id: p.id, name: p.name })),
         }),
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        throw new Error(`HTTP ${res.status} | ${JSON.stringify(errBody)}`);
+      }
       const result = await res.json();
       const tasks: AiTask[] = result.tasks || [];
       const reminders: AiReminder[] = result.reminders || [];
