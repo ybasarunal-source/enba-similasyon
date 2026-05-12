@@ -558,9 +558,29 @@ export const Tasks: React.FC = () => {
   }, []);
 
   // ── Handlers ──────────────────────────────────────────────
+  const playDoneSound = () => {
+    try {
+      const ctx = new AudioContext();
+      const notes = [523.25, 659.25, 783.99]; // C5, E5, G5
+      notes.forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        const t = ctx.currentTime + i * 0.1;
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(0.18, t + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
+        osc.start(t); osc.stop(t + 0.35);
+      });
+    } catch { /* AudioContext not available */ }
+  };
+
   const toggleTask = async (id: string|number) => {
     const task = tasks.find(t=>t.id===id); if (!task) return;
     const newStatus = task.status==='done' ? 'todo' : 'done';
+    if (newStatus === 'done') playDoneSound();
     setTasks(prev=>prev.map(t=>t.id===id ? { ...t, status:newStatus, completedAt: newStatus==='done'?new Date().toISOString():undefined } : t));
     tasksAPI.update(id.toString(), { status:newStatus });
     if (msAccount && task.msTodoId && task.msListId) await microsoftService.syncTask(task.msListId, { ...task, status:newStatus }, task.msTodoId);
