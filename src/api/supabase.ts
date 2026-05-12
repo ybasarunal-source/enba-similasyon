@@ -610,12 +610,12 @@ export const pnlReportsAPI = {
     if (!user) return [];
 
     const profile = await profileAPI.getMyProfile();
-    const query = supabase.from('pnl_reports').select('*');
-    
+    // Supabase JS v2: builder is immutable — chain must be assigned
+    let query = supabase.from('pnl_reports').select('*');
     if (profile?.company_id) {
-      query.eq('company_id', profile.company_id);
+      query = query.eq('company_id', profile.company_id) as typeof query;
     } else {
-      query.eq('user_id', user.id);
+      query = query.eq('user_id', user.id) as typeof query;
     }
 
     const { data, error } = await query.order('created_at', { ascending: false });
@@ -632,7 +632,9 @@ export const pnlReportsAPI = {
     if (!user) return null;
 
     const profile = await profileAPI.getMyProfile();
-    const payload: any = { ...report, user_id: user.id };
+    // id sütunu uuid — client-side id'yi gönderme, Supabase gen_random_uuid() atar
+    const { id: _omit, ...reportWithoutId } = report;
+    const payload: any = { ...reportWithoutId, user_id: user.id };
     if (profile?.company_id) payload.company_id = profile.company_id;
 
     const { data, error } = await supabase
