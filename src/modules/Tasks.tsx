@@ -836,17 +836,21 @@ export const Tasks: React.FC = () => {
 
       {/* ── RIGHT PANEL — slim strip ─────────────────────────── */}
       {rightPanel==='slim' && (
-        <aside
-          onClick={() => setRightPanel('open')}
-          title="Paneli aç"
-          style={{ width:44, flexShrink:0, borderLeft:`1px solid ${BOLD.line}`, background:BOLD.ink, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:10, cursor:'pointer' }}
-        >
-          <Timer size={14} style={{ color: pomRunning ? BOLD.accent : 'rgba(255,255,255,0.4)' }}/>
-          <div style={{
-            fontSize:11, fontFamily:'JetBrains Mono,monospace', fontWeight:600,
-            color:'#fff', writingMode:'vertical-rl', letterSpacing:'0.08em',
-            transform:'rotate(180deg)',
-          }}>
+        <aside style={{ width:44, flexShrink:0, borderLeft:`1px solid ${BOLD.line}`, background:BOLD.ink, display:'flex', flexDirection:'column', alignItems:'center', paddingTop:64, paddingBottom:16, gap:10 }}>
+          {/* Aç butonu — gizleme tuşunun hemen altında */}
+          <button
+            onClick={() => setRightPanel('open')}
+            title="Paneli aç"
+            style={{ width:28, height:28, borderRadius:8, border:'1px solid rgba(255,255,255,0.12)', background:'rgba(255,255,255,0.07)', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', color:'rgba(255,255,255,0.5)', flexShrink:0, transition:'background .15s' }}
+            onMouseEnter={e => (e.currentTarget.style.background='rgba(255,255,255,0.15)')}
+            onMouseLeave={e => (e.currentTarget.style.background='rgba(255,255,255,0.07)')}
+          >
+            <ChevronLeft size={12} strokeWidth={2.5}/>
+          </button>
+
+          {/* Sayaç */}
+          <Timer size={14} style={{ color: pomRunning ? BOLD.accent : 'rgba(255,255,255,0.35)', marginTop:8 }}/>
+          <div style={{ fontSize:11, fontFamily:'JetBrains Mono,monospace', fontWeight:600, color:'#fff', writingMode:'vertical-rl', letterSpacing:'0.08em', transform:'rotate(180deg)' }}>
             {String(Math.floor(pomSecs/60)).padStart(2,'0')}:{String(pomSecs%60).padStart(2,'0')}
           </div>
           {pomRunning && (
