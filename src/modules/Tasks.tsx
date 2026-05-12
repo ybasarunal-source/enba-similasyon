@@ -477,7 +477,7 @@ export const Tasks: React.FC = () => {
   const [restructureProjectIds, setRestructureProjectIds] = useState<Set<string>>(new Set());
   const [restructureQueue, setRestructureQueue] = useState<Task[]>([]);
   const [restructureIdx, setRestructureIdx] = useState(0);
-  const [restructureEdits, setRestructureEdits] = useState<{ priority: Task['priority']; deadline: string; projectId: string }>({ priority:'medium', deadline:'', projectId:'' });
+  const [restructureEdits, setRestructureEdits] = useState<{ priority: Task['priority']; deadline: string; projectId: string; done: boolean }>({ priority:'medium', deadline:'', projectId:'', done:false });
   const [pomSecs, setPomSecs] = useState(25*60);
   const [pomRunning, setPomRunning] = useState(false);
   const [pomMode, setPomMode] = useState<'work'|'break'>('work');
@@ -592,14 +592,14 @@ export const Tasks: React.FC = () => {
       });
     setRestructureQueue(queue);
     setRestructureIdx(0);
-    if (queue.length > 0) setRestructureEdits({ priority: queue[0].priority, deadline: queue[0].deadline||'', projectId: queue[0].projectId||'' });
+    if (queue.length > 0) setRestructureEdits({ priority: queue[0].priority, deadline: queue[0].deadline||'', projectId: queue[0].projectId||'', done: queue[0].status==='done' });
     setShowRestructureSelect(false);
   };
 
   const applyRestructureEdit = (advance: boolean) => {
     if (advance) {
       const task = restructureQueue[restructureIdx];
-      const updated = { ...task, ...restructureEdits };
+      const updated = { ...task, ...restructureEdits, status: restructureEdits.done ? 'done' : (task.status === 'done' ? 'todo' : task.status) } as Task;
       setTasks(prev => prev.map(t => t.id === task.id ? updated : t));
       tasksAPI.update(task.id.toString(), toSupabaseTask(updated));
     }
@@ -607,7 +607,7 @@ export const Tasks: React.FC = () => {
     if (next >= restructureQueue.length) { setRestructureQueue([]); return; }
     const nextTask = restructureQueue[next];
     setRestructureIdx(next);
-    setRestructureEdits({ priority: nextTask.priority, deadline: nextTask.deadline||'', projectId: nextTask.projectId||'' });
+    setRestructureEdits({ priority: nextTask.priority, deadline: nextTask.deadline||'', projectId: nextTask.projectId||'', done: nextTask.status==='done' });
   };
 
   const handleAddTask = async (e: React.FormEvent) => {
@@ -1136,6 +1136,12 @@ export const Tasks: React.FC = () => {
                     {proj && <span style={{ position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', width:9, height:9, borderRadius:3, background:proj.color, pointerEvents:'none' }}/>}
                   </div>
                 </div>
+                {/* Done toggle */}
+                <label className="flex items-center gap-3 p-3.5 rounded-xl cursor-pointer transition-all" style={{ background: restructureEdits.done ? '#22c55e15' : BOLD.bg, border:`1.5px solid ${restructureEdits.done ? '#22c55e' : BOLD.line}` }}>
+                  <input type="checkbox" checked={restructureEdits.done} onChange={e => setRestructureEdits(ed=>({...ed, done:e.target.checked}))} style={{ accentColor:'#22c55e', width:16, height:16, cursor:'pointer' }}/>
+                  <Check size={14} style={{ color: restructureEdits.done ? '#22c55e' : BOLD.inkFaint }}/>
+                  <span className="text-[13px] font-bold" style={{ color: restructureEdits.done ? '#22c55e' : BOLD.inkSoft }}>Tamamlandı olarak işaretle</span>
+                </label>
               </div>
               {/* Footer */}
               <div className="px-8 pb-7 flex gap-3">
