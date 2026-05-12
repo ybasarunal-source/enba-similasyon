@@ -3,6 +3,7 @@ import {
   PlusCircle, RotateCw, Calendar, Trash2, Pencil,
   RefreshCw, Download, Search, Check, Pin, Layers,
   Timer, Sun, X, CheckSquare, Kanban as KanbanIcon,
+  ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import { microsoftService } from '../api/microsoft';
 import { googleService } from '../api/google';
@@ -471,6 +472,7 @@ export const Tasks: React.FC = () => {
   const [deletingProject, setDeletingProject] = useState<Project|null>(null);
   const [deleteTargetId, setDeleteTargetId] = useState('none');
   const [formData, setFormData] = useState<Partial<Task>>({ title:'', desc:'', priority:'medium', deadline:'', projectId:'', moduleRef:'genel' });
+  const [rightPanelOpen, setRightPanelOpen] = useState(true);
 
   // ── Load data ──────────────────────────────────────────────
   useEffect(() => {
@@ -803,7 +805,29 @@ export const Tasks: React.FC = () => {
         {openTask && <TaskDetail task={openTask} projects={projectsWithColor} onClose={()=>setOpenTask(null)} onToggle={handleToggle} onEdit={t=>{handleEditTask(t);setOpenTask(null);}} onDelete={handleDeleteTask}/>}
       </main>
 
+      {/* ── RIGHT PANEL TOGGLE ───────────────────────────────── */}
+      <button
+        onClick={() => setRightPanelOpen(o => !o)}
+        title={rightPanelOpen ? 'Paneli gizle' : 'Pomodoro panelini aç'}
+        style={{
+          position:'absolute', right: rightPanelOpen ? 248 : 0, top:'50%', transform:'translateY(-50%)',
+          zIndex:20, width:18, height:48,
+          background:BOLD.surface, border:`1px solid ${BOLD.line}`,
+          borderRight: rightPanelOpen ? `1px solid ${BOLD.line}` : 'none',
+          borderRadius: rightPanelOpen ? '6px 0 0 6px' : '0 6px 6px 0',
+          display:'flex', alignItems:'center', justifyContent:'center',
+          cursor:'pointer', transition:'right .25s',
+          color:BOLD.inkFaint,
+        }}
+      >
+        {rightPanelOpen
+          ? <ChevronRight size={11} strokeWidth={2.5}/>
+          : <ChevronLeft size={11} strokeWidth={2.5}/>
+        }
+      </button>
+
       {/* ── RIGHT PANEL ──────────────────────────────────────── */}
+      {rightPanelOpen && (
       <aside className="flex flex-col flex-shrink-0 gap-3.5 overflow-y-auto custom-scrollbar" style={{ width:248, padding:'20px 16px', borderLeft:`1px solid ${BOLD.line}`, background:'#FCFAF6' }}>
         <PomodoroWidget focusTask={focusTask??null}/>
 
@@ -852,6 +876,7 @@ export const Tasks: React.FC = () => {
           {tasks.length} görev · {projects.length} proje
         </div>
       </aside>
+      )}
 
       {/* ── MODALS ───────────────────────────────────────────── */}
       {showTaskForm && (
