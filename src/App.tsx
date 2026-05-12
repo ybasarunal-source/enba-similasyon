@@ -754,7 +754,7 @@ export const App: React.FC = () => {
 
         {/* ─── Module Content ──────────────────────────────── */}
         <div className="flex-1 overflow-y-auto custom-scrollbar">
-          <div className="max-w-[1200px] mx-auto min-h-full">
+          <div className="min-h-full">
             <ErrorBoundary>
               <React.Suspense fallback={
                 <div className="flex items-center justify-center h-64">
