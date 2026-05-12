@@ -2,8 +2,11 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import {
   PlusCircle, Sun, Layers, Archive, Trash2, X,
   Calendar, Users, FileText, Search, RotateCw, BookOpen,
+  Sparkles, Check,
 } from 'lucide-react';
-import { notesAPI, projectsAPI, SupabaseNote } from '../api/supabase';
+import { notesAPI, projectsAPI, tasksAPI, SupabaseNote, supabase } from '../api/supabase';
+
+const EDGE_URL = (import.meta.env.VITE_SUPABASE_URL || 'https://wmkfrzfatvxzpyahkdai.supabase.co') + '/functions/v1/analyze-note';
 
 // ── Types ─────────────────────────────────────────────────
 interface Note {
@@ -18,6 +21,8 @@ interface Note {
   updatedAt: string;
 }
 interface Project { id: string; name: string; color?: string; }
+interface AiTask { title: string; desc: string; priority: 'high'|'medium'|'low'; deadline: string|null; projectId: string|null; }
+interface AiReminder { text: string; date: string|null; }
 
 // ── Converters ────────────────────────────────────────────
 const fromSB = (n: SupabaseNote): Note => ({
@@ -82,6 +87,12 @@ export const Notes: React.FC = () => {
   const [search, setSearch] = useState('');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [createError, setCreateError] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiTasks, setAiTasks] = useState<AiTask[]>([]);
+  const [aiReminders, setAiReminders] = useState<AiReminder[]>([]);
+  const [aiPanelOpen, setAiPanelOpen] = useState(false);
+  const [selectedAiTasks, setSelectedAiTasks] = useState<Set<number>>(new Set());
+  const [selectedAiReminders, setSelectedAiReminders] = useState<Set<number>>(new Set());
   const saveTimer = useRef<ReturnType<typeof setTimeout>>();
 
   // ── Load ──────────────────────────────────────────────
@@ -179,6 +190,63 @@ export const Notes: React.FC = () => {
     const note = fromSB(created);
     setNotes(prev => [note, ...prev]);
     setSelectedId(note.id);
+  };
+
+  // ── AI Analysis ───────────────────────────────────────
+  const analyzeNote = async () => {
+    if (!selectedNote?.content?.trim()) return;
+    setAiLoading(true);
+    setCreateError('');
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(EDGE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.access_token}` },
+        body: JSON.stringify({
+          noteContent: selectedNote.content,
+          noteTitle: selectedNote.title,
+          projects: projectsWithColor.map(p => ({ id: p.id, name: p.name })),
+        }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const result = await res.json();
+      const tasks: AiTask[] = result.tasks || [];
+      const reminders: AiReminder[] = result.reminders || [];
+      setAiTasks(tasks);
+      setAiReminders(reminders);
+      setSelectedAiTasks(new Set(tasks.map((_, i) => i)));
+      setSelectedAiReminders(new Set(reminders.map((_, i) => i)));
+      setAiPanelOpen(true);
+    } catch (err: any) {
+      setCreateError('AI analiz başarısız: ' + (err?.message || 'bilinmeyen hata'));
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const applySelected = async () => {
+    const tasksToCreate = aiTasks.filter((_, i) => selectedAiTasks.has(i));
+    for (const t of tasksToCreate) {
+      await tasksAPI.insert({
+        id: Date.now().toString() + Math.random().toString(36).slice(2, 6),
+        title: t.title,
+        description: t.desc || '',
+        priority: t.priority || 'medium',
+        deadline: t.deadline || '',
+        project_id: t.projectId || '',
+        module_ref: 'genel',
+        status: 'todo',
+        source: 'local',
+      });
+    }
+    const remindersToCreate = aiReminders.filter((_, i) => selectedAiReminders.has(i));
+    for (const r of remindersToCreate) {
+      await notesAPI.insert({ title: r.text, content: '', type: 'free', note_date: r.date || todayStr(), project_id: undefined });
+    }
+    const newNotes = await notesAPI.getAll();
+    setNotes(newNotes.map(fromSB));
+    setAiPanelOpen(false);
+    setAiTasks([]); setAiReminders([]);
   };
 
   // ── Archive / Delete ──────────────────────────────────
@@ -385,8 +453,9 @@ export const Notes: React.FC = () => {
         </div>
       </div>
 
-      {/* ── EDITOR ───────────────────────────────────────── */}
-      <main className="flex-1 min-w-0 flex flex-col overflow-hidden">
+      {/* ── EDITOR + AI PANEL ───────────────────────────── */}
+      <main className="flex-1 min-w-0 flex overflow-hidden">
+      <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
         {selectedNote ? (
           <>
             {/* Editor toolbar */}
@@ -424,6 +493,14 @@ export const Notes: React.FC = () => {
                   style={{ color: saveStatus === 'saving' ? B.faint : '#22c55e', opacity: saveStatus === 'idle' ? 0 : 1, fontFamily: 'inherit' }}>
                   {saveStatus === 'saving' ? 'kaydediliyor…' : '✓ kaydedildi'}
                 </span>
+
+                {/* AI Analyse */}
+                <button onClick={analyzeNote} disabled={aiLoading || !selectedNote.content.trim()}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-all"
+                  style={{ background: aiPanelOpen ? B.accent : B.ink, color: '#fff', border: 'none', cursor: 'pointer', fontFamily: 'inherit', opacity: !selectedNote.content.trim() ? 0.4 : 1 }}>
+                  {aiLoading ? <RotateCw size={12} className="animate-spin"/> : <Sparkles size={12}/>}
+                  {aiLoading ? 'Analiz ediliyor…' : 'Analiz Et'}
+                </button>
 
                 {/* Actions */}
                 <button onClick={() => toggleArchive(selectedNote)} title={selectedNote.archivedAt ? 'Arşivden çıkar' : 'Arşivle'}
@@ -498,6 +575,118 @@ export const Notes: React.FC = () => {
             </div>
           </div>
         )}
+      </div>
+
+      {/* ── AI PANEL ─────────────────────────────────────── */}
+      {aiPanelOpen && (
+        <div className="flex flex-col flex-shrink-0" style={{ width: 340, borderLeft: `1px solid ${B.line}`, background: B.surface, overflow: 'hidden' }}>
+          {/* Header */}
+          <div className="flex items-center justify-between px-5 py-4 flex-shrink-0" style={{ borderBottom: `1px solid ${B.line}`, background: B.ink }}>
+            <div className="flex items-center gap-2">
+              <Sparkles size={14} style={{ color: B.accent }} />
+              <span className="text-[13px] font-bold" style={{ color: '#fff', letterSpacing: '-0.01em' }}>AI Önerileri</span>
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ background: 'rgba(255,255,255,.1)', color: 'rgba(255,255,255,.6)', fontFamily: 'JetBrains Mono,monospace' }}>
+                {selectedAiTasks.size + selectedAiReminders.size} seçili
+              </span>
+            </div>
+            <button onClick={() => setAiPanelOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,.5)', padding: 4 }}><X size={14} /></button>
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-5">
+
+            {/* Tasks */}
+            {aiTasks.length > 0 && (
+              <div>
+                <div className="text-[10px] font-black uppercase tracking-[0.1em] mb-2" style={{ color: B.faint }}>Görevler — {aiTasks.length}</div>
+                <div className="space-y-2">
+                  {aiTasks.map((t, i) => {
+                    const checked = selectedAiTasks.has(i);
+                    const proj = projectsWithColor.find(p => p.id === t.projectId);
+                    const prioColor = { high: '#FF3B30', medium: '#FF9500', low: '#6BBF8A' }[t.priority || 'medium'];
+                    return (
+                      <button key={i} onClick={() => setSelectedAiTasks(prev => { const s = new Set(prev); s.has(i) ? s.delete(i) : s.add(i); return s; })}
+                        className="w-full text-left rounded-xl p-3 transition-all"
+                        style={{ background: checked ? B.ink + '08' : B.bg, border: `1.5px solid ${checked ? B.ink + '30' : B.line}`, cursor: 'pointer', fontFamily: 'inherit' }}>
+                        <div className="flex items-start gap-2.5">
+                          <div className="flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5"
+                            style={{ borderColor: checked ? B.ink : B.line, background: checked ? B.ink : 'transparent' }}>
+                            {checked && <Check size={10} strokeWidth={3} style={{ color: '#fff' }} />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-[13px] font-semibold leading-snug" style={{ color: B.ink }}>{t.title}</div>
+                            {t.desc && <div className="text-[11.5px] mt-0.5 line-clamp-2" style={{ color: B.soft }}>{t.desc}</div>}
+                            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                              <span style={{ fontSize: 10, fontWeight: 700, color: prioColor, background: prioColor + '18', padding: '1px 6px', borderRadius: 999 }}>
+                                {t.priority === 'high' ? 'Yüksek' : t.priority === 'low' ? 'Düşük' : 'Orta'}
+                              </span>
+                              {t.deadline && <span className="text-[10.5px] font-medium" style={{ color: B.faint }}>{t.deadline}</span>}
+                              {proj && <span className="text-[10.5px] font-medium flex items-center gap-1" style={{ color: B.soft }}><span style={{ width: 6, height: 6, borderRadius: 2, background: proj.color, display: 'inline-block' }} />{proj.name}</span>}
+                            </div>
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Reminders */}
+            {aiReminders.length > 0 && (
+              <div>
+                <div className="text-[10px] font-black uppercase tracking-[0.1em] mb-2" style={{ color: B.faint }}>Hatırlatmalar — {aiReminders.length}</div>
+                <div className="space-y-2">
+                  {aiReminders.map((r, i) => {
+                    const checked = selectedAiReminders.has(i);
+                    return (
+                      <button key={i} onClick={() => setSelectedAiReminders(prev => { const s = new Set(prev); s.has(i) ? s.delete(i) : s.add(i); return s; })}
+                        className="w-full text-left rounded-xl p-3 transition-all"
+                        style={{ background: checked ? '#FFF1DC' : B.bg, border: `1.5px solid ${checked ? '#FF9500' : B.line}`, cursor: 'pointer', fontFamily: 'inherit' }}>
+                        <div className="flex items-start gap-2.5">
+                          <div className="flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5"
+                            style={{ borderColor: checked ? '#FF9500' : B.line, background: checked ? '#FF9500' : 'transparent' }}>
+                            {checked && <Check size={10} strokeWidth={3} style={{ color: '#fff' }} />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-[13px] font-semibold leading-snug" style={{ color: B.ink }}>{r.text}</div>
+                            {r.date && <div className="text-[10.5px] mt-1 font-medium" style={{ color: B.faint }}>{r.date}</div>}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {aiTasks.length === 0 && aiReminders.length === 0 && (
+              <div className="text-center py-8">
+                <div className="text-[13px]" style={{ color: B.faint }}>Bu notta görev veya hatırlatma bulunamadı.</div>
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          {(aiTasks.length > 0 || aiReminders.length > 0) && (
+            <div className="p-4 flex-shrink-0" style={{ borderTop: `1px solid ${B.line}` }}>
+              <button onClick={applySelected}
+                disabled={selectedAiTasks.size + selectedAiReminders.size === 0}
+                className="w-full py-3 rounded-xl text-[13px] font-bold flex items-center justify-center gap-2 transition-all"
+                style={{ background: B.ink, color: '#fff', border: 'none', cursor: 'pointer', fontFamily: 'inherit', opacity: selectedAiTasks.size + selectedAiReminders.size === 0 ? 0.4 : 1 }}>
+                <Check size={14} strokeWidth={2.5} />
+                {selectedAiTasks.size} görev + {selectedAiReminders.size} hatırlatma ekle
+              </button>
+              <button onClick={() => setAiPanelOpen(false)}
+                className="w-full py-2 mt-2 text-[11px] font-semibold"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: B.faint, fontFamily: 'inherit' }}>
+                Vazgeç
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       </main>
       </div>
     </div>
