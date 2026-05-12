@@ -354,7 +354,7 @@ export const Mail: React.FC = () => {
               <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-300" />
             </div>
             <button 
-              onClick={fetchEmails}
+              onClick={() => fetchEmails()}
               className={`p-2 rounded-xl border border-gray-100 text-gray-400 hover:text-enba-orange hover:bg-orange-50 transition-all ${isLoading ? 'animate-spin border-enba-orange/20 text-enba-orange' : ''}`}
               title="Yenile"
             >
