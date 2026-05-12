@@ -31,13 +31,6 @@ interface Email {
 }
 
 export const Mail: React.FC = () => {
-  // --- GEÇICI TANI LOG — sorun çözülünce sil ---
-  const _raw   = localStorage.getItem('google_access_token');
-  const _exp   = localStorage.getItem('google_token_expiry');
-  const _valid  = !!_raw && !!_exp && Date.now() < parseInt(_exp);
-  console.log('[Mail mount] token:', _raw ? 'VAR' : 'YOK', '| expiry:', _exp, '| now:', Date.now(), '| geçerli:', _valid, '| kalan(s):', _exp ? Math.floor((parseInt(_exp) - Date.now()) / 1000) : 'N/A');
-  // --- / ---
-
   const [emails, setEmails] = useState<Email[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -58,6 +51,7 @@ export const Mail: React.FC = () => {
   );
   const [msConnecting, setMsConnecting] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [googleNeedsReconnect, setGoogleNeedsReconnect] = useState(false);
   const [activeFolder, setActiveFolder] = useState<'inbox' | 'sent' | 'drafts' | 'trash'>('inbox');
   const [taskModal, setTaskModal] = useState(false);
   const [taskForm, setTaskForm] = useState({ title: '', desc: '', priority: 'medium', deadline: '' });
@@ -66,6 +60,7 @@ export const Mail: React.FC = () => {
 
   const checkConnections = async () => {
     setIsCheckingConnections(true);
+    setGoogleNeedsReconnect(false);
     try {
       // Google OAuth redirect'ten bu modüle doğrudan dönüldüyse token hash'te olabilir
       googleService.handleAuthReturn();
@@ -74,7 +69,6 @@ export const Mail: React.FC = () => {
       setMsConnected(!!msToken);
 
       const gToken = googleService.getAccessToken();
-      console.log('[Mail checkConnections] gToken:', gToken ? 'BULUNDU' : 'NULL', '| msToken:', msToken ? 'BULUNDU' : 'NULL');
       setGoogleConnected(!!gToken);
 
       if (msToken || gToken) {
@@ -116,10 +110,13 @@ export const Mail: React.FC = () => {
           if (!testRes.ok) {
             const errBody = await testRes.json().catch(() => ({}));
             const msg = errBody?.error?.message || testRes.statusText;
-            setFetchError(`Gmail API hatası ${testRes.status}: ${msg}`);
+            console.error(`[Mail] Gmail API ${testRes.status}:`, errBody);
             if (testRes.status === 401) {
-              googleService.logout();
-              setGoogleConnected(false);
+              // Token sunucu tarafında geçersiz — localStorage'dan silme, 3-panel'de yeniden bağlan butonu göster
+              setFetchError(`Gmail yetkisi geçersiz. Lütfen yeniden bağlanın.`);
+              setGoogleNeedsReconnect(true);
+            } else {
+              setFetchError(`Gmail API hatası ${testRes.status}: ${msg}`);
             }
           } else {
             const gEmails = await googleService.getRecentEmails(30);
@@ -434,7 +431,9 @@ export const Mail: React.FC = () => {
               </svg>
               <span className="text-[11px] font-semibold flex-1 text-left">Gmail</span>
               {googleConnected
-                ? <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" />
+                ? googleNeedsReconnect
+                  ? <span onClick={e => { e.stopPropagation(); handleConnectGoogle(); }} className="text-[9px] text-amber-500 font-bold hover:underline">Yenile</span>
+                  : <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" />
                 : <span onClick={e => { e.stopPropagation(); handleConnectGoogle(); }} className="text-[9px] text-[#EA4335] font-bold hover:underline">Bağla</span>
               }
             </button>
@@ -471,9 +470,17 @@ export const Mail: React.FC = () => {
         </header>
 
         {fetchError && (
-          <div className="bg-rose-50 border-b border-rose-100 px-4 py-2 flex items-start gap-2 flex-shrink-0">
-            <span className="text-rose-400 text-xs flex-shrink-0 mt-0.5">⚠</span>
-            <span className="text-[10px] text-rose-700 font-medium leading-relaxed">{fetchError}</span>
+          <div className="bg-rose-50 border-b border-rose-100 px-4 py-2 flex items-center gap-2 flex-shrink-0">
+            <span className="text-rose-400 text-xs flex-shrink-0">⚠</span>
+            <span className="text-[10px] text-rose-700 font-medium leading-relaxed flex-1">{fetchError}</span>
+            {googleNeedsReconnect && (
+              <button
+                onClick={handleConnectGoogle}
+                className="text-[10px] font-black text-[#4285F4] hover:underline flex-shrink-0 whitespace-nowrap"
+              >
+                Yeniden Bağlan →
+              </button>
+            )}
           </div>
         )}
 
