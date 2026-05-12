@@ -85,8 +85,8 @@ const BoldCheckbox = ({ checked, onToggle, priority, size = 22 }: { checked: boo
 };
 
 // ── UI: TaskRow ───────────────────────────────────────────────────────────
-interface RowActions { projects: Project[]; onToggle: (id: string|number, e: React.MouseEvent) => void; onOpen: (t: Task) => void; onPin: (id: string|number) => void; onDelete: (t: Task) => void; onEdit: (t: Task) => void; }
-const TaskRow = ({ task, projects, onToggle, onOpen, onPin, onDelete, onEdit }: { task: Task } & RowActions) => {
+interface RowActions { projects: Project[]; onToggle: (id: string|number, e: React.MouseEvent) => void; onOpen: (t: Task) => void; onPin: (id: string|number) => void; onDelete: (t: Task) => void; onEdit: (t: Task) => void; onMyDay: (id: string|number) => void; myDayIds: Set<string>; }
+const TaskRow = ({ task, projects, onToggle, onOpen, onPin, onDelete, onEdit, onMyDay, myDayIds }: { task: Task } & RowActions) => {
   const pidx = projects.findIndex(p => p.id === task.projectId);
   const proj = pidx >= 0 ? projects[pidx] : null;
   const pc = proj ? projColor(proj, pidx) : '#94a3b8';
@@ -115,6 +115,7 @@ const TaskRow = ({ task, projects, onToggle, onOpen, onPin, onDelete, onEdit }: 
         {dl && <span className="text-[11.5px] font-semibold tabular-nums" style={{ color: dl.color }}>{dl.label}</span>}
       </div>
       <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity self-center ml-1">
+        <button onClick={e=>{e.stopPropagation();onMyDay(task.id);}} className="p-1.5 rounded-lg hover:bg-black/5 transition-colors" title="Günüme ekle" style={{ color: myDayIds.has(task.id.toString())?'#FF9500':BOLD.inkFaint }}><Sun size={11} className={myDayIds.has(task.id.toString())?'fill-current':''} /></button>
         <button onClick={e=>{e.stopPropagation();onPin(task.id);}} className="p-1.5 rounded-lg hover:bg-black/5 transition-colors" style={{ color: task.isPinned?'#FF9500':BOLD.inkFaint }}><Pin size={11} className={task.isPinned?'fill-current':''} /></button>
         <button onClick={e=>{e.stopPropagation();onEdit(task);}} className="p-1.5 rounded-lg hover:bg-black/5 transition-colors" style={{ color: BOLD.inkFaint }}><Pencil size={11} /></button>
         <button onClick={e=>{e.stopPropagation();onDelete(task);}} className="p-1.5 rounded-lg hover:bg-red-50 transition-colors" style={{ color: BOLD.inkFaint }}><Trash2 size={11} /></button>
@@ -183,8 +184,8 @@ const FGroup = ({ label, children }: { label:string; children:React.ReactNode })
 );
 
 // ── View: Today ───────────────────────────────────────────────────────────
-interface VP { tasks:Task[]; projects:Project[]; onToggle:(id:string|number,e:React.MouseEvent)=>void; onOpen:(t:Task)=>void; onPin:(id:string|number)=>void; onDelete:(t:Task)=>void; onEdit:(t:Task)=>void; onStatus?:(id:string|number,s:Task['status'])=>void; }
-const TodayView = ({ tasks, projects, onToggle, onOpen, onPin, onDelete, onEdit }: VP) => {
+interface VP { tasks:Task[]; projects:Project[]; onToggle:(id:string|number,e:React.MouseEvent)=>void; onOpen:(t:Task)=>void; onPin:(id:string|number)=>void; onDelete:(t:Task)=>void; onEdit:(t:Task)=>void; onStatus?:(id:string|number,s:Task['status'])=>void; onMyDay:(id:string|number)=>void; myDayIds:Set<string>; }
+const TodayView = ({ tasks, projects, onToggle, onOpen, onPin, onDelete, onEdit, onMyDay, myDayIds }: VP) => {
   const day0 = (s:string) => { const d=new Date(s); d.setHours(0,0,0,0); return d; };
   const todayTasks = tasks.filter(t => t.status!=='done' && t.deadline && sameDay(day0(t.deadline), todayDate));
   const overdue    = tasks.filter(t => t.status!=='done' && t.deadline && day0(t.deadline) < todayDate && !sameDay(day0(t.deadline), todayDate));
@@ -194,8 +195,9 @@ const TodayView = ({ tasks, projects, onToggle, onOpen, onPin, onDelete, onEdit 
   const completion = totalToday > 0 ? doneToday/totalToday : 0;
   const hour = new Date().getHours();
   const greet = hour<12 ? 'Günaydın' : hour<18 ? 'İyi günler' : 'İyi akşamlar';
+  const myDayExtra = tasks.filter(t => myDayIds.has(t.id.toString()) && t.status!=='done' && !(t.deadline && sameDay(day0(t.deadline), todayDate)));
   const focusTask = todayTasks.find(t=>t.priority==='high') ?? todayTasks[0];
-  const rp = { projects, onToggle, onOpen, onPin, onDelete, onEdit };
+  const rp = { projects, onToggle, onOpen, onPin, onDelete, onEdit, onMyDay, myDayIds };
   const R=20, C=2*Math.PI*R;
   return (
     <div className="p-8 overflow-y-auto h-full custom-scrollbar">
@@ -219,6 +221,7 @@ const TodayView = ({ tasks, projects, onToggle, onOpen, onPin, onDelete, onEdit 
         </div>
       </div>
       {focusTask && <FocusCard task={focusTask} projects={projects} onToggle={onToggle} onOpen={onOpen} />}
+      {myDayExtra.length>0 && <BoldSection title="Günüme Eklediklerim" count={myDayExtra.length} color="#FF9500"><div className="flex flex-col gap-2">{myDayExtra.map(t=><TaskRow key={t.id} task={t} {...rp}/>)}</div></BoldSection>}
       {overdue.length>0 && <BoldSection title="Gecikti" count={overdue.length} color="#FF3B30"><div className="flex flex-col gap-2">{overdue.map(t=><TaskRow key={t.id} task={t} {...rp}/>)}</div></BoldSection>}
       <BoldSection title="Bugün" count={todayTasks.length}>
         <div className="flex flex-col gap-2">
@@ -233,7 +236,7 @@ const TodayView = ({ tasks, projects, onToggle, onOpen, onPin, onDelete, onEdit 
 };
 
 // ── View: All Tasks ───────────────────────────────────────────────────────
-const AllTasksView = ({ tasks, projects, onToggle, onOpen, onPin, onDelete, onEdit }: VP) => {
+const AllTasksView = ({ tasks, projects, onToggle, onOpen, onPin, onDelete, onEdit, onMyDay, myDayIds }: VP) => {
   const [pf, setPf] = useState('all');
   const [projF, setProjF] = useState('all');
   const [sf, setSf] = useState('active');
@@ -246,7 +249,7 @@ const AllTasksView = ({ tasks, projects, onToggle, onOpen, onPin, onDelete, onEd
     if (q && !t.title.toLowerCase().includes(q.toLowerCase())) return false;
     return true;
   }), [tasks, pf, projF, sf, q]);
-  const rp = { projects, onToggle, onOpen, onPin, onDelete, onEdit };
+  const rp = { projects, onToggle, onOpen, onPin, onDelete, onEdit, onMyDay, myDayIds };
   return (
     <div className="p-8 overflow-y-auto h-full custom-scrollbar">
       <div className="mb-5">
@@ -342,9 +345,9 @@ const KanbanView = ({ tasks, projects, onToggle, onOpen, onStatus }: VP & { onSt
 };
 
 // ── View: Completed ───────────────────────────────────────────────────────
-const CompletedView = ({ tasks, projects, onToggle, onOpen, onPin, onDelete, onEdit }: VP) => {
+const CompletedView = ({ tasks, projects, onToggle, onOpen, onPin, onDelete, onEdit, onMyDay, myDayIds }: VP) => {
   const done = tasks.filter(t=>t.status==='done');
-  const rp = { projects, onToggle, onOpen, onPin, onDelete, onEdit };
+  const rp = { projects, onToggle, onOpen, onPin, onDelete, onEdit, onMyDay, myDayIds };
   return (
     <div className="p-8 overflow-y-auto h-full custom-scrollbar">
       <div className="mb-5">
@@ -481,6 +484,10 @@ export const Tasks: React.FC = () => {
   const [pomSecs, setPomSecs] = useState(25*60);
   const [pomRunning, setPomRunning] = useState(false);
   const [pomMode, setPomMode] = useState<'work'|'break'>('work');
+  const [myDayIds, setMyDayIds] = useState<Set<string>>(() => {
+    try { return new Set(JSON.parse(localStorage.getItem('enba_my_day_tasks') || '[]')); }
+    catch { return new Set<string>(); }
+  });
   useEffect(() => {
     if (!pomRunning) return;
     const i = setInterval(() => setPomSecs(s => Math.max(0, s - 1)), 1000);
@@ -580,6 +587,16 @@ export const Tasks: React.FC = () => {
   const handleStatusChange = (id: string|number, status: Task['status']) => {
     setTasks(prev=>prev.map(t=>t.id===id ? { ...t, status } : t));
     tasksAPI.update(id.toString(), { status });
+  };
+
+  const toggleMyDay = (id: string|number) => {
+    setMyDayIds(prev => {
+      const next = new Set(prev);
+      const key = id.toString();
+      next.has(key) ? next.delete(key) : next.add(key);
+      localStorage.setItem('enba_my_day_tasks', JSON.stringify([...next]));
+      return next;
+    });
   };
 
   // ── Restructure handlers ──────────────────────────────────
@@ -738,7 +755,7 @@ export const Tasks: React.FC = () => {
     { id:'completed', icon:CheckSquare, label:'Tamamlananlar', count: tasks.filter(t=>t.status==='done').length },
   ];
 
-  const sharedViewProps = { tasks:filteredTasks, projects:projectsWithColor, onToggle:handleToggle, onOpen:setOpenTask, onPin:togglePin, onDelete:handleDeleteTask, onEdit:handleEditTask };
+  const sharedViewProps = { tasks:filteredTasks, projects:projectsWithColor, onToggle:handleToggle, onOpen:setOpenTask, onPin:togglePin, onDelete:handleDeleteTask, onEdit:handleEditTask, onMyDay:toggleMyDay, myDayIds };
 
   return (
     <div className="flex h-screen overflow-hidden animate-fade-in" style={{ background:BOLD.bg, fontFamily:'Poppins,sans-serif', letterSpacing:'-0.005em', position:'relative' }}>
