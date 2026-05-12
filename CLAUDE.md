@@ -307,6 +307,15 @@ Veri kaybı riski olan her adımı kullanıcıya açıkça belirt ve onay al.
 - [x] console.log temizliği (commit 903934a)
 - [x] TypeScript any azaltma: usePlanSync + dataService (commit 200a123)
 
+### Tamamlanan UI/UX İyileştirmeleri (2026-05-12)
+- [x] Notes AI analiz — Edge Function (hyper-service) CORS+auth+secret+JSON parse zinciri düzeltildi
+- [x] Notes — hover'da silme butonu, applyLoading duplicate koruması, crypto.randomUUID
+- [x] Pomodoro — App.tsx global floating widget, localStorage persistence (enba_pomodoro_active)
+- [x] Tasks — çoklu seçim (bulk delete + bulk move), panel defaults (sol slim, sağ open), sağ panel 2-state
+- [x] Kanban — Flexbox eşit kolonlar, richer task cards
+- [x] ModulesOverview — tek satır kompakt header
+- [x] Mail — provider onboarding ekranı (Microsoft / Google bağlantı kartları) (commit 7d0d237)
+
 ### Kullanıcı Öncelik Sırası
 1. **FastPlan iyileştirmeleri** — başabaş, geri ödeme, duyarlılık, versiyon notları, gider grafiği, PDF
 2. **DetailedPlan iyileştirmeleri**
