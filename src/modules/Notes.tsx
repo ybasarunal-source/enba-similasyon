@@ -88,6 +88,8 @@ export const Notes: React.FC = () => {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [createError, setCreateError] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
+  const [applyLoading, setApplyLoading] = useState(false);
+  const [successToast, setSuccessToast] = useState('');
   const [aiTasks, setAiTasks] = useState<AiTask[]>([]);
   const [aiReminders, setAiReminders] = useState<AiReminder[]>([]);
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
@@ -238,7 +240,10 @@ export const Notes: React.FC = () => {
   };
 
   const applySelected = async () => {
+    if (applyLoading) return;
+    setApplyLoading(true);
     const tasksToCreate = aiTasks.filter((_, i) => selectedAiTasks.has(i));
+    const remindersToCreate = aiReminders.filter((_, i) => selectedAiReminders.has(i));
     for (const t of tasksToCreate) {
       await tasksAPI.insert({
         id: crypto.randomUUID(),
@@ -252,7 +257,6 @@ export const Notes: React.FC = () => {
         source: 'local',
       });
     }
-    const remindersToCreate = aiReminders.filter((_, i) => selectedAiReminders.has(i));
     for (const r of remindersToCreate) {
       await notesAPI.insert({ title: r.text, content: '', type: 'free', note_date: r.date || todayStr(), project_id: undefined });
     }
@@ -260,6 +264,12 @@ export const Notes: React.FC = () => {
     setNotes(newNotes.map(fromSB));
     setAiPanelOpen(false);
     setAiTasks([]); setAiReminders([]);
+    setApplyLoading(false);
+    const parts = [];
+    if (tasksToCreate.length) parts.push(`${tasksToCreate.length} görev`);
+    if (remindersToCreate.length) parts.push(`${remindersToCreate.length} hatırlatma`);
+    setSuccessToast(parts.join(' + ') + ' eklendi');
+    setTimeout(() => setSuccessToast(''), 3000);
   };
 
   // ── Archive / Delete ──────────────────────────────────
@@ -310,6 +320,15 @@ export const Notes: React.FC = () => {
 
   return (
     <div className="flex flex-col h-screen overflow-hidden animate-fade-in" style={{ background: B.bg, fontFamily: 'Poppins,sans-serif' }}>
+
+      {/* ── Success toast ────────────────────────────────── */}
+      {successToast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-xl flex items-center gap-2 shadow-lg"
+          style={{ background: '#1A1A1A', color: '#fff', fontSize: 13, fontWeight: 600, fontFamily: 'Poppins,sans-serif', pointerEvents: 'none' }}>
+          <Check size={14} strokeWidth={2.5} />
+          {successToast}
+        </div>
+      )}
 
       {/* ── Error banner ─────────────────────────────────── */}
       {createError && (
@@ -684,11 +703,11 @@ export const Notes: React.FC = () => {
           {(aiTasks.length > 0 || aiReminders.length > 0) && (
             <div className="p-4 flex-shrink-0" style={{ borderTop: `1px solid ${B.line}` }}>
               <button onClick={applySelected}
-                disabled={selectedAiTasks.size + selectedAiReminders.size === 0}
+                disabled={selectedAiTasks.size + selectedAiReminders.size === 0 || applyLoading}
                 className="w-full py-3 rounded-xl text-[13px] font-bold flex items-center justify-center gap-2 transition-all"
-                style={{ background: B.ink, color: '#fff', border: 'none', cursor: 'pointer', fontFamily: 'inherit', opacity: selectedAiTasks.size + selectedAiReminders.size === 0 ? 0.4 : 1 }}>
+                style={{ background: B.ink, color: '#fff', border: 'none', cursor: applyLoading ? 'wait' : 'pointer', fontFamily: 'inherit', opacity: selectedAiTasks.size + selectedAiReminders.size === 0 || applyLoading ? 0.5 : 1 }}>
                 <Check size={14} strokeWidth={2.5} />
-                {selectedAiTasks.size} görev + {selectedAiReminders.size} hatırlatma ekle
+                {applyLoading ? 'Ekleniyor...' : `${selectedAiTasks.size} görev + ${selectedAiReminders.size} hatırlatma ekle`}
               </button>
               <button onClick={() => setAiPanelOpen(false)}
                 className="w-full py-2 mt-2 text-[11px] font-semibold"
