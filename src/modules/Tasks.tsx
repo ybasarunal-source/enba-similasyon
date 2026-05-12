@@ -470,6 +470,7 @@ export const Tasks: React.FC = () => {
   const [deletingProject, setDeletingProject] = useState<Project|null>(null);
   const [deleteTargetId, setDeleteTargetId] = useState('none');
   const [formData, setFormData] = useState<Partial<Task>>({ title:'', desc:'', priority:'medium', deadline:'', projectId:'', moduleRef:'genel' });
+  const [leftPanel, setLeftPanel] = useState<'open'|'slim'>('open');
   const [rightPanel, setRightPanel] = useState<'open'|'slim'|'hidden'>('open');
   const [pomSecs, setPomSecs] = useState(25*60);
   const [pomRunning, setPomRunning] = useState(false);
@@ -708,7 +709,61 @@ export const Tasks: React.FC = () => {
   return (
     <div className="flex h-screen overflow-hidden animate-fade-in" style={{ background:BOLD.bg, fontFamily:'Poppins,sans-serif', letterSpacing:'-0.005em', position:'relative' }}>
 
-      {/* ── LEFT SIDEBAR ─────────────────────────────────────── */}
+      {/* ── LEFT SIDEBAR TOGGLE ──────────────────────────────── */}
+      <button
+        onClick={() => setLeftPanel(p => p==='open' ? 'slim' : 'open')}
+        title={leftPanel==='open' ? 'Menüyü küçült' : 'Menüyü aç'}
+        style={{
+          position:'absolute',
+          left: leftPanel==='open' ? 220 : 44,
+          top:'50%', transform:'translateY(-50%)',
+          zIndex:20, width:18, height:48,
+          background:BOLD.surface, border:`1px solid ${BOLD.line}`,
+          borderLeft: leftPanel==='open' ? `1px solid ${BOLD.line}` : 'none',
+          borderRadius: leftPanel==='open' ? '0 6px 6px 0' : '6px 0 0 6px',
+          display:'flex', alignItems:'center', justifyContent:'center',
+          cursor:'pointer', transition:'left .25s',
+          color:BOLD.inkFaint,
+        }}
+      >
+        {leftPanel==='open'
+          ? <ChevronLeft size={11} strokeWidth={2.5}/>
+          : <ChevronRight size={11} strokeWidth={2.5}/>
+        }
+      </button>
+
+      {/* ── LEFT SIDEBAR — slim strip ────────────────────────── */}
+      {leftPanel==='slim' && (
+        <aside style={{ width:44, flexShrink:0, borderRight:`1px solid ${BOLD.line}`, background:'transparent', display:'flex', flexDirection:'column', alignItems:'center', padding:'16px 0', gap:6 }}>
+          <button
+            onClick={() => setShowTaskForm(true)}
+            title="Yeni Görev"
+            style={{ width:32, height:32, borderRadius:10, background:BOLD.ink, border:'none', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', color:'#fff', flexShrink:0, transition:'filter .15s' }}
+            onMouseEnter={e => (e.currentTarget.style.filter='brightness(1.3)')}
+            onMouseLeave={e => (e.currentTarget.style.filter='brightness(1)')}
+          >
+            <PlusCircle size={16} strokeWidth={2.2}/>
+          </button>
+          <div style={{ width:1, flex:1, background:BOLD.line, margin:'8px 0' }}/>
+          {navItems.map(item => {
+            const active = activeView===item.id;
+            return (
+              <button key={item.id} onClick={()=>setActiveView(item.id)} title={item.label}
+                style={{ width:32, height:32, borderRadius:8, border:'none', background:active?BOLD.ink+'15':'transparent', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', color:active?BOLD.ink:BOLD.inkSoft, position:'relative', flexShrink:0, transition:'background .15s' }}
+                onMouseEnter={e=>{if(!active)(e.currentTarget.style.background=BOLD.line+'80');}}
+                onMouseLeave={e=>{if(!active)(e.currentTarget.style.background='transparent');}}>
+                <item.icon size={15}/>
+                {item.count!=null&&item.count>0&&(
+                  <span style={{ position:'absolute', top:2, right:2, width:8, height:8, borderRadius:'50%', background:BOLD.accent, fontSize:0 }}/>
+                )}
+              </button>
+            );
+          })}
+        </aside>
+      )}
+
+      {/* ── LEFT SIDEBAR — full ──────────────────────────────── */}
+      {leftPanel==='open' && (
       <aside className="flex flex-col flex-shrink-0 overflow-hidden" style={{ width:220, background:'transparent', borderRight:`1px solid ${BOLD.line}`, padding:'20px 12px 16px' }}>
         {/* New task button */}
         <button onClick={()=>setShowTaskForm(true)}
@@ -792,6 +847,7 @@ export const Tasks: React.FC = () => {
           </div>
         </div>
       </aside>
+      )}
 
       {/* ── MAIN CONTENT ─────────────────────────────────────── */}
       <main className="flex-1 min-w-0 relative overflow-hidden">
