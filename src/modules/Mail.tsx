@@ -13,8 +13,10 @@ import {
   CheckCircle2,
   FileText,
   Trash2,
+  ListTodo,
   type LucideIcon,
 } from 'lucide-react';
+import { tasksAPI, type SupabaseTask } from '../api/supabase';
 
 interface Email {
   id: string;
@@ -47,6 +49,10 @@ export const Mail: React.FC = () => {
   const [msConnecting, setMsConnecting] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [activeFolder, setActiveFolder] = useState<'inbox' | 'sent' | 'drafts' | 'trash'>('inbox');
+  const [taskModal, setTaskModal] = useState(false);
+  const [taskForm, setTaskForm] = useState({ title: '', desc: '', priority: 'medium', deadline: '' });
+  const [isSavingTask, setIsSavingTask] = useState(false);
+  const [taskSaved, setTaskSaved] = useState(false);
 
   const checkConnections = async () => {
     setIsCheckingConnections(true);
@@ -176,6 +182,39 @@ export const Mail: React.FC = () => {
       return matchesSource && matchesSearch;
     });
   }, [emails, sourceFilter, searchTerm]);
+
+  const openTaskModal = () => {
+    if (!selectedEmail) return;
+    setTaskForm({
+      title: selectedEmail.subject,
+      desc: `Gönderen: ${selectedEmail.sender} <${selectedEmail.senderEmail}>\n\n${selectedEmail.bodyPreview}`,
+      priority: 'medium',
+      deadline: '',
+    });
+    setTaskSaved(false);
+    setTaskModal(true);
+  };
+
+  const handleCreateTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingTask(true);
+    const task: SupabaseTask = {
+      id: crypto.randomUUID(),
+      title: taskForm.title,
+      description: taskForm.desc,
+      priority: taskForm.priority,
+      deadline: taskForm.deadline || undefined,
+      status: 'todo',
+      source: 'local',
+      module_ref: 'mail',
+    };
+    const result = await tasksAPI.insert(task);
+    setIsSavingTask(false);
+    if (result) {
+      setTaskSaved(true);
+      setTimeout(() => { setTaskSaved(false); setTaskModal(false); }, 1400);
+    }
+  };
 
   const handleOpenEmail = async (email: Email) => {
     setSelectedEmail(email);
@@ -487,6 +526,13 @@ export const Mail: React.FC = () => {
                 {new Date(selectedEmail.date).toLocaleString('tr-TR')}
               </span>
               <button
+                onClick={openTaskModal}
+                className="p-1.5 text-gray-400 hover:text-enba-orange hover:bg-orange-50 rounded-lg transition-all"
+                title="Görev Oluştur"
+              >
+                <ListTodo size={16} />
+              </button>
+              <button
                 onClick={() => setSelectedEmail(null)}
                 className="p-1.5 text-gray-400 hover:text-enba-dark hover:bg-gray-100 rounded-lg transition-all"
               >
@@ -515,6 +561,80 @@ export const Mail: React.FC = () => {
         <div className="flex-1 flex flex-col items-center justify-center bg-[#FAFAFA] text-gray-300">
           <MailIcon size={52} className="mb-4 opacity-20" />
           <p className="text-[10px] font-bold uppercase tracking-widest">Okumak için bir e-posta seçin</p>
+        </div>
+      )}
+
+      {/* Görev Oluştur Modal */}
+      {taskModal && selectedEmail && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center animate-in fade-in duration-150">
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
+            <div className="bg-enba-dark px-5 py-4 flex items-center justify-between text-white">
+              <h2 className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                <ListTodo size={15} className="text-enba-orange" /> Görev Oluştur
+              </h2>
+              <button onClick={() => setTaskModal(false)} className="text-white/50 hover:text-white transition-colors">
+                <X size={18} />
+              </button>
+            </div>
+            <form onSubmit={handleCreateTask} className="p-5 flex flex-col gap-4">
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Başlık</label>
+                <input
+                  required
+                  type="text"
+                  value={taskForm.title}
+                  onChange={e => setTaskForm({ ...taskForm, title: e.target.value })}
+                  className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-xs font-bold text-enba-dark focus:ring-2 focus:ring-enba-orange/20 transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Not</label>
+                <textarea
+                  value={taskForm.desc}
+                  onChange={e => setTaskForm({ ...taskForm, desc: e.target.value })}
+                  rows={3}
+                  className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-xs text-enba-dark focus:ring-2 focus:ring-enba-orange/20 transition-all resize-none"
+                />
+              </div>
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Öncelik</label>
+                  <select
+                    value={taskForm.priority}
+                    onChange={e => setTaskForm({ ...taskForm, priority: e.target.value })}
+                    className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-xs font-bold text-enba-dark focus:ring-2 focus:ring-enba-orange/20 transition-all"
+                  >
+                    <option value="low">Düşük</option>
+                    <option value="medium">Orta</option>
+                    <option value="high">Yüksek</option>
+                  </select>
+                </div>
+                <div className="flex-1">
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Son Tarih</label>
+                  <input
+                    type="date"
+                    value={taskForm.deadline}
+                    onChange={e => setTaskForm({ ...taskForm, deadline: e.target.value })}
+                    className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-xs font-bold text-enba-dark focus:ring-2 focus:ring-enba-orange/20 transition-all"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 mt-1">
+                <button type="button" onClick={() => setTaskModal(false)} className="px-5 py-2.5 rounded-xl text-xs font-black text-gray-400 uppercase tracking-widest hover:bg-gray-50 transition-colors">
+                  İptal
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingTask}
+                  className={`px-7 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-white shadow-lg flex items-center gap-2 transition-all ${taskSaved ? 'bg-emerald-500' : 'bg-enba-dark hover:bg-black active:scale-95'} ${isSavingTask ? 'opacity-70' : ''}`}
+                >
+                  {isSavingTask && <RefreshCw size={13} className="animate-spin" />}
+                  {taskSaved && <CheckCircle2 size={13} />}
+                  {taskSaved ? 'Kaydedildi!' : 'Kaydet'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
