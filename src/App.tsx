@@ -563,7 +563,6 @@ export const App: React.FC = () => {
           <button
             onClick={() => {
               microsoftService.clearStorage();
-              googleService.logout();
               supabase.auth.signOut();
             }}
             title="Çıkış Yap"
@@ -773,11 +772,10 @@ export const App: React.FC = () => {
 
                 {/* Oturumu Kapat */}
                 <button
-                  onClick={() => { 
+                  onClick={() => {
                     microsoftService.clearStorage();
-                    googleService.logout();
-                    supabase.auth.signOut(); 
-                    setUserMenuOpen(false); 
+                    supabase.auth.signOut();
+                    setUserMenuOpen(false);
                   }}
                   style={{
                     display: 'flex', alignItems: 'center', gap: '10px',
