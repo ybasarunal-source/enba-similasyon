@@ -806,7 +806,7 @@ export const Tasks: React.FC = () => {
 
       {/* ── LEFT SIDEBAR — full ──────────────────────────────── */}
       {leftPanel==='open' && (
-      <aside className="flex flex-col flex-shrink-0 overflow-hidden" style={{ width:220, background:'transparent', borderRight:`1px solid ${BOLD.line}`, padding:'20px 12px 16px' }}>
+      <aside className="flex flex-col flex-shrink-0" style={{ width:220, background:'transparent', borderRight:`1px solid ${BOLD.line}`, padding:'20px 12px 16px', overflow:'hidden', minHeight:0 }}>
         {/* New task button */}
         <button onClick={()=>setShowTaskForm(true)}
           className="flex items-center justify-between px-3.5 py-2.5 rounded-xl mb-4 text-[13.5px] font-semibold w-full transition-all hover:brightness-110"
@@ -846,15 +846,15 @@ export const Tasks: React.FC = () => {
         </button>
 
         {/* Projects */}
-        <div className="mt-3">
-          <div className="text-[10.5px] font-bold uppercase tracking-[0.08em] px-2.5 mb-2" style={{ color:BOLD.inkFaint }}>Projeler</div>
-          <div className="flex flex-col gap-0.5">
+        <div className="mt-3 flex flex-col flex-1 min-h-0">
+          <div className="text-[10.5px] font-bold uppercase tracking-[0.08em] px-2.5 mb-2 flex-shrink-0" style={{ color:BOLD.inkFaint }}>Projeler</div>
+          <div className="flex flex-col gap-0.5 overflow-y-auto flex-1 custom-scrollbar">
             {projectsWithColor.map(p => {
               const cnt = tasks.filter(t=>t.projectId===p.id&&t.status!=='done').length;
               const sel = selectedProjectId===p.id;
               return (
                 <button key={p.id} onClick={()=>setSelectedProjectId(sel?'all':p.id)}
-                  className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg w-full text-[12.5px] font-medium transition-all group/p"
+                  className="flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg w-full text-[12.5px] font-medium transition-all group/p flex-shrink-0"
                   style={{ background:sel?p.color+'15':'transparent', color:sel?p.color:BOLD.inkSoft, border:'none', cursor:'pointer', fontFamily:'inherit' }}
                   onMouseEnter={e=>{if(!sel)(e.currentTarget as HTMLButtonElement).style.background=BOLD.line+'60';}}
                   onMouseLeave={e=>{if(!sel)(e.currentTarget as HTMLButtonElement).style.background='transparent';}}>
@@ -868,15 +868,13 @@ export const Tasks: React.FC = () => {
                 </button>
               );
             })}
-            <button onClick={()=>setShowProjectForm(true)} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[12px] font-medium w-full transition-all" style={{ border:`1px dashed ${BOLD.line}`, color:BOLD.inkFaint, background:'transparent', cursor:'pointer', fontFamily:'inherit', marginTop:4 }}
-              onMouseEnter={e=>{(e.currentTarget as HTMLButtonElement).style.borderColor=BOLD.accent;(e.currentTarget as HTMLButtonElement).style.color=BOLD.accent;}}
-              onMouseLeave={e=>{(e.currentTarget as HTMLButtonElement).style.borderColor=BOLD.line;(e.currentTarget as HTMLButtonElement).style.color=BOLD.inkFaint;}}>
-              <PlusCircle size={11}/> Proje Ekle
-            </button>
           </div>
+          <button onClick={()=>setShowProjectForm(true)} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[12px] font-medium w-full transition-all flex-shrink-0" style={{ border:`1px dashed ${BOLD.line}`, color:BOLD.inkFaint, background:'transparent', cursor:'pointer', fontFamily:'inherit', marginTop:4 }}
+            onMouseEnter={e=>{(e.currentTarget as HTMLButtonElement).style.borderColor=BOLD.accent;(e.currentTarget as HTMLButtonElement).style.color=BOLD.accent;}}
+            onMouseLeave={e=>{(e.currentTarget as HTMLButtonElement).style.borderColor=BOLD.line;(e.currentTarget as HTMLButtonElement).style.color=BOLD.inkFaint;}}>
+            <PlusCircle size={11}/> Proje Ekle
+          </button>
         </div>
-
-        <div className="flex-1"/>
 
         {/* Entegrasyon bottom */}
         <div className="pt-4" style={{ borderTop:`1px solid ${BOLD.line}` }}>
