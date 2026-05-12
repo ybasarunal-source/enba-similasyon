@@ -84,6 +84,7 @@ export const Notes: React.FC = () => {
   const [typeFilter, setTypeFilter] = useState<'all' | Note['type']>('all');
   const [projFilter, setProjFilter] = useState('all');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [hoveredNoteId, setHoveredNoteId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [createError, setCreateError] = useState('');
@@ -460,24 +461,35 @@ export const Notes: React.FC = () => {
             <div className="flex flex-col p-2 gap-1">
               {listNotes.map(n => {
                 const active = selectedId === n.id;
+                const hovered = hoveredNoteId === n.id;
                 const proj = projectsWithColor.find(p => p.id === n.projectId);
                 const preview = n.content.split('\n').find(l => l.trim()) || '';
                 return (
-                  <button key={n.id} onClick={() => setSelectedId(n.id)}
-                    className="w-full text-left rounded-xl px-3 py-3 transition-all"
-                    style={{ background: active ? B.ink : 'transparent', border: `1px solid ${active ? B.ink : 'transparent'}`, cursor: 'pointer', fontFamily: 'inherit' }}
-                    onMouseEnter={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = B.bg; }}
-                    onMouseLeave={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}>
-                    <div className="flex items-center justify-between gap-2 mb-1">
-                      <TypeChip type={n.type} sm />
-                      <span className="text-[10.5px] tabular-nums" style={{ color: active ? 'rgba(255,255,255,.5)' : B.faint, fontFamily: 'JetBrains Mono,monospace', flexShrink: 0 }}>{fmtDate(n.date)}</span>
+                  <div key={n.id} className="relative rounded-xl transition-all"
+                    style={{ background: active ? B.ink : hovered ? B.bg : 'transparent', border: `1px solid ${active ? B.ink : 'transparent'}`, cursor: 'pointer', fontFamily: 'inherit' }}
+                    onMouseEnter={() => setHoveredNoteId(n.id)}
+                    onMouseLeave={() => setHoveredNoteId(null)}
+                    onClick={() => setSelectedId(n.id)}>
+                    <div className="px-3 py-3">
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <TypeChip type={n.type} sm />
+                        <span className="text-[10.5px] tabular-nums" style={{ color: active ? 'rgba(255,255,255,.5)' : B.faint, fontFamily: 'JetBrains Mono,monospace', flexShrink: 0 }}>{fmtDate(n.date)}</span>
+                      </div>
+                      <div className="text-[13px] font-semibold leading-snug truncate" style={{ color: active ? '#fff' : B.ink, letterSpacing: '-0.01em' }}>
+                        {n.title || <span style={{ opacity: 0.4 }}>Başlıksız Not</span>}
+                      </div>
+                      {preview && <div className="text-[11.5px] mt-0.5 truncate" style={{ color: active ? 'rgba(255,255,255,.55)' : B.faint }}>{preview}</div>}
+                      {proj && <div className="flex items-center gap-1 mt-1.5"><span style={{ width: 6, height: 6, borderRadius: 2, background: active ? '#fff' : proj.color, display: 'inline-block' }} /><span className="text-[10.5px] font-medium truncate" style={{ color: active ? 'rgba(255,255,255,.6)' : B.soft }}>{proj.name}</span></div>}
                     </div>
-                    <div className="text-[13px] font-semibold leading-snug truncate" style={{ color: active ? '#fff' : B.ink, letterSpacing: '-0.01em' }}>
-                      {n.title || <span style={{ opacity: 0.4 }}>Başlıksız Not</span>}
-                    </div>
-                    {preview && <div className="text-[11.5px] mt-0.5 truncate" style={{ color: active ? 'rgba(255,255,255,.55)' : B.faint }}>{preview}</div>}
-                    {proj && <div className="flex items-center gap-1 mt-1.5"><span style={{ width: 6, height: 6, borderRadius: 2, background: active ? '#fff' : proj.color, display: 'inline-block' }} /><span className="text-[10.5px] font-medium truncate" style={{ color: active ? 'rgba(255,255,255,.6)' : B.soft }}>{proj.name}</span></div>}
-                  </button>
+                    {hovered && (
+                      <button onClick={e => { e.stopPropagation(); deleteNote(n); }}
+                        className="absolute top-2 right-2 rounded-lg p-1 transition-all"
+                        style={{ background: active ? 'rgba(255,255,255,.15)' : B.line, border: 'none', cursor: 'pointer', color: active ? '#fff' : B.faint, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        title="Sil">
+                        <Trash2 size={11} />
+                      </button>
+                    )}
+                  </div>
                 );
               })}
             </div>
