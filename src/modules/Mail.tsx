@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useTranslation } from '../api/i18n';
 import { microsoftService } from '../api/microsoft';
 import { googleService } from '../api/google';
 import {
@@ -11,7 +10,10 @@ import {
   Search,
   X,
   Plug,
-  CheckCircle2
+  CheckCircle2,
+  FileText,
+  Trash2,
+  type LucideIcon,
 } from 'lucide-react';
 
 interface Email {
@@ -27,7 +29,6 @@ interface Email {
 }
 
 export const Mail: React.FC = () => {
-  const { t } = useTranslation();
   const [emails, setEmails] = useState<Email[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -45,6 +46,7 @@ export const Mail: React.FC = () => {
   const [isCheckingConnections, setIsCheckingConnections] = useState(true);
   const [msConnecting, setMsConnecting] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [activeFolder, setActiveFolder] = useState<'inbox' | 'sent' | 'drafts' | 'trash'>('inbox');
 
   const checkConnections = async () => {
     setIsCheckingConnections(true);
@@ -291,153 +293,230 @@ export const Mail: React.FC = () => {
     );
   }
 
+  const folders: { id: 'inbox' | 'sent' | 'drafts' | 'trash'; label: string; Icon: LucideIcon }[] = [
+    { id: 'inbox', label: 'Gelen Kutusu', Icon: Inbox },
+    { id: 'sent', label: 'Gönderilen', Icon: Send },
+    { id: 'drafts', label: 'Taslaklar', Icon: FileText },
+    { id: 'trash', label: 'Çöp Kutusu', Icon: Trash2 },
+  ];
+
   return (
     <div className="flex h-screen bg-[#FAFAFA] animate-fade-in overflow-hidden">
-      {/* ─── LEFT SIDEBAR ─────────────────────────────────── */}
-      <aside className="w-72 bg-white border-r border-gray-100 flex flex-col flex-shrink-0 relative z-10 shadow-sm overflow-hidden">
-        <div className="p-8 pb-4">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-enba-dark rounded-xl flex items-center justify-center text-enba-orange shadow-lg">
-              <MailIcon size={20} />
+
+      {/* ─── SOL: Klasörler ───────────────────────────────── */}
+      <aside className="w-52 bg-white border-r border-gray-100 flex flex-col flex-shrink-0 shadow-sm">
+        <div className="p-5 pb-4">
+          <div className="flex items-center gap-2.5 mb-5">
+            <div className="w-9 h-9 bg-enba-dark rounded-xl flex items-center justify-center text-enba-orange shadow-lg">
+              <MailIcon size={18} />
             </div>
             <div>
-              <h2 className="text-sm font-black text-enba-dark tracking-tight uppercase">E-Posta</h2>
-              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">Merkezi Kutu</p>
+              <h2 className="text-[11px] font-black text-enba-dark tracking-tight uppercase">E-Posta</h2>
+              <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">Merkezi Kutu</p>
             </div>
           </div>
 
-          <button 
-            onClick={() => setShowCompose(true)} 
-            className="w-full py-4 bg-enba-orange text-white rounded-2xl font-black text-[10px] uppercase tracking-[2px] shadow-lg shadow-enba-orange/20 hover:brightness-110 hover:-translate-y-0.5 active:scale-95 transition-all flex items-center justify-center gap-2 mb-6"
+          <button
+            onClick={() => setShowCompose(true)}
+            className="w-full py-3 bg-enba-orange text-white rounded-xl font-black text-[10px] uppercase tracking-[2px] shadow-lg shadow-enba-orange/20 hover:brightness-110 hover:-translate-y-0.5 active:scale-95 transition-all flex items-center justify-center gap-2 mb-5"
           >
-            <PenSquare size={16} /> Yeni E-Posta
+            <PenSquare size={14} /> Yeni E-Posta
           </button>
-          
-          <div className="space-y-2">
-            <button onClick={() => setSourceFilter('all')} className={`w-full flex items-center gap-3 p-3.5 rounded-2xl transition-all ${sourceFilter === 'all' ? 'bg-enba-dark text-white shadow-xl shadow-gray-200' : 'text-gray-400 hover:bg-gray-50'}`}>
-              <Inbox size={18} className={sourceFilter === 'all' ? 'text-enba-orange' : ''} />
-              <span className="text-xs font-bold uppercase tracking-wide">Tüm Gelenler</span>
-            </button>
-            <button onClick={() => setSourceFilter('outlook')} className={`w-full flex items-center gap-3 p-3.5 rounded-2xl transition-all ${sourceFilter === 'outlook' ? 'bg-[#0078d4] text-white shadow-xl shadow-blue-200' : 'text-gray-400 hover:bg-blue-50'}`}>
-              <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M22.5 12C22.5 6.2 17.8 1.5 12 1.5 6.2 1.5 1.5 6.2 1.5 12 1.5 17.8 6.2 22.5 12 22.5 17.8 22.5 22.5 17.8 22.5 12" fill="currentColor" opacity="0.8"/><path d="M14.2 15.6l2.1-7.1h1.7l-3 10H13.4l-3-10h1.7l2.1 7.1" fill="#fff"/></svg>
-              <span className="text-xs font-bold uppercase tracking-wide">Outlook</span>
-            </button>
-            <button onClick={() => setSourceFilter('gmail')} className={`w-full flex items-center gap-3 p-3.5 rounded-2xl transition-all ${sourceFilter === 'gmail' ? 'bg-[#EA4335] text-white shadow-xl shadow-red-200' : 'text-gray-400 hover:bg-red-50'}`}>
-              <svg className="w-4 h-4 fill-current" viewBox="0 0 48 48"><path fill="#fff" d="M24 9.5c3.54 0 6.72 1.22 9.21 3.22l6.89-6.89C35.83 2.1 30.34 0 24 0 15.02 0 7.3 7.46 2.89 13.85l7.78 6.03C12.55 13.47 17.81 9.5 24 9.5z"/></svg>
-              <span className="text-xs font-bold uppercase tracking-wide">Gmail</span>
-            </button>
+
+          <div className="space-y-0.5">
+            <p className="text-[9px] font-black uppercase tracking-widest text-gray-300 px-3 mb-2">Klasörler</p>
+            {folders.map(({ id, label, Icon }) => (
+              <button
+                key={id}
+                disabled={id !== 'inbox'}
+                onClick={() => id === 'inbox' && setActiveFolder('inbox')}
+                className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all text-left ${
+                  activeFolder === id
+                    ? 'bg-enba-dark text-white shadow-md'
+                    : id === 'inbox'
+                      ? 'text-gray-500 hover:bg-gray-50'
+                      : 'text-gray-300 cursor-default'
+                }`}
+              >
+                <Icon size={15} className={activeFolder === id ? 'text-enba-orange' : ''} />
+                <span className="text-[11px] font-semibold flex-1">{label}</span>
+                {id === 'inbox' && emails.length > 0 && (
+                  <span className={`text-[9px] font-black rounded-full px-1.5 py-0.5 ${activeFolder === 'inbox' ? 'bg-enba-orange text-white' : 'bg-gray-100 text-gray-400'}`}>
+                    {emails.length}
+                  </span>
+                )}
+              </button>
+            ))}
           </div>
         </div>
 
-        <div className="mt-auto p-6 border-t border-gray-50 flex flex-col gap-3">
-          <div className="bg-gray-50 rounded-2xl p-4 space-y-3">
-            <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">Bağlantılar</p>
-            {!msConnected ? (
-              <button onClick={handleConnectMs} className="w-full py-2 bg-[#0078d4] text-white rounded-xl text-[10px] font-bold uppercase flex items-center justify-center shadow hover:bg-blue-600 transition-all">
-                Outlook Bağla
-              </button>
-            ) : (
-              <div className="text-[10px] font-bold text-emerald-600 flex items-center gap-2 px-2"><div className="w-2 h-2 rounded-full bg-emerald-500"></div> Outlook Bağlı</div>
-            )}
-            
-            {!googleConnected ? (
-              <button onClick={handleConnectGoogle} className="w-full py-2 bg-[#4285F4] text-white rounded-xl text-[10px] font-bold uppercase flex items-center justify-center shadow hover:bg-blue-600 transition-all">
-                Gmail Bağla
-              </button>
-            ) : (
-               <div className="text-[10px] font-bold text-emerald-600 flex items-center gap-2 px-2"><div className="w-2 h-2 rounded-full bg-emerald-500"></div> Gmail Bağlı</div>
-            )}
+        {/* Hesaplar */}
+        <div className="mt-auto p-4 border-t border-gray-50">
+          <p className="text-[9px] font-black uppercase tracking-widest text-gray-300 px-1 mb-2">Hesaplar</p>
+          <div className="space-y-1">
+            <button
+              onClick={() => setSourceFilter(sourceFilter === 'outlook' ? 'all' : 'outlook')}
+              className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl transition-all ${sourceFilter === 'outlook' ? 'bg-[#0078d4]/10 text-[#0078d4]' : 'text-gray-400 hover:bg-gray-50'}`}
+            >
+              <svg viewBox="0 0 23 23" className="w-3.5 h-3.5 flex-shrink-0">
+                <rect x="1" y="1" width="10" height="10" fill="#f25022"/>
+                <rect x="12" y="1" width="10" height="10" fill="#7fba00"/>
+                <rect x="1" y="12" width="10" height="10" fill="#00a4ef"/>
+                <rect x="12" y="12" width="10" height="10" fill="#ffb900"/>
+              </svg>
+              <span className="text-[11px] font-semibold flex-1 text-left">Outlook</span>
+              {msConnected
+                ? <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" />
+                : <span onClick={e => { e.stopPropagation(); handleConnectMs(); }} className="text-[9px] text-[#0078d4] font-bold hover:underline">Bağla</span>
+              }
+            </button>
+            <button
+              onClick={() => setSourceFilter(sourceFilter === 'gmail' ? 'all' : 'gmail')}
+              className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl transition-all ${sourceFilter === 'gmail' ? 'bg-[#EA4335]/10 text-[#EA4335]' : 'text-gray-400 hover:bg-gray-50'}`}
+            >
+              <svg viewBox="0 0 48 48" className="w-3.5 h-3.5 flex-shrink-0">
+                <path fill="#EA4335" d="M24 9.5c3.54 0 6.72 1.22 9.21 3.22l6.89-6.89C35.83 2.1 30.34 0 24 0 15.02 0 7.3 5.24 3.55 12.9l7.98 6.21C13.34 13.31 18.28 9.5 24 9.5z"/>
+                <path fill="#4285F4" d="M46.5 24.5c0-1.65-.15-3.25-.43-4.79H24v9.07h12.65c-.55 2.93-2.2 5.41-4.67 7.07l7.22 5.61C43.36 37.55 46.5 31.5 46.5 24.5z"/>
+                <path fill="#FBBC05" d="M11.53 28.51A14.5 14.5 0 0 1 9.5 24c0-1.57.26-3.09.73-4.51L2.25 13.28A23.96 23.96 0 0 0 0 24c0 3.86.91 7.51 2.55 10.73l8.98-6.22z"/>
+                <path fill="#34A853" d="M24 48c6.48 0 11.92-2.15 15.9-5.85l-7.22-5.61c-2.02 1.36-4.6 2.16-8.68 2.16-5.72 0-10.66-3.81-12.47-9.1l-7.98 6.21C7.3 42.76 15.02 48 24 48z"/>
+              </svg>
+              <span className="text-[11px] font-semibold flex-1 text-left">Gmail</span>
+              {googleConnected
+                ? <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" />
+                : <span onClick={e => { e.stopPropagation(); handleConnectGoogle(); }} className="text-[9px] text-[#EA4335] font-bold hover:underline">Bağla</span>
+              }
+            </button>
           </div>
         </div>
       </aside>
 
-      {/* ─── MAIN CONTENT AREA ────────────────────────────── */}
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-        <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-6 flex-shrink-0 shadow-sm relative z-0">
-          <div className="flex items-center gap-4">
-            <div className="flex flex-col border-r border-gray-100 pr-4">
-              <h1 className="text-[9px] font-black text-enba-dark tracking-tight leading-none uppercase italic truncate max-w-[150px]">
-                Gelen Kutusu
-              </h1>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest italic">{filteredEmails.length} Mesaj</span>
-              </div>
-            </div>
+      {/* ─── ORTA: E-posta Listesi ────────────────────────── */}
+      <div className={`${selectedEmail ? 'w-80 flex-shrink-0' : 'flex-1'} flex flex-col border-r border-gray-100 bg-white overflow-hidden transition-all duration-200`}>
+        <header className="h-14 border-b border-gray-100 flex items-center justify-between px-4 flex-shrink-0">
+          <div className="flex flex-col">
+            <h1 className="text-[10px] font-black text-enba-dark tracking-tight uppercase leading-none">Gelen Kutusu</h1>
+            <span className="text-[9px] text-gray-400 font-bold mt-0.5">{filteredEmails.length} mesaj</span>
           </div>
-
-          <div className="flex items-center gap-2 flex-shrink-0 overflow-visible ml-2">
+          <div className="flex items-center gap-1.5">
             <div className="relative hidden sm:block">
-              <input 
-                type="text" 
-                placeholder="E-postalarda ara..." 
+              <input
+                type="text"
+                placeholder="Ara..."
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
-                className="bg-gray-50 border-none rounded-lg px-8 py-2 text-[10px] font-medium text-enba-dark focus:ring-2 focus:ring-enba-orange/20 w-48 transition-all"
+                className="bg-gray-50 border-none rounded-lg px-7 py-1.5 text-[10px] font-medium text-enba-dark focus:ring-2 focus:ring-enba-orange/20 w-32 transition-all"
               />
-              <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-300" />
+              <Search size={11} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-300" />
             </div>
-            <button 
+            <button
               onClick={() => fetchEmails()}
-              className={`p-2 rounded-xl border border-gray-100 text-gray-400 hover:text-enba-orange hover:bg-orange-50 transition-all ${isLoading ? 'animate-spin border-enba-orange/20 text-enba-orange' : ''}`}
+              className={`p-1.5 rounded-lg text-gray-400 hover:text-enba-orange hover:bg-orange-50 transition-all ${isLoading ? 'animate-spin text-enba-orange' : ''}`}
               title="Yenile"
             >
-              <RefreshCw size={16} />
+              <RefreshCw size={14} />
             </button>
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto bg-[#FAFAFA] p-6">
-          <div className="max-w-4xl mx-auto flex flex-col gap-3">
-            {fetchError && (
-              <div className="bg-rose-50 border border-rose-200 rounded-xl px-5 py-4 text-sm text-rose-700 font-medium flex items-start gap-3">
-                <span className="flex-shrink-0 text-rose-400 mt-0.5">⚠</span>
-                <div>
-                  <div className="font-black text-rose-800 text-xs uppercase tracking-widest mb-1">Bağlantı Hatası</div>
-                  {fetchError}
-                </div>
-              </div>
-            )}
-            {isLoading && emails.length === 0 ? (
-              <div className="flex items-center justify-center p-10">
-                <RefreshCw size={24} className="animate-spin text-gray-300" />
-              </div>
-            ) : filteredEmails.length === 0 ? (
-              <div className="flex flex-col items-center justify-center p-20 text-gray-400">
-                <Inbox size={48} className="mb-4 opacity-20" />
-                <p className="text-xs font-bold uppercase tracking-widest">E-Posta Bulunamadı</p>
-              </div>
-            ) : (
-              filteredEmails.map(email => (
-                <div key={email.id} onClick={() => handleOpenEmail(email)} className={`bg-white p-4 rounded-xl border ${email.isRead ? 'border-gray-100' : 'border-l-4 border-l-enba-orange border-y-gray-100 border-r-gray-100'} shadow-sm hover:shadow-md transition-all flex gap-4 cursor-pointer`}>
-                  <div className="flex-shrink-0 mt-1">
-                    {email.source === 'outlook' ? (
-                      <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-500 font-bold text-xs uppercase">
-                        O
-                      </div>
-                    ) : (
-                      <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center text-red-500 font-bold text-xs uppercase">
-                        G
-                      </div>
-                    )}
+        {fetchError && (
+          <div className="bg-rose-50 border-b border-rose-100 px-4 py-2 flex items-start gap-2 flex-shrink-0">
+            <span className="text-rose-400 text-xs flex-shrink-0 mt-0.5">⚠</span>
+            <span className="text-[10px] text-rose-700 font-medium leading-relaxed">{fetchError}</span>
+          </div>
+        )}
+
+        <div className="flex-1 overflow-y-auto">
+          {isLoading && emails.length === 0 ? (
+            <div className="flex items-center justify-center p-10">
+              <RefreshCw size={20} className="animate-spin text-gray-300" />
+            </div>
+          ) : filteredEmails.length === 0 ? (
+            <div className="flex flex-col items-center justify-center p-16 text-gray-400">
+              <Inbox size={40} className="mb-3 opacity-20" />
+              <p className="text-[10px] font-bold uppercase tracking-widest">E-Posta Bulunamadı</p>
+            </div>
+          ) : (
+            filteredEmails.map(email => (
+              <div
+                key={email.id}
+                onClick={() => handleOpenEmail(email)}
+                className={`border-b border-gray-50 px-4 py-3.5 cursor-pointer transition-all border-l-2 ${
+                  selectedEmail?.id === email.id
+                    ? 'bg-enba-orange/5 border-l-enba-orange'
+                    : !email.isRead
+                      ? 'border-l-enba-orange hover:bg-gray-50'
+                      : 'border-l-transparent hover:bg-gray-50'
+                }`}
+              >
+                <div className="flex items-start gap-2.5">
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-[10px] uppercase flex-shrink-0 mt-0.5 ${email.source === 'outlook' ? 'bg-blue-50 text-blue-500' : 'bg-red-50 text-red-500'}`}>
+                    {email.source === 'outlook' ? 'O' : 'G'}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <h3 className={`text-sm truncate pr-4 ${email.isRead ? 'font-medium text-gray-700' : 'font-bold text-enba-dark'}`}>
-                        {email.sender} <span className="text-xs text-gray-400 font-normal">&lt;{email.senderEmail}&gt;</span>
-                      </h3>
-                      <span className="text-[10px] text-gray-400 font-medium whitespace-nowrap">
-                        {new Date(email.date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                    <div className="flex items-center justify-between gap-1 mb-0.5">
+                      <span className={`text-xs truncate ${email.isRead ? 'font-medium text-gray-600' : 'font-bold text-enba-dark'}`}>{email.sender}</span>
+                      <span className="text-[9px] text-gray-400 whitespace-nowrap flex-shrink-0">
+                        {new Date(email.date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}
                       </span>
                     </div>
-                    <h4 className={`text-xs mb-1 truncate ${email.isRead ? 'text-gray-600' : 'font-bold text-gray-900'}`}>{email.subject}</h4>
-                    <p className="text-xs text-gray-500 truncate">{email.bodyPreview}</p>
+                    <p className={`text-[11px] truncate mb-0.5 ${email.isRead ? 'text-gray-500' : 'font-semibold text-gray-800'}`}>{email.subject}</p>
+                    <p className="text-[10px] text-gray-400 truncate">{email.bodyPreview}</p>
                   </div>
                 </div>
-              ))
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* ─── SAĞ: E-posta Detayı ──────────────────────────── */}
+      {selectedEmail ? (
+        <div className="flex-1 flex flex-col overflow-hidden bg-white">
+          <div className="border-b border-gray-100 px-6 py-4 flex items-center justify-between flex-shrink-0">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm uppercase flex-shrink-0 ${selectedEmail.source === 'outlook' ? 'bg-blue-50 text-blue-500' : 'bg-red-50 text-red-500'}`}>
+                {selectedEmail.source === 'outlook' ? 'O' : 'G'}
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-enba-dark truncate">{selectedEmail.sender}</p>
+                <p className="text-[10px] text-gray-400">&lt;{selectedEmail.senderEmail}&gt;</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0 ml-4">
+              <span className="text-[9px] font-bold text-gray-400 bg-gray-50 px-2.5 py-1 rounded-lg whitespace-nowrap">
+                {new Date(selectedEmail.date).toLocaleString('tr-TR')}
+              </span>
+              <button
+                onClick={() => setSelectedEmail(null)}
+                className="p-1.5 text-gray-400 hover:text-enba-dark hover:bg-gray-100 rounded-lg transition-all"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          </div>
+
+          <div className="px-6 py-3 border-b border-gray-50 bg-gray-50/50 flex-shrink-0">
+            <h2 className="text-base font-bold text-gray-900">{selectedEmail.subject}</h2>
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-6 py-5 relative custom-scrollbar">
+            {isBodyLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-10">
+                <RefreshCw size={20} className="animate-spin text-enba-orange" />
+              </div>
             )}
+            <div
+              className="text-sm text-gray-700 leading-relaxed max-w-none prose prose-sm prose-a:text-enba-orange"
+              dangerouslySetInnerHTML={{ __html: selectedEmail.body || selectedEmail.bodyPreview }}
+            />
           </div>
         </div>
-      </main>
+      ) : (
+        <div className="flex-1 flex flex-col items-center justify-center bg-[#FAFAFA] text-gray-300">
+          <MailIcon size={52} className="mb-4 opacity-20" />
+          <p className="text-[10px] font-bold uppercase tracking-widest">Okumak için bir e-posta seçin</p>
+        </div>
+      )}
 
       {/* Compose Modal */}
       {showCompose && (
@@ -447,7 +526,7 @@ export const Mail: React.FC = () => {
               <h2 className="text-sm font-black uppercase tracking-widest flex items-center gap-2"><PenSquare size={16} className="text-enba-orange" /> Yeni E-Posta</h2>
               <button onClick={() => setShowCompose(false)} className="text-white/50 hover:text-white transition-colors"><X size={20} /></button>
             </div>
-            
+
             <form onSubmit={handleSendEmail} className="p-6 flex flex-col gap-4">
               <div className="flex gap-4">
                 <div className="flex-1">
@@ -463,7 +542,7 @@ export const Mail: React.FC = () => {
                   </select>
                 </div>
               </div>
-              
+
               <div>
                 <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Konu</label>
                 <input required type="text" value={composeData.subject} onChange={e => setComposeData({...composeData, subject: e.target.value})} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-xs font-bold text-enba-dark focus:ring-2 focus:ring-enba-orange/20 transition-all" />
@@ -484,47 +563,6 @@ export const Mail: React.FC = () => {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-
-      {/* Read Email Modal */}
-      {selectedEmail && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-3xl h-[80vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col">
-            <div className="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                {selectedEmail.source === 'outlook' ? (
-                  <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-500 font-bold text-sm uppercase">O</div>
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center text-red-500 font-bold text-sm uppercase">G</div>
-                )}
-                <div>
-                  <h3 className="text-sm font-bold text-enba-dark">{selectedEmail.sender}</h3>
-                  <p className="text-xs text-gray-400">&lt;{selectedEmail.senderEmail}&gt;</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <span className="text-[10px] font-bold text-gray-400 bg-gray-50 px-3 py-1.5 rounded-lg">
-                  {new Date(selectedEmail.date).toLocaleString('tr-TR')}
-                </span>
-                <button onClick={() => setSelectedEmail(null)} className="p-2 text-gray-400 hover:text-enba-dark hover:bg-gray-100 rounded-xl transition-all"><X size={20} /></button>
-              </div>
-            </div>
-            <div className="px-6 py-4 border-b border-gray-50 bg-gray-50/50">
-              <h2 className="text-lg font-bold text-gray-900">{selectedEmail.subject}</h2>
-            </div>
-            <div className="p-6 flex-1 overflow-y-auto custom-scrollbar relative">
-              {isBodyLoading ? (
-                <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-10">
-                  <RefreshCw size={24} className="animate-spin text-enba-orange" />
-                </div>
-              ) : null}
-              <div 
-                className="text-sm text-gray-700 leading-relaxed max-w-none prose prose-sm prose-a:text-enba-orange"
-                dangerouslySetInnerHTML={{ __html: selectedEmail.body || selectedEmail.bodyPreview }}
-              />
-            </div>
           </div>
         </div>
       )}
