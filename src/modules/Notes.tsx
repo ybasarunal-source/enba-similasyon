@@ -241,12 +241,12 @@ export const Notes: React.FC = () => {
     const tasksToCreate = aiTasks.filter((_, i) => selectedAiTasks.has(i));
     for (const t of tasksToCreate) {
       await tasksAPI.insert({
-        id: Date.now().toString() + Math.random().toString(36).slice(2, 6),
+        id: crypto.randomUUID(),
         title: t.title,
         description: t.desc || '',
         priority: t.priority || 'medium',
-        deadline: t.deadline || '',
-        project_id: t.projectId || '',
+        deadline: t.deadline || undefined,
+        project_id: t.projectId || undefined,
         module_ref: 'genel',
         status: 'todo',
         source: 'local',
