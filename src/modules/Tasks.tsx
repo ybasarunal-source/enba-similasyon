@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   PlusCircle, RotateCw, Calendar, Trash2, Pencil,
   RefreshCw, Download, Search, Check, Pin, Layers,
-  Timer, Sun, X, CheckSquare, Kanban as KanbanIcon,
+  Sun, X, CheckSquare, Kanban as KanbanIcon,
   ChevronLeft, ChevronRight, Shuffle, ArrowRight, SkipForward,
 } from 'lucide-react';
 import { microsoftService } from '../api/microsoft';
@@ -363,50 +363,6 @@ const CompletedView = ({ tasks, projects, onToggle, onOpen, onPin, onDelete, onE
   );
 };
 
-// ── Pomodoro Widget ───────────────────────────────────────────────────────
-interface PomodoroWidgetProps {
-  focusTask: Task|null;
-  secs: number; setSecs: React.Dispatch<React.SetStateAction<number>>;
-  running: boolean; setRunning: React.Dispatch<React.SetStateAction<boolean>>;
-  mode: 'work'|'break'; setMode: React.Dispatch<React.SetStateAction<'work'|'break'>>;
-  onStart: () => void;
-}
-const PomodoroWidget = ({ focusTask, secs, setSecs, running, setRunning, mode, setMode, onStart }: PomodoroWidgetProps) => {
-  const total = mode==='work'?25*60:5*60;
-  const prog = 1-secs/total;
-  const mm = String(Math.floor(secs/60)).padStart(2,'0');
-  const ss2 = String(secs%60).padStart(2,'0');
-  const R=50, C=2*Math.PI*R;
-  return (
-    <div className="rounded-2xl p-4 relative overflow-hidden" style={{ background:BOLD.ink, color:'#fff' }}>
-      <div style={{ position:'absolute', top:-40, right:-40, width:140, height:140, borderRadius:'50%', background:BOLD.accent, opacity:0.18, pointerEvents:'none' }}/>
-      <div className="flex items-center justify-between mb-3 relative">
-        <div className="flex items-center gap-1.5 text-[11px] font-bold tracking-[0.1em] uppercase" style={{ opacity:0.7 }}><Timer size={12}/>Pomodoro</div>
-        <div className="flex gap-0.5 p-0.5 rounded-md" style={{ background:'rgba(255,255,255,.08)' }}>
-          {(['work','break'] as const).map(m=>(
-            <button key={m} onClick={()=>{setMode(m);setSecs(m==='work'?25*60:5*60);setRunning(false);}} className="px-2.5 py-1 rounded text-[10.5px] font-semibold transition-all" style={{ border:'none', background:mode===m?'#fff':'transparent', color:mode===m?BOLD.ink:'#fff', cursor:'pointer', fontFamily:'inherit' }}>{m==='work'?'Odak':'Mola'}</button>
-          ))}
-        </div>
-      </div>
-      <div className="flex justify-center py-2 relative">
-        <svg width={124} height={124} viewBox="0 0 124 124">
-          <circle cx={62} cy={62} r={R} stroke="rgba(255,255,255,.1)" strokeWidth={6} fill="none"/>
-          <circle cx={62} cy={62} r={R} stroke={BOLD.accent} strokeWidth={6} fill="none" strokeLinecap="round" strokeDasharray={C} strokeDashoffset={C*(1-prog)} transform="rotate(-90 62 62)" style={{ transition:'stroke-dashoffset .4s' }}/>
-        </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <div className="text-[28px] font-semibold leading-none" style={{ fontFamily:'JetBrains Mono,monospace', letterSpacing:'-0.04em' }}>{mm}:{ss2}</div>
-          <div className="text-[10px] uppercase tracking-widest font-semibold mt-1" style={{ opacity:0.5 }}>{mode==='work'?'Odak süresi':'Mola'}</div>
-        </div>
-      </div>
-      {focusTask&&<div className="rounded-lg px-3 py-2 mb-3 text-[12px] font-medium leading-snug truncate" style={{ background:'rgba(255,255,255,.06)' }}><span style={{ opacity:0.5, marginRight:6 }}>Şu an:</span>{focusTask.title}</div>}
-      <div className="flex gap-1.5">
-        <button onClick={()=>{ const next=!running; setRunning(next); if(next) onStart(); }} className="flex-1 py-2.5 rounded-lg text-[13px] font-semibold" style={{ border:'none', background:BOLD.accent, color:'#fff', cursor:'pointer', fontFamily:'inherit' }}>{running?'⏸ Duraklat':'▶ Başlat'}</button>
-        <button onClick={()=>{setRunning(false);setSecs(mode==='work'?25*60:5*60);}} className="px-3.5 py-2.5 rounded-lg text-[13px] font-medium" style={{ border:'none', background:'rgba(255,255,255,.1)', color:'#fff', cursor:'pointer', fontFamily:'inherit' }}>↻</button>
-      </div>
-    </div>
-  );
-};
-
 // ── Task Detail Drawer ────────────────────────────────────────────────────
 const TaskDetail = ({ task, projects, onClose, onToggle, onEdit, onDelete }: { task:Task; projects:Project[]; onClose:()=>void; onToggle:(id:string|number,e:React.MouseEvent)=>void; onEdit:(t:Task)=>void; onDelete:(t:Task)=>void }) => {
   const pidx = projects.findIndex(p=>p.id===task.projectId);
@@ -482,19 +438,10 @@ export const Tasks: React.FC = () => {
   const [restructureQueue, setRestructureQueue] = useState<Task[]>([]);
   const [restructureIdx, setRestructureIdx] = useState(0);
   const [restructureEdits, setRestructureEdits] = useState<{ priority: Task['priority']; deadline: string; projectId: string; done: boolean }>({ priority:'medium', deadline:'', projectId:'', done:false });
-  const [pomSecs, setPomSecs] = useState(25*60);
-  const [pomRunning, setPomRunning] = useState(false);
-  const [pomMode, setPomMode] = useState<'work'|'break'>('work');
   const [myDayIds, setMyDayIds] = useState<Set<string>>(() => {
     try { return new Set(JSON.parse(localStorage.getItem('enba_my_day_tasks') || '[]')); }
     catch { return new Set<string>(); }
   });
-  useEffect(() => {
-    if (!pomRunning) return;
-    const i = setInterval(() => setPomSecs(s => Math.max(0, s - 1)), 1000);
-    return () => clearInterval(i);
-  }, [pomRunning]);
-
   // ── Load data ──────────────────────────────────────────────
   useEffect(() => {
     async function loadData() {
@@ -557,29 +504,6 @@ export const Tasks: React.FC = () => {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // ── Pomodoro end sound ────────────────────────────────────
-  useEffect(() => {
-    if (pomSecs === 0 && pomRunning) {
-      setPomRunning(false);
-      try {
-        const ctx = new AudioContext();
-        // Three-pulse alarm: 880 → 880 → 880 with gap
-        [0, 0.4, 0.8].forEach(delay => {
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.connect(gain); gain.connect(ctx.destination);
-          osc.type = 'sine';
-          osc.frequency.value = 880;
-          const t = ctx.currentTime + delay;
-          gain.gain.setValueAtTime(0, t);
-          gain.gain.linearRampToValueAtTime(0.25, t + 0.01);
-          gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
-          osc.start(t); osc.stop(t + 0.3);
-        });
-      } catch { /* ignore */ }
-    }
-  }, [pomSecs, pomRunning]);
 
   // ── Handlers ──────────────────────────────────────────────
   const playDoneSound = () => {
@@ -1004,7 +928,6 @@ export const Tasks: React.FC = () => {
       {/* ── RIGHT PANEL — slim strip ─────────────────────────── */}
       {rightPanel==='slim' && (
         <aside style={{ width:44, flexShrink:0, borderLeft:`1px solid ${BOLD.line}`, background:BOLD.ink, display:'flex', flexDirection:'column', alignItems:'center', paddingTop:64, paddingBottom:16, gap:10 }}>
-          {/* Aç butonu — gizleme tuşunun hemen altında */}
           <button
             onClick={() => setRightPanel('open')}
             title="Paneli aç"
@@ -1014,38 +937,12 @@ export const Tasks: React.FC = () => {
           >
             <ChevronLeft size={12} strokeWidth={2.5}/>
           </button>
-
-          {/* Sayaç */}
-          <Timer size={14} style={{ color: pomRunning ? BOLD.accent : 'rgba(255,255,255,0.35)', marginTop:8 }}/>
-          <div style={{ fontSize:11, fontFamily:'JetBrains Mono,monospace', fontWeight:600, color:'#fff', writingMode:'vertical-rl', letterSpacing:'0.08em', transform:'rotate(180deg)' }}>
-            {String(Math.floor(pomSecs/60)).padStart(2,'0')}:{String(pomSecs%60).padStart(2,'0')}
-          </div>
-          {pomRunning && (
-            <div style={{ width:6, height:6, borderRadius:'50%', background:BOLD.accent, animation:'pulse 1.5s ease-in-out infinite' }}/>
-          )}
         </aside>
       )}
 
       {/* ── RIGHT PANEL — full ───────────────────────────────── */}
       {rightPanel==='open' && (
       <aside className="flex flex-col flex-shrink-0 gap-3.5 overflow-y-auto custom-scrollbar" style={{ width:248, padding:'20px 16px', borderLeft:`1px solid ${BOLD.line}`, background:'#FCFAF6' }}>
-        <PomodoroWidget focusTask={focusTask??null} secs={pomSecs} setSecs={setPomSecs} running={pomRunning} setRunning={setPomRunning} mode={pomMode} setMode={setPomMode} onStart={() => {
-          try {
-            const ctx = new AudioContext();
-            [0, 0.12].forEach((delay, i) => {
-              const osc = ctx.createOscillator();
-              const gain = ctx.createGain();
-              osc.connect(gain); gain.connect(ctx.destination);
-              osc.type = 'sine';
-              osc.frequency.value = i === 0 ? 440 : 660;
-              const t = ctx.currentTime + delay;
-              gain.gain.setValueAtTime(0, t);
-              gain.gain.linearRampToValueAtTime(0.12, t + 0.01);
-              gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
-              osc.start(t); osc.stop(t + 0.18);
-            });
-          } catch { /* ignore */ }
-        }}/>
 
         {/* Quick stats */}
         <div className="rounded-2xl p-4" style={{ background:BOLD.surface, border:`1px solid ${BOLD.line}` }}>

@@ -76,7 +76,8 @@ import {
   Sun,
   Mail as MailIcon,
   CreditCard,
-  Shield
+  Shield,
+  Timer,
 } from 'lucide-react';
 
 type ModuleType =
@@ -112,6 +113,27 @@ export const App: React.FC = () => {
   const [companyName, setCompanyName] = useState<string | null>(null);
   const [theme, setTheme] = useState(() => localStorage.getItem('enba_theme') || 'light');
   const [unreadMailCount, setUnreadMailCount] = useState(0);
+
+  // ── Global Pomodoro ───────────────────────────────────────
+  const [pomSecs, setPomSecs] = useState<number>(() => {
+    try {
+      const s = localStorage.getItem('enba_pomodoro_active');
+      if (s) { const { startedAt, totalSecs } = JSON.parse(s); const r = totalSecs - Math.floor((Date.now()-startedAt)/1000); if (r>0) return r; }
+    } catch {}
+    return 25*60;
+  });
+  const [pomRunning, setPomRunning] = useState<boolean>(() => {
+    try {
+      const s = localStorage.getItem('enba_pomodoro_active');
+      if (s) { const { startedAt, totalSecs } = JSON.parse(s); return Math.floor((Date.now()-startedAt)/1000) < totalSecs; }
+    } catch {}
+    return false;
+  });
+  const [pomMode, setPomMode] = useState<'work'|'break'>(() => {
+    try { const s = localStorage.getItem('enba_pomodoro_active'); if (s) return JSON.parse(s).mode ?? 'work'; } catch {}
+    return 'work';
+  });
+  const [pomPanelOpen, setPomPanelOpen] = useState(false);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -209,6 +231,43 @@ export const App: React.FC = () => {
   useEffect(() => {
     sessionStorage.setItem('enba_active_module', activeModule);
   }, [activeModule]);
+
+  // ── Pomodoro timer interval ───────────────────────────────
+  useEffect(() => {
+    if (!pomRunning) return;
+    const i = setInterval(() => setPomSecs(s => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(i);
+  }, [pomRunning]);
+
+  // ── Pomodoro localStorage sync (running değişince kaydet) ─
+  useEffect(() => {
+    if (pomRunning) {
+      localStorage.setItem('enba_pomodoro_active', JSON.stringify({ startedAt: Date.now(), totalSecs: pomSecs, mode: pomMode }));
+    } else {
+      localStorage.removeItem('enba_pomodoro_active');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pomRunning]);
+
+  // ── Pomodoro end sound ────────────────────────────────────
+  useEffect(() => {
+    if (pomSecs === 0 && pomRunning) {
+      setPomRunning(false);
+      try {
+        const ctx = new AudioContext();
+        [0, 0.4, 0.8].forEach(delay => {
+          const osc = ctx.createOscillator(); const gain = ctx.createGain();
+          osc.connect(gain); gain.connect(ctx.destination);
+          osc.type = 'sine'; osc.frequency.value = 880;
+          const t = ctx.currentTime + delay;
+          gain.gain.setValueAtTime(0, t);
+          gain.gain.linearRampToValueAtTime(0.25, t + 0.01);
+          gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+          osc.start(t); osc.stop(t + 0.3);
+        });
+      } catch { /* ignore */ }
+    }
+  }, [pomSecs, pomRunning]);
 
   // Buraya ulaşıldıysa session kesin vardır.
   // Rol: önce DB profili, yoksa session app_metadata, yoksa demo kuralı, son çare 'user'
@@ -798,6 +857,67 @@ export const App: React.FC = () => {
           </div>
         </div>
       </main>
+
+      {/* ── Global Pomodoro floating widget ──────────────── */}
+      {session && (
+        <div style={{ position:'fixed', bottom:24, right:24, zIndex:1000, fontFamily:'Poppins,sans-serif' }}>
+          {pomPanelOpen ? (
+            <div style={{ width:260, background:'#1A1A1A', borderRadius:20, padding:16, boxShadow:'0 8px 40px rgba(0,0,0,0.28)', color:'#fff' }}>
+              {/* Header */}
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:6, fontSize:11, fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase', opacity:0.7 }}>
+                  <Timer size={12}/>Pomodoro
+                </div>
+                <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                  <div style={{ display:'flex', gap:2, padding:2, borderRadius:6, background:'rgba(255,255,255,.08)' }}>
+                    {(['work','break'] as const).map(m=>(
+                      <button key={m} onClick={()=>{setPomMode(m);setPomSecs(m==='work'?25*60:5*60);setPomRunning(false);}}
+                        style={{ border:'none', padding:'3px 8px', borderRadius:4, fontSize:10, fontWeight:600, cursor:'pointer', fontFamily:'inherit', background:pomMode===m?'#fff':'transparent', color:pomMode===m?'#1A1A1A':'#fff', transition:'all .15s' }}>
+                        {m==='work'?'Odak':'Mola'}
+                      </button>
+                    ))}
+                  </div>
+                  <button onClick={()=>setPomPanelOpen(false)} style={{ border:'none', background:'rgba(255,255,255,.1)', borderRadius:6, width:22, height:22, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', color:'#fff' }}>
+                    <ChevronDown size={12}/>
+                  </button>
+                </div>
+              </div>
+              {/* Ring */}
+              {(() => { const total=pomMode==='work'?25*60:5*60; const prog=1-pomSecs/total; const R=46,C=2*Math.PI*R; const mm=String(Math.floor(pomSecs/60)).padStart(2,'0'); const ss=String(pomSecs%60).padStart(2,'0'); return (
+                <div style={{ display:'flex', justifyContent:'center', padding:'8px 0', position:'relative' }}>
+                  <svg width={112} height={112} viewBox="0 0 112 112">
+                    <circle cx={56} cy={56} r={R} stroke="rgba(255,255,255,.1)" strokeWidth={6} fill="none"/>
+                    <circle cx={56} cy={56} r={R} stroke="#FF9500" strokeWidth={6} fill="none" strokeLinecap="round" strokeDasharray={C} strokeDashoffset={C*(1-prog)} transform="rotate(-90 56 56)" style={{ transition:'stroke-dashoffset .4s' }}/>
+                  </svg>
+                  <div style={{ position:'absolute', inset:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}>
+                    <div style={{ fontSize:26, fontWeight:600, fontFamily:'JetBrains Mono,monospace', letterSpacing:'-0.04em', lineHeight:1 }}>{mm}:{ss}</div>
+                    <div style={{ fontSize:9, textTransform:'uppercase', letterSpacing:'0.1em', opacity:0.45, marginTop:3 }}>{pomMode==='work'?'Odak':'Mola'}</div>
+                  </div>
+                </div>
+              ); })()}
+              {/* Controls */}
+              <div style={{ display:'flex', gap:6, marginTop:4 }}>
+                <button onClick={()=>{ const next=!pomRunning; setPomRunning(next); if(next){ try{ const ctx=new AudioContext(); [0,0.12].forEach((delay,i)=>{ const o=ctx.createOscillator(),g=ctx.createGain(); o.connect(g);g.connect(ctx.destination); o.type='sine'; o.frequency.value=i===0?440:660; const t=ctx.currentTime+delay; g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.12,t+0.01); g.gain.exponentialRampToValueAtTime(0.0001,t+0.18); o.start(t);o.stop(t+0.18); }); }catch{} } }}
+                  style={{ flex:1, padding:'10px 0', borderRadius:8, border:'none', background:'#FF9500', color:'#fff', fontSize:13, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
+                  {pomRunning?'⏸ Duraklat':'▶ Başlat'}
+                </button>
+                <button onClick={()=>{setPomRunning(false);setPomSecs(pomMode==='work'?25*60:5*60);}}
+                  style={{ padding:'10px 12px', borderRadius:8, border:'none', background:'rgba(255,255,255,.1)', color:'#fff', fontSize:13, cursor:'pointer', fontFamily:'inherit' }}>↻</button>
+              </div>
+            </div>
+          ) : (
+            /* Collapsed pill */
+            <button onClick={()=>setPomPanelOpen(true)}
+              style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 14px', borderRadius:50, border:'none', background:'#1A1A1A', color:'#fff', cursor:'pointer', boxShadow:'0 4px 20px rgba(0,0,0,0.25)', fontFamily:'inherit', fontSize:13, fontWeight:600 }}>
+              <Timer size={14} style={{ color: pomRunning ? '#FF9500' : 'rgba(255,255,255,0.5)' }}/>
+              <span style={{ fontFamily:'JetBrains Mono,monospace', fontSize:13 }}>
+                {String(Math.floor(pomSecs/60)).padStart(2,'0')}:{String(pomSecs%60).padStart(2,'0')}
+              </span>
+              {pomRunning && <div style={{ width:6, height:6, borderRadius:'50%', background:'#FF9500', animation:'pulse 1.5s ease-in-out infinite' }}/>}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 };
