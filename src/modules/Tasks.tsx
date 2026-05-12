@@ -539,10 +539,8 @@ export const Tasks: React.FC = () => {
     if (googleService.handleAuthReturn()) setGoogleAccount({ name:'Google Kullanıcısı' });
     const gToken = googleService.getAccessToken();
     if (gToken) {
-      profileAPI.getMyProfile().then(p => {
-        if (!p?.google_data?.token) { googleService.logout(); setGoogleAccount(null); }
-        else setGoogleAccount({ name:'Google Kullanıcısı' });
-      });
+      // Token localStorage'da geçerliyse bağlı say — profilde yoksa silme
+      setGoogleAccount({ name: 'Google Kullanıcısı' });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
