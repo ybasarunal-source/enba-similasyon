@@ -44,6 +44,7 @@ export const googleService = {
       if (token) {
         localStorage.setItem('google_access_token', token);
         localStorage.setItem('google_token_expiry', (Date.now() + parseInt(expires || '3600') * 1000).toString());
+        localStorage.setItem('google_ever_connected', '1');
         window.location.hash = ''; // Clear hash
         return true;
       }
@@ -65,14 +66,9 @@ export const googleService = {
   resumeSession(profile: any) {
     const profileToken = profile.google_data?.token;
     const profileExpiry = profile.google_data?.expiry;
-    console.log('[googleService.resumeSession] profile.google_data:', profile.google_data ?? 'null');
     if (profileToken && profileExpiry) {
       // Zaten geçerli bir token varsa üstüne yazma
-      if (this.getAccessToken()) {
-        console.log('[googleService.resumeSession] localStorage token geçerli, profil tokeni görmezden gelindi');
-        return;
-      }
-      console.log('[googleService.resumeSession] Profil tokeni geri yükleniyor...');
+      if (this.getAccessToken()) return;
       localStorage.setItem('google_access_token', profileToken);
       localStorage.setItem('google_token_expiry', profileExpiry);
     }
@@ -353,8 +349,8 @@ export const googleService = {
   },
 
   logout() {
-    console.trace('[googleService.logout] token siliniyor!');
     localStorage.removeItem('google_access_token');
     localStorage.removeItem('google_token_expiry');
+    localStorage.removeItem('google_ever_connected');
   }
 };
