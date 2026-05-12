@@ -62,11 +62,19 @@ export const googleService = {
   },
 
   // Profil verilerinden token'ı geri yükle (sadece Supabase'de kayıtlıysa)
-  // NOT: Profilde token yoksa localStorage'a dokunma — yeni bağlananların token'ını silmesin
   resumeSession(profile: any) {
-    if (profile.google_data?.token) {
-      localStorage.setItem('google_access_token', profile.google_data.token);
-      localStorage.setItem('google_token_expiry', profile.google_data.expiry);
+    const profileToken = profile.google_data?.token;
+    const profileExpiry = profile.google_data?.expiry;
+    console.log('[googleService.resumeSession] profile.google_data:', profile.google_data ?? 'null');
+    if (profileToken && profileExpiry) {
+      // Zaten geçerli bir token varsa üstüne yazma
+      if (this.getAccessToken()) {
+        console.log('[googleService.resumeSession] localStorage token geçerli, profil tokeni görmezden gelindi');
+        return;
+      }
+      console.log('[googleService.resumeSession] Profil tokeni geri yükleniyor...');
+      localStorage.setItem('google_access_token', profileToken);
+      localStorage.setItem('google_token_expiry', profileExpiry);
     }
   },
 
@@ -345,6 +353,7 @@ export const googleService = {
   },
 
   logout() {
+    console.trace('[googleService.logout] token siliniyor!');
     localStorage.removeItem('google_access_token');
     localStorage.removeItem('google_token_expiry');
   }
