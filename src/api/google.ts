@@ -88,7 +88,7 @@ export const googleService = {
       });
 
       if (!response.ok) {
-        if (response.status === 401 || response.status === 403) {
+        if (response.status === 401) {
           localStorage.removeItem('google_access_token');
           localStorage.removeItem('google_token_expiry');
         }
@@ -213,7 +213,7 @@ export const googleService = {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!listResponse.ok) {
-        if (listResponse.status === 401 || listResponse.status === 403) {
+        if (listResponse.status === 401) {
           localStorage.removeItem('google_access_token');
           localStorage.removeItem('google_token_expiry');
         }
@@ -307,7 +307,7 @@ export const googleService = {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!response.ok) {
-        if (response.status === 401 || response.status === 403) {
+        if (response.status === 401) {
           localStorage.removeItem('google_access_token');
           localStorage.removeItem('google_token_expiry');
         }
