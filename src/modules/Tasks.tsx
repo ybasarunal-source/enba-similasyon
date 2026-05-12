@@ -296,56 +296,84 @@ const AllTasksView = ({ tasks, projects, onToggle, onOpen, onPin, onDelete, onEd
 };
 
 // ── View: Kanban ──────────────────────────────────────────────────────────
+const KANBAN_COLS: { id:Task['status']; name:string; color:string }[] = [
+  { id:'todo',  name:'Başlanmamış', color:'#6B7280' },
+  { id:'doing', name:'Devam Eden',  color:'#FF9500' },
+  { id:'done',  name:'Tamamlandı',  color:'#34C759' },
+];
 const KanbanView = ({ tasks, projects, onToggle, onOpen, onStatus }: VP & { onStatus:(id:string|number,s:Task['status'])=>void }) => {
   const [dragged, setDragged] = useState<string|number|null>(null);
   const [over, setOver] = useState<string|null>(null);
-  const cols: { id:Task['status']; name:string; emoji:string }[] = [
-    { id:'todo', name:'Yapılacak', emoji:'○' },
-    { id:'doing', name:'Devam Eden', emoji:'◐' },
-    { id:'done', name:'Tamamlanan', emoji:'●' },
-  ];
   return (
-    <div className="p-8 h-full flex flex-col overflow-hidden">
-      <div className="mb-5 flex-shrink-0">
-        <h1 className="text-[30px] font-bold m-0 leading-none" style={{ fontFamily:'Bricolage Grotesque,Poppins,sans-serif', letterSpacing:'-0.04em', color:BOLD.ink }}>Kanban Panosu</h1>
-        <p className="text-[13.5px] mt-1.5" style={{ color:BOLD.inkSoft }}>Sürükle bırak ile görevleri taşı</p>
+    <div className="flex flex-col h-full overflow-hidden" style={{ padding:'20px 16px 16px' }}>
+      <div className="mb-4 flex-shrink-0">
+        <h1 className="text-[26px] font-bold m-0 leading-none" style={{ fontFamily:'Bricolage Grotesque,Poppins,sans-serif', letterSpacing:'-0.04em', color:BOLD.ink }}>Kanban</h1>
       </div>
-      <div className="grid gap-4 flex-1 min-h-0" style={{ gridTemplateColumns:'repeat(3,1fr)' }}>
-        {cols.map(col => {
-          const colTasks = tasks.filter(t=>t.status===col.id);
+      <div className="flex gap-3 flex-1 min-h-0 overflow-x-auto">
+        {KANBAN_COLS.map(col => {
+          const colTasks = tasks.filter(t => t.status === col.id);
+          const isOver = over === col.id;
           return (
             <div key={col.id}
               onDragOver={e=>{e.preventDefault();setOver(col.id);}}
               onDragLeave={()=>setOver(o=>o===col.id?null:o)}
               onDrop={()=>{if(dragged){onStatus(dragged,col.id);setDragged(null);setOver(null);}}}
-              className="flex flex-col min-h-0 rounded-2xl p-3 transition-all duration-150"
-              style={{ background: over===col.id ? BOLD.accent+'12' : BOLD.lineSoft, border: over===col.id ? `2px dashed ${BOLD.accent}` : `1px solid ${BOLD.line}` }}>
-              <div className="flex items-center gap-2 px-2 py-1.5 mb-3">
-                <span className="text-[14px]" style={{ color:BOLD.inkSoft }}>{col.emoji}</span>
-                <span className="text-[15px] font-bold" style={{ fontFamily:'Bricolage Grotesque,Poppins,sans-serif', letterSpacing:'-0.02em', color:BOLD.ink }}>{col.name}</span>
-                <span className="text-[11px] font-bold tabular-nums px-1.5 py-0.5 rounded" style={{ background:BOLD.line, color:BOLD.inkFaint, fontFamily:'JetBrains Mono,monospace' }}>{colTasks.length}</span>
+              style={{
+                flex:'1 1 0', minWidth:220, display:'flex', flexDirection:'column', minHeight:0,
+                borderRadius:16, padding:'10px 8px',
+                background: isOver ? BOLD.accent+'10' : BOLD.surface,
+                border: `1.5px solid ${isOver ? BOLD.accent : BOLD.line}`,
+                transition:'border-color .15s, background .15s',
+              }}>
+              {/* Column header */}
+              <div style={{ display:'flex', alignItems:'center', gap:8, padding:'4px 6px 10px', flexShrink:0 }}>
+                <span style={{ width:8, height:8, borderRadius:'50%', background:col.color, display:'inline-block', flexShrink:0 }}/>
+                <span style={{ fontSize:13, fontWeight:700, color:BOLD.ink, letterSpacing:'-0.01em', flex:1 }}>{col.name}</span>
+                <span style={{ fontSize:11, fontWeight:700, fontFamily:'JetBrains Mono,monospace', color:BOLD.inkFaint, background:BOLD.line, borderRadius:5, padding:'1px 6px' }}>{colTasks.length}</span>
               </div>
-              <div className="flex flex-col gap-2 overflow-y-auto flex-1 custom-scrollbar">
+              {/* Cards */}
+              <div className="flex flex-col gap-2 overflow-y-auto flex-1 custom-scrollbar" style={{ paddingBottom:4 }}>
                 {colTasks.map(task => {
-                  const pidx = projects.findIndex(p=>p.id===task.projectId);
-                  const proj = pidx>=0 ? projects[pidx] : null;
-                  const pc = proj ? projColor(proj,pidx) : '#94a3b8';
+                  const pidx = projects.findIndex(p => p.id === task.projectId);
+                  const proj = pidx >= 0 ? projects[pidx] : null;
+                  const pc = proj ? projColor(proj, pidx) : '#94a3b8';
+                  const dl = deadlineLabel(task.deadline, task.status==='done');
+                  const prioColors: Record<string,string> = { high:'#FF3B30', medium:'#FF9500', low:'#34C759' };
                   return (
-                    <div key={task.id} draggable onDragStart={()=>setDragged(task.id)} onDragEnd={()=>{setDragged(null);setOver(null);}} onClick={()=>onOpen(task)}
-                      className="rounded-xl p-3 cursor-grab transition-all duration-150 relative overflow-hidden"
-                      style={{ background:'#fff', border:`1px solid ${BOLD.line}`, opacity:dragged===task.id?0.4:1, borderLeft:`3px solid ${pc}`, boxShadow:'0 1px 0 rgba(20,18,15,.03)' }}
-                      onMouseEnter={e=>{(e.currentTarget as HTMLDivElement).style.boxShadow='0 2px 8px rgba(20,18,15,.08)';}}
-                      onMouseLeave={e=>{(e.currentTarget as HTMLDivElement).style.boxShadow='0 1px 0 rgba(20,18,15,.03)';}}>
-                      <div className="flex items-center gap-1.5 mb-1.5">
-                        <span style={{ width:6, height:6, borderRadius:'50%', background:pc, flexShrink:0, display:'inline-block' }} />
-                        <span className="text-[10.5px] font-bold uppercase tracking-widest truncate flex-1" style={{ color:BOLD.inkSoft }}>{proj?.name??''}</span>
-                        {task.priority==='high'&&<span style={{ width:6, height:6, borderRadius:'50%', background:'#FF3B30', flexShrink:0, display:'inline-block' }} />}
+                    <div key={task.id}
+                      draggable
+                      onDragStart={()=>setDragged(task.id)}
+                      onDragEnd={()=>{setDragged(null);setOver(null);}}
+                      onClick={()=>onOpen(task)}
+                      style={{
+                        background:'#fff', borderRadius:12, padding:'10px 12px',
+                        border:`1px solid ${BOLD.line}`, borderLeft:`3px solid ${pc}`,
+                        opacity: dragged===task.id ? 0.35 : 1,
+                        cursor:'grab', boxShadow:'0 1px 2px rgba(20,18,15,.04)',
+                        transition:'box-shadow .15s, opacity .15s',
+                      }}
+                      onMouseEnter={e=>(e.currentTarget as HTMLDivElement).style.boxShadow='0 3px 10px rgba(20,18,15,.1)'}
+                      onMouseLeave={e=>(e.currentTarget as HTMLDivElement).style.boxShadow='0 1px 2px rgba(20,18,15,.04)'}>
+                      {/* Top row: project + priority dot */}
+                      <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:6 }}>
+                        {proj && <>
+                          <span style={{ width:6, height:6, borderRadius:'50%', background:pc, flexShrink:0, display:'inline-block' }}/>
+                          <span style={{ fontSize:10, fontWeight:600, color:BOLD.inkSoft, flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{proj.name}</span>
+                        </>}
+                        <span style={{ width:7, height:7, borderRadius:'50%', background:prioColors[task.priority]??'#94a3b8', flexShrink:0, display:'inline-block', marginLeft:'auto' }}/>
                       </div>
-                      <div className="text-[13px] font-semibold leading-snug mb-2" style={{ color:BOLD.ink, letterSpacing:'-0.01em' }}>{task.title}</div>
-                      {task.deadline&&<div className="flex items-center gap-1 text-[11px] font-medium" style={{ color:BOLD.inkFaint }}><Calendar size={10}/>{new Date(task.deadline).toLocaleDateString('tr-TR',{day:'2-digit',month:'2-digit'})}</div>}
+                      {/* Title */}
+                      <div style={{ fontSize:13, fontWeight:600, color:BOLD.ink, lineHeight:1.35, letterSpacing:'-0.01em', textDecoration:task.status==='done'?'line-through':'none', marginBottom: dl||task.desc ? 6 : 0 }}>{task.title}</div>
+                      {/* Desc preview */}
+                      {task.desc && <div style={{ fontSize:11, color:BOLD.inkSoft, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', marginBottom:4 }}>{task.desc}</div>}
+                      {/* Deadline */}
+                      {dl && <div style={{ display:'flex', alignItems:'center', gap:4, fontSize:11, fontWeight:600, color:dl.color }}><Calendar size={9}/>{new Date(task.deadline!).toLocaleDateString('tr-TR',{day:'2-digit',month:'2-digit'})}</div>}
                     </div>
                   );
                 })}
+                {colTasks.length === 0 && (
+                  <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, color:BOLD.inkFaint, borderRadius:10, border:`1.5px dashed ${BOLD.line}`, margin:'4px 0', padding:'24px 0' }}>Görev yok</div>
+                )}
               </div>
             </div>
           );
