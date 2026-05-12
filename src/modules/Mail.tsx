@@ -44,10 +44,13 @@ export const Mail: React.FC = () => {
   const [googleConnected, setGoogleConnected] = useState(false);
   const [isCheckingConnections, setIsCheckingConnections] = useState(true);
   const [msConnecting, setMsConnecting] = useState(false);
-  const [googleConnecting, setGoogleConnecting] = useState(false);
 
   const checkConnections = async () => {
     setIsCheckingConnections(true);
+
+    // Google OAuth redirect'ten bu modüle doğrudan dönüldüyse token hash'te olabilir
+    googleService.handleAuthReturn();
+
     const msToken = await microsoftService.getToken(['User.Read', 'Mail.ReadWrite', 'Mail.Send']);
     setMsConnected(!!msToken);
 
@@ -104,14 +107,8 @@ export const Mail: React.FC = () => {
   };
 
   const handleConnectGoogle = () => {
-    setGoogleConnecting(true);
+    // loginRedirect sayfayı terk eder — geri dönüşte App.tsx handleAuthReturn token'ı kaydeder
     googleService.loginRedirect();
-    setTimeout(() => {
-      const gToken = googleService.getAccessToken();
-      setGoogleConnected(!!gToken);
-      setGoogleConnecting(false);
-      if (gToken) fetchEmails();
-    }, 3000);
   };
 
   const handleSendEmail = async (e: React.FormEvent) => {
@@ -252,11 +249,10 @@ export const Mail: React.FC = () => {
               </ul>
               <button
                 onClick={handleConnectGoogle}
-                disabled={googleConnecting}
-                className="mt-auto w-full py-3 bg-[#4285F4] text-white rounded-xl text-xs font-black uppercase tracking-widest shadow shadow-blue-200 hover:bg-blue-600 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-60"
+                className="mt-auto w-full py-3 bg-[#4285F4] text-white rounded-xl text-xs font-black uppercase tracking-widest shadow shadow-blue-200 hover:bg-blue-600 active:scale-95 transition-all flex items-center justify-center gap-2"
               >
-                {googleConnecting ? <RefreshCw size={14} className="animate-spin" /> : <Plug size={14} />}
-                {googleConnecting ? 'Bağlanıyor...' : 'Google ile Bağlan'}
+                <Plug size={14} />
+                Google ile Bağlan
               </button>
             </div>
           </div>

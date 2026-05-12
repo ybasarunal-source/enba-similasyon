@@ -166,6 +166,9 @@ export const App: React.FC = () => {
   const [session, setSession] = useState<Session | null | undefined>(undefined); // undefined = loading
 
   useEffect(() => {
+    // Google OAuth redirect'ten döndüysek token hash'te gelir — hemen kaydet
+    googleService.handleAuthReturn();
+
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
     return () => subscription.unsubscribe();
