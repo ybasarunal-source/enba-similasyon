@@ -59,7 +59,7 @@ export const Mail: React.FC = () => {
     setIsCheckingConnections(false);
 
     if (msToken || gToken) {
-      fetchEmails();
+      fetchEmails({ ms: !!msToken, google: !!gToken });
     }
   };
 
@@ -67,17 +67,20 @@ export const Mail: React.FC = () => {
     checkConnections();
   }, []);
 
-  const fetchEmails = async () => {
+  const fetchEmails = async (override?: { ms?: boolean; google?: boolean }) => {
+    const useMsConnected = override?.ms ?? msConnected;
+    const useGoogleConnected = override?.google ?? googleConnected;
+
     setIsLoading(true);
     let allEmails: Email[] = [];
 
     try {
-      if (msConnected) {
+      if (useMsConnected) {
         const msEmails = await microsoftService.getRecentEmails(30);
         allEmails = [...allEmails, ...msEmails];
       }
-      
-      if (googleConnected) {
+
+      if (useGoogleConnected) {
         const gEmails = await googleService.getRecentEmails(30);
         allEmails = [...allEmails, ...gEmails];
       }
