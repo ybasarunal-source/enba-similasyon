@@ -1159,6 +1159,15 @@ export const Tasks: React.FC = () => {
                   <Check size={14} style={{ color: restructureEdits.done ? '#22c55e' : BOLD.inkFaint }}/>
                   <span className="text-[13px] font-bold" style={{ color: restructureEdits.done ? '#22c55e' : BOLD.inkSoft }}>Tamamlandı olarak işaretle</span>
                 </label>
+                {/* My Day toggle */}
+                {(() => { const inMyDay = myDayIds.has(task.id.toString()); return (
+                <button type="button" onClick={() => toggleMyDay(task.id)}
+                  className="flex items-center gap-3 p-3.5 rounded-xl w-full cursor-pointer transition-all text-left"
+                  style={{ background: inMyDay ? '#FF950015' : BOLD.bg, border:`1.5px solid ${inMyDay ? '#FF9500' : BOLD.line}`, fontFamily:'inherit' }}>
+                  <Sun size={14} style={{ color: inMyDay ? '#FF9500' : BOLD.inkFaint, fill: inMyDay ? '#FF9500' : 'none' }}/>
+                  <span className="text-[13px] font-bold" style={{ color: inMyDay ? '#FF9500' : BOLD.inkSoft }}>{inMyDay ? 'Günümde ✓' : 'Günüme ekle'}</span>
+                </button>
+                ); })()}
               </div>
               {/* Footer */}
               <div className="px-8 pb-7 flex gap-3">
