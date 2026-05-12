@@ -88,11 +88,7 @@ export const googleService = {
       });
 
       if (!response.ok) {
-        if (response.status === 401) {
-          localStorage.removeItem('google_access_token');
-          localStorage.removeItem('google_token_expiry');
-        }
-        console.warn(`Google API Error: ${response.status} ${response.statusText}`);
+        console.warn(`Google Calendar API Error: ${response.status} ${response.statusText}`);
         return [];
       }
 
@@ -213,11 +209,7 @@ export const googleService = {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!listResponse.ok) {
-        if (listResponse.status === 401) {
-          localStorage.removeItem('google_access_token');
-          localStorage.removeItem('google_token_expiry');
-        }
-        throw new Error('Failed to fetch gmail messages');
+        throw new Error(`Gmail messages fetch failed: ${listResponse.status}`);
       }
       const listData = await listResponse.json();
       const messages = listData.messages || [];
@@ -307,10 +299,6 @@ export const googleService = {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!response.ok) {
-        if (response.status === 401) {
-          localStorage.removeItem('google_access_token');
-          localStorage.removeItem('google_token_expiry');
-        }
         return 0;
       }
       const data = await response.json();
