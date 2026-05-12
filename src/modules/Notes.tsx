@@ -219,8 +219,12 @@ export const Notes: React.FC = () => {
         throw new Error(`HTTP ${res.status} | ${JSON.stringify(errBody)}`);
       }
       const result = await res.json();
-      const tasks: AiTask[] = result.tasks || [];
-      const reminders: AiReminder[] = result.reminders || [];
+      const tasks: AiTask[] = (result.tasks || []).map((t: string | AiTask) =>
+        typeof t === 'string' ? { title: t, desc: '', priority: 'medium' as const, deadline: null, projectId: null } : t
+      );
+      const reminders: AiReminder[] = (result.reminders || []).map((r: string | AiReminder) =>
+        typeof r === 'string' ? { text: r, date: null } : r
+      );
       setAiTasks(tasks);
       setAiReminders(reminders);
       setSelectedAiTasks(new Set(tasks.map((_, i) => i)));
