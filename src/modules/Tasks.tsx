@@ -361,15 +361,13 @@ const CompletedView = ({ tasks, projects, onToggle, onOpen, onPin, onDelete, onE
 };
 
 // ── Pomodoro Widget ───────────────────────────────────────────────────────
-const PomodoroWidget = ({ focusTask }: { focusTask: Task|null }) => {
-  const [secs, setSecs] = useState(25*60);
-  const [running, setRunning] = useState(false);
-  const [mode, setMode] = useState<'work'|'break'>('work');
-  useEffect(() => {
-    if (!running) return;
-    const i = setInterval(()=>setSecs(s=>Math.max(0,s-1)),1000);
-    return ()=>clearInterval(i);
-  }, [running]);
+interface PomodoroWidgetProps {
+  focusTask: Task|null;
+  secs: number; setSecs: React.Dispatch<React.SetStateAction<number>>;
+  running: boolean; setRunning: React.Dispatch<React.SetStateAction<boolean>>;
+  mode: 'work'|'break'; setMode: React.Dispatch<React.SetStateAction<'work'|'break'>>;
+}
+const PomodoroWidget = ({ focusTask, secs, setSecs, running, setRunning, mode, setMode }: PomodoroWidgetProps) => {
   const total = mode==='work'?25*60:5*60;
   const prog = 1-secs/total;
   const mm = String(Math.floor(secs/60)).padStart(2,'0');
@@ -473,6 +471,14 @@ export const Tasks: React.FC = () => {
   const [deleteTargetId, setDeleteTargetId] = useState('none');
   const [formData, setFormData] = useState<Partial<Task>>({ title:'', desc:'', priority:'medium', deadline:'', projectId:'', moduleRef:'genel' });
   const [rightPanel, setRightPanel] = useState<'open'|'slim'|'hidden'>('open');
+  const [pomSecs, setPomSecs] = useState(25*60);
+  const [pomRunning, setPomRunning] = useState(false);
+  const [pomMode, setPomMode] = useState<'work'|'break'>('work');
+  useEffect(() => {
+    if (!pomRunning) return;
+    const i = setInterval(() => setPomSecs(s => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(i);
+  }, [pomRunning]);
 
   // ── Load data ──────────────────────────────────────────────
   useEffect(() => {
@@ -833,17 +839,26 @@ export const Tasks: React.FC = () => {
         <aside
           onClick={() => setRightPanel('open')}
           title="Paneli aç"
-          style={{ width:44, flexShrink:0, borderLeft:`1px solid ${BOLD.line}`, background:'#FCFAF6', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:12, cursor:'pointer' }}
+          style={{ width:44, flexShrink:0, borderLeft:`1px solid ${BOLD.line}`, background:BOLD.ink, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:10, cursor:'pointer' }}
         >
-          <Timer size={16} style={{ color:BOLD.inkFaint }}/>
-          <div style={{ fontSize:9, fontFamily:'JetBrains Mono,monospace', color:BOLD.inkFaint, writingMode:'vertical-rl', letterSpacing:'0.1em' }}>POMODORO</div>
+          <Timer size={14} style={{ color: pomRunning ? BOLD.accent : 'rgba(255,255,255,0.4)' }}/>
+          <div style={{
+            fontSize:11, fontFamily:'JetBrains Mono,monospace', fontWeight:600,
+            color:'#fff', writingMode:'vertical-rl', letterSpacing:'0.08em',
+            transform:'rotate(180deg)',
+          }}>
+            {String(Math.floor(pomSecs/60)).padStart(2,'0')}:{String(pomSecs%60).padStart(2,'0')}
+          </div>
+          {pomRunning && (
+            <div style={{ width:6, height:6, borderRadius:'50%', background:BOLD.accent, animation:'pulse 1.5s ease-in-out infinite' }}/>
+          )}
         </aside>
       )}
 
       {/* ── RIGHT PANEL — full ───────────────────────────────── */}
       {rightPanel==='open' && (
       <aside className="flex flex-col flex-shrink-0 gap-3.5 overflow-y-auto custom-scrollbar" style={{ width:248, padding:'20px 16px', borderLeft:`1px solid ${BOLD.line}`, background:'#FCFAF6' }}>
-        <PomodoroWidget focusTask={focusTask??null}/>
+        <PomodoroWidget focusTask={focusTask??null} secs={pomSecs} setSecs={setPomSecs} running={pomRunning} setRunning={setPomRunning} mode={pomMode} setMode={setPomMode}/>
 
         {/* Quick stats */}
         <div className="rounded-2xl p-4" style={{ background:BOLD.surface, border:`1px solid ${BOLD.line}` }}>
