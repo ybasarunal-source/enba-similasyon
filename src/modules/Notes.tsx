@@ -117,14 +117,31 @@ export const Notes: React.FC = () => {
     return pool.find(n => n.id === selectedId) ?? null;
   }, [notes, archived, selectedId, view]);
 
+  // ── Beforeunload guard ────────────────────────────────
+  useEffect(() => {
+    const guard = (e: BeforeUnloadEvent) => {
+      if (saveStatus === 'saving') {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', guard);
+    return () => window.removeEventListener('beforeunload', guard);
+  }, [saveStatus]);
+
   // ── Auto-save ─────────────────────────────────────────
   const scheduleAutoSave = useCallback((id: string, updates: Partial<SupabaseNote>) => {
     clearTimeout(saveTimer.current);
     setSaveStatus('saving');
     saveTimer.current = setTimeout(async () => {
-      await notesAPI.update(id, updates);
-      setSaveStatus('saved');
-      setTimeout(() => setSaveStatus('idle'), 2000);
+      const ok = await notesAPI.update(id, updates);
+      if (ok) {
+        setSaveStatus('saved');
+        setTimeout(() => setSaveStatus('idle'), 2000);
+      } else {
+        setSaveStatus('idle');
+        setCreateError('Kayıt başarısız — ağ bağlantısını kontrol edin.');
+      }
     }, 1200);
   }, []);
 
