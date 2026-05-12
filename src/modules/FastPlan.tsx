@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { usePlanSync } from '../hooks/usePlanSync';
 import { SyncBanner } from '../components/SyncBanner';
 import { ASGARI_NET, DEFAULT_DAILY_MEAL } from '../utils/constants';
@@ -6,6 +6,7 @@ import {
   hesapla, type GiderKalem, type PersonelItem, type GiderItem,
   type YatirimItem, type PlanParams, type PlanSonuc,
 } from '../utils/fastPlanCalc';
+import { settingsAPI, DEFAULT_APP_SETTINGS } from '../utils/appSettings';
 import {
   Zap, Package, Factory,
   Users, BarChart3, TrendingUp,
@@ -59,21 +60,22 @@ const fmt = (n: number) =>
 const fmtDec = (n: number, d = 1) =>
   (n || 0).toLocaleString('tr-TR', { minimumFractionDigits: d, maximumFractionDigits: d });
 
-const VARSAYILAN_PARAMS: PlanParams = {
-  aylikTon: 0, alisFiyati: 0, satisFiyati: 0,
-  alisNakliye: 0, satisNakliye: 0, uretimFiresi: 0,
-  copOrani: 0, ayiklamaVar: false, elektrikKwFiyat: 0,
-  aylikGun: 26, gunlukSaat: 8, vardiyaSayisi: 1,
-  personelListesi: [],
-  ektraGiderler: [], yatirimlar: [], 
-  muhasebeGider: 0,
-  kiraGider: 0,
-  forkliftGider: 0,
-  bakimGider: 0,
-  elektrikGider: 0,
-  cevreMuhGider: 0,
-  amortismanAy: 36,
-};
+function makeVarsayilanParams(s: typeof DEFAULT_APP_SETTINGS): PlanParams {
+  return {
+    aylikTon: 0, alisFiyati: 0, satisFiyati: 0,
+    alisNakliye: 0, satisNakliye: 0, uretimFiresi: 0,
+    copOrani: 0, ayiklamaVar: false, elektrikKwFiyat: s.elektrikBirimFiyat,
+    aylikGun: s.aylikGun, gunlukSaat: 8, vardiyaSayisi: 1,
+    personelListesi: [],
+    ektraGiderler: [], yatirimlar: [],
+    muhasebeGider: 0, kiraGider: 0, forkliftGider: 0,
+    bakimGider: 0, elektrikGider: 0, cevreMuhGider: 0,
+    amortismanAy: 36,
+    asgariUcret: s.asgariUcret,
+    asgariSgk: s.asgariSgk,
+    yemekUcreti: s.yemekUcreti,
+  };
+}
 
 // ─── InputRow (dışarıda — her render'da yeniden oluşturulmasın) ──
 const InputRow: React.FC<{
@@ -188,16 +190,33 @@ export const FastPlan: React.FC = () => {
     planType: 'fast',
   });
 
+  // Settings
+  const [appSettings, setAppSettings] = useState(DEFAULT_APP_SETTINGS);
+  useEffect(() => {
+    settingsAPI.get().then(s => {
+      setAppSettings(s);
+      setParams(prev => ({
+        ...prev,
+        asgariUcret: s.asgariUcret,
+        asgariSgk: s.asgariSgk,
+        yemekUcreti: s.yemekUcreti,
+        elektrikKwFiyat: s.elektrikBirimFiyat,
+        aylikGun: s.aylikGun,
+      }));
+    });
+  }, []);
+
   // Form state
   const [baslik, setBaslik] = useState('');
   const [aciklama, setAciklama] = useState('');
   const [etiket, setEtiket] = useState('');
-  const [params, setParams] = useState<PlanParams>({ ...VARSAYILAN_PARAMS });
+  const [params, setParams] = useState<PlanParams>(() => makeVarsayilanParams(DEFAULT_APP_SETTINGS));
   const [yeniPersonel, setYeniPersonel] = useState({ unvan: '', kisiSayisi: 1, ekMaas: 0, isAyiklama: false });
   const [yeniGider, setYeniGider] = useState<{ ad: string; tutar: string; kalem: GiderKalem }>({ ad: '', tutar: '', kalem: 'enerji' });
   const [yeniYatirim, setYeniYatirim] = useState({ ad: '', tutar: '' });
 
   // Panel açıklıkları
+  const [panelSabitler, setPanelSabitler] = useState(false);
   const [panelYatirim, setPanelYatirim] = useState(true);
   const [panelOp, setPanelOp] = useState(false);
   const [panelPer, setPanelPer] = useState(false);
@@ -249,7 +268,7 @@ export const FastPlan: React.FC = () => {
   const resetForm = () => {
     setDuzenlemId(null);
     setBaslik(''); setAciklama(''); setEtiket('');
-    setParams({ ...VARSAYILAN_PARAMS });
+    setParams(makeVarsayilanParams(appSettings));
     setSaveModalOpen(false);
     setView('cards');
   };
@@ -427,7 +446,7 @@ export const FastPlan: React.FC = () => {
             </div>
           </div>
           <button
-            onClick={() => { setDuzenlemId(null); setBaslik(''); setAciklama(''); setEtiket(''); setParams({ ...VARSAYILAN_PARAMS }); setView('form'); }}
+            onClick={() => { setDuzenlemId(null); setBaslik(''); setAciklama(''); setEtiket(''); setParams(makeVarsayilanParams(appSettings)); setView('form'); }}
             className="flex items-center gap-3 px-8 py-4 bg-enba-orange text-white rounded-[1.5rem] font-black text-[11px] uppercase tracking-[3px] shadow-2xl shadow-enba-orange/30 hover:brightness-110 transition-all active:scale-95"
           >
             <Plus size={20} /> Yeni Plan Oluştur
@@ -563,7 +582,7 @@ export const FastPlan: React.FC = () => {
               <p className="text-sm text-gray-400 font-medium mt-2">Yeni Plan Oluştur butonuna tıklayarak ilk planınızı oluşturun.</p>
             </div>
             <button
-              onClick={() => { setDuzenlemId(null); setBaslik(''); setAciklama(''); setParams({ ...VARSAYILAN_PARAMS }); setView('form'); }}
+              onClick={() => { setDuzenlemId(null); setBaslik(''); setAciklama(''); setParams(makeVarsayilanParams(appSettings)); setView('form'); }}
               className="flex items-center gap-3 px-8 py-4 bg-enba-dark text-white rounded-[1.5rem] font-black text-[11px] uppercase tracking-[3px] shadow-xl hover:bg-black transition-all"
             >
               <Plus size={18} /> İlk Planı Oluştur
@@ -931,7 +950,23 @@ export const FastPlan: React.FC = () => {
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
         {/* Sol: Giriş Panelleri */}
         <div className="xl:col-span-7 space-y-5">
-          <Panel 
+          {/* ─── Operasyonel Sabitler ─────────────────── */}
+          <Panel
+            title="0. Operasyonel Sabitler" icon={<Scale size={18} />} open={panelSabitler}
+            onToggle={() => setPanelSabitler(v => !v)}
+            badge="Ayarlardan yüklendi"
+          >
+            <div className="mb-3 flex items-center gap-2 text-[10px] text-gray-400 font-bold">
+              <span>Varsayılanlar Ayarlar sayfasından gelir. Her plan kendi değerini taşır — değiştirirsen sadece bu planı etkiler.</span>
+            </div>
+            <InputRow label="Asgari Net Ücret (₺/ay)" value={params.asgariUcret} onChange={v => setParams(p => ({ ...p, asgariUcret: v }))} suffix="₺" />
+            <InputRow label="İşveren SGK Payı (₺/ay)" value={params.asgariSgk} onChange={v => setParams(p => ({ ...p, asgariSgk: v }))} suffix="₺" />
+            <InputRow label="Günlük Yemek Ücreti (₺/gün)" value={params.yemekUcreti} onChange={v => setParams(p => ({ ...p, yemekUcreti: v }))} suffix="₺" />
+            <InputRow label="Elektrik Birim Fiyatı (₺/kWh)" value={params.elektrikKwFiyat} onChange={v => setParams(p => ({ ...p, elektrikKwFiyat: v }))} suffix="₺" step={0.1} />
+            <InputRow label="Aylık Çalışma Günü" value={params.aylikGun} onChange={v => setParams(p => ({ ...p, aylikGun: v }))} suffix="gün" max={31} />
+          </Panel>
+
+          <Panel
             title="I. Başlangıç Yatırımları (CAPEX)" icon={<Gem size={18} />} open={panelYatirim} 
             onToggle={() => setPanelYatirim(v => !v)}
             badge={`₺${fmt(params.yatirimlar.reduce((s, y) => s + y.tutar, 0))}`}

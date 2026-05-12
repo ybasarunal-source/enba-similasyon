@@ -1,4 +1,4 @@
-import { ASGARI_NET, ASGARI_SGK, DEFAULT_DAILY_MEAL } from './constants';
+export { ASGARI_NET, ASGARI_SGK, DEFAULT_DAILY_MEAL, DEFAULT_WORK_DAYS } from './constants';
 
 export type GiderKalem = 'enerji' | 'kira' | 'bakim' | 'pazarlama' | 'yonetim' | 'diger';
 
@@ -36,6 +36,10 @@ export interface PlanParams {
   aylikGun: number;
   gunlukSaat: number;
   vardiyaSayisi: number;
+  // Değişken sabitler — her plan kendi değerini taşır
+  asgariUcret: number;
+  asgariSgk: number;
+  yemekUcreti: number;
   personelListesi: PersonelItem[];
   ektraGiderler: GiderItem[];
   yatirimlar: YatirimItem[];
@@ -80,9 +84,9 @@ export function hesapla(p: PlanParams): PlanSonuc {
   let toplamMaas = 0, toplamSgk = 0, toplamYemek = 0;
   p.personelListesi.forEach(per => {
     const kisi = per.kisiSayisi * p.vardiyaSayisi;
-    toplamMaas += (ASGARI_NET + per.ekMaas) * kisi;
-    toplamSgk += ASGARI_SGK * kisi;
-    toplamYemek += DEFAULT_DAILY_MEAL * p.aylikGun * kisi;
+    toplamMaas += (p.asgariUcret + per.ekMaas) * kisi;
+    toplamSgk += p.asgariSgk * kisi;
+    toplamYemek += p.yemekUcreti * p.aylikGun * kisi;
   });
 
   const giderKırılım: Record<GiderKalem, number> = {

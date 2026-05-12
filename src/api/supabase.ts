@@ -67,6 +67,7 @@ export interface UserProfile {
   microsoft_data?: any;
   google_data?: any;
   parasut_data?: any;
+  settings?: Record<string, number>;
 }
 
 export interface Company {

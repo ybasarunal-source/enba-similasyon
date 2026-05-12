@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { hesapla, type PlanParams } from '../fastPlanCalc';
-import { ASGARI_NET, ASGARI_SGK, DEFAULT_DAILY_MEAL } from '../constants';
+import { hesapla, type PlanParams, ASGARI_NET, ASGARI_SGK, DEFAULT_DAILY_MEAL } from '../fastPlanCalc';
 
 const BASE: PlanParams = {
   aylikTon: 100,
@@ -25,6 +24,9 @@ const BASE: PlanParams = {
   elektrikGider: 0,
   cevreMuhGider: 0,
   amortismanAy: 36,
+  asgariUcret: ASGARI_NET,
+  asgariSgk: ASGARI_SGK,
+  yemekUcreti: DEFAULT_DAILY_MEAL,
 };
 
 describe('hesapla — temel gelir/gider', () => {

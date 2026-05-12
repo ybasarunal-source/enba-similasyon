@@ -1,22 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from '../api/i18n';
 import { supabase, profileAPI, type UserProfile, type UserRole, type ModulePermissions } from '../api/supabase';
-import { 
-  Settings as SettingsIcon, 
-  RefreshCw, 
-  Save, 
-  CircleDollarSign, 
-  Scale, 
-  Globe, 
-  Languages, 
-  Bell, 
-  UserCircle, 
-  LogOut, 
-  ShieldCheck, 
-  Ruler, 
-  Weight, 
+import { settingsAPI, DEFAULT_APP_SETTINGS, type AppSettings } from '../utils/appSettings';
+import {
+  Settings as SettingsIcon,
+  RefreshCw,
+  Save,
+  CircleDollarSign,
+  Scale,
+  Globe,
+  Languages,
+  Bell,
+  UserCircle,
+  LogOut,
+  ShieldCheck,
+  Ruler,
+  Weight,
   CheckCircle,
-  Palette
+  Palette,
+  SlidersHorizontal
 } from 'lucide-react';
 
 interface SettingsProps {
@@ -28,7 +30,13 @@ interface SettingsProps {
 export const Settings: React.FC<SettingsProps> = ({ profile, currentTheme, onThemeChange }) => {
   const { t, language, setLanguage } = useTranslation();
   const [success, setSuccess] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // ── Operasyonel Sabitler ────────────────────────────────
+  const [appSettings, setAppSettings] = useState<AppSettings>(DEFAULT_APP_SETTINGS);
+  useEffect(() => {
+    settingsAPI.get().then(s => setAppSettings(s));
+  }, []);
 
   // ── Admin: Kullanıcı Yönetimi State ─────────────────────
   const [allProfiles, setAllProfiles] = useState<UserProfile[]>([]);
@@ -83,8 +91,11 @@ export const Settings: React.FC<SettingsProps> = ({ profile, currentTheme, onThe
     return { currency: 'TRY', unit: 'ton', notifications: true, theme: 'light' };
   });
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    setSaving(true);
     localStorage.setItem('enba_settings', JSON.stringify(settings));
+    await settingsAPI.save(appSettings);
+    setSaving(false);
     setSuccess(true);
     setTimeout(() => setSuccess(false), 3000);
   };
@@ -182,6 +193,43 @@ export const Settings: React.FC<SettingsProps> = ({ profile, currentTheme, onThe
                   </button>
                 ))}
              </div>
+          </div>
+
+          {/* ─── Operasyonel Sabitler ──────────────────── */}
+          <div className={`${CARD_STYLE} md:col-span-2`}>
+            <div className="absolute top-0 right-0 w-32 h-32 bg-enba-orange/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+            <h3 className={TITLE_STYLE}>
+              <SlidersHorizontal size={20} className="text-enba-orange" /> Operasyonel Sabitler
+            </h3>
+            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-6 -mt-4 italic">
+              Yeni planlar bu değerleri varsayılan olarak kullanır. Her plan kendi sabitini taşır — geçmiş planlar etkilenmez.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-0 relative z-10">
+              {([
+                { key: 'asgariUcret',        label: 'Asgari Net Ücret',        suffix: '₺/ay',   step: 1 },
+                { key: 'asgariSgk',          label: 'İşveren SGK Payı',        suffix: '₺/ay',   step: 1 },
+                { key: 'yemekUcreti',        label: 'Günlük Yemek Ücreti',     suffix: '₺/gün',  step: 1 },
+                { key: 'elektrikBirimFiyat', label: 'Elektrik Birim Fiyatı',   suffix: '₺/kWh',  step: 0.01 },
+                { key: 'suBirimFiyat',       label: 'Su Birim Fiyatı',         suffix: '₺/m³',   step: 0.1 },
+                { key: 'aylikGun',           label: 'Aylık Çalışma Günü',      suffix: 'gün',    step: 1, max: 31 },
+              ] as { key: keyof AppSettings; label: string; suffix: string; step: number; max?: number }[]).map(field => (
+                <div key={field.key} className="flex items-center justify-between gap-4 py-3 border-b border-gray-50 last:border-0">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-[2px] flex-shrink-0">{field.label}</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      value={appSettings[field.key]}
+                      min={0}
+                      max={field.max ?? 9_999_999}
+                      step={field.step}
+                      onChange={e => setAppSettings(prev => ({ ...prev, [field.key]: parseFloat(e.target.value) || 0 }))}
+                      className="w-28 text-right bg-gray-50 border border-gray-100 rounded-xl px-3 py-2 text-sm font-black text-enba-dark focus:ring-2 focus:ring-enba-orange/20 outline-none transition-all tabular-nums"
+                    />
+                    <span className="text-[10px] text-gray-400 font-bold w-12 shrink-0">{field.suffix}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Theme Selector Section */}
@@ -406,7 +454,7 @@ export const Settings: React.FC<SettingsProps> = ({ profile, currentTheme, onThe
           >
              <div className="absolute inset-0 bg-white/10 -translate-x-full group-hover:translate-x-0 transition-transform duration-700"></div>
              <Save size={24} className="text-enba-orange group-hover:rotate-12 transition-transform" />
-             {loading ? 'YÜKLENİYOR...' : 'SİSTEMİ GÜNCELLE'}
+             {saving ? 'KAYDEDİLİYOR...' : 'SİSTEMİ GÜNCELLE'}
           </button>
        </div>
     </div>
