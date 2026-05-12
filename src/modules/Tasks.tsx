@@ -369,8 +369,9 @@ interface PomodoroWidgetProps {
   secs: number; setSecs: React.Dispatch<React.SetStateAction<number>>;
   running: boolean; setRunning: React.Dispatch<React.SetStateAction<boolean>>;
   mode: 'work'|'break'; setMode: React.Dispatch<React.SetStateAction<'work'|'break'>>;
+  onStart: () => void;
 }
-const PomodoroWidget = ({ focusTask, secs, setSecs, running, setRunning, mode, setMode }: PomodoroWidgetProps) => {
+const PomodoroWidget = ({ focusTask, secs, setSecs, running, setRunning, mode, setMode, onStart }: PomodoroWidgetProps) => {
   const total = mode==='work'?25*60:5*60;
   const prog = 1-secs/total;
   const mm = String(Math.floor(secs/60)).padStart(2,'0');
@@ -399,7 +400,7 @@ const PomodoroWidget = ({ focusTask, secs, setSecs, running, setRunning, mode, s
       </div>
       {focusTask&&<div className="rounded-lg px-3 py-2 mb-3 text-[12px] font-medium leading-snug truncate" style={{ background:'rgba(255,255,255,.06)' }}><span style={{ opacity:0.5, marginRight:6 }}>Şu an:</span>{focusTask.title}</div>}
       <div className="flex gap-1.5">
-        <button onClick={()=>setRunning(r=>!r)} className="flex-1 py-2.5 rounded-lg text-[13px] font-semibold" style={{ border:'none', background:BOLD.accent, color:'#fff', cursor:'pointer', fontFamily:'inherit' }}>{running?'⏸ Duraklat':'▶ Başlat'}</button>
+        <button onClick={()=>{ const next=!running; setRunning(next); if(next) onStart(); }} className="flex-1 py-2.5 rounded-lg text-[13px] font-semibold" style={{ border:'none', background:BOLD.accent, color:'#fff', cursor:'pointer', fontFamily:'inherit' }}>{running?'⏸ Duraklat':'▶ Başlat'}</button>
         <button onClick={()=>{setRunning(false);setSecs(mode==='work'?25*60:5*60);}} className="px-3.5 py-2.5 rounded-lg text-[13px] font-medium" style={{ border:'none', background:'rgba(255,255,255,.1)', color:'#fff', cursor:'pointer', fontFamily:'inherit' }}>↻</button>
       </div>
     </div>
@@ -556,6 +557,29 @@ export const Tasks: React.FC = () => {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ── Pomodoro end sound ────────────────────────────────────
+  useEffect(() => {
+    if (pomSecs === 0 && pomRunning) {
+      setPomRunning(false);
+      try {
+        const ctx = new AudioContext();
+        // Three-pulse alarm: 880 → 880 → 880 with gap
+        [0, 0.4, 0.8].forEach(delay => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain); gain.connect(ctx.destination);
+          osc.type = 'sine';
+          osc.frequency.value = 880;
+          const t = ctx.currentTime + delay;
+          gain.gain.setValueAtTime(0, t);
+          gain.gain.linearRampToValueAtTime(0.25, t + 0.01);
+          gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+          osc.start(t); osc.stop(t + 0.3);
+        });
+      } catch { /* ignore */ }
+    }
+  }, [pomSecs, pomRunning]);
 
   // ── Handlers ──────────────────────────────────────────────
   const playDoneSound = () => {
@@ -1005,7 +1029,23 @@ export const Tasks: React.FC = () => {
       {/* ── RIGHT PANEL — full ───────────────────────────────── */}
       {rightPanel==='open' && (
       <aside className="flex flex-col flex-shrink-0 gap-3.5 overflow-y-auto custom-scrollbar" style={{ width:248, padding:'20px 16px', borderLeft:`1px solid ${BOLD.line}`, background:'#FCFAF6' }}>
-        <PomodoroWidget focusTask={focusTask??null} secs={pomSecs} setSecs={setPomSecs} running={pomRunning} setRunning={setPomRunning} mode={pomMode} setMode={setPomMode}/>
+        <PomodoroWidget focusTask={focusTask??null} secs={pomSecs} setSecs={setPomSecs} running={pomRunning} setRunning={setPomRunning} mode={pomMode} setMode={setPomMode} onStart={() => {
+          try {
+            const ctx = new AudioContext();
+            [0, 0.12].forEach((delay, i) => {
+              const osc = ctx.createOscillator();
+              const gain = ctx.createGain();
+              osc.connect(gain); gain.connect(ctx.destination);
+              osc.type = 'sine';
+              osc.frequency.value = i === 0 ? 440 : 660;
+              const t = ctx.currentTime + delay;
+              gain.gain.setValueAtTime(0, t);
+              gain.gain.linearRampToValueAtTime(0.12, t + 0.01);
+              gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+              osc.start(t); osc.stop(t + 0.18);
+            });
+          } catch { /* ignore */ }
+        }}/>
 
         {/* Quick stats */}
         <div className="rounded-2xl p-4" style={{ background:BOLD.surface, border:`1px solid ${BOLD.line}` }}>
