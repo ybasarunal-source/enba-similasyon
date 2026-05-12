@@ -472,7 +472,7 @@ export const Tasks: React.FC = () => {
   const [deletingProject, setDeletingProject] = useState<Project|null>(null);
   const [deleteTargetId, setDeleteTargetId] = useState('none');
   const [formData, setFormData] = useState<Partial<Task>>({ title:'', desc:'', priority:'medium', deadline:'', projectId:'', moduleRef:'genel' });
-  const [rightPanelOpen, setRightPanelOpen] = useState(true);
+  const [rightPanel, setRightPanel] = useState<'open'|'slim'|'hidden'>('open');
 
   // ── Load data ──────────────────────────────────────────────
   useEffect(() => {
@@ -807,27 +807,41 @@ export const Tasks: React.FC = () => {
 
       {/* ── RIGHT PANEL TOGGLE ───────────────────────────────── */}
       <button
-        onClick={() => setRightPanelOpen(o => !o)}
-        title={rightPanelOpen ? 'Paneli gizle' : 'Pomodoro panelini aç'}
+        onClick={() => setRightPanel(p => p==='open' ? 'slim' : p==='slim' ? 'hidden' : 'open')}
+        title={rightPanel==='open' ? 'Küçült' : rightPanel==='slim' ? 'Gizle' : 'Paneli aç'}
         style={{
-          position:'absolute', right: rightPanelOpen ? 248 : 0, top:'50%', transform:'translateY(-50%)',
+          position:'absolute',
+          right: rightPanel==='open' ? 248 : rightPanel==='slim' ? 44 : 0,
+          top:'50%', transform:'translateY(-50%)',
           zIndex:20, width:18, height:48,
           background:BOLD.surface, border:`1px solid ${BOLD.line}`,
-          borderRight: rightPanelOpen ? `1px solid ${BOLD.line}` : 'none',
-          borderRadius: rightPanelOpen ? '6px 0 0 6px' : '0 6px 6px 0',
+          borderRight: rightPanel!=='hidden' ? `1px solid ${BOLD.line}` : 'none',
+          borderRadius: rightPanel!=='hidden' ? '6px 0 0 6px' : '0 6px 6px 0',
           display:'flex', alignItems:'center', justifyContent:'center',
           cursor:'pointer', transition:'right .25s',
           color:BOLD.inkFaint,
         }}
       >
-        {rightPanelOpen
-          ? <ChevronRight size={11} strokeWidth={2.5}/>
-          : <ChevronLeft size={11} strokeWidth={2.5}/>
+        {rightPanel==='hidden'
+          ? <ChevronLeft size={11} strokeWidth={2.5}/>
+          : <ChevronRight size={11} strokeWidth={2.5}/>
         }
       </button>
 
-      {/* ── RIGHT PANEL ──────────────────────────────────────── */}
-      {rightPanelOpen && (
+      {/* ── RIGHT PANEL — slim strip ─────────────────────────── */}
+      {rightPanel==='slim' && (
+        <aside
+          onClick={() => setRightPanel('open')}
+          title="Paneli aç"
+          style={{ width:44, flexShrink:0, borderLeft:`1px solid ${BOLD.line}`, background:'#FCFAF6', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:12, cursor:'pointer' }}
+        >
+          <Timer size={16} style={{ color:BOLD.inkFaint }}/>
+          <div style={{ fontSize:9, fontFamily:'JetBrains Mono,monospace', color:BOLD.inkFaint, writingMode:'vertical-rl', letterSpacing:'0.1em' }}>POMODORO</div>
+        </aside>
+      )}
+
+      {/* ── RIGHT PANEL — full ───────────────────────────────── */}
+      {rightPanel==='open' && (
       <aside className="flex flex-col flex-shrink-0 gap-3.5 overflow-y-auto custom-scrollbar" style={{ width:248, padding:'20px 16px', borderLeft:`1px solid ${BOLD.line}`, background:'#FCFAF6' }}>
         <PomodoroWidget focusTask={focusTask??null}/>
 
