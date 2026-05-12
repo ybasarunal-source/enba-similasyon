@@ -31,11 +31,18 @@ interface Email {
 }
 
 export const Mail: React.FC = () => {
+  // --- GEÇICI TANI LOG — sorun çözülünce sil ---
+  const _raw   = localStorage.getItem('google_access_token');
+  const _exp   = localStorage.getItem('google_token_expiry');
+  const _valid  = !!_raw && !!_exp && Date.now() < parseInt(_exp);
+  console.log('[Mail mount] token:', _raw ? 'VAR' : 'YOK', '| expiry:', _exp, '| now:', Date.now(), '| geçerli:', _valid, '| kalan(s):', _exp ? Math.floor((parseInt(_exp) - Date.now()) / 1000) : 'N/A');
+  // --- / ---
+
   const [emails, setEmails] = useState<Email[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [sourceFilter, setSourceFilter] = useState<'all' | 'outlook' | 'gmail'>('all');
-  
+
   const [selectedEmail, setSelectedEmail] = useState<Email | null>(null);
   const [isBodyLoading, setIsBodyLoading] = useState(false);
 
@@ -67,6 +74,7 @@ export const Mail: React.FC = () => {
       setMsConnected(!!msToken);
 
       const gToken = googleService.getAccessToken();
+      console.log('[Mail checkConnections] gToken:', gToken ? 'BULUNDU' : 'NULL', '| msToken:', msToken ? 'BULUNDU' : 'NULL');
       setGoogleConnected(!!gToken);
 
       if (msToken || gToken) {
