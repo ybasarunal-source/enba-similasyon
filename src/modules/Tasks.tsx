@@ -3,7 +3,7 @@ import {
   PlusCircle, RotateCw, Calendar, Trash2, Pencil,
   RefreshCw, Download, Search, Check, Pin, Layers,
   Timer, Sun, X, CheckSquare, Kanban as KanbanIcon,
-  ChevronLeft, ChevronRight,
+  ChevronLeft, ChevronRight, Shuffle, ArrowRight, SkipForward,
 } from 'lucide-react';
 import { microsoftService } from '../api/microsoft';
 import { googleService } from '../api/google';
@@ -472,6 +472,12 @@ export const Tasks: React.FC = () => {
   const [formData, setFormData] = useState<Partial<Task>>({ title:'', desc:'', priority:'medium', deadline:'', projectId:'', moduleRef:'genel' });
   const [leftPanel, setLeftPanel] = useState<'open'|'slim'>('open');
   const [rightPanel, setRightPanel] = useState<'open'|'slim'|'hidden'>('open');
+  const [showRestructureSelect, setShowRestructureSelect] = useState(false);
+  const [restructureAllProjects, setRestructureAllProjects] = useState(true);
+  const [restructureProjectIds, setRestructureProjectIds] = useState<Set<string>>(new Set());
+  const [restructureQueue, setRestructureQueue] = useState<Task[]>([]);
+  const [restructureIdx, setRestructureIdx] = useState(0);
+  const [restructureEdits, setRestructureEdits] = useState<{ priority: Task['priority']; deadline: string; projectId: string }>({ priority:'medium', deadline:'', projectId:'' });
   const [pomSecs, setPomSecs] = useState(25*60);
   const [pomRunning, setPomRunning] = useState(false);
   const [pomMode, setPomMode] = useState<'work'|'break'>('work');
@@ -574,6 +580,34 @@ export const Tasks: React.FC = () => {
   const handleStatusChange = (id: string|number, status: Task['status']) => {
     setTasks(prev=>prev.map(t=>t.id===id ? { ...t, status } : t));
     tasksAPI.update(id.toString(), { status });
+  };
+
+  // ── Restructure handlers ──────────────────────────────────
+  const startRestructure = () => {
+    const queue = tasks
+      .filter(t => t.status !== 'done' && (restructureAllProjects || restructureProjectIds.has(t.projectId || '')))
+      .sort((a, b) => {
+        const po: Record<string, number> = { high:0, medium:1, low:2 };
+        return (po[a.priority]??1) - (po[b.priority]??1) || (a.deadline??'').localeCompare(b.deadline??'');
+      });
+    setRestructureQueue(queue);
+    setRestructureIdx(0);
+    if (queue.length > 0) setRestructureEdits({ priority: queue[0].priority, deadline: queue[0].deadline||'', projectId: queue[0].projectId||'' });
+    setShowRestructureSelect(false);
+  };
+
+  const applyRestructureEdit = (advance: boolean) => {
+    if (advance) {
+      const task = restructureQueue[restructureIdx];
+      const updated = { ...task, ...restructureEdits };
+      setTasks(prev => prev.map(t => t.id === task.id ? updated : t));
+      tasksAPI.update(task.id.toString(), toSupabaseTask(updated));
+    }
+    const next = restructureIdx + 1;
+    if (next >= restructureQueue.length) { setRestructureQueue([]); return; }
+    const nextTask = restructureQueue[next];
+    setRestructureIdx(next);
+    setRestructureEdits({ priority: nextTask.priority, deadline: nextTask.deadline||'', projectId: nextTask.projectId||'' });
   };
 
   const handleAddTask = async (e: React.FormEvent) => {
@@ -759,6 +793,14 @@ export const Tasks: React.FC = () => {
               </button>
             );
           })}
+          <button
+            onClick={() => { setRestructureAllProjects(true); setRestructureProjectIds(new Set()); setShowRestructureSelect(true); }}
+            title="Yeniden Yapılandır"
+            style={{ width:32, height:32, borderRadius:8, border:`1px dashed ${BOLD.line}`, background:'transparent', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', color:BOLD.inkFaint, flexShrink:0, marginTop:4 }}
+            onMouseEnter={e=>{(e.currentTarget.style.borderColor=BOLD.accent);(e.currentTarget.style.color=BOLD.accent);}}
+            onMouseLeave={e=>{(e.currentTarget.style.borderColor=BOLD.line);(e.currentTarget.style.color=BOLD.inkFaint);}}>
+            <Shuffle size={14}/>
+          </button>
         </aside>
       )}
 
@@ -793,8 +835,18 @@ export const Tasks: React.FC = () => {
           })}
         </div>
 
+        {/* Restructure button */}
+        <button
+          onClick={() => { setRestructureAllProjects(true); setRestructureProjectIds(new Set()); setShowRestructureSelect(true); }}
+          className="flex items-center gap-2 px-2.5 py-2 rounded-lg w-full text-[12.5px] font-semibold transition-all mt-1 mb-1"
+          style={{ background:'transparent', color:BOLD.inkSoft, border:`1px dashed ${BOLD.line}`, cursor:'pointer', fontFamily:'inherit' }}
+          onMouseEnter={e=>{(e.currentTarget as HTMLButtonElement).style.borderColor=BOLD.accent;(e.currentTarget as HTMLButtonElement).style.color=BOLD.accent;(e.currentTarget as HTMLButtonElement).style.background=BOLD.accent+'08';}}
+          onMouseLeave={e=>{(e.currentTarget as HTMLButtonElement).style.borderColor=BOLD.line;(e.currentTarget as HTMLButtonElement).style.color=BOLD.inkSoft;(e.currentTarget as HTMLButtonElement).style.background='transparent';}}>
+          <Shuffle size={13}/> Yeniden Yapılandır
+        </button>
+
         {/* Projects */}
-        <div className="mt-4">
+        <div className="mt-3">
           <div className="text-[10.5px] font-bold uppercase tracking-[0.08em] px-2.5 mb-2" style={{ color:BOLD.inkFaint }}>Projeler</div>
           <div className="flex flex-col gap-0.5">
             {projectsWithColor.map(p => {
@@ -966,6 +1018,141 @@ export const Tasks: React.FC = () => {
         </div>
       </aside>
       )}
+
+      {/* ── RESTRUCTURE: Project selection ───────────────────── */}
+      {showRestructureSelect && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6" style={{ background:'rgba(22,21,26,.55)', backdropFilter:'blur(8px)' }}>
+          <div className="w-full max-w-md rounded-3xl overflow-hidden shadow-2xl" style={{ background:BOLD.surface }}>
+            <div className="h-1" style={{ background:BOLD.accent }}/>
+            <div className="px-8 py-7" style={{ borderBottom:`1px solid ${BOLD.line}` }}>
+              <div className="flex items-center gap-3 mb-1">
+                <Shuffle size={18} style={{ color:BOLD.accent }}/>
+                <h3 className="text-[18px] font-bold m-0" style={{ fontFamily:'Bricolage Grotesque,Poppins,sans-serif', letterSpacing:'-0.03em', color:BOLD.ink }}>Yeniden Yapılandır</h3>
+              </div>
+              <p className="text-[12px] mt-1" style={{ color:BOLD.inkSoft }}>Hangi projelerdeki görevleri yeniden düzenlemek istersiniz?</p>
+            </div>
+            <div className="px-8 py-6 space-y-3">
+              {/* All projects toggle */}
+              <label className="flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all" style={{ background: restructureAllProjects ? BOLD.accent+'10' : BOLD.bg, border:`1.5px solid ${restructureAllProjects ? BOLD.accent : BOLD.line}` }}>
+                <input type="checkbox" checked={restructureAllProjects} onChange={e => { setRestructureAllProjects(e.target.checked); if (e.target.checked) setRestructureProjectIds(new Set()); }} style={{ accentColor:BOLD.accent, width:16, height:16 }}/>
+                <span className="text-[13px] font-bold" style={{ color: restructureAllProjects ? BOLD.accent : BOLD.ink }}>Tüm Projeler</span>
+                <span className="ml-auto text-[11px] tabular-nums" style={{ color:BOLD.inkFaint }}>{tasks.filter(t=>t.status!=='done').length} görev</span>
+              </label>
+              {/* Individual projects */}
+              {!restructureAllProjects && (
+                <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar">
+                  {projectsWithColor.map(p => {
+                    const cnt = tasks.filter(t=>t.status!=='done'&&t.projectId===p.id).length;
+                    const checked = restructureProjectIds.has(p.id);
+                    return (
+                      <label key={p.id} className="flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all" style={{ background: checked ? p.color+'10' : BOLD.bg, border:`1.5px solid ${checked ? p.color : BOLD.line}` }}>
+                        <input type="checkbox" checked={checked} onChange={e => { const s = new Set(restructureProjectIds); e.target.checked ? s.add(p.id) : s.delete(p.id); setRestructureProjectIds(s); }} style={{ accentColor:p.color, width:16, height:16 }}/>
+                        <span style={{ width:9, height:9, borderRadius:3, background:p.color, flexShrink:0, display:'inline-block' }}/>
+                        <span className="text-[13px] font-semibold flex-1" style={{ color:BOLD.ink }}>{p.name}</span>
+                        <span className="text-[11px] tabular-nums" style={{ color:BOLD.inkFaint }}>{cnt}</span>
+                      </label>
+                    );
+                  })}
+                  {projectsWithColor.length === 0 && <p className="text-[12px] text-center py-4" style={{ color:BOLD.inkFaint }}>Henüz proje yok</p>}
+                </div>
+              )}
+              {restructureAllProjects && (
+                <button className="text-[11px] font-semibold w-full text-center py-1" style={{ background:'none', border:'none', cursor:'pointer', color:BOLD.inkFaint }} onClick={() => setRestructureAllProjects(false)}>
+                  Proje bazlı seçmek istiyorum →
+                </button>
+              )}
+            </div>
+            <div className="px-8 pb-7 flex gap-3">
+              <button onClick={() => setShowRestructureSelect(false)} className="flex-1 py-3 rounded-xl text-[12px] font-bold uppercase tracking-widest" style={{ background:BOLD.bg, color:BOLD.inkSoft, border:'none', cursor:'pointer' }}>İptal</button>
+              <button
+                onClick={startRestructure}
+                disabled={!restructureAllProjects && restructureProjectIds.size === 0}
+                className="flex-1 py-3 rounded-xl text-[12px] font-bold uppercase tracking-widest flex items-center justify-center gap-2"
+                style={{ background:BOLD.ink, color:'#fff', border:'none', cursor:'pointer', opacity: (!restructureAllProjects && restructureProjectIds.size===0) ? 0.4 : 1 }}>
+                Başla <ArrowRight size={14}/>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── RESTRUCTURE: Task triage flow ────────────────────── */}
+      {restructureQueue.length > 0 && restructureIdx < restructureQueue.length && (() => {
+        const task = restructureQueue[restructureIdx];
+        const proj = projectsWithColor.find(p=>p.id===task.projectId);
+        const total = restructureQueue.length;
+        const progress = ((restructureIdx) / total) * 100;
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-6" style={{ background:'rgba(22,21,26,.7)', backdropFilter:'blur(10px)' }}>
+            <div className="w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl" style={{ background:BOLD.surface }}>
+              {/* Progress bar */}
+              <div style={{ height:4, background:BOLD.line }}>
+                <div style={{ width:`${progress}%`, height:'100%', background:BOLD.accent, transition:'width .3s' }}/>
+              </div>
+              {/* Header */}
+              <div className="px-8 pt-6 pb-4 flex items-center justify-between" style={{ borderBottom:`1px solid ${BOLD.line}` }}>
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-[0.1em] mb-1" style={{ color:BOLD.inkFaint }}>
+                    <Shuffle size={10} style={{ display:'inline', marginRight:4 }}/>Yeniden Yapılandır
+                  </div>
+                  <div className="text-[22px] font-bold leading-tight" style={{ fontFamily:'Bricolage Grotesque,Poppins,sans-serif', letterSpacing:'-0.03em', color:BOLD.ink, maxWidth:340 }}>{task.title}</div>
+                  {task.desc && <div className="text-[12px] mt-1 line-clamp-2" style={{ color:BOLD.inkSoft }}>{task.desc}</div>}
+                </div>
+                <div className="text-right ml-4 flex-shrink-0">
+                  <div className="text-[28px] font-black" style={{ fontFamily:'JetBrains Mono,monospace', letterSpacing:'-0.05em', color:BOLD.ink }}>{restructureIdx+1}</div>
+                  <div className="text-[11px] font-bold" style={{ color:BOLD.inkFaint }}>/ {total}</div>
+                </div>
+              </div>
+              {/* Controls */}
+              <div className="px-8 py-6 space-y-5">
+                {/* Priority */}
+                <div>
+                  <div className="text-[10px] font-black uppercase tracking-widest mb-2" style={{ color:BOLD.inkFaint }}>Öncelik</div>
+                  <div className="flex gap-2">
+                    {(['high','medium','low'] as const).map(p => (
+                      <button key={p} onClick={() => setRestructureEdits(e=>({...e,priority:p}))}
+                        className="flex-1 py-2.5 rounded-xl text-[12px] font-bold transition-all"
+                        style={{ border:`2px solid ${restructureEdits.priority===p ? PRIO[p].color : BOLD.line}`, background: restructureEdits.priority===p ? PRIO[p].color+'15' : 'transparent', color: restructureEdits.priority===p ? PRIO[p].color : BOLD.inkSoft, cursor:'pointer', fontFamily:'inherit' }}>
+                        {PRIO[p].name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {/* Deadline */}
+                <div>
+                  <div className="text-[10px] font-black uppercase tracking-widest mb-2" style={{ color:BOLD.inkFaint }}>Son Tarih</div>
+                  <input type="date" value={restructureEdits.deadline} onChange={e=>setRestructureEdits(ed=>({...ed,deadline:e.target.value}))}
+                    className="w-full rounded-xl px-4 py-3 text-[13px] font-semibold outline-none"
+                    style={{ background:BOLD.bg, border:`1.5px solid ${BOLD.line}`, color:BOLD.ink, fontFamily:'inherit' }}/>
+                </div>
+                {/* Project */}
+                <div>
+                  <div className="text-[10px] font-black uppercase tracking-widest mb-2" style={{ color:BOLD.inkFaint }}>Proje</div>
+                  <div className="relative">
+                    <select value={restructureEdits.projectId} onChange={e=>setRestructureEdits(ed=>({...ed,projectId:e.target.value}))}
+                      className="w-full rounded-xl px-4 py-3 text-[13px] font-semibold outline-none appearance-none cursor-pointer"
+                      style={{ background:BOLD.bg, border:`1.5px solid ${proj ? proj.color+'60' : BOLD.line}`, color:BOLD.ink, fontFamily:'inherit' }}>
+                      <option value="">— Proje yok —</option>
+                      {projectsWithColor.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    </select>
+                    {proj && <span style={{ position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', width:9, height:9, borderRadius:3, background:proj.color, pointerEvents:'none' }}/>}
+                  </div>
+                </div>
+              </div>
+              {/* Footer */}
+              <div className="px-8 pb-7 flex gap-3">
+                <button onClick={() => setRestructureQueue([])} className="px-5 py-3 rounded-xl text-[11px] font-bold uppercase tracking-widest" style={{ background:BOLD.bg, color:BOLD.inkFaint, border:'none', cursor:'pointer' }}>Bitir</button>
+                <button onClick={() => applyRestructureEdit(false)} className="flex-1 py-3 rounded-xl text-[12px] font-bold uppercase tracking-widest flex items-center justify-center gap-2" style={{ background:BOLD.bg, color:BOLD.inkSoft, border:`1px solid ${BOLD.line}`, cursor:'pointer', fontFamily:'inherit' }}>
+                  <SkipForward size={13}/> Atla
+                </button>
+                <button onClick={() => applyRestructureEdit(true)} className="flex-1 py-3 rounded-xl text-[12px] font-bold uppercase tracking-widest flex items-center justify-center gap-2" style={{ background:BOLD.ink, color:'#fff', border:'none', cursor:'pointer', fontFamily:'inherit' }}>
+                  Kaydet <ArrowRight size={14}/>
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── MODALS ───────────────────────────────────────────── */}
       {showTaskForm && (
