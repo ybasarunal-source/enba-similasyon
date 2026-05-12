@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { notesAPI, projectsAPI, tasksAPI, SupabaseNote, supabase } from '../api/supabase';
 
-const EDGE_URL = (import.meta.env.VITE_SUPABASE_URL || 'https://wmkfrzfatvxzpyahkdai.supabase.co') + '/functions/v1/analyze-note';
+const EDGE_URL = (import.meta.env.VITE_SUPABASE_URL || 'https://wmkfrzfatvxzpyahkdai.supabase.co') + '/functions/v1/hyper-service';
 
 // ── Types ─────────────────────────────────────────────────
 interface Note {
