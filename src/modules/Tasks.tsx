@@ -441,8 +441,8 @@ export const Tasks: React.FC = () => {
   const [deletingProject, setDeletingProject] = useState<Project|null>(null);
   const [deleteTargetId, setDeleteTargetId] = useState('none');
   const [formData, setFormData] = useState<Partial<Task>>({ title:'', desc:'', priority:'medium', deadline:'', projectId:'', moduleRef:'genel' });
-  const [leftPanel, setLeftPanel] = useState<'open'|'slim'>('open');
-  const [rightPanel, setRightPanel] = useState<'open'|'slim'|'hidden'>('hidden');
+  const [leftPanel, setLeftPanel] = useState<'open'|'slim'>('slim');
+  const [rightPanel, setRightPanel] = useState<'open'|'hidden'>('open');
   const [showRestructureSelect, setShowRestructureSelect] = useState(false);
   const [restructureAllProjects, setRestructureAllProjects] = useState(true);
   const [restructureProjectIds, setRestructureProjectIds] = useState<Set<string>>(new Set());
@@ -987,16 +987,16 @@ export const Tasks: React.FC = () => {
 
       {/* ── RIGHT PANEL TOGGLE ───────────────────────────────── */}
       <button
-        onClick={() => setRightPanel(p => p==='open' ? 'slim' : p==='slim' ? 'hidden' : 'open')}
-        title={rightPanel==='open' ? 'Küçült' : rightPanel==='slim' ? 'Gizle' : 'Paneli aç'}
+        onClick={() => setRightPanel(p => p==='open' ? 'hidden' : 'open')}
+        title={rightPanel==='open' ? 'Gizle' : 'Paneli aç'}
         style={{
           position:'absolute',
-          right: rightPanel==='open' ? 248 : rightPanel==='slim' ? 44 : 0,
+          right: rightPanel==='open' ? 248 : 0,
           top:'50%', transform:'translateY(-50%)',
           zIndex:20, width:18, height:48,
           background:BOLD.surface, border:`1px solid ${BOLD.line}`,
-          borderRight: rightPanel!=='hidden' ? `1px solid ${BOLD.line}` : 'none',
-          borderRadius: rightPanel!=='hidden' ? '6px 0 0 6px' : '0 6px 6px 0',
+          borderRight: rightPanel==='open' ? `1px solid ${BOLD.line}` : 'none',
+          borderRadius: rightPanel==='open' ? '6px 0 0 6px' : '0 6px 6px 0',
           display:'flex', alignItems:'center', justifyContent:'center',
           cursor:'pointer', transition:'right .25s',
           color:BOLD.inkFaint,
@@ -1007,21 +1007,6 @@ export const Tasks: React.FC = () => {
           : <ChevronRight size={11} strokeWidth={2.5}/>
         }
       </button>
-
-      {/* ── RIGHT PANEL — slim strip ─────────────────────────── */}
-      {rightPanel==='slim' && (
-        <aside style={{ width:44, flexShrink:0, borderLeft:`1px solid ${BOLD.line}`, background:BOLD.ink, display:'flex', flexDirection:'column', alignItems:'center', paddingTop:64, paddingBottom:16, gap:10 }}>
-          <button
-            onClick={() => setRightPanel('open')}
-            title="Paneli aç"
-            style={{ width:28, height:28, borderRadius:8, border:'1px solid rgba(255,255,255,0.12)', background:'rgba(255,255,255,0.07)', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', color:'rgba(255,255,255,0.5)', flexShrink:0, transition:'background .15s' }}
-            onMouseEnter={e => (e.currentTarget.style.background='rgba(255,255,255,0.15)')}
-            onMouseLeave={e => (e.currentTarget.style.background='rgba(255,255,255,0.07)')}
-          >
-            <ChevronLeft size={12} strokeWidth={2.5}/>
-          </button>
-        </aside>
-      )}
 
       {/* ── RIGHT PANEL — full ───────────────────────────────── */}
       {rightPanel==='open' && (
