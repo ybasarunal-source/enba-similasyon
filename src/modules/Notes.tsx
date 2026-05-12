@@ -81,6 +81,7 @@ export const Notes: React.FC = () => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [createError, setCreateError] = useState('');
   const saveTimer = useRef<ReturnType<typeof setTimeout>>();
 
   // ── Load ──────────────────────────────────────────────
@@ -137,8 +138,12 @@ export const Notes: React.FC = () => {
 
   // ── Create ────────────────────────────────────────────
   const createNote = async (type: Note['type'] = 'free') => {
-    const created = await notesAPI.insert({ title: '', content: '', type, note_date: todayStr(), project_id: '' });
-    if (!created) return;
+    setCreateError('');
+    const created = await notesAPI.insert({ title: '', content: '', type, note_date: todayStr(), project_id: undefined });
+    if (!created) {
+      setCreateError('Not oluşturulamadı. Supabase migration_v25 çalıştırıldı mı?');
+      return;
+    }
     const note = fromSB(created);
     setNotes(prev => [note, ...prev]);
     setSelectedId(note.id);
@@ -151,8 +156,9 @@ export const Notes: React.FC = () => {
     setProjFilter('all');
     const todayDaily = notes.find(n => n.date === todayStr() && n.type === 'daily');
     if (todayDaily) { setSelectedId(todayDaily.id); return; }
-    const created = await notesAPI.insert({ title: `${new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}`, content: '', type: 'daily', note_date: todayStr(), project_id: '' });
-    if (!created) return;
+    setCreateError('');
+    const created = await notesAPI.insert({ title: new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }), content: '', type: 'daily', note_date: todayStr(), project_id: undefined });
+    if (!created) { setCreateError('Not oluşturulamadı. Supabase migration_v25 çalıştırıldı mı?'); return; }
     const note = fromSB(created);
     setNotes(prev => [note, ...prev]);
     setSelectedId(note.id);
@@ -205,7 +211,17 @@ export const Notes: React.FC = () => {
   );
 
   return (
-    <div className="flex h-screen overflow-hidden animate-fade-in" style={{ background: B.bg, fontFamily: 'Poppins,sans-serif' }}>
+    <div className="flex flex-col h-screen overflow-hidden animate-fade-in" style={{ background: B.bg, fontFamily: 'Poppins,sans-serif' }}>
+
+      {/* ── Error banner ─────────────────────────────────── */}
+      {createError && (
+        <div className="flex items-center justify-between px-5 py-2.5 flex-shrink-0" style={{ background: '#FFF1DC', borderBottom: `1px solid #FFB938`, color: '#92400E' }}>
+          <span className="text-[12.5px] font-semibold">{createError}</span>
+          <button onClick={() => setCreateError('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#92400E', padding: 0 }}><X size={14} /></button>
+        </div>
+      )}
+
+      <div className="flex flex-1 min-h-0 overflow-hidden">
 
       {/* ── LEFT SIDEBAR ─────────────────────────────────── */}
       <aside className="flex flex-col flex-shrink-0" style={{ width: 200, borderRight: `1px solid ${B.line}`, padding: '20px 12px 16px', overflow: 'hidden' }}>
@@ -466,6 +482,7 @@ export const Notes: React.FC = () => {
           </div>
         )}
       </main>
+      </div>
     </div>
   );
 };
