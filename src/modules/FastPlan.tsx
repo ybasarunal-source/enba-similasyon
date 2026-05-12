@@ -1,10 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { usePlanSync } from '../hooks/usePlanSync';
 import { SyncBanner } from '../components/SyncBanner';
-import { ASGARI_NET, DEFAULT_DAILY_MEAL } from '../utils/constants';
+import { ASGARI_NET } from '../utils/constants';
 import {
-  hesapla, type GiderKalem, type PersonelItem, type GiderItem,
-  type YatirimItem, type PlanParams, type PlanSonuc,
+  hesapla, type GiderKalem, type PlanParams, type PlanSonuc,
 } from '../utils/fastPlanCalc';
 import { settingsAPI, DEFAULT_APP_SETTINGS } from '../utils/appSettings';
 import {
@@ -13,7 +12,7 @@ import {
   Plus, Trash2, Save, Scale,
   FileText, Layout, ArrowRight, Tag, Gem
 } from 'lucide-react';
-import type { PlanCard, PlanVersion } from './fastplan/types';
+import type { PlanCard } from './fastplan/types';
 import {
   KALEM_ORDER, KALEM_LABEL, STORAGE_KEY,
   fmt, fmtDec, makeVarsayilanParams, versionToCard,
@@ -60,6 +59,8 @@ export const FastPlan: React.FC = () => {
   const [yeniGider, setYeniGider] = useState<{ ad: string; tutar: string; kalem: GiderKalem }>({ ad: '', tutar: '', kalem: 'enerji' });
   const [yeniYatirim, setYeniYatirim] = useState({ ad: '', tutar: '' });
 
+  const [isPdfGenerating, setIsPdfGenerating] = useState(false);
+
   // Panel açıklıkları
   const [panelSabitler, setPanelSabitler] = useState(false);
   const [panelYatirim, setPanelYatirim] = useState(true);
@@ -82,6 +83,22 @@ export const FastPlan: React.FC = () => {
     })),
     [params]
   );
+
+  const pdfIndir = async () => {
+    setIsPdfGenerating(true);
+    await new Promise(r => setTimeout(r, 300));
+    const el = document.getElementById('fastplan-pdf-container');
+    if (!el) { setIsPdfGenerating(false); return; }
+    const opt = {
+      margin: [10, 10, 10, 10],
+      filename: `Enba_Plan_${baslik || 'taslak'}.pdf`,
+      image: { type: 'jpeg', quality: 0.97 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    };
+    const { default: html2pdf } = await import('html2pdf.js');
+    html2pdf().set(opt).from(el).save().then(() => setIsPdfGenerating(false));
+  };
 
   // ─── Filtre & sıralama hesaplamaları ──────────────────────
   const tumEtiketler = useMemo(
@@ -722,6 +739,14 @@ export const FastPlan: React.FC = () => {
           <button onClick={resetForm} className="px-6 py-3 rounded-2xl border border-gray-200 text-gray-500 hover:bg-gray-50 font-black text-[11px] uppercase tracking-[2px] transition-all">
             İptal
           </button>
+          <button
+            onClick={pdfIndir}
+            disabled={isPdfGenerating}
+            className="flex items-center gap-2 px-6 py-3 rounded-2xl border border-gray-200 text-gray-500 hover:bg-red-50 hover:border-red-200 hover:text-red-500 font-black text-[11px] uppercase tracking-[2px] transition-all disabled:opacity-50"
+          >
+            <FileText size={15} />
+            {isPdfGenerating ? 'Hazırlanıyor...' : 'PDF'}
+          </button>
           <button onClick={handleKaydetClick} className="flex items-center gap-3 px-8 py-3.5 bg-enba-orange text-white rounded-2xl font-black text-[11px] uppercase tracking-[2px] shadow-xl shadow-enba-orange/30 hover:brightness-110 transition-all active:scale-95">
             <Save size={16} /> Planı Kaydet
           </button>
@@ -1224,6 +1249,112 @@ export const FastPlan: React.FC = () => {
           onIptal={() => setSaveModalOpen(false)}
         />
       )}
+
+      {/* ─── Gizli PDF Container ─────────────────────────────── */}
+      <div id="fastplan-pdf-container" style={{ position: 'fixed', left: '-9999px', top: 0, width: '794px', fontFamily: 'sans-serif', color: '#1A1A1A', background: '#fff', padding: '40px' }}>
+        {/* Başlık */}
+        <div style={{ borderBottom: '3px solid #E35205', paddingBottom: 16, marginBottom: 24 }}>
+          <div style={{ fontSize: 11, fontWeight: 900, color: '#E35205', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 4 }}>Enba Similasyon — Hızlı İş Planı</div>
+          <div style={{ fontSize: 22, fontWeight: 900, textTransform: 'uppercase', letterSpacing: -0.5 }}>{baslik || 'İsimsiz Plan'}</div>
+          {aciklama && <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>{aciklama}</div>}
+          {etiket && <div style={{ display: 'inline-block', marginTop: 8, padding: '2px 10px', background: '#f3f4f6', borderRadius: 20, fontSize: 10, fontWeight: 900, textTransform: 'uppercase', letterSpacing: 2 }}>{etiket}</div>}
+          <div style={{ fontSize: 10, color: '#9ca3af', marginTop: 8 }}>{new Date().toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
+        </div>
+
+        {/* KPI Özet */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, marginBottom: 24 }}>
+          {[
+            { label: 'Satış Geliri', value: `₺${fmt(formSonuc.satisGeliri)}`, sub: `${fmtDec(formSonuc.satisTon)} ton/ay`, color: '#059669' },
+            { label: 'Toplam Gider', value: `₺${fmt(formSonuc.totalGider)}`, sub: `₺${fmt(formSonuc.birimMaliyet)}/ton`, color: '#dc2626' },
+            { label: 'FAVÖK', value: `₺${fmt(formSonuc.ebitda)}`, sub: `%${fmtDec(formSonuc.ebitdaMarji)} marj`, color: formSonuc.ebitda >= 0 ? '#059669' : '#dc2626' },
+            { label: 'Net Kâr', value: `₺${fmt(formSonuc.netKar)}`, sub: formSonuc.netKar >= 0 ? 'Kârlı ✓' : 'Zarar ✗', color: formSonuc.netKar >= 0 ? '#059669' : '#dc2626' },
+          ].map((k, i) => (
+            <div key={i} style={{ background: '#f9fafb', borderRadius: 12, padding: '14px 16px' }}>
+              <div style={{ fontSize: 9, fontWeight: 900, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>{k.label}</div>
+              <div style={{ fontSize: 16, fontWeight: 900, color: k.color, fontVariantNumeric: 'tabular-nums' }}>{k.value}</div>
+              <div style={{ fontSize: 10, color: '#9ca3af', marginTop: 2 }}>{k.sub}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Gider Kırılımı + Duyarlılık yan yana */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
+          {/* Gider Dağılımı */}
+          <div>
+            <div style={{ fontSize: 9, fontWeight: 900, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 3, marginBottom: 12 }}>Gider Dağılımı</div>
+            {[
+              { label: 'Mal Alım', value: formSonuc.malAlisGideri, color: '#f87171' },
+              { label: 'Nakliye', value: formSonuc.alisNakliyeGideri + formSonuc.satisNakliyeGideri, color: '#fb923c' },
+              { label: 'Personel', value: formSonuc.toplamMaas + formSonuc.toplamSgk + formSonuc.toplamYemek, color: '#60a5fa' },
+              { label: 'Enerji', value: formSonuc.giderKırılım.enerji, color: '#facc15' },
+              { label: 'Diğer', value: formSonuc.toplamEktra - formSonuc.giderKırılım.enerji + formSonuc.giderKırılım.kira + formSonuc.giderKırılım.bakim + formSonuc.giderKırılım.pazarlama + formSonuc.giderKırılım.yonetim + formSonuc.giderKırılım.diger, color: '#d1d5db' },
+            ].filter(it => it.value > 0).map(it => {
+              const pct = formSonuc.totalGider > 0 ? (it.value / formSonuc.totalGider) * 100 : 0;
+              return (
+                <div key={it.label} style={{ marginBottom: 8 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: '#374151' }}>{it.label}</span>
+                    <span style={{ fontSize: 10, fontWeight: 900, color: '#6b7280', fontVariantNumeric: 'tabular-nums' }}>%{fmtDec(pct, 0)} · ₺{fmt(it.value)}</span>
+                  </div>
+                  <div style={{ height: 6, background: '#f3f4f6', borderRadius: 3 }}>
+                    <div style={{ height: '100%', width: `${pct}%`, background: it.color, borderRadius: 3 }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Duyarlılık */}
+          {params.satisFiyati > 0 && (
+            <div>
+              <div style={{ fontSize: 9, fontWeight: 900, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 3, marginBottom: 12 }}>Duyarlılık — Satış Fiyatı</div>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 10 }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
+                    <th style={{ textAlign: 'left', padding: '4px 0', fontWeight: 900, color: '#9ca3af', fontSize: 9 }}>Senaryo</th>
+                    <th style={{ textAlign: 'right', padding: '4px 0', fontWeight: 900, color: '#9ca3af', fontSize: 9 }}>₺/ton</th>
+                    <th style={{ textAlign: 'right', padding: '4px 0', fontWeight: 900, color: '#9ca3af', fontSize: 9 }}>FAVÖK</th>
+                    <th style={{ textAlign: 'right', padding: '4px 0', fontWeight: 900, color: '#9ca3af', fontSize: 9 }}>Marj</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {duyarlilik.map(({ pct, sonuc: ds }) => (
+                    <tr key={pct} style={{ borderBottom: '1px solid #f3f4f6', background: pct === 0 ? '#fff7ed' : 'transparent' }}>
+                      <td style={{ padding: '5px 0', fontWeight: pct === 0 ? 900 : 700 }}>{pct === 0 ? 'Baz' : pct > 0 ? `+%${pct}` : `%${pct}`}</td>
+                      <td style={{ textAlign: 'right', fontWeight: 900, fontVariantNumeric: 'tabular-nums' }}>₺{fmt(params.satisFiyati * (1 + pct / 100))}</td>
+                      <td style={{ textAlign: 'right', fontWeight: 900, color: ds.ebitda >= 0 ? '#059669' : '#dc2626', fontVariantNumeric: 'tabular-nums' }}>₺{fmt(ds.ebitda)}</td>
+                      <td style={{ textAlign: 'right', fontWeight: 900, color: ds.ebitdaMarji >= 10 ? '#059669' : ds.ebitdaMarji >= 0 ? '#ca8a04' : '#dc2626' }}>%{fmtDec(ds.ebitdaMarji)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* Yatırım Analizi */}
+        {params.yatirimlar.length > 0 && (
+          <div style={{ background: '#f9fafb', borderRadius: 12, padding: '16px 20px', marginBottom: 24 }}>
+            <div style={{ fontSize: 9, fontWeight: 900, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 3, marginBottom: 12 }}>Yatırım Analizi</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
+              {[
+                { label: 'Toplam CAPEX', value: `₺${fmt(params.yatirimlar.reduce((s, y) => s + y.tutar, 0))}` },
+                { label: 'Başabaş Noktası', value: formSonuc.basabasNokta === Infinity ? '— kâra geçilemiyor' : `${fmtDec(formSonuc.basabasNokta, 1)} ton/ay` },
+                { label: 'Geri Ödeme Süresi', value: formSonuc.geriOdemeSuresi === null ? '— (zarar)' : `${fmtDec(formSonuc.geriOdemeSuresi, 1)} ay` },
+              ].map((it, i) => (
+                <div key={i}>
+                  <div style={{ fontSize: 9, fontWeight: 900, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 3 }}>{it.label}</div>
+                  <div style={{ fontSize: 13, fontWeight: 900 }}>{it.value}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div style={{ fontSize: 9, color: '#d1d5db', textAlign: 'center', marginTop: 16 }}>
+          Enba Similasyon · uygulama.basarunal.com · {new Date().toLocaleDateString('tr-TR')}
+        </div>
+      </div>
     </div>
   );
 };
