@@ -44,8 +44,11 @@ export const Mail: React.FC = () => {
   const [isSending, setIsSending] = useState(false);
 
   const [msConnected, setMsConnected] = useState(false);
-  const [googleConnected, setGoogleConnected] = useState(false);
-  const [isCheckingConnections, setIsCheckingConnections] = useState(true);
+  // Senkron başlat — her mount'ta localStorage'dan direkt oku, async bekleme
+  const [googleConnected, setGoogleConnected] = useState(() => !!googleService.getAccessToken());
+  const [isCheckingConnections, setIsCheckingConnections] = useState(
+    () => !googleService.getAccessToken()
+  );
   const [msConnecting, setMsConnecting] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [activeFolder, setActiveFolder] = useState<'inbox' | 'sent' | 'drafts' | 'trash'>('inbox');
@@ -56,19 +59,21 @@ export const Mail: React.FC = () => {
 
   const checkConnections = async () => {
     setIsCheckingConnections(true);
+    try {
+      // Google OAuth redirect'ten bu modüle doğrudan dönüldüyse token hash'te olabilir
+      googleService.handleAuthReturn();
 
-    // Google OAuth redirect'ten bu modüle doğrudan dönüldüyse token hash'te olabilir
-    googleService.handleAuthReturn();
+      const msToken = await microsoftService.getToken(['User.Read', 'Mail.ReadWrite', 'Mail.Send']);
+      setMsConnected(!!msToken);
 
-    const msToken = await microsoftService.getToken(['User.Read', 'Mail.ReadWrite', 'Mail.Send']);
-    setMsConnected(!!msToken);
+      const gToken = googleService.getAccessToken();
+      setGoogleConnected(!!gToken);
 
-    const gToken = googleService.getAccessToken();
-    setGoogleConnected(!!gToken);
-    setIsCheckingConnections(false);
-
-    if (msToken || gToken) {
-      fetchEmails({ ms: !!msToken, google: !!gToken });
+      if (msToken || gToken) {
+        fetchEmails({ ms: !!msToken, google: !!gToken });
+      }
+    } finally {
+      setIsCheckingConnections(false);
     }
   };
 
@@ -235,7 +240,7 @@ export const Mail: React.FC = () => {
     }
   };
 
-  if (isCheckingConnections) {
+  if (isCheckingConnections && !googleConnected && !msConnected) {
     return (
       <div className="flex h-screen items-center justify-center bg-[#FAFAFA]">
         <RefreshCw size={24} className="animate-spin text-gray-300" />
