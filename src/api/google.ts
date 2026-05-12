@@ -61,13 +61,12 @@ export const googleService = {
     return null;
   },
 
-  // Profil verilerinden token'ı geri yükle ve yerel depolamaya yaz
+  // Profil verilerinden token'ı geri yükle (sadece Supabase'de kayıtlıysa)
+  // NOT: Profilde token yoksa localStorage'a dokunma — yeni bağlananların token'ını silmesin
   resumeSession(profile: any) {
     if (profile.google_data?.token) {
       localStorage.setItem('google_access_token', profile.google_data.token);
       localStorage.setItem('google_token_expiry', profile.google_data.expiry);
-    } else {
-      this.logout();
     }
   },
 
