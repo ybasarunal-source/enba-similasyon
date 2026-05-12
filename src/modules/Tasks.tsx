@@ -346,7 +346,7 @@ const KanbanView = ({ tasks, projects, onToggle, onOpen, onStatus }: VP & { onSt
 
 // ── View: Completed ───────────────────────────────────────────────────────
 const CompletedView = ({ tasks, projects, onToggle, onOpen, onPin, onDelete, onEdit, onMyDay, myDayIds }: VP) => {
-  const done = tasks.filter(t=>t.status==='done');
+  const done = tasks.filter(t=>t.status==='done').sort((a,b)=>(b.completedAt??b.createdAt??'').localeCompare(a.completedAt??a.createdAt??''));
   const rp = { projects, onToggle, onOpen, onPin, onDelete, onEdit, onMyDay, myDayIds };
   return (
     <div className="p-8 overflow-y-auto h-full custom-scrollbar">
