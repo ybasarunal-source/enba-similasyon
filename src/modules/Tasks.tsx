@@ -975,7 +975,7 @@ export const Tasks: React.FC = () => {
             {activeView==='completed' && <CompletedView {...sharedViewProps}/>}
           </>
         )}
-        {openTask && <TaskDetail task={openTask} projects={projectsWithColor} onClose={()=>setOpenTask(null)} onToggle={handleToggle} onEdit={t=>{handleEditTask(t);setOpenTask(null);}} onDelete={handleDeleteTask}/>}
+        {openTask && <TaskDetail task={tasks.find(t=>t.id===openTask.id)??openTask} projects={projectsWithColor} onClose={()=>setOpenTask(null)} onToggle={handleToggle} onEdit={t=>{handleEditTask(t);setOpenTask(null);}} onDelete={handleDeleteTask}/>}
       </main>
 
       {/* ── RIGHT PANEL TOGGLE ───────────────────────────────── */}
