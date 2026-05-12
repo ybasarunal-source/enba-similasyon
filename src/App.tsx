@@ -44,6 +44,7 @@ const Mail              = lazyRetry(() => import('./modules/Mail').then(m => ({ 
 const FixedExpenses     = lazyRetry(() => import('./modules/FixedExpenses').then(m => ({ default: m.FixedExpenses })));
 const SuperAdmin        = lazyRetry(() => import('./modules/SuperAdmin').then(m => ({ default: m.SuperAdmin })));
 const CompanyAdmin      = lazyRetry(() => import('./modules/CompanyAdmin').then(m => ({ default: m.CompanyAdmin })));
+const Notes             = lazyRetry(() => import('./modules/Notes').then(m => ({ default: m.Notes })));
 import {
   Home,
   LayoutGrid,
@@ -58,6 +59,7 @@ import {
   ClipboardList,
   FileBadge,
   Settings as SettingsIcon,
+  NotebookPen,
   PanelLeftClose,
   PanelLeftOpen,
   User,
@@ -80,7 +82,7 @@ import {
 type ModuleType =
   | 'dashboard' | 'stock' | 'production' | 'logistics' | 'hr'
   | 'archive' | 'cashflow' | 'planning' | 'fastplan' | 'machinery'
-  | 'tasks' | 'calendar' | 'licensing' | 'settings' | 'pnl' | 'profile' | 'parasut' | 'modules' | 'mail' | 'fixedexpenses' | 'super_admin' | 'company_admin';
+  | 'tasks' | 'calendar' | 'licensing' | 'settings' | 'pnl' | 'profile' | 'parasut' | 'modules' | 'mail' | 'fixedexpenses' | 'notes' | 'super_admin' | 'company_admin';
 
 export const App: React.FC = () => {
   const { t, language, setLanguage, isLoading } = useTranslation();
@@ -225,7 +227,7 @@ export const App: React.FC = () => {
   };
 
   const MENU_GROUPS = [
-    { id: 'g1', title: 'Operasyon (Kısayollar)', items: ['modules', 'dashboard', 'tasks', 'calendar', 'mail'] },
+    { id: 'g1', title: 'Operasyon (Kısayollar)', items: ['modules', 'dashboard', 'tasks', 'notes', 'calendar', 'mail'] },
     { id: 'g2', title: 'Finans & Muhasebe', items: ['pnl', 'cashflow', 'parasut', 'fixedexpenses'] },
     { id: 'g3', title: 'Üretim & Lojistik', items: ['fastplan', 'planning', 'production', 'stock', 'logistics', 'machinery'] },
     { id: 'g4', title: 'Kurumsal Yönetim', items: ['hr', 'licensing', 'archive'] },
@@ -249,6 +251,7 @@ export const App: React.FC = () => {
     { id: 'parasut',    label: 'Paraşüt',                  icon: Receipt },
     { id: 'machinery',  label: t('modules.machinery'),     icon: Wrench },
     { id: 'tasks',      label: t('modules.tasks'),         icon: ClipboardList },
+    { id: 'notes',      label: 'Notlar',                   icon: NotebookPen },
     { id: 'calendar',   label: 'Takvim',                   icon: CalendarIcon },
     { id: 'mail',       label: 'E-Posta',                  icon: MailIcon },
     { id: 'fixedexpenses', label: 'Abonelikler/Ödemeler', icon: CreditCard },
@@ -275,12 +278,12 @@ export const App: React.FC = () => {
 
       // Profil henüz yükleniyorsa (ve rol 'user') temel modülleri göster
       if (isProfileLoading) {
-        return ['profile', 'dashboard', 'tasks', 'calendar', 'modules', 'mail', 'fixedexpenses'].includes(item.id);
+        return ['profile', 'dashboard', 'tasks', 'notes', 'calendar', 'modules', 'mail', 'fixedexpenses'].includes(item.id);
       }
       
       // Core modules
-      if (['profile', 'dashboard', 'tasks', 'calendar', 'modules', 'mail', 'fixedexpenses'].includes(item.id)) return true;
-      
+      if (['profile', 'dashboard', 'tasks', 'notes', 'calendar', 'modules', 'mail', 'fixedexpenses'].includes(item.id)) return true;
+
       // Yetki kontrolü
       return userProfile?.permissions?.[item.id] === true;
     } catch (e) {
@@ -771,6 +774,7 @@ export const App: React.FC = () => {
                 {activeModule === 'cashflow'   && <Cashflow aktifPlanlar={JSON.parse(localStorage.getItem('enba_detailed_plans') || '[]')} />}
                 {activeModule === 'machinery'  && <Machinery />}
                 {activeModule === 'tasks'      && <Tasks />}
+                {activeModule === 'notes'      && <Notes />}
                 {activeModule === 'calendar'   && <CalendarModule />}
                 {activeModule === 'licensing'  && <Licensing />}
                 {activeModule === 'settings'   && (

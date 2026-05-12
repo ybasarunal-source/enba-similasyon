@@ -909,3 +909,67 @@ export const permitsAPI = {
     return true;
   }
 };
+
+// ── Notes (Notlar) API ────────────────────────────────────
+export interface SupabaseNote {
+  id: string;
+  user_id?: string;
+  company_id?: string;
+  title: string;
+  content: string;
+  type: 'daily' | 'meeting' | 'free';
+  project_id?: string;
+  note_date: string;
+  archived_at?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export const notesAPI = {
+  async getAll(): Promise<SupabaseNote[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+    const profile = await profileAPI.getMyProfile();
+    const query = supabase.from('notes').select('*').is('archived_at', null);
+    if (profile?.company_id) query.eq('company_id', profile.company_id);
+    else query.eq('user_id', user.id);
+    const { data, error } = await query.order('note_date', { ascending: false });
+    if (error) { console.error('Notlar çekilemedi:', error); return []; }
+    return data || [];
+  },
+
+  async getArchived(): Promise<SupabaseNote[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+    const profile = await profileAPI.getMyProfile();
+    const query = supabase.from('notes').select('*').not('archived_at', 'is', null);
+    if (profile?.company_id) query.eq('company_id', profile.company_id);
+    else query.eq('user_id', user.id);
+    const { data, error } = await query.order('archived_at', { ascending: false });
+    if (error) { console.error('Arşiv notları çekilemedi:', error); return []; }
+    return data || [];
+  },
+
+  async insert(note: Omit<SupabaseNote, 'id' | 'user_id' | 'company_id' | 'created_at' | 'updated_at'>): Promise<SupabaseNote | null> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+    const profile = await profileAPI.getMyProfile();
+    const payload: any = { ...note, user_id: user.id };
+    if (profile?.company_id) payload.company_id = profile.company_id;
+    const { data, error } = await supabase.from('notes').insert(payload).select().single();
+    if (error) { console.error('Not eklenemedi:', error); return null; }
+    return data;
+  },
+
+  async update(id: string, updates: Partial<SupabaseNote>): Promise<boolean> {
+    const { error } = await supabase.from('notes').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', id);
+    if (error) { console.error('Not güncellenemedi:', error); return false; }
+    return true;
+  },
+
+  async delete(id: string): Promise<boolean> {
+    const { error } = await supabase.from('notes').delete().eq('id', id);
+    if (error) { console.error('Not silinemedi:', error); return false; }
+    return true;
+  },
+};
