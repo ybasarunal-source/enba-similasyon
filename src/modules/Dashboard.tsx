@@ -760,6 +760,19 @@ const Dashboard: React.FC<DashboardProps> = ({ navigate, user }) => {
 
       {/* ── Card grid ──────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Add card button (edit mode only) — first in grid */}
+        {editMode && (
+          <div className="col-span-1">
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="w-full h-full min-h-[100px] rounded-2xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center gap-2 text-gray-400 hover:border-enba-orange hover:text-enba-orange transition-all"
+            >
+              <Plus size={24} />
+              <span className="text-xs font-medium">Kart Ekle</span>
+            </button>
+          </div>
+        )}
+
         {layout.map(card => {
           const colClass = card.cols === 4
             ? 'col-span-2 lg:col-span-4'
@@ -839,18 +852,6 @@ const Dashboard: React.FC<DashboardProps> = ({ navigate, user }) => {
           );
         })}
 
-        {/* Add card button (edit mode only) */}
-        {editMode && (
-          <div className="col-span-1">
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="w-full h-full min-h-[100px] rounded-2xl border-2 border-dashed border-gray-300 flex flex-col items-center justify-center gap-2 text-gray-400 hover:border-enba-orange hover:text-enba-orange transition-all"
-            >
-              <Plus size={24} />
-              <span className="text-xs font-medium">Kart Ekle</span>
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Edit mode footer */}
