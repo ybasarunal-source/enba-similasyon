@@ -485,7 +485,11 @@ const KPI_TYPES: CardType[] = ['tasks_kpi', 'mail_kpi', 'calendar_kpi', 'payment
 
 // ─── Weather helpers ──────────────────────────────────────────────────────────
 
-interface WeatherData { temp: number; code: number; city: string; }
+interface WeatherData {
+  temp: number; code: number; city: string;
+  lat: number; lon: number;
+  daily: { date: string; code: number; max: number; min: number }[];
+}
 
 function getWeatherEmoji(code: number): string {
   if (code === 0) return '☀️';
@@ -513,6 +517,7 @@ const Dashboard: React.FC<DashboardProps> = ({ navigate, user }) => {
   });
 
   const [weather, setWeather] = useState<WeatherData | null>(null);
+  const [weatherOpen, setWeatherOpen] = useState(false);
   const [layout, setLayout] = useState<CardConfig[]>(loadLayout);
   const [editMode, setEditMode] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -642,13 +647,19 @@ const Dashboard: React.FC<DashboardProps> = ({ navigate, user }) => {
         try {
           const { latitude: lat, longitude: lon } = pos.coords;
           const [weatherRes, geoRes] = await Promise.all([
-            fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`),
+            fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min&forecast_days=7&timezone=auto`),
             fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`),
           ]);
           const wData = await weatherRes.json();
           const gData = await geoRes.json();
           const city = gData.address?.city || gData.address?.town || gData.address?.village || gData.address?.county || '';
-          setWeather({ temp: wData.current_weather.temperature, code: wData.current_weather.weathercode, city });
+          const daily = (wData.daily?.time || []).map((date: string, i: number) => ({
+            date,
+            code: wData.daily.weathercode[i],
+            max: wData.daily.temperature_2m_max[i],
+            min: wData.daily.temperature_2m_min[i],
+          }));
+          setWeather({ temp: wData.current_weather.temperature, code: wData.current_weather.weathercode, city, lat, lon, daily });
         } catch { /* ignore */ }
       },
       () => { /* permission denied */ },
@@ -752,12 +763,50 @@ const Dashboard: React.FC<DashboardProps> = ({ navigate, user }) => {
         </div>
         <div className="flex items-center gap-3 flex-shrink-0">
           {weather && (
-            <div className="flex items-center gap-2 px-4 py-2 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl shadow-sm select-none">
-              <span className="text-xl leading-none">{getWeatherEmoji(weather.code)}</span>
-              <div className="flex flex-col leading-none">
-                <span className="text-sm font-semibold text-[var(--text-primary)] tabular-nums">{Math.round(weather.temp)}°C</span>
-                {weather.city && <span className="text-[10px] text-gray-400 mt-0.5 truncate max-w-[80px]">{weather.city}</span>}
-              </div>
+            <div className="relative">
+              <button
+                onClick={() => setWeatherOpen(v => !v)}
+                className="flex items-center gap-2 px-4 py-2 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl shadow-sm hover:shadow-md transition-all select-none"
+              >
+                <span className="text-xl leading-none">{getWeatherEmoji(weather.code)}</span>
+                <div className="flex flex-col leading-none text-left">
+                  <span className="text-sm font-semibold text-[var(--text-primary)] tabular-nums">{Math.round(weather.temp)}°C</span>
+                  {weather.city && <span className="text-[10px] text-gray-400 mt-0.5 truncate max-w-[80px]">{weather.city}</span>}
+                </div>
+              </button>
+
+              {weatherOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setWeatherOpen(false)} />
+                  <div className="absolute right-0 top-full mt-2 z-50 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-2xl shadow-2xl p-4 w-72">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">7 Günlük Tahmin</p>
+                    <div className="grid grid-cols-7 gap-1 mb-4">
+                      {weather.daily.map((day, i) => {
+                        const d = new Date(day.date);
+                        const label = i === 0 ? 'Bugün' : d.toLocaleDateString('tr-TR', { weekday: 'short' });
+                        return (
+                          <div key={day.date} className="flex flex-col items-center gap-1 p-1.5 rounded-xl hover:bg-gray-50 transition-colors">
+                            <span className="text-[9px] font-semibold text-gray-400 uppercase">{label}</span>
+                            <span className="text-base leading-none">{getWeatherEmoji(day.code)}</span>
+                            <span className="text-[11px] font-bold text-gray-700 tabular-nums">{Math.round(day.max)}°</span>
+                            <span className="text-[9px] text-gray-400 tabular-nums">{Math.round(day.min)}°</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <a
+                      href={`https://wttr.in/${weather.lat},${weather.lon}?lang=tr`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2 w-full py-2 rounded-xl bg-gray-50 hover:bg-gray-100 text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors border border-gray-100"
+                      onClick={() => setWeatherOpen(false)}
+                    >
+                      <ExternalLink size={12} />
+                      Detaylı tahmin
+                    </a>
+                  </div>
+                </>
+              )}
             </div>
           )}
           <button
