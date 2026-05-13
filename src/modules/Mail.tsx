@@ -17,6 +17,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Star,
+  ExternalLink,
   type LucideIcon,
 } from 'lucide-react';
 import { tasksAPI, projectsAPI, type SupabaseTask, type SupabaseProject } from '../api/supabase';
@@ -492,9 +493,17 @@ export const Mail: React.FC = () => {
                     : 'https://mail.google.com/mail/'}
                   target="_blank"
                   rel="noopener noreferrer"
-                  title="Gmail'i aç"
-                  style={{ width: 8, height: 8, borderRadius: '50%', background: '#34D399', flexShrink: 0, display: 'block' }}
-                />
+                  title={gmailEmail ? `Gmail'i aç — ${gmailEmail}` : "Gmail'i aç"}
+                  className="flex items-center justify-center rounded-lg bg-white border border-gray-100 hover:border-[#EA4335]/30 hover:bg-[#EA4335]/5 transition-all"
+                  style={{ width: 28, height: 28, flexShrink: 0 }}
+                >
+                  <svg viewBox="0 0 48 48" style={{ width: 14, height: 14 }}>
+                    <path fill="#EA4335" d="M24 9.5c3.54 0 6.72 1.22 9.21 3.22l6.89-6.89C35.83 2.1 30.34 0 24 0 15.02 0 7.3 5.24 3.55 12.9l7.98 6.21C13.34 13.31 18.28 9.5 24 9.5z"/>
+                    <path fill="#4285F4" d="M46.5 24.5c0-1.65-.15-3.25-.43-4.79H24v9.07h12.65c-.55 2.93-2.2 5.41-4.67 7.07l7.22 5.61C43.36 37.55 46.5 31.5 46.5 24.5z"/>
+                    <path fill="#FBBC05" d="M11.53 28.51A14.5 14.5 0 0 1 9.5 24c0-1.57.26-3.09.73-4.51L2.25 13.28A23.96 23.96 0 0 0 0 24c0 3.86.91 7.51 2.55 10.73l8.98-6.22z"/>
+                    <path fill="#34A853" d="M24 48c6.48 0 11.92-2.15 15.9-5.85l-7.22-5.61c-2.02 1.36-4.6 2.16-8.68 2.16-5.72 0-10.66-3.81-12.47-9.1l-7.98 6.21C7.3 42.76 15.02 48 24 48z"/>
+                  </svg>
+                </a>
               : <div title={googleConnected ? 'Gmail oturumu geçersiz' : 'Gmail bağlı değil'} style={{ width: 8, height: 8, borderRadius: '50%', background: googleConnected ? '#FCD34D' : '#D1D5DB', flexShrink: 0 }}/>
             }
           </div>
@@ -517,10 +526,35 @@ export const Mail: React.FC = () => {
 
           <button
             onClick={() => setShowCompose(true)}
-            className="w-full py-3 bg-enba-orange text-white rounded-xl font-black text-[10px] uppercase tracking-[2px] shadow-lg shadow-enba-orange/20 hover:brightness-110 hover:-translate-y-0.5 active:scale-95 transition-all flex items-center justify-center gap-2 mb-5"
+            className="w-full py-3 bg-enba-orange text-white rounded-xl font-black text-[10px] uppercase tracking-[2px] shadow-lg shadow-enba-orange/20 hover:brightness-110 hover:-translate-y-0.5 active:scale-95 transition-all flex items-center justify-center gap-2 mb-3"
           >
             <PenSquare size={14} /> Yeni E-Posta
           </button>
+
+          {googleConnected && !googleNeedsReconnect && (
+            <a
+              href={gmailEmail
+                ? `https://accounts.google.com/AccountChooser?Email=${encodeURIComponent(gmailEmail)}&continue=${encodeURIComponent('https://mail.google.com/mail/')}`
+                : 'https://mail.google.com/mail/'}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-gray-100 bg-white hover:border-[#EA4335]/25 hover:bg-[#EA4335]/5 transition-all mb-5"
+            >
+              <div className="w-6 h-6 rounded-lg bg-white shadow-sm border border-gray-100 flex items-center justify-center flex-shrink-0 group-hover:shadow-md transition-all">
+                <svg viewBox="0 0 48 48" className="w-3.5 h-3.5">
+                  <path fill="#EA4335" d="M24 9.5c3.54 0 6.72 1.22 9.21 3.22l6.89-6.89C35.83 2.1 30.34 0 24 0 15.02 0 7.3 5.24 3.55 12.9l7.98 6.21C13.34 13.31 18.28 9.5 24 9.5z"/>
+                  <path fill="#4285F4" d="M46.5 24.5c0-1.65-.15-3.25-.43-4.79H24v9.07h12.65c-.55 2.93-2.2 5.41-4.67 7.07l7.22 5.61C43.36 37.55 46.5 31.5 46.5 24.5z"/>
+                  <path fill="#FBBC05" d="M11.53 28.51A14.5 14.5 0 0 1 9.5 24c0-1.57.26-3.09.73-4.51L2.25 13.28A23.96 23.96 0 0 0 0 24c0 3.86.91 7.51 2.55 10.73l8.98-6.22z"/>
+                  <path fill="#34A853" d="M24 48c6.48 0 11.92-2.15 15.9-5.85l-7.22-5.61c-2.02 1.36-4.6 2.16-8.68 2.16-5.72 0-10.66-3.81-12.47-9.1l-7.98 6.21C7.3 42.76 15.02 48 24 48z"/>
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-black text-gray-600 group-hover:text-[#EA4335] transition-colors leading-none">Gmail'i Aç</p>
+                {gmailEmail && <p className="text-[8px] text-gray-300 font-medium truncate mt-0.5">{gmailEmail}</p>}
+              </div>
+              <ExternalLink size={11} className="text-gray-300 group-hover:text-[#EA4335] transition-colors flex-shrink-0" />
+            </a>
+          )}
 
           <div className="space-y-0.5">
             <p className="text-[9px] font-black uppercase tracking-widest text-gray-300 px-3 mb-2">Klasörler</p>
@@ -583,15 +617,7 @@ export const Mail: React.FC = () => {
               {googleConnected
                 ? googleNeedsReconnect
                   ? <span onClick={e => { e.stopPropagation(); handleConnectGoogle(); }} className="text-[9px] text-amber-500 font-bold hover:underline">Yenile</span>
-                  : <a
-                      href={gmailEmail
-                        ? `https://accounts.google.com/AccountChooser?Email=${encodeURIComponent(gmailEmail)}&continue=${encodeURIComponent('https://mail.google.com/mail/')}`
-                        : 'https://mail.google.com/mail/'}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={e => e.stopPropagation()}
-                      className="text-[9px] text-[#EA4335] font-bold hover:underline flex-shrink-0"
-                    >Aç</a>
+                  : <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" />
                 : <span onClick={e => { e.stopPropagation(); handleConnectGoogle(); }} className="text-[9px] text-[#EA4335] font-bold hover:underline">Bağla</span>
               }
             </button>
