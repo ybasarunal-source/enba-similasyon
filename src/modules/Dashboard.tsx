@@ -483,6 +483,21 @@ function getCardHeader(type: CardType, t: (k: string) => string): CardHeaderInfo
 
 const KPI_TYPES: CardType[] = ['tasks_kpi', 'mail_kpi', 'calendar_kpi', 'payments_kpi', 'stock_kpi', 'production_kpi', 'app_link'];
 
+// ─── Weather helpers ──────────────────────────────────────────────────────────
+
+interface WeatherData { temp: number; code: number; city: string; }
+
+function getWeatherEmoji(code: number): string {
+  if (code === 0) return '☀️';
+  if (code <= 3) return '⛅';
+  if (code <= 48) return '🌫️';
+  if (code <= 57) return '🌦️';
+  if (code <= 67) return '🌧️';
+  if (code <= 77) return '❄️';
+  if (code <= 82) return '🌧️';
+  return '⛈️';
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 const Dashboard: React.FC<DashboardProps> = ({ navigate, user }) => {
@@ -497,6 +512,7 @@ const Dashboard: React.FC<DashboardProps> = ({ navigate, user }) => {
     appointments: [], unreadMailCount: 0, hasData: false,
   });
 
+  const [weather, setWeather] = useState<WeatherData | null>(null);
   const [layout, setLayout] = useState<CardConfig[]>(loadLayout);
   const [editMode, setEditMode] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -618,6 +634,28 @@ const Dashboard: React.FC<DashboardProps> = ({ navigate, user }) => {
     return () => clearInterval(interval);
   }, [t]);
 
+  // ── Weather fetch (runs once on mount) ─────────────────────────────────────
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const { latitude: lat, longitude: lon } = pos.coords;
+          const [weatherRes, geoRes] = await Promise.all([
+            fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`),
+            fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`),
+          ]);
+          const wData = await weatherRes.json();
+          const gData = await geoRes.json();
+          const city = gData.address?.city || gData.address?.town || gData.address?.village || gData.address?.county || '';
+          setWeather({ temp: wData.current_weather.temperature, code: wData.current_weather.weathercode, city });
+        } catch { /* ignore */ }
+      },
+      () => { /* permission denied */ },
+      { timeout: 8000 }
+    );
+  }, []);
+
   const fmt = (n: number) =>
     (n || 0).toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 1 });
 
@@ -713,6 +751,15 @@ const Dashboard: React.FC<DashboardProps> = ({ navigate, user }) => {
           </div>
         </div>
         <div className="flex items-center gap-3 flex-shrink-0">
+          {weather && (
+            <div className="flex items-center gap-2 px-4 py-2 bg-[var(--bg-surface)] border border-[var(--border-subtle)] rounded-xl shadow-sm select-none">
+              <span className="text-xl leading-none">{getWeatherEmoji(weather.code)}</span>
+              <div className="flex flex-col leading-none">
+                <span className="text-sm font-semibold text-[var(--text-primary)] tabular-nums">{Math.round(weather.temp)}°C</span>
+                {weather.city && <span className="text-[10px] text-gray-400 mt-0.5 truncate max-w-[80px]">{weather.city}</span>}
+              </div>
+            </div>
+          )}
           <button
             onClick={() => navigate('fastplan')}
             className="px-5 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-xs font-medium hover:bg-gray-200 transition-all flex items-center gap-2 border border-gray-200"
