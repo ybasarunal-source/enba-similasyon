@@ -679,7 +679,7 @@ const Dashboard: React.FC<DashboardProps> = ({ navigate, user }) => {
             </form>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-shrink-0">
           <button
             onClick={() => navigate('fastplan')}
             className="px-5 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-xs font-medium hover:bg-gray-200 transition-all flex items-center gap-2 border border-gray-200"
@@ -694,15 +694,32 @@ const Dashboard: React.FC<DashboardProps> = ({ navigate, user }) => {
             <Package size={15} />
             {t('landing.purchase_record')}
           </button>
+        </div>
+      </div>
+
+      {/* ── Kart düzenleme çubuğu ───────────────────────────────────────────── */}
+      <div className="flex items-center justify-between">
+        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">
+          {editMode ? 'Sürükle & bırak ile yeniden düzenle · kaldırmak için ✕' : 'Panel'}
+        </p>
+        <div className="flex items-center gap-2">
+          {editMode && (
+            <button
+              onClick={resetLayout}
+              className="px-3 py-1.5 text-[10px] font-bold text-gray-400 hover:text-rose-500 transition-colors"
+            >
+              Varsayılana sıfırla
+            </button>
+          )}
           <button
             onClick={() => setEditMode(v => !v)}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-medium transition-all border ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
               editMode
                 ? 'bg-enba-orange text-white border-enba-orange shadow-md shadow-enba-orange/20'
-                : 'bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200'
+                : 'bg-white text-gray-600 border-gray-200 hover:border-enba-orange/40 hover:text-enba-orange'
             }`}
           >
-            <Settings size={15} />
+            <Settings size={14} />
             {editMode ? 'Bitti' : 'Düzenle'}
           </button>
         </div>
