@@ -308,7 +308,7 @@ export const microsoftService = {
     if (!client) return [];
     try {
       const response = await client.api('/me/messages')
-        .select('id,subject,bodyPreview,sender,receivedDateTime,isRead,body')
+        .select('id,subject,bodyPreview,sender,receivedDateTime,isRead,body,flag')
         .orderby('receivedDateTime DESC')
         .top(top)
         .get();
@@ -321,11 +321,25 @@ export const microsoftService = {
         senderEmail: msg.sender?.emailAddress?.address || '',
         date: msg.receivedDateTime,
         isRead: msg.isRead,
-        source: 'outlook'
+        isStarred: msg.flag?.flagStatus === 'flagged',
+        source: 'outlook' as const,
       }));
     } catch (err) {
       console.error('MS Get Emails Error:', err);
       return [];
+    }
+  },
+
+  async flagEmail(id: string, flagged: boolean): Promise<boolean> {
+    const client = await this.getGraphClient(mailScopes);
+    if (!client) return false;
+    try {
+      await client.api(`/me/messages/${id}`).patch({
+        flag: { flagStatus: flagged ? 'flagged' : 'notFlagged' },
+      });
+      return true;
+    } catch {
+      return false;
     }
   },
 

@@ -16,6 +16,7 @@ import {
   ListTodo,
   ChevronLeft,
   ChevronRight,
+  Star,
   type LucideIcon,
 } from 'lucide-react';
 import { tasksAPI, type SupabaseTask } from '../api/supabase';
@@ -29,6 +30,7 @@ interface Email {
   senderEmail: string;
   date: string;
   isRead: boolean;
+  isStarred?: boolean;
   source: 'outlook' | 'gmail';
 }
 
@@ -63,6 +65,7 @@ export const Mail: React.FC = () => {
   const [taskForm, setTaskForm] = useState({ title: '', desc: '', priority: 'medium', deadline: '' });
   const [isSavingTask, setIsSavingTask] = useState(false);
   const [taskSaved, setTaskSaved] = useState(false);
+  const [starToast, setStarToast] = useState(false);
 
   const checkConnections = async () => {
     setIsCheckingConnections(true);
@@ -247,6 +250,43 @@ export const Mail: React.FC = () => {
     }
   };
 
+  const handleStarEmail = async (email: Email, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const newStarred = !email.isStarred;
+
+    // Optimistic UI
+    const applyUpdate = (em: Email) => em.id === email.id ? { ...em, isStarred: newStarred } : em;
+    setEmails(prev => prev.map(applyUpdate));
+    if (selectedEmail?.id === email.id) setSelectedEmail(prev => prev ? applyUpdate(prev) : prev);
+
+    try {
+      if (email.source === 'gmail') {
+        googleService.starEmail(email.id, newStarred);
+      } else if (email.source === 'outlook') {
+        microsoftService.flagEmail(email.id, newStarred);
+      }
+
+      if (newStarred) {
+        const task: SupabaseTask = {
+          id: crypto.randomUUID(),
+          title: email.subject,
+          description: `Gönderen: ${email.sender} <${email.senderEmail}>\n\n${email.bodyPreview}`,
+          priority: 'medium',
+          status: 'todo',
+          source: 'local',
+          module_ref: 'mail',
+        };
+        await tasksAPI.insert(task);
+        setStarToast(true);
+        setTimeout(() => setStarToast(false), 2500);
+      }
+    } catch (err) {
+      console.error('Star email error:', err);
+      // Revert
+      setEmails(prev => prev.map(em => em.id === email.id ? { ...em, isStarred: !newStarred } : em));
+    }
+  };
+
   if (isCheckingConnections && !googleConnected && !msConnected) {
     return (
       <div className="flex h-screen items-center justify-center bg-[#FAFAFA]">
@@ -353,6 +393,14 @@ export const Mail: React.FC = () => {
 
   return (
     <div className="flex h-screen bg-[#FAFAFA] animate-fade-in overflow-hidden" style={{ position: 'relative' }}>
+
+      {/* ─── Bayrak toast ─────────────────────────────────── */}
+      {starToast && (
+        <div className="fixed bottom-6 right-6 z-50 bg-enba-dark text-white px-4 py-2.5 rounded-xl text-[11px] font-bold flex items-center gap-2 shadow-xl pointer-events-none animate-fade-in">
+          <Star size={12} className="text-amber-400" fill="currentColor"/>
+          Görev oluşturuldu
+        </div>
+      )}
 
       {/* ─── SOL SIDEBAR TOGGLE ───────────────────────────── */}
       <button
@@ -563,7 +611,7 @@ export const Mail: React.FC = () => {
               <div
                 key={email.id}
                 onClick={() => handleOpenEmail(email)}
-                className={`border-b border-gray-50 px-4 py-3.5 cursor-pointer transition-all border-l-2 ${
+                className={`group border-b border-gray-50 px-4 py-3.5 cursor-pointer transition-all border-l-2 ${
                   selectedEmail?.id === email.id
                     ? 'bg-enba-orange/5 border-l-enba-orange'
                     : !email.isRead
@@ -578,9 +626,18 @@ export const Mail: React.FC = () => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-1 mb-0.5">
                       <span className={`text-xs truncate ${email.isRead ? 'font-medium text-gray-600' : 'font-bold text-enba-dark'}`}>{email.sender}</span>
-                      <span className="text-[9px] text-gray-400 whitespace-nowrap flex-shrink-0">
-                        {new Date(email.date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}
-                      </span>
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <button
+                          onClick={e => handleStarEmail(email, e)}
+                          title={email.isStarred ? 'Bayraktan çıkar' : 'Bayrakla — görev oluştur'}
+                          className={`p-0.5 rounded transition-all ${email.isStarred ? 'opacity-100 text-amber-400' : 'opacity-0 group-hover:opacity-100 text-gray-300 hover:text-amber-400'}`}
+                        >
+                          <Star size={12} fill={email.isStarred ? 'currentColor' : 'none'} strokeWidth={1.8}/>
+                        </button>
+                        <span className="text-[9px] text-gray-400 whitespace-nowrap">
+                          {new Date(email.date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })}
+                        </span>
+                      </div>
                     </div>
                     <p className={`text-[11px] truncate mb-0.5 ${email.isRead ? 'text-gray-500' : 'font-semibold text-gray-800'}`}>{email.subject}</p>
                     <p className="text-[10px] text-gray-400 truncate">{email.bodyPreview}</p>
@@ -609,6 +666,13 @@ export const Mail: React.FC = () => {
               <span className="text-[9px] font-bold text-gray-400 bg-gray-50 px-2.5 py-1 rounded-lg whitespace-nowrap">
                 {new Date(selectedEmail.date).toLocaleString('tr-TR')}
               </span>
+              <button
+                onClick={e => handleStarEmail(selectedEmail, e)}
+                className={`p-1.5 rounded-lg transition-all ${selectedEmail.isStarred ? 'text-amber-400 bg-amber-50' : 'text-gray-400 hover:text-amber-400 hover:bg-amber-50'}`}
+                title={selectedEmail.isStarred ? 'Bayraktan çıkar' : 'Bayrakla — görev oluştur'}
+              >
+                <Star size={16} fill={selectedEmail.isStarred ? 'currentColor' : 'none'} strokeWidth={1.8}/>
+              </button>
               <button
                 onClick={openTaskModal}
                 className="p-1.5 text-gray-400 hover:text-enba-orange hover:bg-orange-50 rounded-lg transition-all"

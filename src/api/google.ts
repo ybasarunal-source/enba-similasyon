@@ -228,7 +228,6 @@ export const googleService = {
     if (!token) return [];
 
     try {
-      // Get message list
       const listResponse = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${maxResults}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -238,20 +237,19 @@ export const googleService = {
       const listData = await listResponse.json();
       const messages = listData.messages || [];
 
-      // Fetch details for each message
       const detailedMessages = await Promise.all(
         messages.map(async (msg: any) => {
           const detailResponse = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}?format=metadata&metadataHeaders=Subject&metadataHeaders=From&metadataHeaders=Date`, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
           const detailData = await detailResponse.json();
-          
+
           const headers = detailData.payload?.headers || [];
-          const subject = headers.find((h: any) => h.name.toLowerCase() === 'subject')?.value || 'No Subject';
-          const from = headers.find((h: any) => h.name.toLowerCase() === 'from')?.value || 'Unknown';
+          const subject = headers.find((h: any) => h.name.toLowerCase() === 'subject')?.value || 'Konu Yok';
+          const from = headers.find((h: any) => h.name.toLowerCase() === 'from')?.value || 'Bilinmiyor';
           const date = headers.find((h: any) => h.name.toLowerCase() === 'date')?.value || '';
-          
-          // Parse "Name <email@domain.com>" format
+          const labelIds: string[] = detailData.labelIds || [];
+
           let senderName = from;
           let senderEmail = from;
           const match = from.match(/(.*)<(.*)>/);
@@ -262,14 +260,15 @@ export const googleService = {
 
           return {
             id: detailData.id,
-            subject: subject,
+            subject,
             bodyPreview: detailData.snippet || '',
-            body: detailData.snippet || '', // Just snippet for now to save API calls
+            body: '', // tam içerik handleOpenEmail'de çekilir
             sender: senderName,
-            senderEmail: senderEmail,
+            senderEmail,
             date: date ? new Date(date).toISOString() : new Date().toISOString(),
-            isRead: !(detailData.labelIds || []).includes('UNREAD'),
-            source: 'gmail'
+            isRead: !labelIds.includes('UNREAD'),
+            isStarred: labelIds.includes('STARRED'),
+            source: 'gmail' as const,
           };
         })
       );
@@ -289,17 +288,30 @@ export const googleService = {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await response.json();
-      
+
+      // Base64url → UTF-8 string (TextDecoder ile Türkçe karakter desteği)
+      const decodeB64 = (b64: string): string => {
+        try {
+          const binary = atob(b64.replace(/-/g, '+').replace(/_/g, '/'));
+          const bytes = new Uint8Array(binary.length);
+          for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+          return new TextDecoder('utf-8').decode(bytes);
+        } catch {
+          return '';
+        }
+      };
+
       const getBodyStr = (payload: any): string => {
         if (!payload) return '';
-        if (payload.body && payload.body.data) {
-          return decodeURIComponent(escape(atob(payload.body.data.replace(/-/g, '+').replace(/_/g, '/'))));
-        }
+        if (payload.body?.data) return decodeB64(payload.body.data);
         if (payload.parts) {
           const htmlPart = payload.parts.find((p: any) => p.mimeType === 'text/html');
           if (htmlPart) return getBodyStr(htmlPart);
           const plainPart = payload.parts.find((p: any) => p.mimeType === 'text/plain');
-          if (plainPart) return getBodyStr(plainPart);
+          if (plainPart) {
+            const text = getBodyStr(plainPart);
+            return text ? `<pre style="white-space:pre-wrap;font-family:inherit">${text}</pre>` : '';
+          }
           for (const part of payload.parts) {
             const res = getBodyStr(part);
             if (res) return res;
@@ -307,7 +319,7 @@ export const googleService = {
         }
         return '';
       };
-      
+
       return getBodyStr(data.payload);
     } catch (err) {
       console.error('Google Get Body Error:', err);
@@ -364,6 +376,21 @@ export const googleService = {
       return response.ok;
     } catch (err) {
       console.error('Google Send Email Error:', err);
+      return false;
+    }
+  },
+
+  async starEmail(id: string, starred: boolean): Promise<boolean> {
+    const token = this.getAccessToken();
+    if (!token) return false;
+    try {
+      const response = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}/modify`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(starred ? { addLabelIds: ['STARRED'] } : { removeLabelIds: ['STARRED'] }),
+      });
+      return response.ok;
+    } catch {
       return false;
     }
   },
