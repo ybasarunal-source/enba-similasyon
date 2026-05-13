@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import {
   PlusCircle, Sun, Layers, Archive, Trash2, X,
   Calendar, Users, FileText, Search, RotateCw, BookOpen,
-  Sparkles, Check,
+  Sparkles, Check, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import { notesAPI, projectsAPI, tasksAPI, SupabaseNote, supabase } from '../api/supabase';
 
@@ -96,6 +96,7 @@ export const Notes: React.FC = () => {
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
   const [selectedAiTasks, setSelectedAiTasks] = useState<Set<number>>(new Set());
   const [selectedAiReminders, setSelectedAiReminders] = useState<Set<number>>(new Set());
+  const [leftPanel, setLeftPanel] = useState<'open'|'slim'>('slim');
   const saveTimer = useRef<ReturnType<typeof setTimeout>>();
 
   // ── Load ──────────────────────────────────────────────
@@ -339,9 +340,63 @@ export const Notes: React.FC = () => {
         </div>
       )}
 
-      <div className="flex flex-1 min-h-0 overflow-hidden">
+      <div className="flex flex-1 min-h-0 overflow-hidden" style={{ position: 'relative' }}>
 
-      {/* ── LEFT SIDEBAR ─────────────────────────────────── */}
+      {/* ── LEFT SIDEBAR TOGGLE ──────────────────────────── */}
+      <button
+        onClick={() => setLeftPanel(p => p === 'open' ? 'slim' : 'open')}
+        title={leftPanel === 'open' ? 'Menüyü küçült' : 'Menüyü aç'}
+        style={{
+          position: 'absolute',
+          left: leftPanel === 'open' ? 200 : 44,
+          top: '50%', transform: 'translateY(-50%)',
+          zIndex: 20, width: 18, height: 48,
+          background: B.surface, border: `1px solid ${B.line}`,
+          borderLeft: leftPanel === 'open' ? `1px solid ${B.line}` : 'none',
+          borderRadius: leftPanel === 'open' ? '0 6px 6px 0' : '6px 0 0 6px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer', transition: 'left .25s',
+          color: B.faint,
+        }}
+      >
+        {leftPanel === 'open' ? <ChevronLeft size={11} strokeWidth={2.5}/> : <ChevronRight size={11} strokeWidth={2.5}/>}
+      </button>
+
+      {/* ── LEFT SIDEBAR — slim ──────────────────────────── */}
+      {leftPanel === 'slim' && (
+        <aside style={{ width: 44, flexShrink: 0, borderRight: `1px solid ${B.line}`, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '16px 0', gap: 6 }}>
+          <button
+            onClick={() => createNote('free')}
+            title="Yeni Not"
+            style={{ width: 32, height: 32, borderRadius: 10, background: B.ink, border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff', flexShrink: 0, transition: 'filter .15s' }}
+            onMouseEnter={e => (e.currentTarget.style.filter = 'brightness(1.3)')}
+            onMouseLeave={e => (e.currentTarget.style.filter = 'brightness(1)')}
+          >
+            <PlusCircle size={16} strokeWidth={2.2}/>
+          </button>
+          <div style={{ width: 1, height: 16, background: B.line }}/>
+          {navItems.map(item => {
+            const active = view === item.id;
+            return (
+              <button key={item.id}
+                onClick={() => { if (item.id === 'today') openToday(); else setView(item.id as NavView); }}
+                title={item.label}
+                style={{ width: 32, height: 32, borderRadius: 8, border: 'none', background: active ? B.ink + '15' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: active ? B.ink : B.soft, flexShrink: 0, transition: 'background .15s', position: 'relative' }}
+                onMouseEnter={e => { if (!active) e.currentTarget.style.background = B.line + '80'; }}
+                onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent'; }}
+              >
+                <item.Icon size={15}/>
+                {item.count != null && item.count > 0 && (
+                  <span style={{ position: 'absolute', top: 2, right: 2, width: 8, height: 8, borderRadius: '50%', background: B.accent, fontSize: 0 }}/>
+                )}
+              </button>
+            );
+          })}
+        </aside>
+      )}
+
+      {/* ── LEFT SIDEBAR — open ──────────────────────────── */}
+      {leftPanel === 'open' && (
       <aside className="flex flex-col flex-shrink-0" style={{ width: 200, borderRight: `1px solid ${B.line}`, padding: '20px 12px 16px', overflow: 'hidden' }}>
 
         {/* New Note buttons */}
@@ -427,6 +482,7 @@ export const Notes: React.FC = () => {
           </>
         )}
       </aside>
+      )}
 
       {/* ── NOTE LIST ────────────────────────────────────── */}
       <div className="flex flex-col flex-shrink-0" style={{ width: 272, borderRight: `1px solid ${B.line}`, background: B.surface }}>

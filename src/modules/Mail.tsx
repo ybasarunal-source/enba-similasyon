@@ -14,6 +14,8 @@ import {
   FileText,
   Trash2,
   ListTodo,
+  ChevronLeft,
+  ChevronRight,
   type LucideIcon,
 } from 'lucide-react';
 import { tasksAPI, type SupabaseTask } from '../api/supabase';
@@ -46,6 +48,7 @@ export const Mail: React.FC = () => {
   const [composeData, setComposeData] = useState({ to: '', subject: '', body: '', source: 'outlook' as 'outlook' | 'gmail' });
   const [isSending, setIsSending] = useState(false);
 
+  const [leftPanel, setLeftPanel] = useState<'open'|'slim'>('slim');
   const [msConnected, setMsConnected] = useState(false);
   // Senkron başlat — her mount'ta localStorage'dan direkt oku, async bekleme
   const [googleConnected, setGoogleConnected] = useState(() => !!googleService.getAccessToken());
@@ -349,9 +352,59 @@ export const Mail: React.FC = () => {
   ];
 
   return (
-    <div className="flex h-screen bg-[#FAFAFA] animate-fade-in overflow-hidden">
+    <div className="flex h-screen bg-[#FAFAFA] animate-fade-in overflow-hidden" style={{ position: 'relative' }}>
 
-      {/* ─── SOL: Klasörler ───────────────────────────────── */}
+      {/* ─── SOL SIDEBAR TOGGLE ───────────────────────────── */}
+      <button
+        onClick={() => setLeftPanel(p => p === 'open' ? 'slim' : 'open')}
+        title={leftPanel === 'open' ? 'Menüyü küçült' : 'Menüyü aç'}
+        style={{
+          position: 'absolute',
+          left: leftPanel === 'open' ? 208 : 44,
+          top: '50%', transform: 'translateY(-50%)',
+          zIndex: 20, width: 18, height: 48,
+          background: '#fff', border: '1px solid #F3F4F6',
+          borderLeft: leftPanel === 'open' ? '1px solid #F3F4F6' : 'none',
+          borderRadius: leftPanel === 'open' ? '0 6px 6px 0' : '6px 0 0 6px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer', transition: 'left .25s',
+          color: '#9CA3AF',
+        }}
+      >
+        {leftPanel === 'open' ? <ChevronLeft size={11} strokeWidth={2.5}/> : <ChevronRight size={11} strokeWidth={2.5}/>}
+      </button>
+
+      {/* ─── SOL: Slim strip ──────────────────────────────── */}
+      {leftPanel === 'slim' && (
+        <aside className="flex flex-col flex-shrink-0 bg-white border-r border-gray-100 shadow-sm" style={{ width: 44, alignItems: 'center', padding: '16px 0', gap: 6 }}>
+          <button
+            onClick={() => setShowCompose(true)}
+            title="Yeni E-Posta"
+            className="flex items-center justify-center rounded-xl bg-enba-orange text-white flex-shrink-0 hover:brightness-110 transition-all"
+            style={{ width: 32, height: 32, border: 'none', cursor: 'pointer' }}
+          >
+            <PenSquare size={14}/>
+          </button>
+          <div className="flex-shrink-0" style={{ width: 1, height: 16, background: '#F3F4F6' }}/>
+          <button
+            onClick={() => setActiveFolder('inbox')}
+            title="Gelen Kutusu"
+            className="flex items-center justify-center rounded-xl transition-all flex-shrink-0"
+            style={{ width: 32, height: 32, border: 'none', cursor: 'pointer', background: activeFolder === 'inbox' ? '#1A1A1A' : 'transparent', color: activeFolder === 'inbox' ? '#E35205' : '#9CA3AF' }}
+          >
+            <Inbox size={15}/>
+          </button>
+          <div style={{ flex: 1 }}/>
+          {/* Hesap göstergeleri */}
+          <div className="flex flex-col items-center gap-2 pb-2">
+            <div title={msConnected ? 'Outlook bağlı' : 'Outlook bağlı değil'} style={{ width: 8, height: 8, borderRadius: '50%', background: msConnected ? '#34D399' : '#D1D5DB', flexShrink: 0 }}/>
+            <div title={googleConnected ? 'Gmail bağlı' : 'Gmail bağlı değil'} style={{ width: 8, height: 8, borderRadius: '50%', background: googleConnected ? '#34D399' : '#D1D5DB', flexShrink: 0 }}/>
+          </div>
+        </aside>
+      )}
+
+      {/* ─── SOL: Klasörler (open) ────────────────────────── */}
+      {leftPanel === 'open' && (
       <aside className="w-52 bg-white border-r border-gray-100 flex flex-col flex-shrink-0 shadow-sm">
         <div className="p-5 pb-4">
           <div className="flex items-center gap-2.5 mb-5">
@@ -439,6 +492,7 @@ export const Mail: React.FC = () => {
           </div>
         </div>
       </aside>
+      )}
 
       {/* ─── ORTA: E-posta Listesi ────────────────────────── */}
       <div className={`${selectedEmail ? 'w-80 flex-shrink-0' : 'flex-1'} flex flex-col border-r border-gray-100 bg-white overflow-hidden transition-all duration-200`}>
