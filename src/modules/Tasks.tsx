@@ -536,7 +536,6 @@ export const Tasks: React.FC = () => {
       } catch(err) { console.warn('MSAL: Session recovery failed:', err); }
     };
     recoverSession();
-    if (googleService.handleAuthReturn()) setGoogleAccount({ name:'Google Kullanıcısı' });
     const gToken = googleService.getAccessToken();
     if (gToken) {
       // Token localStorage'da geçerliyse bağlı say — profilde yoksa silme

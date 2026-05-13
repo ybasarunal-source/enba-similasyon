@@ -316,12 +316,19 @@ Veri kaybı riski olan her adımı kullanıcıya açıkça belirt ve onay al.
 - [x] ModulesOverview — tek satır kompakt header
 - [x] Mail — provider onboarding ekranı (Microsoft / Google bağlantı kartları) (commit 7d0d237)
 
+### Tamamlanan (2026-05-13)
+- [x] FastPlan dosya bölme — `fastplan/` altında 5 dosya, ana dosya 1581→1231 satır (commit e8669f7)
+- [x] FastPlan PDF export — form header'ında "PDF" butonu, html2pdf.js dynamic import (commit a50aab0)
+- [x] FastPlan iyileştirmeleri — başabaş, geri ödeme, duyarlılık, gider bar chart, versiyon notları (önceki oturumda tamamlanmıştı)
+- [x] Mail Gmail fix — google.resumeSession + Tasks.tsx token silme bug düzeltildi (commitler bc5ba3b, 4912064)
+- [x] Mail hata göstergesi — Gmail API 403/401 görünür hata mesajı (commit ea2ac63)
+- [x] PnL kaydet fix — UUID mismatch + Supabase query chaining (commit a125eed)
+
 ### Kullanıcı Öncelik Sırası
-1. **FastPlan iyileştirmeleri** — başabaş, geri ödeme, duyarlılık, versiyon notları, gider grafiği, PDF
-2. **DetailedPlan iyileştirmeleri**
-3. **Paraşüt tamamlama** — Enba stok ↔ Paraşüt item eşleştirmesi, yazma uç noktaları
-4. **PnL analizi güçlendirme**
-5. **Yapay zeka asistanı** — siteye entegre AI chat
+1. **DetailedPlan iyileştirmeleri**
+2. **Paraşüt tamamlama** — Enba stok ↔ Paraşüt item eşleştirmesi, yazma uç noktaları
+3. **PnL analizi güçlendirme**
+4. **Yapay zeka asistanı** — siteye entegre AI chat
 
 ### Bekleyen Teknik Görevler
 - [ ] **Admin test hesabı** — Supabase'de `role='admin'` + geçerli `company_id` → şirket izolasyonunu doğrula
@@ -330,13 +337,7 @@ Veri kaybı riski olan her adımı kullanıcıya açıkça belirt ve onay al.
 - [ ] **Bordro/muhasebe** — ertelendi (müşteri talebi olursa)
 
 ### Bir Sonraki Oturumda İlk Yapılacak
-**FastPlan hesaplama iyileştirmeleri** — `hesapla()` fonksiyonuna ekle + form sağ panel'e göster:
-1. **Başabaş noktası** — sabit giderler ÷ (satış fiyatı/ton - değişken maliyet/ton) = başabaş ton/ay
-2. **Geri ödeme süresi** — toplam CAPEX ÷ aylık net kâr = kaç ay
-3. **Duyarlılık tablosu** — alış/satış fiyatı ±%10, ±%20 → net kâr senaryoları
-4. **Versiyon notları** — PlanVersion'a `not?: string` ekle, SaveModal'da not giriş alanı
-5. **Gider dağılım bar chart** — CSS tabanlı, harici kütüphane yok
-6. **PDF çıktısı** — html2pdf ile plan özeti A4 çıktısı
+**DetailedPlan iyileştirmeleri** — öncelik sırasına göre belirlenecek
 
 ---
 

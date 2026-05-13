@@ -53,9 +53,7 @@ export const Calendar: React.FC = () => {
 
   // Handle Google Auth Return
   useEffect(() => {
-    if (googleService.handleAuthReturn()) {
-      loadEvents();
-    }
+    loadEvents();
   }, []);
 
   const loadEvents = async () => {

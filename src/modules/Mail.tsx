@@ -65,9 +65,6 @@ export const Mail: React.FC = () => {
     setIsCheckingConnections(true);
     setGoogleNeedsReconnect(false);
     try {
-      // Google OAuth redirect'ten bu modüle doğrudan dönüldüyse token hash'te olabilir
-      googleService.handleAuthReturn();
-
       const msToken = await microsoftService.getToken(['User.Read', 'Mail.ReadWrite', 'Mail.Send']);
       setMsConnected(!!msToken);
 
@@ -101,11 +98,10 @@ export const Mail: React.FC = () => {
       }
 
       if (useGoogleConnected) {
-        // Token'ı doğrudan test et
         const token = googleService.getAccessToken();
         if (!token) {
-          setFetchError('Google token bulunamadı — lütfen yeniden bağlanın.');
-          setGoogleConnected(false);
+          setFetchError('Gmail oturumu sona erdi — lütfen yeniden bağlanın.');
+          setGoogleNeedsReconnect(true);
         } else {
           const testRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/profile', {
             headers: { Authorization: `Bearer ${token}` },

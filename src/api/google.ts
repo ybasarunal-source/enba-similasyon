@@ -40,12 +40,21 @@ export const googleService = {
       const params = new URLSearchParams(hash.substring(1));
       const token = params.get('access_token');
       const expires = params.get('expires_in');
-      
+
       if (token) {
+        const expiry = (Date.now() + parseInt(expires || '3600') * 1000).toString();
         localStorage.setItem('google_access_token', token);
-        localStorage.setItem('google_token_expiry', (Date.now() + parseInt(expires || '3600') * 1000).toString());
+        localStorage.setItem('google_token_expiry', expiry);
         localStorage.setItem('google_ever_connected', '1');
-        window.location.hash = ''; // Clear hash
+        // Aynı sekme içinde navigasyon için sessionStorage yedek
+        sessionStorage.setItem('google_access_token', token);
+        sessionStorage.setItem('google_token_expiry', expiry);
+        // Hash'i sayfayı yeniden yüklemeden temizle
+        try {
+          history.replaceState(null, '', window.location.pathname + window.location.search);
+        } catch {
+          window.location.hash = '';
+        }
         return true;
       }
     }
@@ -53,12 +62,23 @@ export const googleService = {
   },
 
   getAccessToken(): string | null {
-    const token = localStorage.getItem('google_access_token');
-    const expiry = localStorage.getItem('google_token_expiry');
-    
-    if (token && expiry && Date.now() < parseInt(expiry)) {
-      return token;
+    const lsToken = localStorage.getItem('google_access_token');
+    const lsExpiry = localStorage.getItem('google_token_expiry');
+
+    if (lsToken && lsExpiry && Date.now() < parseInt(lsExpiry)) {
+      return lsToken;
     }
+
+    // localStorage'dan alınamadıysa sessionStorage yedeğine bak (aynı sekme)
+    const ssToken = sessionStorage.getItem('google_access_token');
+    const ssExpiry = sessionStorage.getItem('google_token_expiry');
+    if (ssToken && ssExpiry && Date.now() < parseInt(ssExpiry)) {
+      // localStorage'ı yeniden doldur
+      localStorage.setItem('google_access_token', ssToken);
+      localStorage.setItem('google_token_expiry', ssExpiry);
+      return ssToken;
+    }
+
     return null;
   },
 
@@ -352,5 +372,7 @@ export const googleService = {
     localStorage.removeItem('google_access_token');
     localStorage.removeItem('google_token_expiry');
     localStorage.removeItem('google_ever_connected');
+    sessionStorage.removeItem('google_access_token');
+    sessionStorage.removeItem('google_token_expiry');
   }
 };

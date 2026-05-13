@@ -324,3 +324,71 @@ grep "^## \[" log.md | tail -5
 - `src/modules/planning/steps/ReportStep.tsx`
 
 **Bir sonraki:** Kayıt mekanizması derinleştirme (DetailedPlan versiyonlama + Supabase sync)
+
+---
+
+## [2026-05-13] geliştirme | FastPlan dosya bölme + PDF + Mail Gmail fix + PnL kaydet fix
+
+### FastPlan dosya bölme
+- `src/modules/FastPlan.tsx` 1581 → 1231 satıra indirildi
+- 5 yeni dosya: `src/modules/fastplan/types.ts`, `helpers.ts`, `FormPrimitives.tsx`, `SaveModal.tsx`, `PlanKartBileseni.tsx`
+- ArşivBolumu de PlanKartBileseni.tsx'e taşındı
+- Commits: e8669f7
+
+### FastPlan PDF export
+- Form header'ına "PDF" butonu eklendi (html2pdf.js dynamic import)
+- A4 portrait: başlık/KPI/gider bar chart/duyarlılık tablosu/yatırım analizi
+- Gizli `#fastplan-pdf-container` div ile render
+- Commit: a50aab0
+
+### Mail — Google OAuth token bug (3 katmanlı sorun)
+1. `src/api/google.ts` `resumeSession()`: profilde token yoksa `logout()` çağırıyordu → token siliyordu → düzeltildi (commit bc5ba3b)
+2. `src/modules/Tasks.tsx` satır 543: aynı pattern, profil yüklenince token siliyordu → düzeltildi (commit 4912064)
+3. Gmail API Google Cloud Console'da etkin değildi → kullanıcı manuel etkinleştirdi
+4. Mail modülüne görünür hata göstergesi eklendi (commit ea2ac63)
+- Etkilenen: `src/api/google.ts`, `src/modules/Tasks.tsx`, `src/modules/Mail.tsx`
+
+### PnL kaydet hatası
+- `pnlReportsAPI.insert`: `id: Date.now().toString()` gönderiliyordu, tablo `uuid` bekliyordu → id strip edildi
+- `pnlReportsAPI.getAll`: Supabase JS v2 immutable builder — `.eq()` atanmadan kullanılıyordu, filtre uygulanmıyordu → düzeltildi
+- Etkilenen: `src/api/supabase.ts` (commit a125eed)
+
+**Bir sonraki:** DetailedPlan iyileştirmeleri veya Paraşüt tamamlama
+
+---
+
+## [2026-05-13] geliştirme | Mail 3-panel layout — klasörler + inline detay
+
+- Eski yapı: 2-panel (sol sidebar + geniş liste) + okuma modal'ı
+- Yeni yapı: **3-panel** — Sol klasörler (w-52) / Orta liste (daralan) / Sağ inline detay
+- Sol panel: Gelen/Gönderilen/Taslaklar/Çöp Kutusu + Hesaplar (Outlook/Gmail bağlantı göstergesi)
+- E-postaya tıklayınca modal açılmıyor, sağda yerleşik panel açılıyor; liste w-80'e daralıyor
+- Gönderilen/Taslaklar/Çöp şimdilik pasif (API desteği gelince aktifleşir)
+- Etkilenen: `src/modules/Mail.tsx` (commit cb82f83)
+- Bir sonraki: Başka UI iyileştirmesi veya DetailedPlan
+
+---
+
+## [2026-05-13] bug | Gmail token navigasyon sonrası kayboluyor — ÇÖZÜLEMEDI
+
+**Sorun:** Mail'e gidip Gmail bağlanıyor, mailler yükleniyor. Başka modüle geçip geri dönünce "Gmail bağlantısı kesildi" butonu çıkıyor (`googleConnected = false`). Her navigasyonda tekrar bağlanmak gerekiyor.
+
+**Bu oturumda denenenler:**
+- `prompt=select_account` → `prompt=consent` değiştirildi (commit `9a8ceb9`) → Gmail 401 düzeldi, mailler yükleniyor. Ama navigasyon sorunu devam ediyor.
+- `google_ever_connected` localStorage flag eklendi (önceki oturum) → Onboarding ekranı artık çıkmıyor ✓
+- `fetchEmails` 401 handler'dan `googleService.logout()` kaldırıldı (önceki oturum) ✓
+- App.tsx logout butonlarından `googleService.logout()` kaldırıldı (önceki oturum) ✓
+
+**Eliminasyon:**
+- `localStorage.clear()` yok (grep doğruladı)
+- `microsoftService.clearStorage()` sadece MSAL key'leri temizliyor
+- `resumeSession` etkisiz (profile.google_data = null)
+- Token expiry formülü doğru
+- 1 saat içinde gerçekleşiyor → expiry sorunu değil
+
+**Güçlü hipotez:** Token localStorage'dan kayboluyor ama NEDEN bilinmiyor. `getAccessToken()` lazy init'te null dönüyor — token ya hiç kaydedilmiyor ya da aradan siliniyor.
+
+**Sonraki adım için:** Önce diagnostic logging ekle (konsol çıktısını gör), sonra fix yap. Detaylar memory dosyasında: `handoff_gmail_token_2026_05_13.md`
+
+- Etkilenen dosyalar: `src/modules/Mail.tsx`, `src/api/google.ts`
+- Bir sonraki: Diagnostic log → token'ın nerede kaybolduğunu tespit et
