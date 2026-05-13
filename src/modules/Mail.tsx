@@ -61,7 +61,6 @@ export const Mail: React.FC = () => {
   const [msConnecting, setMsConnecting] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [googleNeedsReconnect, setGoogleNeedsReconnect] = useState(false);
-  const [activeFolder, setActiveFolder] = useState<'inbox' | 'sent' | 'drafts' | 'trash'>('inbox');
   const [taskModal, setTaskModal] = useState(false);
   const [projects, setProjects] = useState<SupabaseProject[]>([]);
   const [taskForm, setTaskForm] = useState({ title: '', desc: '', priority: 'medium', deadline: '', projectId: '' });
@@ -69,6 +68,8 @@ export const Mail: React.FC = () => {
   const [taskSaved, setTaskSaved] = useState(false);
   const [starToast, setStarToast] = useState(false);
   const [gmailEmail, setGmailEmail] = useState('');
+  const [gmailLabels, setGmailLabels] = useState<{id: string, name: string, type: string}[]>([]);
+  const [activeGmailLabel, setActiveGmailLabel] = useState<string>('INBOX');
   const [listWidth, setListWidth] = useState(320);
   const [listVisible, setListVisible] = useState(true);
   const [readFilter, setReadFilter] = useState<'all' | 'unread' | 'starred'>('all');
@@ -98,9 +99,10 @@ export const Mail: React.FC = () => {
     checkConnections();
   }, []);
 
-  const fetchEmails = async (override?: { ms?: boolean; google?: boolean }) => {
+  const fetchEmails = async (override?: { ms?: boolean; google?: boolean; gmailLabel?: string }) => {
     const useMsConnected = override?.ms ?? msConnected;
     const useGoogleConnected = override?.google ?? googleConnected;
+    const useGmailLabel = override?.gmailLabel ?? activeGmailLabel;
 
     setIsLoading(true);
     setFetchError(null);
@@ -135,7 +137,10 @@ export const Mail: React.FC = () => {
           } else {
             const profileData = await testRes.json().catch(() => ({}));
             if (profileData.emailAddress) setGmailEmail(profileData.emailAddress);
-            const gEmails = await googleService.getRecentEmails(30);
+            if (gmailLabels.length === 0) {
+              googleService.getLabels().then(labels => setGmailLabels(labels));
+            }
+            const gEmails = await googleService.getRecentEmails(50, useGmailLabel);
             allEmails = [...allEmails, ...gEmails];
           }
         }
@@ -452,12 +457,6 @@ export const Mail: React.FC = () => {
     );
   }
 
-  const folders: { id: 'inbox' | 'sent' | 'drafts' | 'trash'; label: string; Icon: LucideIcon }[] = [
-    { id: 'inbox', label: 'Gelen Kutusu', Icon: Inbox },
-    { id: 'sent', label: 'Gönderilen', Icon: Send },
-    { id: 'drafts', label: 'Taslaklar', Icon: FileText },
-    { id: 'trash', label: 'Çöp Kutusu', Icon: Trash2 },
-  ];
 
   return (
     <div className="flex h-screen bg-[#FAFAFA] animate-fade-in overflow-hidden" style={{ position: 'relative' }}>
@@ -503,10 +502,10 @@ export const Mail: React.FC = () => {
           </button>
           <div className="flex-shrink-0" style={{ width: 1, height: 16, background: '#F3F4F6' }}/>
           <button
-            onClick={() => setActiveFolder('inbox')}
+            onClick={() => { setActiveGmailLabel('INBOX'); fetchEmails({ gmailLabel: 'INBOX' }); }}
             title="Gelen Kutusu"
             className="flex items-center justify-center rounded-xl transition-all flex-shrink-0"
-            style={{ width: 32, height: 32, border: 'none', cursor: 'pointer', background: activeFolder === 'inbox' ? '#1A1A1A' : 'transparent', color: activeFolder === 'inbox' ? '#E35205' : '#9CA3AF' }}
+            style={{ width: 32, height: 32, border: 'none', cursor: 'pointer', background: activeGmailLabel === 'INBOX' ? '#1A1A1A' : 'transparent', color: activeGmailLabel === 'INBOX' ? '#E35205' : '#9CA3AF' }}
           >
             <Inbox size={15}/>
           </button>
@@ -559,31 +558,59 @@ export const Mail: React.FC = () => {
             <PenSquare size={14} /> Yeni E-Posta
           </button>
 
-          <div className="space-y-0.5">
-            <p className="text-[9px] font-black uppercase tracking-widest text-gray-300 px-3 mb-2">Klasörler</p>
-            {folders.map(({ id, label, Icon }) => (
-              <button
-                key={id}
-                disabled={id !== 'inbox'}
-                onClick={() => id === 'inbox' && setActiveFolder('inbox')}
-                className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all text-left ${
-                  activeFolder === id
-                    ? 'bg-enba-dark text-white shadow-md'
-                    : id === 'inbox'
-                      ? 'text-gray-500 hover:bg-gray-50'
-                      : 'text-gray-300 cursor-default'
-                }`}
-              >
-                <Icon size={15} className={activeFolder === id ? 'text-enba-orange' : ''} />
-                <span className="text-[11px] font-semibold flex-1">{label}</span>
-                {id === 'inbox' && emails.length > 0 && (
-                  <span className={`text-[9px] font-black rounded-full px-1.5 py-0.5 ${activeFolder === 'inbox' ? 'bg-enba-orange text-white' : 'bg-gray-100 text-gray-400'}`}>
-                    {emails.length}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
+          {/* Gmail Klasörleri / Etiketler */}
+          {googleConnected && (
+            <div className="space-y-0.5">
+              <p className="text-[9px] font-black uppercase tracking-widest text-gray-300 px-3 mb-2">Gmail Klasörleri</p>
+              {/* Sabit sistem etiketleri */}
+              {([
+                { id: 'INBOX',   label: 'Gelen Kutusu', Icon: Inbox },
+                { id: 'SENT',    label: 'Gönderilen',   Icon: Send },
+                { id: 'DRAFT',   label: 'Taslaklar',    Icon: FileText },
+                { id: 'STARRED', label: 'Yıldızlı',     Icon: Star },
+                { id: 'TRASH',   label: 'Çöp Kutusu',   Icon: Trash2 },
+              ] as { id: string; label: string; Icon: LucideIcon }[]).map(({ id, label, Icon }) => (
+                <button
+                  key={id}
+                  onClick={() => { setActiveGmailLabel(id); fetchEmails({ gmailLabel: id }); }}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl transition-all text-left ${
+                    activeGmailLabel === id ? 'bg-enba-dark text-white shadow-md' : 'text-gray-500 hover:bg-gray-50'
+                  }`}
+                >
+                  <Icon size={14} className={activeGmailLabel === id ? 'text-enba-orange' : ''} />
+                  <span className="text-[11px] font-semibold flex-1">{label}</span>
+                  {id === 'INBOX' && emails.length > 0 && (
+                    <span className={`text-[9px] font-black rounded-full px-1.5 py-0.5 ${activeGmailLabel === 'INBOX' ? 'bg-enba-orange text-white' : 'bg-gray-100 text-gray-400'}`}>
+                      {emails.length}
+                    </span>
+                  )}
+                </button>
+              ))}
+              {/* Kullanıcı etiketleri */}
+              {gmailLabels.filter(l => l.type === 'user').length > 0 && (
+                <>
+                  <p className="text-[8px] font-black uppercase tracking-widest text-gray-200 px-3 pt-2 pb-1">Etiketler</p>
+                  <div className="max-h-40 overflow-y-auto space-y-0.5 pr-1">
+                    {gmailLabels
+                      .filter(l => l.type === 'user')
+                      .map(l => (
+                        <button
+                          key={l.id}
+                          onClick={() => { setActiveGmailLabel(l.id); fetchEmails({ gmailLabel: l.id }); }}
+                          className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all text-left ${
+                            activeGmailLabel === l.id ? 'bg-enba-dark text-white' : 'text-gray-500 hover:bg-gray-50'
+                          }`}
+                        >
+                          <span className={`w-2 h-2 rounded-full flex-shrink-0 ${activeGmailLabel === l.id ? 'bg-enba-orange' : 'bg-gray-300'}`}/>
+                          <span className="text-[11px] font-semibold truncate">{l.name}</span>
+                        </button>
+                      ))
+                    }
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Hesaplar */}

@@ -223,12 +223,30 @@ export const googleService = {
     }
   },
 
-  async getRecentEmails(maxResults: number = 20) {
+  async getLabels(): Promise<{id: string, name: string, type: string}[]> {
+    const token = this.getAccessToken();
+    if (!token) return [];
+    try {
+      const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/labels', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!response.ok) return [];
+      const data = await response.json();
+      return data.labels || [];
+    } catch (err) {
+      console.error('Google Labels Error:', err);
+      return [];
+    }
+  },
+
+  async getRecentEmails(maxResults: number = 20, labelId?: string) {
     const token = this.getAccessToken();
     if (!token) return [];
 
     try {
-      const listResponse = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${maxResults}`, {
+      let listUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${maxResults}`;
+      if (labelId) listUrl += `&labelIds=${encodeURIComponent(labelId)}`;
+      const listResponse = await fetch(listUrl, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!listResponse.ok) {
