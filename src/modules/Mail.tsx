@@ -647,7 +647,21 @@ export const Mail: React.FC = () => {
               {googleConnected
                 ? googleNeedsReconnect
                   ? <span onClick={e => { e.stopPropagation(); handleConnectGoogle(); }} className="text-[9px] text-amber-500 font-bold hover:underline">Yenile</span>
-                  : <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" />
+                  : <div className="flex items-center gap-1.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" />
+                      <span
+                        onClick={e => {
+                          e.stopPropagation();
+                          googleService.logout();
+                          localStorage.removeItem('google_ever_connected');
+                          setGoogleConnected(false);
+                          setGmailLabels([]);
+                          setEmails(prev => prev.filter(em => em.source !== 'gmail'));
+                        }}
+                        className="text-[9px] text-gray-300 hover:text-red-400 font-bold hover:underline cursor-pointer"
+                        title="Gmail bağlantısını kes"
+                      >Kes</span>
+                    </div>
                 : <span onClick={e => { e.stopPropagation(); handleConnectGoogle(); }} className="text-[9px] text-[#EA4335] font-bold hover:underline">Bağla</span>
               }
             </button>
