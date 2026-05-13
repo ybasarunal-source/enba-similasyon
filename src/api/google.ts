@@ -380,6 +380,18 @@ export const googleService = {
     }
   },
 
+  async markAsRead(id: string): Promise<void> {
+    const token = this.getAccessToken();
+    if (!token) return;
+    try {
+      await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}/modify`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ removeLabelIds: ['UNREAD'] }),
+      });
+    } catch { /* ignore */ }
+  },
+
   async starEmail(id: string, starred: boolean): Promise<boolean> {
     const token = this.getAccessToken();
     if (!token) return false;

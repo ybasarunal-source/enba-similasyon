@@ -19,7 +19,7 @@ import {
   Star,
   type LucideIcon,
 } from 'lucide-react';
-import { tasksAPI, type SupabaseTask } from '../api/supabase';
+import { tasksAPI, projectsAPI, type SupabaseTask, type SupabaseProject } from '../api/supabase';
 
 interface Email {
   id: string;
@@ -62,7 +62,8 @@ export const Mail: React.FC = () => {
   const [googleNeedsReconnect, setGoogleNeedsReconnect] = useState(false);
   const [activeFolder, setActiveFolder] = useState<'inbox' | 'sent' | 'drafts' | 'trash'>('inbox');
   const [taskModal, setTaskModal] = useState(false);
-  const [taskForm, setTaskForm] = useState({ title: '', desc: '', priority: 'medium', deadline: '' });
+  const [projects, setProjects] = useState<SupabaseProject[]>([]);
+  const [taskForm, setTaskForm] = useState({ title: '', desc: '', priority: 'medium', deadline: '', projectId: '' });
   const [isSavingTask, setIsSavingTask] = useState(false);
   const [taskSaved, setTaskSaved] = useState(false);
   const [starToast, setStarToast] = useState(false);
@@ -132,6 +133,31 @@ export const Mail: React.FC = () => {
 
       allEmails.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       setEmails(allEmails);
+
+      // Gmail'den (veya Outlook'tan) önceden bayraklananları görev olarak sync et
+      const SYNCED_KEY = 'enba_mail_starred_synced';
+      let syncedIds: Set<string>;
+      try { syncedIds = new Set(JSON.parse(localStorage.getItem(SYNCED_KEY) || '[]')); }
+      catch { syncedIds = new Set(); }
+
+      const toSync = allEmails.filter(e => e.isStarred && !syncedIds.has(e.id));
+      for (const email of toSync) {
+        const task: SupabaseTask = {
+          id: crypto.randomUUID(),
+          title: email.subject,
+          description: `Gönderen: ${email.sender} <${email.senderEmail}>\n\n${email.bodyPreview}`,
+          priority: 'medium',
+          status: 'todo',
+          source: 'local',
+          module_ref: 'mail',
+        };
+        tasksAPI.insert(task);
+        syncedIds.add(email.id);
+      }
+      // Eski ID'leri temizle (sadece mevcut listede olanları tut)
+      const currentIds = new Set(allEmails.map(e => e.id));
+      const pruned = [...syncedIds].filter(id => currentIds.has(id));
+      localStorage.setItem(SYNCED_KEY, JSON.stringify(pruned));
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       setFetchError(`Bağlantı hatası: ${msg}`);
@@ -205,8 +231,10 @@ export const Mail: React.FC = () => {
       desc: `Gönderen: ${selectedEmail.sender} <${selectedEmail.senderEmail}>\n\n${selectedEmail.bodyPreview}`,
       priority: 'medium',
       deadline: '',
+      projectId: '',
     });
     setTaskSaved(false);
+    if (projects.length === 0) projectsAPI.getAll().then(setProjects);
     setTaskModal(true);
   };
 
@@ -219,6 +247,7 @@ export const Mail: React.FC = () => {
       description: taskForm.desc,
       priority: taskForm.priority,
       deadline: taskForm.deadline || undefined,
+      project_id: taskForm.projectId || undefined,
       status: 'todo',
       source: 'local',
       module_ref: 'mail',
@@ -232,18 +261,25 @@ export const Mail: React.FC = () => {
   };
 
   const handleOpenEmail = async (email: Email) => {
-    setSelectedEmail(email);
+    // Okundu işaretle
+    const emailRead = { ...email, isRead: true };
+    setSelectedEmail(emailRead);
+    if (!email.isRead) {
+      setEmails(prev => prev.map(e => e.id === email.id ? { ...e, isRead: true } : e));
+      if (email.source === 'gmail') googleService.markAsRead(email.id);
+      else if (email.source === 'outlook') microsoftService.markAsRead(email.id);
+    }
+    // Gmail tam içerik çek
     if (email.source === 'gmail' && !email.body.includes('<')) {
-      // Body is probably just a snippet, fetch full HTML body
       setIsBodyLoading(true);
       try {
         const fullBody = await googleService.getEmailBody(email.id);
         if (fullBody) {
-          setSelectedEmail({ ...email, body: fullBody });
-          setEmails(emails.map(e => e.id === email.id ? { ...e, body: fullBody } : e));
+          setSelectedEmail(prev => prev ? { ...prev, body: fullBody } : prev);
+          setEmails(prev => prev.map(e => e.id === email.id ? { ...e, body: fullBody } : e));
         }
-      } catch (e) {
-        console.error('Error fetching full body:', e);
+      } catch (err) {
+        console.error('Error fetching full body:', err);
       } finally {
         setIsBodyLoading(false);
       }
@@ -743,6 +779,19 @@ export const Mail: React.FC = () => {
                   rows={3}
                   className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-xs text-enba-dark focus:ring-2 focus:ring-enba-orange/20 transition-all resize-none"
                 />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Proje / Kategori</label>
+                <select
+                  value={taskForm.projectId}
+                  onChange={e => setTaskForm({ ...taskForm, projectId: e.target.value })}
+                  className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5 text-xs font-bold text-enba-dark focus:ring-2 focus:ring-enba-orange/20 transition-all"
+                >
+                  <option value="">— Genel (kategorisiz) —</option>
+                  {projects.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
               </div>
               <div className="flex gap-3">
                 <div className="flex-1">

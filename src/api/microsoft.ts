@@ -330,6 +330,14 @@ export const microsoftService = {
     }
   },
 
+  async markAsRead(id: string): Promise<void> {
+    const client = await this.getGraphClient(mailScopes);
+    if (!client) return;
+    try {
+      await client.api(`/me/messages/${id}`).patch({ isRead: true });
+    } catch { /* ignore */ }
+  },
+
   async flagEmail(id: string, flagged: boolean): Promise<boolean> {
     const client = await this.getGraphClient(mailScopes);
     if (!client) return false;
