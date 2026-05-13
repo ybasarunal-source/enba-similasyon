@@ -17,7 +17,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Star,
-  ExternalLink,
   type LucideIcon,
 } from 'lucide-react';
 import { tasksAPI, projectsAPI, type SupabaseTask, type SupabaseProject } from '../api/supabase';
@@ -68,6 +67,7 @@ export const Mail: React.FC = () => {
   const [isSavingTask, setIsSavingTask] = useState(false);
   const [taskSaved, setTaskSaved] = useState(false);
   const [starToast, setStarToast] = useState(false);
+  const [gmailEmail, setGmailEmail] = useState('');
 
   const checkConnections = async () => {
     setIsCheckingConnections(true);
@@ -126,6 +126,8 @@ export const Mail: React.FC = () => {
               setFetchError(`Gmail API hatası ${testRes.status}: ${msg}`);
             }
           } else {
+            const profileData = await testRes.json().catch(() => ({}));
+            if (profileData.emailAddress) setGmailEmail(profileData.emailAddress);
             const gEmails = await googleService.getRecentEmails(30);
             allEmails = [...allEmails, ...gEmails];
           }
@@ -483,7 +485,18 @@ export const Mail: React.FC = () => {
           {/* Hesap göstergeleri */}
           <div className="flex flex-col items-center gap-2 pb-2">
             <div title={msConnected ? 'Outlook bağlı' : 'Outlook bağlı değil'} style={{ width: 8, height: 8, borderRadius: '50%', background: msConnected ? '#34D399' : '#D1D5DB', flexShrink: 0 }}/>
-            <div title={googleConnected ? 'Gmail bağlı' : 'Gmail bağlı değil'} style={{ width: 8, height: 8, borderRadius: '50%', background: googleConnected ? '#34D399' : '#D1D5DB', flexShrink: 0 }}/>
+            {googleConnected && !googleNeedsReconnect
+              ? <a
+                  href={gmailEmail
+                    ? `https://accounts.google.com/AccountChooser?Email=${encodeURIComponent(gmailEmail)}&continue=${encodeURIComponent('https://mail.google.com/mail/')}`
+                    : 'https://mail.google.com/mail/'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Gmail'i aç"
+                  style={{ width: 8, height: 8, borderRadius: '50%', background: '#34D399', flexShrink: 0, display: 'block' }}
+                />
+              : <div title={googleConnected ? 'Gmail oturumu geçersiz' : 'Gmail bağlı değil'} style={{ width: 8, height: 8, borderRadius: '50%', background: googleConnected ? '#FCD34D' : '#D1D5DB', flexShrink: 0 }}/>
+            }
           </div>
         </aside>
       )}
@@ -570,7 +583,15 @@ export const Mail: React.FC = () => {
               {googleConnected
                 ? googleNeedsReconnect
                   ? <span onClick={e => { e.stopPropagation(); handleConnectGoogle(); }} className="text-[9px] text-amber-500 font-bold hover:underline">Yenile</span>
-                  : <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" />
+                  : <a
+                      href={gmailEmail
+                        ? `https://accounts.google.com/AccountChooser?Email=${encodeURIComponent(gmailEmail)}&continue=${encodeURIComponent('https://mail.google.com/mail/')}`
+                        : 'https://mail.google.com/mail/'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={e => e.stopPropagation()}
+                      className="text-[9px] text-[#EA4335] font-bold hover:underline flex-shrink-0"
+                    >Aç</a>
                 : <span onClick={e => { e.stopPropagation(); handleConnectGoogle(); }} className="text-[9px] text-[#EA4335] font-bold hover:underline">Bağla</span>
               }
             </button>
@@ -703,28 +724,6 @@ export const Mail: React.FC = () => {
               <span className="text-[9px] font-bold text-gray-400 bg-gray-50 px-2.5 py-1 rounded-lg whitespace-nowrap">
                 {new Date(selectedEmail.date).toLocaleString('tr-TR')}
               </span>
-              {selectedEmail.source === 'gmail' && (
-                <a
-                  href={`https://mail.google.com/mail/u/0/#inbox/${selectedEmail.id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-1.5 text-gray-400 hover:text-[#4285F4] hover:bg-blue-50 rounded-lg transition-all"
-                  title="Gmail'de aç"
-                >
-                  <ExternalLink size={16} />
-                </a>
-              )}
-              {selectedEmail.source === 'outlook' && (
-                <a
-                  href="https://outlook.live.com/mail/0/inbox"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-1.5 text-gray-400 hover:text-[#0078d4] hover:bg-blue-50 rounded-lg transition-all"
-                  title="Outlook'ta aç"
-                >
-                  <ExternalLink size={16} />
-                </a>
-              )}
               <button
                 onClick={e => handleStarEmail(selectedEmail, e)}
                 className={`p-1.5 rounded-lg transition-all ${selectedEmail.isStarred ? 'text-amber-400 bg-amber-50' : 'text-gray-400 hover:text-amber-400 hover:bg-amber-50'}`}

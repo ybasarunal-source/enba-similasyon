@@ -392,3 +392,13 @@ grep "^## \[" log.md | tail -5
 
 - Etkilenen dosyalar: `src/modules/Mail.tsx`, `src/api/google.ts`
 - Bir sonraki: Diagnostic log → token'ın nerede kaybolduğunu tespit et
+
+---
+
+## [2026-05-13 00:00] geliştirme | Gmail token sessionStorage backup fix (commit ea482cd)
+- Yapılan: localStorage token kaybı sorununa karşı savunmacı fix uygulandı
+  - `google.ts`: token hem localStorage hem sessionStorage'a kaydediliyor; `getAccessToken()` localStorage boşsa sessionStorage'dan kurtarıp localStorage'ı yeniden doldururuyor; `logout()` her ikisini de temizliyor; `history.replaceState` ile hash temizleme iyileştirildi
+  - `Mail.tsx`: `fetchEmails` içinde token yoksa `setGoogleConnected(false)` yerine `setGoogleNeedsReconnect(true)` — error banner göster, paneli kapatma; diagnostic log kaldırıldı
+  - `Calendar.tsx` + `Tasks.tsx`: redundant `handleAuthReturn()` çağrıları kaldırıldı (App.tsx yönetiyor)
+- Etkilenen dosyalar: `src/api/google.ts`, `src/modules/Mail.tsx`, `src/modules/Calendar.tsx`, `src/modules/Tasks.tsx`
+- Bir sonraki: Test — Gmail bağla → navigasyon → Mail'e dön → token hâlâ geçerli mi?
