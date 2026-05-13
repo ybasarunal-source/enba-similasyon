@@ -17,6 +17,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Star,
+  ExternalLink,
   type LucideIcon,
 } from 'lucide-react';
 import { tasksAPI, projectsAPI, type SupabaseTask, type SupabaseProject } from '../api/supabase';
@@ -702,6 +703,28 @@ export const Mail: React.FC = () => {
               <span className="text-[9px] font-bold text-gray-400 bg-gray-50 px-2.5 py-1 rounded-lg whitespace-nowrap">
                 {new Date(selectedEmail.date).toLocaleString('tr-TR')}
               </span>
+              {selectedEmail.source === 'gmail' && (
+                <a
+                  href={`https://mail.google.com/mail/u/0/#inbox/${selectedEmail.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-1.5 text-gray-400 hover:text-[#4285F4] hover:bg-blue-50 rounded-lg transition-all"
+                  title="Gmail'de aç"
+                >
+                  <ExternalLink size={16} />
+                </a>
+              )}
+              {selectedEmail.source === 'outlook' && (
+                <a
+                  href="https://outlook.live.com/mail/0/inbox"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-1.5 text-gray-400 hover:text-[#0078d4] hover:bg-blue-50 rounded-lg transition-all"
+                  title="Outlook'ta aç"
+                >
+                  <ExternalLink size={16} />
+                </a>
+              )}
               <button
                 onClick={e => handleStarEmail(selectedEmail, e)}
                 className={`p-1.5 rounded-lg transition-all ${selectedEmail.isStarred ? 'text-amber-400 bg-amber-50' : 'text-gray-400 hover:text-amber-400 hover:bg-amber-50'}`}
