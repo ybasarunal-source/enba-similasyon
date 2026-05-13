@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { microsoftService } from '../api/microsoft';
 import { googleService } from '../api/google';
 import {
@@ -69,6 +69,12 @@ export const Mail: React.FC = () => {
   const [taskSaved, setTaskSaved] = useState(false);
   const [starToast, setStarToast] = useState(false);
   const [gmailEmail, setGmailEmail] = useState('');
+  const [listWidth, setListWidth] = useState(320);
+  const [listVisible, setListVisible] = useState(true);
+  const [readFilter, setReadFilter] = useState<'all' | 'unread' | 'starred'>('all');
+  const isDragging = useRef(false);
+  const dragStartX = useRef(0);
+  const dragStartWidth = useRef(320);
 
   const checkConnections = async () => {
     setIsCheckingConnections(true);
@@ -221,12 +227,34 @@ export const Mail: React.FC = () => {
   const filteredEmails = useMemo(() => {
     return emails.filter(e => {
       const matchesSource = sourceFilter === 'all' || e.source === sourceFilter;
-      const matchesSearch = e.subject.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      const matchesSearch = e.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
                             e.sender.toLowerCase().includes(searchTerm.toLowerCase()) ||
                             e.bodyPreview.toLowerCase().includes(searchTerm.toLowerCase());
-      return matchesSource && matchesSearch;
+      const matchesRead = readFilter === 'all' ||
+        (readFilter === 'unread' && !e.isRead) ||
+        (readFilter === 'starred' && e.isStarred);
+      return matchesSource && matchesSearch && matchesRead;
     });
-  }, [emails, sourceFilter, searchTerm]);
+  }, [emails, sourceFilter, searchTerm, readFilter]);
+
+  const handleDragStart = (e: React.MouseEvent) => {
+    isDragging.current = true;
+    dragStartX.current = e.clientX;
+    dragStartWidth.current = listWidth;
+    const onMove = (ev: MouseEvent) => {
+      const delta = ev.clientX - dragStartX.current;
+      const newW = Math.max(240, Math.min(600, dragStartWidth.current + delta));
+      setListWidth(newW);
+    };
+    const onUp = () => {
+      isDragging.current = false;
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    e.preventDefault();
+  };
 
   const openTaskModal = () => {
     if (!selectedEmail) return;
@@ -602,13 +630,27 @@ export const Mail: React.FC = () => {
       )}
 
       {/* ─── ORTA: E-posta Listesi ────────────────────────── */}
-      <div className={`${selectedEmail ? 'w-80 flex-shrink-0' : 'flex-1'} flex flex-col border-r border-gray-100 bg-white overflow-hidden transition-all duration-200`}>
+      {!listVisible && (
+        <button
+          onClick={() => setListVisible(true)}
+          title="Listeyi göster"
+          className="flex items-center justify-center bg-white border-r border-gray-100 hover:bg-gray-50 transition-all flex-shrink-0"
+          style={{ width: 18, cursor: 'pointer' }}
+        >
+          <ChevronRight size={11} strokeWidth={2.5} className="text-gray-400"/>
+        </button>
+      )}
+      {listVisible && (
+      <div
+        className="flex flex-col border-r border-gray-100 bg-white overflow-hidden relative"
+        style={{ width: listWidth, flexShrink: 0 }}
+      >
         <header className="h-14 border-b border-gray-100 flex items-center justify-between px-4 flex-shrink-0">
           <div className="flex flex-col">
             <h1 className="text-[10px] font-black text-enba-dark tracking-tight uppercase leading-none">Gelen Kutusu</h1>
             <span className="text-[9px] text-gray-400 font-bold mt-0.5">{filteredEmails.length} mesaj</span>
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1">
             {googleConnected && !googleNeedsReconnect && (
               <a
                 href={gmailEmail
@@ -617,7 +659,7 @@ export const Mail: React.FC = () => {
                 target="_blank"
                 rel="noopener noreferrer"
                 title={gmailEmail ? `Gmail'i aç — ${gmailEmail}` : "Gmail'i aç"}
-                className="group flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-gray-100 bg-white hover:border-[#EA4335]/30 hover:bg-[#EA4335]/5 transition-all"
+                className="group flex items-center gap-1.5 px-2 py-1.5 rounded-lg border border-gray-100 bg-white hover:border-[#EA4335]/30 hover:bg-[#EA4335]/5 transition-all"
               >
                 <svg viewBox="0 0 48 48" className="w-3 h-3 flex-shrink-0">
                   <path fill="#EA4335" d="M24 9.5c3.54 0 6.72 1.22 9.21 3.22l6.89-6.89C35.83 2.1 30.34 0 24 0 15.02 0 7.3 5.24 3.55 12.9l7.98 6.21C13.34 13.31 18.28 9.5 24 9.5z"/>
@@ -629,13 +671,13 @@ export const Mail: React.FC = () => {
                 <ExternalLink size={9} className="text-gray-300 group-hover:text-[#EA4335] transition-colors flex-shrink-0" />
               </a>
             )}
-            <div className="relative hidden sm:block">
+            <div className="relative">
               <input
                 type="text"
                 placeholder="Ara..."
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
-                className="bg-gray-50 border-none rounded-lg px-7 py-1.5 text-[10px] font-medium text-enba-dark focus:ring-2 focus:ring-enba-orange/20 w-32 transition-all"
+                className="bg-gray-50 border-none rounded-lg px-6 py-1.5 text-[10px] font-medium text-enba-dark focus:ring-2 focus:ring-enba-orange/20 w-24 transition-all"
               />
               <Search size={11} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-300" />
             </div>
@@ -646,8 +688,38 @@ export const Mail: React.FC = () => {
             >
               <RefreshCw size={14} />
             </button>
+            <button
+              onClick={() => setListVisible(false)}
+              title="Listeyi gizle"
+              className="p-1.5 rounded-lg text-gray-400 hover:text-enba-dark hover:bg-gray-100 transition-all"
+            >
+              <ChevronLeft size={14}/>
+            </button>
           </div>
         </header>
+
+        {/* ─── Filtre çubuğu ──────────────────────────────── */}
+        <div className="px-3 py-2 border-b border-gray-100 bg-gray-50/40 flex items-center gap-1 flex-shrink-0 flex-wrap">
+          {(['all', 'gmail', 'outlook'] as const).map(f => (
+            <button
+              key={f}
+              onClick={() => setSourceFilter(f)}
+              className={`px-2 py-0.5 rounded-md text-[9px] font-bold transition-all ${sourceFilter === f ? 'bg-enba-dark text-white' : 'text-gray-400 hover:bg-gray-200'}`}
+            >
+              {f === 'all' ? 'Tümü' : f === 'gmail' ? 'Gmail' : 'Outlook'}
+            </button>
+          ))}
+          <div className="w-px h-3 bg-gray-200 mx-0.5 flex-shrink-0"/>
+          {(['all', 'unread', 'starred'] as const).map(f => (
+            <button
+              key={f}
+              onClick={() => setReadFilter(f)}
+              className={`px-2 py-0.5 rounded-md text-[9px] font-bold transition-all ${readFilter === f ? 'bg-enba-dark text-white' : 'text-gray-400 hover:bg-gray-200'}`}
+            >
+              {f === 'all' ? 'Hepsi' : f === 'unread' ? 'Okunmamış' : '★ Yıldızlı'}
+            </button>
+          ))}
+        </div>
 
         {fetchError && (
           <div className="bg-rose-50 border-b border-rose-100 px-4 py-2 flex items-center gap-2 flex-shrink-0">
@@ -726,7 +798,15 @@ export const Mail: React.FC = () => {
             ))
           )}
         </div>
+
+        {/* Drag handle — sağ kenara sürükle, genişliği ayarla */}
+        <div
+          onMouseDown={handleDragStart}
+          className="absolute right-0 top-0 bottom-0 hover:bg-enba-orange/20 active:bg-enba-orange/40 transition-colors"
+          style={{ width: 4, cursor: 'col-resize', zIndex: 10 }}
+        />
       </div>
+      )}
 
       {/* ─── SAĞ: E-posta Detayı ──────────────────────────── */}
       {selectedEmail ? (
