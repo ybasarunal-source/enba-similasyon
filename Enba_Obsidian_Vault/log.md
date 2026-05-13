@@ -401,4 +401,20 @@ grep "^## \[" log.md | tail -5
   - `Mail.tsx`: `fetchEmails` içinde token yoksa `setGoogleConnected(false)` yerine `setGoogleNeedsReconnect(true)` — error banner göster, paneli kapatma; diagnostic log kaldırıldı
   - `Calendar.tsx` + `Tasks.tsx`: redundant `handleAuthReturn()` çağrıları kaldırıldı (App.tsx yönetiyor)
 - Etkilenen dosyalar: `src/api/google.ts`, `src/modules/Mail.tsx`, `src/modules/Calendar.tsx`, `src/modules/Tasks.tsx`
+
+---
+
+## [2026-05-14 00:00] geliştirme | Dashboard.tsx — özelleştirilebilir widget/kart sistemi
+- Yapılan: Dashboard.tsx tamamen yeniden yazıldı (481 → 851 satır)
+  - 13 kart tipi tanımlandı (6 KPI + 7 liste/grafik)
+  - `CardConfig[]` layoutu `localStorage['enba_dashboard_layout_v1']` ile kalıcı
+  - Varsayılan layout: 8 kart (4 KPI + tasks_list, calendar_list, stock_chart, payments_list)
+  - Düzenleme modu: Settings butonu → turuncu çerçeve + kırmızı ✕ kaldır + HTML5 drag-and-drop sıralama
+  - "Kart Ekle" modal: tüm 13 kart tipini gösterir, tıklayınca `crypto.randomUUID()` ile ekler
+  - "Varsayılana sıfırla" linki
+  - Mevcut veri yükleme mantığı aynen korundu (Supabase sorguları, hesaplamalar)
+  - `unreadMailCount`: Google + Microsoft unread sayıları toplanıyor
+  - TypeScript strict — `tsc --noEmit` hatasız geçti
+- Etkilenen dosyalar: `src/modules/Dashboard.tsx`
+- Bir sonraki: DetailedPlan iyileştirmeleri (kullanıcı öncelik sırası #1)
 - Bir sonraki: Test — Gmail bağla → navigasyon → Mail'e dön → token hâlâ geçerli mi?

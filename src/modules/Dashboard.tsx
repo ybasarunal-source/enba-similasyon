@@ -7,7 +7,8 @@ import { DataService } from '../api/dataService';
 import {
   PieChart, Zap, Factory, Coins, Package, CheckSquare, CreditCard,
   ShieldCheck, ArrowRight, Info, Ghost, Receipt, BadgeCheck, TrendingUp,
-  Search, Calendar, MapPin, Clock, Mail as MailIcon, Settings, Plus, X
+  Search, Calendar, MapPin, Clock, Mail as MailIcon, Settings, Plus, X,
+  ExternalLink, Pencil
 } from 'lucide-react';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -21,12 +22,14 @@ type CardType =
   | 'tasks_kpi' | 'mail_kpi' | 'calendar_kpi' | 'payments_kpi'
   | 'stock_kpi' | 'production_kpi'
   | 'tasks_list' | 'calendar_list' | 'payments_list' | 'licenses'
-  | 'stock_chart' | 'mail_list' | 'fastplan';
+  | 'stock_chart' | 'mail_list' | 'fastplan'
+  | 'app_link';
 
 interface CardConfig {
   id: string;
   type: CardType;
   cols: 1 | 2 | 4;
+  config?: Record<string, string>;
 }
 
 interface Stats {
@@ -70,6 +73,7 @@ const CARD_CATALOGUE: CardMeta[] = [
   { type: 'stock_chart',    label: 'Envanter Grafiği',       desc: 'Hammadde / mamul donut grafiği', icon: PieChart,    defaultCols: 2 },
   { type: 'mail_list',      label: 'Maillerim',              desc: 'Okunmamış mail özeti',           icon: MailIcon,    defaultCols: 2 },
   { type: 'fastplan',       label: 'Aktif Plan',             desc: 'Aktif iş planı özeti',           icon: Zap,         defaultCols: 2 },
+  { type: 'app_link',       label: 'Uygulama Kısayolu',     desc: 'Harici uygulamaya tek tıkla git', icon: ExternalLink, defaultCols: 1 },
 ];
 
 // ─── Default layout ──────────────────────────────────────────────────────────
@@ -109,6 +113,7 @@ function renderCardContent(
   navigate: (v: string) => void,
   fmt: (n: number) => string,
   t: (key: string) => string,
+  config?: Record<string, string>,
 ): React.ReactNode {
 
   // ── KPI cards ──────────────────────────────────────────────────────────────
@@ -418,6 +423,30 @@ function renderCardContent(
     );
   }
 
+  if (type === 'app_link') {
+    const emoji = config?.emoji || '🔗';
+    const name = config?.name || 'Uygulama';
+    const url = config?.url ? (config.url.startsWith('http') ? config.url : `https://${config.url}`) : '#';
+    return (
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-3 w-full px-5 py-4 hover:shadow-md transition-all rounded-2xl"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="w-10 h-10 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center text-xl flex-shrink-0">
+          {emoji}
+        </div>
+        <div className="min-w-0 text-left">
+          <div className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Kısayol</div>
+          <div className="text-sm font-semibold text-gray-800 truncate">{name}</div>
+        </div>
+        <ExternalLink size={14} className="text-gray-300 flex-shrink-0 ml-auto" />
+      </a>
+    );
+  }
+
   return null;
 }
 
@@ -445,13 +474,14 @@ function getCardHeader(type: CardType, t: (k: string) => string): CardHeaderInfo
     stock_chart:    { icon: PieChart,    title: 'Envanter Özeti',         navigateTo: 'stock',      iconClass: 'text-enba-orange' },
     mail_list:      { icon: MailIcon,    title: 'Maillerim',              navigateTo: 'mail',       iconClass: 'text-blue-500' },
     fastplan:       { icon: Zap,         title: 'Aktif Plan',             navigateTo: 'fastplan',   iconClass: 'text-enba-orange' },
+    app_link:       { icon: ExternalLink, title: 'Uygulama',              navigateTo: null,         iconClass: 'text-gray-400' },
   };
   return map[type];
 }
 
 // ─── KPI cards skip the generic header ───────────────────────────────────────
 
-const KPI_TYPES: CardType[] = ['tasks_kpi', 'mail_kpi', 'calendar_kpi', 'payments_kpi', 'stock_kpi', 'production_kpi'];
+const KPI_TYPES: CardType[] = ['tasks_kpi', 'mail_kpi', 'calendar_kpi', 'payments_kpi', 'stock_kpi', 'production_kpi', 'app_link'];
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
@@ -470,6 +500,9 @@ const Dashboard: React.FC<DashboardProps> = ({ navigate, user }) => {
   const [layout, setLayout] = useState<CardConfig[]>(loadLayout);
   const [editMode, setEditMode] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [addModalStep, setAddModalStep] = useState<'catalog' | 'configure'>('catalog');
+  const [appForm, setAppForm] = useState({ name: '', url: '', emoji: '🔗' });
+  const [editingCardId, setEditingCardId] = useState<string | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
   const dragNode = useRef<EventTarget | null>(null);
@@ -771,13 +804,26 @@ const Dashboard: React.FC<DashboardProps> = ({ navigate, user }) => {
                   </div>
                 )}
                 <div className="flex-1">
-                  {renderCardContent(card.type, stats, navigate, fmt, t)}
+                  {renderCardContent(card.type, stats, navigate, fmt, t, card.config)}
                 </div>
               </div>
 
               {/* Edit mode overlay: drag-over ring */}
               {editMode && isDragTarget && (
                 <div className="absolute inset-0 rounded-2xl ring-2 ring-enba-orange ring-offset-2 pointer-events-none" />
+              )}
+
+              {/* Edit mode: pencil button for app_link cards */}
+              {editMode && card.type === 'app_link' && (
+                <button
+                  onClick={() => {
+                    setAppForm({ name: card.config?.name || '', url: card.config?.url || '', emoji: card.config?.emoji || '🔗' });
+                    setEditingCardId(card.id);
+                  }}
+                  className="absolute top-2 right-9 w-6 h-6 bg-gray-700 text-white rounded-full flex items-center justify-center hover:bg-gray-900 transition-colors z-10 shadow"
+                >
+                  <Pencil size={11} />
+                </button>
               )}
 
               {/* Edit mode: remove button */}
@@ -823,40 +869,190 @@ const Dashboard: React.FC<DashboardProps> = ({ navigate, user }) => {
       {showAddModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
-          onClick={() => setShowAddModal(false)}
+          onClick={() => { setShowAddModal(false); setAddModalStep('catalog'); }}
         >
           <div
             className="bg-[var(--bg-surface)] rounded-2xl shadow-2xl border border-[var(--border-subtle)] w-full max-w-2xl mx-4 overflow-hidden"
             onClick={e => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-subtle)]">
-              <h2 className="text-base font-semibold text-[var(--text-primary)]">Kart Ekle</h2>
+              <div className="flex items-center gap-3">
+                {addModalStep === 'configure' && (
+                  <button
+                    onClick={() => setAddModalStep('catalog')}
+                    className="text-xs font-medium text-gray-400 hover:text-gray-700 transition-colors"
+                  >
+                    ← Geri
+                  </button>
+                )}
+                <h2 className="text-base font-semibold text-[var(--text-primary)]">
+                  {addModalStep === 'catalog' ? 'Kart Ekle' : 'Uygulama Kısayolu'}
+                </h2>
+              </div>
               <button
-                onClick={() => setShowAddModal(false)}
+                onClick={() => { setShowAddModal(false); setAddModalStep('catalog'); }}
                 className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 transition-colors"
               >
                 <X size={16} />
               </button>
             </div>
-            <div className="p-6 grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[60vh] overflow-y-auto custom-scrollbar">
-              {CARD_CATALOGUE.map(meta => {
-                const Icon = meta.icon;
-                return (
+
+            {addModalStep === 'catalog' && (
+              <div className="p-6 grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                {CARD_CATALOGUE.map(meta => {
+                  const Icon = meta.icon;
+                  return (
+                    <button
+                      key={meta.type}
+                      onClick={() => {
+                        if (meta.type === 'app_link') {
+                          setAppForm({ name: '', url: '', emoji: '🔗' });
+                          setAddModalStep('configure');
+                        } else {
+                          addCard(meta);
+                        }
+                      }}
+                      className="flex flex-col items-start gap-2 p-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-low)] hover:border-enba-orange hover:bg-orange-50/40 transition-all text-left"
+                    >
+                      <div className="w-9 h-9 rounded-lg bg-white border border-gray-100 flex items-center justify-center shadow-sm">
+                        <Icon size={18} className="text-enba-orange" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-semibold text-[var(--text-primary)] leading-snug">{meta.label}</div>
+                        <div className="text-[10px] text-gray-400 mt-0.5 leading-relaxed">{meta.desc}</div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {addModalStep === 'configure' && (
+              <div className="p-6 space-y-4">
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0">
+                    <label className="text-xs font-medium text-gray-600 mb-1 block">Emoji</label>
+                    <input
+                      value={appForm.emoji}
+                      onChange={e => setAppForm(p => ({ ...p, emoji: e.target.value }))}
+                      maxLength={2}
+                      className="w-16 text-center text-2xl border border-gray-200 rounded-xl px-2 py-2 outline-none focus:border-enba-orange bg-[var(--bg-surface-low)]"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-xs font-medium text-gray-600 mb-1 block">Uygulama adı</label>
+                    <input
+                      value={appForm.name}
+                      onChange={e => setAppForm(p => ({ ...p, name: e.target.value }))}
+                      placeholder="örn. Google Drive"
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-enba-orange bg-[var(--bg-surface-low)]"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">URL</label>
+                  <input
+                    value={appForm.url}
+                    onChange={e => setAppForm(p => ({ ...p, url: e.target.value }))}
+                    placeholder="drive.google.com"
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-enba-orange bg-[var(--bg-surface-low)]"
+                  />
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
                   <button
-                    key={meta.type}
-                    onClick={() => addCard(meta)}
-                    className="flex flex-col items-start gap-2 p-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-low)] hover:border-enba-orange hover:bg-orange-50/40 transition-all text-left"
+                    onClick={() => setAddModalStep('catalog')}
+                    className="px-4 py-2 rounded-xl text-xs font-medium text-gray-500 border border-gray-200 hover:bg-gray-50 transition-colors"
                   >
-                    <div className="w-9 h-9 rounded-lg bg-white border border-gray-100 flex items-center justify-center shadow-sm">
-                      <Icon size={18} className="text-enba-orange" />
-                    </div>
-                    <div>
-                      <div className="text-xs font-semibold text-[var(--text-primary)] leading-snug">{meta.label}</div>
-                      <div className="text-[10px] text-gray-400 mt-0.5 leading-relaxed">{meta.desc}</div>
-                    </div>
+                    İptal
                   </button>
-                );
-              })}
+                  <button
+                    disabled={!appForm.name.trim() || !appForm.url.trim()}
+                    onClick={() => {
+                      const url = appForm.url.startsWith('http') ? appForm.url : `https://${appForm.url}`;
+                      const newCard: CardConfig = { id: crypto.randomUUID(), type: 'app_link', cols: 1, config: { name: appForm.name.trim(), url, emoji: appForm.emoji || '🔗' } };
+                      setLayout(prev => [...prev, newCard]);
+                      setShowAddModal(false);
+                      setAddModalStep('catalog');
+                    }}
+                    className="px-5 py-2 rounded-xl text-xs font-bold bg-enba-orange text-white hover:brightness-110 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm shadow-enba-orange/20"
+                  >
+                    Ekle
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Edit app_link modal ─────────────────────────────────────────────── */}
+      {editingCardId && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+          onClick={() => setEditingCardId(null)}
+        >
+          <div
+            className="bg-[var(--bg-surface)] rounded-2xl shadow-2xl border border-[var(--border-subtle)] w-full max-w-sm mx-4 overflow-hidden"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-subtle)]">
+              <h2 className="text-base font-semibold text-[var(--text-primary)]">Kısayolu Düzenle</h2>
+              <button
+                onClick={() => setEditingCardId(null)}
+                className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="flex gap-3">
+                <div className="flex-shrink-0">
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">Emoji</label>
+                  <input
+                    value={appForm.emoji}
+                    onChange={e => setAppForm(p => ({ ...p, emoji: e.target.value }))}
+                    maxLength={2}
+                    className="w-16 text-center text-2xl border border-gray-200 rounded-xl px-2 py-2 outline-none focus:border-enba-orange bg-[var(--bg-surface-low)]"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">Uygulama adı</label>
+                  <input
+                    value={appForm.name}
+                    onChange={e => setAppForm(p => ({ ...p, name: e.target.value }))}
+                    placeholder="örn. Google Drive"
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-enba-orange bg-[var(--bg-surface-low)]"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-600 mb-1 block">URL</label>
+                <input
+                  value={appForm.url}
+                  onChange={e => setAppForm(p => ({ ...p, url: e.target.value }))}
+                  placeholder="drive.google.com"
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:border-enba-orange bg-[var(--bg-surface-low)]"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  onClick={() => setEditingCardId(null)}
+                  className="px-4 py-2 rounded-xl text-xs font-medium text-gray-500 border border-gray-200 hover:bg-gray-50 transition-colors"
+                >
+                  İptal
+                </button>
+                <button
+                  disabled={!appForm.name.trim() || !appForm.url.trim()}
+                  onClick={() => {
+                    const url = appForm.url.startsWith('http') ? appForm.url : `https://${appForm.url}`;
+                    setLayout(prev => prev.map(c => c.id === editingCardId ? { ...c, config: { name: appForm.name.trim(), url, emoji: appForm.emoji || '🔗' } } : c));
+                    setEditingCardId(null);
+                  }}
+                  className="px-5 py-2 rounded-xl text-xs font-bold bg-enba-orange text-white hover:brightness-110 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm shadow-enba-orange/20"
+                >
+                  Kaydet
+                </button>
+              </div>
             </div>
           </div>
         </div>
