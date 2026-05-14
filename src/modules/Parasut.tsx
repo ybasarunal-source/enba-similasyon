@@ -225,6 +225,10 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
   const [mcodeQuery, setMcodeQuery]       = useState('');
   const [creatingMcodeFor, setCreatingMcodeFor] = useState<string | null>(null);
   const [newMcodeName, setNewMcodeName]   = useState('');
+  const [showNewOp, setShowNewOp]         = useState(false);
+  const [newOpName, setNewOpName]         = useState('');
+  const [newOpPrefix, setNewOpPrefix]     = useState('');
+  const [newOpProgress, setNewOpProgress] = useState<{ done: number; total: number; errors: number } | null>(null);
 
   const allMcodes = subasCats;
 
@@ -433,6 +437,33 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
     setConfirmData(null);
     setUploadReport(errs);
     setCatStep('ready');
+  };
+
+  const createOperation = async () => {
+    const prefix = newOpPrefix.trim().toUpperCase();
+    if (!prefix || !companyId) return;
+    const mcodes = allMcodes.length > 0 ? allMcodes : [];
+    if (mcodes.length === 0) return;
+    setNewOpProgress({ done: 0, total: mcodes.length, errors: 0 });
+    let done = 0, errors = 0;
+    for (const m of mcodes) {
+      const name = `${prefix} - ${m.tr}`;
+      try {
+        await parasutService.requestWrite(`/${companyId}/item_categories`, 'POST', {
+          data: { type: 'item_categories', attributes: { name } },
+        });
+        done++;
+      } catch { errors++; }
+      setNewOpProgress({ done: done + errors, total: mcodes.length, errors });
+      await new Promise(res => setTimeout(res, 300));
+    }
+    // Kategorileri yenile
+    const cats = await parasutService.getItemCategories(companyId);
+    setCatRows(cats.map(c => ({ id: c.id, name: c.name, ...autoMatchWith(c.name, subasCats), toDelete: false })));
+    setNewOpProgress(null);
+    setShowNewOp(false);
+    setNewOpName('');
+    setNewOpPrefix('');
   };
 
   const loadItems = useCallback(async (cid: string) => {
@@ -949,30 +980,87 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
 
               {/* Toolbar — only in ready step */}
               {catStep === 'ready' && (
-                <div className="flex items-center gap-3 px-6 py-3 border-b border-gray-100 bg-gray-50/50 flex-shrink-0 flex-wrap">
-                  <button onClick={exportCatExcel}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-medium bg-white border border-gray-200 text-gray-600 hover:border-violet-300 hover:text-violet-600 transition-all">
-                    <Download size={13} /> Excel İndir
-                  </button>
-                  <label className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-medium bg-white border border-gray-200 text-gray-600 hover:border-violet-300 hover:text-violet-600 transition-all cursor-pointer">
-                    <Upload size={13} /> Excel Yükle
-                    <input type="file" accept=".xlsx,.xls" className="hidden"
-                      onChange={e => { const f = e.target.files?.[0]; if (f) importCatExcel(f); e.target.value = ''; }} />
-                  </label>
-                  <button onClick={() => setShowAyarlarPanel(true)} className="text-[11px] text-gray-400 italic hover:text-violet-600 transition-colors">
-                    Özel kategoriler → <span className="font-medium text-violet-500 underline underline-offset-2">Finansal Ayarlar</span>
-                  </button>
-                  <div className="flex-1" />
-                  <span className="text-xs text-gray-400">
-                    {catRows.length} kategori
-                    {toRename.length > 0 && <span className="text-emerald-600 font-medium"> · {toRename.length} yeniden adlandırılacak</span>}
-                    {toDelete.length > 0 && <span className="text-rose-500 font-medium"> · {toDelete.length} silinecek</span>}
-                  </span>
-                  <button onClick={prepareConfirm}
-                    disabled={readyCount === 0}
-                    className="flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold bg-violet-600 text-white hover:brightness-110 transition-all disabled:opacity-40 shadow-sm shadow-violet-200">
-                    İncele ve Onayla ({readyCount})
-                  </button>
+                <div className="flex-shrink-0 border-b border-gray-100">
+                  {/* Toolbar */}
+                  <div className="flex items-center gap-3 px-6 py-3 bg-gray-50/50 flex-wrap">
+                    <button onClick={exportCatExcel}
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-medium bg-white border border-gray-200 text-gray-600 hover:border-violet-300 hover:text-violet-600 transition-all">
+                      <Download size={13} /> Excel İndir
+                    </button>
+                    <label className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-medium bg-white border border-gray-200 text-gray-600 hover:border-violet-300 hover:text-violet-600 transition-all cursor-pointer">
+                      <Upload size={13} /> Excel Yükle
+                      <input type="file" accept=".xlsx,.xls" className="hidden"
+                        onChange={e => { const f = e.target.files?.[0]; if (f) importCatExcel(f); e.target.value = ''; }} />
+                    </label>
+                    <button onClick={() => setShowNewOp(v => !v)}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-medium border transition-all ${showNewOp ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : 'bg-white border-gray-200 text-gray-600 hover:border-emerald-300 hover:text-emerald-600'}`}>
+                      <Plus size={13} /> Yeni Operasyon Kur
+                    </button>
+                    <button onClick={() => setShowAyarlarPanel(true)} className="text-[11px] text-gray-400 italic hover:text-violet-600 transition-colors">
+                      Özel kategoriler → <span className="font-medium text-violet-500 underline underline-offset-2">Finansal Ayarlar</span>
+                    </button>
+                    <div className="flex-1" />
+                    <span className="text-xs text-gray-400">
+                      {catRows.length} kategori
+                      {toRename.length > 0 && <span className="text-emerald-600 font-medium"> · {toRename.length} yeniden adlandırılacak</span>}
+                      {toDelete.length > 0 && <span className="text-rose-500 font-medium"> · {toDelete.length} silinecek</span>}
+                    </span>
+                    <button onClick={prepareConfirm}
+                      disabled={readyCount === 0}
+                      className="flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold bg-violet-600 text-white hover:brightness-110 transition-all disabled:opacity-40 shadow-sm shadow-violet-200">
+                      İncele ve Onayla ({readyCount})
+                    </button>
+                  </div>
+
+                  {/* Yeni Operasyon Formu */}
+                  {showNewOp && (
+                    <div className="px-6 py-4 bg-emerald-50/60 border-t border-emerald-100">
+                      {newOpProgress ? (
+                        <div className="flex items-center gap-4">
+                          <div className="flex-1 bg-white rounded-full h-2 overflow-hidden border border-emerald-200">
+                            <div className="h-full bg-emerald-500 transition-all duration-300 rounded-full"
+                              style={{ width: `${Math.round((newOpProgress.done / newOpProgress.total) * 100)}%` }} />
+                          </div>
+                          <span className="text-xs text-emerald-700 font-medium whitespace-nowrap">
+                            {newOpProgress.done} / {newOpProgress.total}
+                            {newOpProgress.errors > 0 && <span className="text-rose-500"> · {newOpProgress.errors} hata</span>}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex items-end gap-3 flex-wrap">
+                          <div className="flex flex-col gap-1">
+                            <label className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Operasyon Adı</label>
+                            <input
+                              type="text" placeholder="ör. Ankara" value={newOpName}
+                              onChange={e => setNewOpName(e.target.value)}
+                              className="w-40 border border-gray-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-emerald-400 bg-white" />
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            <label className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Önkod (1-2 harf)</label>
+                            <input
+                              type="text" placeholder="ör. A" value={newOpPrefix} maxLength={2}
+                              onChange={e => setNewOpPrefix(e.target.value.replace(/[^a-zA-ZğüşıöçĞÜŞİÖÇ]/g, ''))}
+                              className="w-20 border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-bold uppercase outline-none focus:border-emerald-400 bg-white tracking-widest" />
+                          </div>
+                          {newOpPrefix.trim() && (
+                            <div className="flex flex-col gap-1">
+                              <label className="text-[10px] font-medium text-gray-500 uppercase tracking-wide">Önizleme</label>
+                              <span className="text-[11px] text-gray-500 font-mono bg-white border border-gray-100 rounded-lg px-2 py-1.5">
+                                {newOpPrefix.trim().toUpperCase()} - {allMcodes[0]?.tr ?? 'M105 - 600.01 - Yurt İçi Satışlar'}
+                                <span className="text-gray-400"> + {allMcodes.length - 1} kod</span>
+                              </span>
+                            </div>
+                          )}
+                          <button
+                            onClick={createOperation}
+                            disabled={!newOpPrefix.trim() || allMcodes.length === 0}
+                            className="flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold bg-emerald-600 text-white hover:brightness-110 transition-all disabled:opacity-40 shadow-sm shadow-emerald-200">
+                            <Upload size={13} /> {allMcodes.length} Kodu Paraşüt'e Yükle
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
