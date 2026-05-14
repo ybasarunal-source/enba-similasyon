@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Receipt,
   TrendingUp,
@@ -225,6 +225,7 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
   const [mcodeQuery, setMcodeQuery]       = useState('');
   const [creatingMcodeFor, setCreatingMcodeFor] = useState<string | null>(null);
   const [newMcodeName, setNewMcodeName]   = useState('');
+  const isCreatingMcodeRef = useRef(false);
   const [showNewOp, setShowNewOp]         = useState(false);
   const [newOpName, setNewOpName]         = useState('');
   const [newOpPrefix, setNewOpPrefix]     = useState('');
@@ -294,6 +295,7 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
     } catch (e: any) {
       alert(e.message);
     } finally {
+      isCreatingMcodeRef.current = false;
       setOpenMcodeFor(null);
       setMcodeQuery('');
       setCreatingMcodeFor(null);
@@ -1302,7 +1304,7 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
                               onBlur={() => {
                                 const exact = allMcodes.find(m => m.code === mcodeQuery.trim().toUpperCase());
                                 if (exact) updateRow(row.id, exact.code);
-                                setTimeout(() => setOpenMcodeFor(null), 150);
+                                setTimeout(() => { if (!isCreatingMcodeRef.current) setOpenMcodeFor(null); }, 150);
                               }}
                             />
                             {openMcodeFor === row.id && (
@@ -1342,12 +1344,12 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
                                               <button onMouseDown={() => handleCreateMcode(row.id)} className="p-1 bg-violet-600 text-white rounded-lg hover:bg-violet-700">
                                                 <Check size={12} />
                                               </button>
-                                              <button onMouseDown={() => { setCreatingMcodeFor(null); setNewMcodeName(''); }} className="p-1 text-gray-400 hover:text-gray-600">
+                                              <button onMouseDown={() => { isCreatingMcodeRef.current = false; setCreatingMcodeFor(null); setNewMcodeName(''); }} className="p-1 text-gray-400 hover:text-gray-600">
                                                 <X size={12} />
                                               </button>
                                             </div>
                                           ) : (
-                                            <button onMouseDown={() => setCreatingMcodeFor(row.id)}
+                                            <button onMouseDown={() => { isCreatingMcodeRef.current = true; setCreatingMcodeFor(row.id); }}
                                               className="w-full text-left px-3 py-2.5 text-[11px] text-violet-600 hover:bg-violet-50 flex items-center gap-2 font-medium">
                                               <Plus size={11} />
                                               <span className="font-mono font-bold">{mcodeQuery.trim().toUpperCase()}</span>
