@@ -108,11 +108,11 @@ export const financialCategoriesAPI = {
 
   nextCustomCode(categories: FinancialCategory[]): string {
     const nums = categories
-      .filter(c => /^Ö\d+$/.test(c.code))
-      .map(c => parseInt(c.code.replace('Ö', ''), 10))
+      .filter(c => /^M9\d{2}$/.test(c.code) && c.is_custom)
+      .map(c => parseInt(c.code.replace('M', ''), 10))
       .filter(n => !isNaN(n));
-    const max = nums.length > 0 ? Math.max(...nums) : 0;
-    return `Ö${String(max + 1).padStart(3, '0')}`;
+    const max = nums.length > 0 ? Math.max(...nums) : 949;
+    return `M${max + 1}`;
   },
 
   nextChildCode(parentCode: string, categories: FinancialCategory[]): string {
