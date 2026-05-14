@@ -46,6 +46,7 @@ const SuperAdmin        = lazyRetry(() => import('./modules/SuperAdmin').then(m 
 const CompanyAdmin      = lazyRetry(() => import('./modules/CompanyAdmin').then(m => ({ default: m.CompanyAdmin })));
 const Notes             = lazyRetry(() => import('./modules/Notes').then(m => ({ default: m.Notes })));
 const Ayarlar           = lazyRetry(() => import('./modules/Ayarlar').then(m => ({ default: m.Ayarlar })));
+const VarlikTakibi      = lazyRetry(() => import('./modules/VarlikTakibi').then(m => ({ default: m.VarlikTakibi })));
 import {
   Home,
   LayoutGrid,
@@ -79,12 +80,13 @@ import {
   CreditCard,
   Shield,
   Timer,
+  Landmark,
 } from 'lucide-react';
 
 type ModuleType =
   | 'dashboard' | 'stock' | 'production' | 'logistics' | 'hr'
   | 'archive' | 'cashflow' | 'planning' | 'fastplan' | 'machinery'
-  | 'tasks' | 'calendar' | 'licensing' | 'settings' | 'ayarlar' | 'pnl' | 'profile' | 'parasut' | 'modules' | 'mail' | 'fixedexpenses' | 'notes' | 'super_admin' | 'company_admin';
+  | 'tasks' | 'calendar' | 'licensing' | 'settings' | 'ayarlar' | 'varlik' | 'pnl' | 'profile' | 'parasut' | 'modules' | 'mail' | 'fixedexpenses' | 'notes' | 'super_admin' | 'company_admin';
 
 export const App: React.FC = () => {
   const { t, language, setLanguage, isLoading } = useTranslation();
@@ -291,7 +293,7 @@ export const App: React.FC = () => {
 
   const MENU_GROUPS = [
     { id: 'g1', title: 'Operasyon (Kısayollar)', items: ['modules', 'dashboard', 'tasks', 'notes', 'calendar', 'mail'] },
-    { id: 'g2', title: 'Finans & Muhasebe', items: ['pnl', 'cashflow', 'parasut', 'fixedexpenses'] },
+    { id: 'g2', title: 'Finans & Muhasebe', items: ['pnl', 'cashflow', 'parasut', 'fixedexpenses', 'varlik'] },
     { id: 'g3', title: 'Üretim & Lojistik', items: ['fastplan', 'planning', 'production', 'stock', 'logistics', 'machinery'] },
     { id: 'g4', title: 'Kurumsal Yönetim', items: ['hr', 'licensing', 'archive'] },
     { id: 'g5', title: 'Sistem', items: ['profile', 'settings', 'ayarlar'] },
@@ -321,6 +323,7 @@ export const App: React.FC = () => {
     { id: 'logistics',  label: t('modules.logistics'),     icon: Truck },
     { id: 'settings',   label: t('nav.sistem'),            icon: SettingsIcon },
     { id: 'ayarlar',   label: 'Finansal Ayarlar',         icon: SlidersHorizontal },
+    { id: 'varlik',    label: 'Varlık Takibi',            icon: Landmark },
     { id: 'profile',    label: 'Profilim',                 icon: User },
     { id: 'super_admin',   label: 'Sistem Yönetimi',   icon: Shield },
     { id: 'company_admin', label: 'Şirket Yönetimi',   icon: Shield },
@@ -856,6 +859,7 @@ export const App: React.FC = () => {
                 {activeModule === 'planning' && <DetailedPlanManager />}
                 {activeModule === 'parasut'  && <Parasut />}
                 {activeModule === 'ayarlar'  && <Ayarlar profile={userProfile} />}
+                {activeModule === 'varlik'   && <VarlikTakibi profile={userProfile} />}
               </React.Suspense>
             </ErrorBoundary>
           </div>
