@@ -235,7 +235,7 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
       const prefix = match[1].toUpperCase() as 'K' | 'M' | 'V';
       const mcode = 'M' + match[2].toUpperCase();
       const found = mcodes.find(m => m.code === mcode);
-      if (found) return { prefix, mcode, newName: `${prefix} - ${found.code} ${found.tr}` };
+      if (found) return { prefix, mcode, newName: `${prefix} - ${found.tr}` };
       // Kod tanımlı değil ama prefix ve numara doğru
       return { prefix, mcode, newName: '' };
     }
@@ -285,7 +285,7 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
       });
       await reloadMcodes();
       setCatRows(prev => prev.map(r => r.id !== rowId ? r : {
-        ...r, mcode: code, newName: `${r.prefix} - ${code} ${newMcodeName.trim()}`,
+        ...r, mcode: code, newName: `${r.prefix} - ${code} - ${newMcodeName.trim()}`,
       }));
     } catch (e: any) {
       alert(e.message);
@@ -307,7 +307,7 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
       // Mcode yoksa col 1 adından yeniden çıkart
       const mcode = r.mcode || autoMatchWith(r.name, allMcodes).mcode;
       const found = allMcodes.find(m => m.code === mcode);
-      return { ...r, prefix, mcode, newName: found ? `${prefix} - ${found.code} ${found.tr}` : r.newName };
+      return { ...r, prefix, mcode, newName: found ? `${prefix} - ${found.tr}` : r.newName };
     }));
   };
 
@@ -315,7 +315,7 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
     const found = allMcodes.find(m => m.code === mcode.trim().toUpperCase());
     setCatRows(prev => prev.map(r => {
       if (r.id !== id) return r;
-      return { ...r, mcode: mcode.toUpperCase(), newName: found ? `${r.prefix} - ${found.code} ${found.tr}` : r.newName };
+      return { ...r, mcode: mcode.toUpperCase(), newName: found ? `${r.prefix} - ${found.tr}` : r.newName };
     }));
   };
 
@@ -356,7 +356,7 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
       const del    = String(row[5] || '').trim().toUpperCase() === 'EVET';
       if (!id) continue;
       const found  = allMcodes.find(m => m.code === mcode);
-      updates.push({ id, prefix, mcode, newName: over || (found ? `${prefix} - ${found.code} ${found.tr}` : ''), toDelete: del });
+      updates.push({ id, prefix, mcode, newName: over || (found ? `${prefix} - ${found.tr}` : ''), toDelete: del });
     }
     setCatRows(prev => prev.map(r => {
       const u = updates.find(x => x.id === r.id);
@@ -1233,9 +1233,8 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
                                       )}
                                       {matches.map(m => (
                                         <button key={m.code} onMouseDown={() => { updateRow(row.id, m.code); setOpenMcodeFor(null); setMcodeQuery(''); }}
-                                          className="w-full text-left px-3 py-2 hover:bg-violet-50 transition-colors border-b border-gray-50 last:border-0 flex items-start gap-2">
-                                          <span className="font-mono text-[11px] font-bold text-violet-600 flex-shrink-0 mt-0.5">{m.code}</span>
-                                          <span className="text-[11px] text-gray-700 line-clamp-1">{m.tr}</span>
+                                          className="w-full text-left px-3 py-2 hover:bg-violet-50 transition-colors border-b border-gray-50 last:border-0">
+                                          <span className="text-[11px] text-gray-700 line-clamp-1 font-mono">{m.tr}</span>
                                         </button>
                                       ))}
                                       {canCreate && (
