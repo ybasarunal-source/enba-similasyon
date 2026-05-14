@@ -36,8 +36,10 @@ export const Calendar: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isLoading, setIsLoading] = useState(false);
+  const [loadComplete, setLoadComplete] = useState(false);
   const [isMSAuth, setIsMSAuth] = useState(false);
   const [isGAuth, setIsGAuth] = useState(false);
+  const gEverConnected = !!localStorage.getItem('google_ever_connected');
   const [showAddModal, setShowAddModal] = useState(false);
   const [sourceFilter, setSourceFilter] = useState<'all' | 'google' | 'outlook' | 'task'>('all');
   const [formData, setFormData] = useState({
@@ -115,6 +117,7 @@ export const Calendar: React.FC = () => {
       console.error('Calendar Load Error:', err);
     } finally {
       setIsLoading(false);
+      setLoadComplete(true);
     }
   };
 
@@ -234,7 +237,7 @@ export const Calendar: React.FC = () => {
     </div>
   );
 
-  if (!isMSAuth && !isGAuth) {
+  if (loadComplete && !isMSAuth && !isGAuth && !gEverConnected) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-10 text-center animate-in fade-in duration-500">
         <div className="w-20 h-20 bg-gray-50 rounded-3xl flex items-center justify-center text-gray-300 mb-6 border border-gray-100">
@@ -302,8 +305,8 @@ export const Calendar: React.FC = () => {
                   </button>
                 )}
                 {!isGAuth && (
-                  <button onClick={() => googleService.loginRedirect()} className="flex items-center gap-2 text-[9px] font-bold text-gray-600 bg-gray-100 px-3 py-1.5 rounded-xl hover:bg-gray-200 transition-all">
-                    <GoogleLogo /> Google Ekle
+                  <button onClick={() => googleService.loginRedirect()} className="flex items-center gap-2 text-[9px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl hover:bg-amber-100 transition-all">
+                    <GoogleLogo /> {gEverConnected ? 'Google Yeniden Bağlan' : 'Google Ekle'}
                   </button>
                 )}
               </div>
