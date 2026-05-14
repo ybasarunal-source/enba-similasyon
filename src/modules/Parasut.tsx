@@ -225,6 +225,7 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
   const [mcodeQuery, setMcodeQuery]       = useState('');
   const [creatingMcodeFor, setCreatingMcodeFor] = useState<string | null>(null);
   const [newMcodeName, setNewMcodeName]   = useState('');
+  const [createMcodeError, setCreateMcodeError] = useState('');
   const isCreatingMcodeRef = useRef(false);
   const [showNewOp, setShowNewOp]         = useState(false);
   const [newOpName, setNewOpName]         = useState('');
@@ -280,6 +281,7 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
     if (!newMcodeName.trim() || !profile?.company_id) return;
     const code = mcodeQuery.trim().toUpperCase();
     const parent_code = code.includes('.') ? code.split('.')[0] : null;
+    setCreateMcodeError('');
     try {
       await financialCategoriesAPI.add(profile.company_id, {
         code,
@@ -292,14 +294,15 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
       setCatRows(prev => prev.map(r => r.id !== rowId ? r : {
         ...r, mcode: code, newName: `${r.prefix} - ${code} - ${newMcodeName.trim()}`,
       }));
-    } catch (e: any) {
-      alert(e.message);
-    } finally {
+      // Başarıda kapat
       isCreatingMcodeRef.current = false;
       setOpenMcodeFor(null);
       setMcodeQuery('');
       setCreatingMcodeFor(null);
       setNewMcodeName('');
+    } catch (e: any) {
+      // Hata durumunda dropdown açık kalır, hata inline gösterilir
+      setCreateMcodeError(e.message || 'Kayıt hatası');
     }
   };
 
@@ -1330,23 +1333,28 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
                                       {canCreate && (
                                         <div className="border-t border-gray-100">
                                           {creatingMcodeFor === row.id ? (
-                                            <div className="p-2 flex items-center gap-2 bg-violet-50">
-                                              <span className="font-mono text-[11px] font-bold text-violet-600 flex-shrink-0">{mcodeQuery.trim().toUpperCase()}</span>
-                                              <input
-                                                autoFocus
-                                                type="text"
-                                                placeholder="Kategori adı..."
-                                                value={newMcodeName}
-                                                onChange={e => setNewMcodeName(e.target.value)}
-                                                onKeyDown={e => { if (e.key === 'Enter') handleCreateMcode(row.id); if (e.key === 'Escape') { setCreatingMcodeFor(null); setNewMcodeName(''); } }}
-                                                className="flex-1 text-xs border border-violet-200 rounded-lg px-2 py-1 outline-none focus:ring-1 focus:ring-violet-400"
-                                              />
-                                              <button onMouseDown={() => handleCreateMcode(row.id)} className="p-1 bg-violet-600 text-white rounded-lg hover:bg-violet-700">
-                                                <Check size={12} />
-                                              </button>
-                                              <button onMouseDown={() => { isCreatingMcodeRef.current = false; setCreatingMcodeFor(null); setNewMcodeName(''); }} className="p-1 text-gray-400 hover:text-gray-600">
-                                                <X size={12} />
-                                              </button>
+                                                          <div className="p-2 bg-violet-50 flex flex-col gap-1">
+                                              <div className="flex items-center gap-2">
+                                                <span className="font-mono text-[11px] font-bold text-violet-600 flex-shrink-0">{mcodeQuery.trim().toUpperCase()}</span>
+                                                <input
+                                                  autoFocus
+                                                  type="text"
+                                                  placeholder="Kategori adı..."
+                                                  value={newMcodeName}
+                                                  onChange={e => { setNewMcodeName(e.target.value); setCreateMcodeError(''); }}
+                                                  onKeyDown={e => { if (e.key === 'Enter') handleCreateMcode(row.id); if (e.key === 'Escape') { isCreatingMcodeRef.current = false; setCreatingMcodeFor(null); setNewMcodeName(''); setCreateMcodeError(''); } }}
+                                                  className={`flex-1 text-xs border rounded-lg px-2 py-1 outline-none focus:ring-1 ${createMcodeError ? 'border-rose-300 focus:ring-rose-300' : 'border-violet-200 focus:ring-violet-400'}`}
+                                                />
+                                                <button onMouseDown={() => handleCreateMcode(row.id)} className="p-1 bg-violet-600 text-white rounded-lg hover:bg-violet-700">
+                                                  <Check size={12} />
+                                                </button>
+                                                <button onMouseDown={() => { isCreatingMcodeRef.current = false; setCreatingMcodeFor(null); setNewMcodeName(''); setCreateMcodeError(''); }} className="p-1 text-gray-400 hover:text-gray-600">
+                                                  <X size={12} />
+                                                </button>
+                                              </div>
+                                              {createMcodeError && (
+                                                <p className="text-[10px] text-rose-500 px-1">{createMcodeError}</p>
+                                              )}
                                             </div>
                                           ) : (
                                             <button onMouseDown={() => { isCreatingMcodeRef.current = true; setCreatingMcodeFor(row.id); }}
