@@ -303,6 +303,54 @@ export const parasutService = {
     });
   },
 
+  async requestWrite(path: string, method: 'POST' | 'PATCH' | 'DELETE', body?: any): Promise<any> {
+    const token = await this.getToken();
+    if (!token) throw new Error('SESSION_EXPIRED');
+    const url = new URL('/api/parasut-data', window.location.origin);
+    url.searchParams.set('path', `/v4${path}`);
+    const resp = await fetch(url.toString(), {
+      method,
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/vnd.api+json',
+        'Accept': 'application/vnd.api+json',
+      },
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+    if (resp.status === 204 || resp.status === 200 && resp.headers.get('content-length') === '0') return null;
+    if (!resp.ok) {
+      const text = await resp.text().catch(() => '');
+      throw new Error(`Paraşüt yazma hatası ${resp.status}: ${text.slice(0, 300)}`);
+    }
+    return resp.json();
+  },
+
+  async getItemCategories(companyId: string): Promise<{ id: string; name: string }[]> {
+    try {
+      const raw = await this.requestAll(`/${companyId}/item_categories`);
+      return (raw.data || []).map((cat: any) => ({
+        id: cat.id,
+        name: cat.attributes?.name || '',
+      }));
+    } catch { return []; }
+  },
+
+  async patchCategoryName(companyId: string, categoryId: string, newName: string): Promise<boolean> {
+    try {
+      await this.requestWrite(`/${companyId}/item_categories/${categoryId}`, 'PATCH', {
+        data: {
+          id: categoryId,
+          type: 'item_categories',
+          attributes: { name: newName },
+        },
+      });
+      return true;
+    } catch (err) {
+      console.error('Kategori güncelleme hatası:', err);
+      return false;
+    }
+  },
+
   _mapItems(raw: any): ParasutItem[] {
     const included: any[] = raw.included || [];
     const findCategory = (id: string) => {

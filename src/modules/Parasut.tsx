@@ -11,8 +11,13 @@ import {
   AlertCircle,
   Loader2,
   Search,
+  X,
+  Download,
+  Upload,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { parasutService, type ParasutInvoice, type ParasutItem } from '../api/parasut';
+import { MCODE_LIST } from '../api/mcodeList';
 
 type DatePreset = 'this_month' | 'last_3' | 'this_year' | 'custom';
 type TypeFilter = 'all' | 'income' | 'expense';
@@ -182,9 +187,95 @@ export const Parasut: React.FC = () => {
   const [itemSearch, setItemSearch] = useState('');
   const [itemsLoaded, setItemsLoaded] = useState(false);
 
-  // Custom Dates (New Feature Kept)
+  // Custom Dates
   const [dateFrom, setDateFrom] = useState(() => getRange('this_month').from);
   const [dateTo,   setDateTo]   = useState(() => getRange('this_month').to);
+
+  // Kategori eşleştirme
+  type CatRow = { id: string; name: string; mcode: string; newName: string };
+  type CatStep = 'idle' | 'fetching' | 'ready' | 'uploading';
+  const [showCatModal, setShowCatModal]     = useState(false);
+  const [catStep, setCatStep]               = useState<CatStep>('idle');
+  const [catRows, setCatRows]               = useState<CatRow[]>([]);
+  const [catProgress, setCatProgress]       = useState({ done: 0, total: 0, errors: 0 });
+
+  const fetchCategories = async () => {
+    setCatStep('fetching');
+    const cats = await parasutService.getItemCategories(companyId);
+    setCatRows(cats.map(c => ({ id: c.id, name: c.name, mcode: '', newName: '' })));
+    setCatStep('ready');
+  };
+
+  const updateRow = (id: string, mcode: string) => {
+    const found = MCODE_LIST.find(m => m.code === mcode.trim().toUpperCase());
+    setCatRows(prev => prev.map(r =>
+      r.id === id ? { ...r, mcode: mcode.toUpperCase(), newName: found ? found.tr : r.newName } : r
+    ));
+  };
+
+  const updateNewName = (id: string, newName: string) => {
+    setCatRows(prev => prev.map(r => r.id === id ? { ...r, newName } : r));
+  };
+
+  const exportCatExcel = async () => {
+    const xlsx = await import('xlsx');
+    const wb = xlsx.utils.book_new();
+    const data1 = [
+      ['ID', 'Mevcut Paraşüt Adı', 'M-Kodu', 'Yeni Ad (Otomatik / Düzenlenebilir)'],
+      ...catRows.map(r => [r.id, r.name, r.mcode, r.newName]),
+    ];
+    const ws1 = xlsx.utils.aoa_to_sheet(data1);
+    ws1['!cols'] = [{ wch: 10 }, { wch: 45 }, { wch: 14 }, { wch: 65 }];
+    xlsx.utils.book_append_sheet(wb, ws1, 'Eşleştirme');
+    const data2 = [
+      ['M-Kodu', 'İngilizce Açıklama', 'Paraşüt Kategori Adı (TR)'],
+      ...MCODE_LIST.map(m => [m.code, m.en, m.tr]),
+    ];
+    const ws2 = xlsx.utils.aoa_to_sheet(data2);
+    ws2['!cols'] = [{ wch: 14 }, { wch: 50 }, { wch: 70 }];
+    xlsx.utils.book_append_sheet(wb, ws2, 'M-Kod Referans');
+    xlsx.writeFile(wb, 'parasut_kategori_eslestirme.xlsx');
+  };
+
+  const importCatExcel = async (file: File) => {
+    const xlsx = await import('xlsx');
+    const buf = await file.arrayBuffer();
+    const wb = xlsx.read(buf);
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = xlsx.utils.sheet_to_json(ws, { header: 1 }) as any[][];
+    const updates: { id: string; mcode: string; newName: string }[] = [];
+    for (const row of rows.slice(1)) {
+      const id       = String(row[0] || '').trim();
+      const mcode    = String(row[2] || '').trim().toUpperCase();
+      const override = String(row[3] || '').trim();
+      if (!id) continue;
+      const found = MCODE_LIST.find(m => m.code === mcode);
+      const newName = override || (found ? found.tr : '');
+      updates.push({ id, mcode, newName });
+    }
+    setCatRows(prev => prev.map(r => {
+      const u = updates.find(x => x.id === r.id);
+      return u ? { ...r, mcode: u.mcode, newName: u.newName } : r;
+    }));
+  };
+
+  const applyMappings = async () => {
+    const toUpdate = catRows.filter(r => r.newName.trim());
+    if (!toUpdate.length) return;
+    setCatProgress({ done: 0, total: toUpdate.length, errors: 0 });
+    setCatStep('uploading');
+    let done = 0, errors = 0;
+    for (const row of toUpdate) {
+      const ok = await parasutService.patchCategoryName(companyId, row.id, row.newName.trim());
+      if (ok) done++; else errors++;
+      setCatProgress({ done: done + errors, total: toUpdate.length, errors });
+      await new Promise(r => setTimeout(r, 400));
+    }
+    // Refresh
+    const cats = await parasutService.getItemCategories(companyId);
+    setCatRows(cats.map(c => ({ id: c.id, name: c.name, mcode: '', newName: '' })));
+    setCatStep('ready');
+  };
 
   const loadItems = useCallback(async (cid: string) => {
     if (!cid) return;
@@ -367,6 +458,12 @@ export const Parasut: React.FC = () => {
               <RefreshCw size={13} className={itemsLoading ? 'animate-spin' : ''} /> Yenile
             </button>
           )}
+          <button
+            onClick={() => { setShowCatModal(true); if (catStep === 'idle') fetchCategories(); }}
+            className="flex items-center gap-2 px-4 py-2 bg-violet-50 text-violet-600 border border-violet-200 rounded-xl text-xs font-medium hover:bg-violet-100 transition-all"
+          >
+            <FileSpreadsheet size={13} /> Kategori Eşleştir
+          </button>
           <button onClick={handleLogout}
             className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-500 rounded-xl text-xs font-medium hover:bg-red-50 hover:text-red-500 transition-all">
             <LogOut size={13} /> Çıkış
@@ -635,6 +732,138 @@ export const Parasut: React.FC = () => {
           })()}
         </div>
       </>}
+
+      {/* ── Kategori Eşleştirme Modal ──────────────────────────────────────── */}
+      {showCatModal && (() => {
+        const toUpdate = catRows.filter(r => r.newName.trim());
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+            onClick={() => { if (catStep !== 'uploading') setShowCatModal(false); }}>
+            <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 w-full max-w-5xl mx-4 max-h-[88vh] flex flex-col"
+              onClick={e => e.stopPropagation()}>
+
+              {/* Modal header */}
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
+                <div>
+                  <h2 className="text-base font-bold text-gray-800 flex items-center gap-2">
+                    <FileSpreadsheet size={16} className="text-violet-500" /> Kategori Eşleştirme
+                  </h2>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    Paraşüt kategorilerine M-kodu girin → Yeni Ad otomatik dolar → Uygula ile toplu güncelle
+                  </p>
+                </div>
+                <button onClick={() => setShowCatModal(false)}
+                  className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 hover:bg-gray-200 transition-colors">
+                  <X size={15} />
+                </button>
+              </div>
+
+              {/* Toolbar */}
+              <div className="flex items-center gap-3 px-6 py-3 border-b border-gray-100 bg-gray-50/50 flex-shrink-0 flex-wrap">
+                <button onClick={exportCatExcel} disabled={catStep !== 'ready'}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-medium bg-white border border-gray-200 text-gray-600 hover:border-violet-300 hover:text-violet-600 transition-all disabled:opacity-40">
+                  <Download size={13} /> Excel İndir
+                </button>
+                <label className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-medium bg-white border border-gray-200 text-gray-600 hover:border-violet-300 hover:text-violet-600 transition-all cursor-pointer">
+                  <Upload size={13} /> Excel Yükle
+                  <input type="file" accept=".xlsx,.xls" className="hidden"
+                    onChange={e => { const f = e.target.files?.[0]; if (f) importCatExcel(f); e.target.value = ''; }} />
+                </label>
+                <div className="flex-1" />
+                {catStep === 'ready' && (
+                  <span className="text-xs text-gray-400">{catRows.length} kategori · {toUpdate.length} eşleştirildi</span>
+                )}
+                <button onClick={applyMappings}
+                  disabled={catStep !== 'ready' || toUpdate.length === 0}
+                  className="flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold bg-violet-600 text-white hover:brightness-110 transition-all disabled:opacity-40 shadow-sm shadow-violet-200">
+                  Paraşüt'e Uygula ({toUpdate.length})
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 overflow-y-auto">
+                {catStep === 'idle' && (
+                  <div className="flex flex-col items-center justify-center py-20 gap-4">
+                    <FileSpreadsheet size={40} className="text-gray-200" />
+                    <button onClick={fetchCategories}
+                      className="flex items-center gap-2 px-6 py-3 bg-violet-600 text-white rounded-xl text-sm font-bold hover:brightness-110 transition-all shadow-sm shadow-violet-200">
+                      <RefreshCw size={14} /> Kategorileri Yükle
+                    </button>
+                  </div>
+                )}
+
+                {catStep === 'fetching' && (
+                  <div className="flex flex-col items-center justify-center py-20 gap-3 text-gray-400">
+                    <Loader2 size={32} className="animate-spin text-violet-500" />
+                    <span className="text-sm">Paraşüt'ten kategoriler alınıyor...</span>
+                  </div>
+                )}
+
+                {catStep === 'uploading' && (
+                  <div className="flex flex-col items-center justify-center py-20 gap-4">
+                    <Loader2 size={32} className="animate-spin text-violet-500" />
+                    <div className="text-center">
+                      <p className="text-sm font-semibold text-gray-700 mb-1">
+                        Güncelleniyor... {catProgress.done}/{catProgress.total}
+                      </p>
+                      {catProgress.errors > 0 && (
+                        <p className="text-xs text-rose-500">{catProgress.errors} hata</p>
+                      )}
+                    </div>
+                    <div className="w-64 bg-gray-100 rounded-full h-2 overflow-hidden">
+                      <div
+                        className="h-2 bg-violet-500 rounded-full transition-all"
+                        style={{ width: `${catProgress.total ? (catProgress.done / catProgress.total) * 100 : 0}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {catStep === 'ready' && (
+                  <table className="w-full text-sm">
+                    <thead className="sticky top-0 bg-gray-50 z-10">
+                      <tr className="border-b border-gray-100">
+                        <th className="px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider text-left">Mevcut Paraşüt Adı</th>
+                        <th className="px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider text-left w-36">M-Kodu</th>
+                        <th className="px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider text-left">Yeni Ad</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {catRows.map((row, i) => (
+                        <tr key={row.id} className={`border-b border-gray-50 ${i % 2 === 0 ? '' : 'bg-gray-50/40'}`}>
+                          <td className="px-5 py-2.5 text-xs text-gray-700 font-medium">{row.name}</td>
+                          <td className="px-5 py-2.5">
+                            <input
+                              list={`mcode-list-${row.id}`}
+                              value={row.mcode}
+                              onChange={e => updateRow(row.id, e.target.value)}
+                              placeholder="M105"
+                              className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs font-mono outline-none focus:border-violet-400 bg-white"
+                            />
+                            <datalist id={`mcode-list-${row.id}`}>
+                              {MCODE_LIST.map(m => (
+                                <option key={m.code} value={m.code}>{m.code} — {m.tr}</option>
+                              ))}
+                            </datalist>
+                          </td>
+                          <td className="px-5 py-2.5">
+                            <input
+                              value={row.newName}
+                              onChange={e => updateNewName(row.id, e.target.value)}
+                              placeholder="Otomatik dolar..."
+                              className={`w-full border rounded-lg px-2 py-1.5 text-xs outline-none focus:border-violet-400 bg-white ${row.newName ? 'border-emerald-300 text-emerald-700 font-medium' : 'border-gray-200 text-gray-400'}`}
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 };

@@ -1,28 +1,37 @@
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  // Token can come from Authorization header OR _token query param (fallback for header stripping)
   const { path, _token, ...rest } = req.query;
   if (!path) return res.status(400).json({ error: 'path_required' });
 
   const token = _token || (req.headers.authorization || '').replace('Bearer ', '');
   if (!token) return res.status(401).json({ error: 'no_token' });
 
-  const qs = new URLSearchParams(rest).toString();
+  const isWrite = ['POST', 'PATCH', 'DELETE'].includes(req.method);
+
+  // For GET requests append remaining query params; for writes they go in the body
+  const qs = !isWrite ? new URLSearchParams(rest).toString() : '';
   const upstream_url = `https://api.parasut.com${path}${qs ? '?' + qs : ''}`;
 
   try {
-    const upstream = await fetch(upstream_url, {
+    const fetchOptions = {
+      method: req.method,
       headers: {
         Authorization: `Bearer ${token}`,
         Accept: 'application/vnd.api+json',
+        ...(isWrite ? { 'Content-Type': 'application/vnd.api+json' } : {}),
       },
-    });
+    };
 
+    if (isWrite && req.body) {
+      fetchOptions.body = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
+    }
+
+    const upstream = await fetch(upstream_url, fetchOptions);
     const data = await upstream.text();
 
     if (upstream.status === 401 || upstream.status === 403) {
