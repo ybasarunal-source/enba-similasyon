@@ -245,8 +245,8 @@ export const parasutService = {
     const findCategory = (id: string) => {
       const c = included.find((i: any) => i.id === id && i.type === 'item_categories');
       if (!c) return '';
-      const ct: string = c.attributes?.category_type || '';
-      if (ct.toLowerCase().includes('contact')) return '';
+      const ct: string = c.attributes?.category_type?.toLowerCase() || '';
+      if (ct.includes('contact') || ct.includes('employee')) return '';
       return c.attributes?.name || '';
     };
     return (raw.data || []).filter((item: any) => item.attributes?.status !== 'cancelled' && item.attributes?.status !== 'void').map((item: any) => {
@@ -333,8 +333,8 @@ export const parasutService = {
       const raw = await this.requestAll(`/${companyId}/item_categories`);
       return (raw.data || [])
         .filter((cat: any) => {
-          const ct: string = cat.attributes?.category_type || '';
-          return !ct.toLowerCase().includes('contact');
+          const ct: string = cat.attributes?.category_type?.toLowerCase() || '';
+          return !ct.includes('contact') && !ct.includes('employee');
         })
         .map((cat: any) => ({
           id: cat.id,
