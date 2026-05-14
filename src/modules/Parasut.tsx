@@ -202,16 +202,42 @@ export const Parasut: React.FC = () => {
     creates: { mcode: string; tr: string }[];
     createOps: string[];
   };
+  type CustomMcode = { code: string; tr: string };
+  const CUSTOM_MCODES_KEY = 'enba_custom_mcodes';
   const CAT_OPERATIONS = [
     { id: 'M', label: 'Merkez' },
     { id: 'K', label: 'Kömürcüler' },
     { id: 'V', label: 'Varsak' },
   ];
-  const [showCatModal, setShowCatModal] = useState(false);
-  const [catStep, setCatStep]           = useState<CatStep>('idle');
-  const [catRows, setCatRows]           = useState<CatRow[]>([]);
-  const [catProgress, setCatProgress]   = useState({ done: 0, total: 0, errors: 0 });
-  const [confirmData, setConfirmData]   = useState<ConfirmData | null>(null);
+  const [showCatModal, setShowCatModal]   = useState(false);
+  const [catStep, setCatStep]             = useState<CatStep>('idle');
+  const [catRows, setCatRows]             = useState<CatRow[]>([]);
+  const [catProgress, setCatProgress]     = useState({ done: 0, total: 0, errors: 0 });
+  const [confirmData, setConfirmData]     = useState<ConfirmData | null>(null);
+  const [customMcodes, setCustomMcodes]   = useState<CustomMcode[]>(() => {
+    try { return JSON.parse(localStorage.getItem(CUSTOM_MCODES_KEY) || '[]'); } catch { return []; }
+  });
+  const [showNewMcode, setShowNewMcode]   = useState(false);
+  const [newMcodeForm, setNewMcodeForm]   = useState({ code: '', tr: '' });
+
+  const allMcodes = [...MCODE_LIST, ...customMcodes];
+
+  const addCustomMcode = () => {
+    if (!newMcodeForm.tr.trim()) return;
+    const code = newMcodeForm.code.trim() || `Ö${String(customMcodes.length + 1).padStart(3, '0')}`;
+    const entry: CustomMcode = { code: code.toUpperCase(), tr: newMcodeForm.tr.trim() };
+    const updated = [...customMcodes, entry];
+    setCustomMcodes(updated);
+    try { localStorage.setItem(CUSTOM_MCODES_KEY, JSON.stringify(updated)); } catch { /* ignore */ }
+    setNewMcodeForm({ code: '', tr: '' });
+    setShowNewMcode(false);
+  };
+
+  const deleteCustomMcode = (code: string) => {
+    const updated = customMcodes.filter(m => m.code !== code);
+    setCustomMcodes(updated);
+    try { localStorage.setItem(CUSTOM_MCODES_KEY, JSON.stringify(updated)); } catch { /* ignore */ }
+  };
 
   const autoMatchCategory = (name: string): { prefix: string; mcode: string; newName: string } => {
     const firstChar = name.replace(/^[\s\-_]+/, '')[0]?.toUpperCase() || '';
@@ -219,7 +245,7 @@ export const Parasut: React.FC = () => {
     const match = name.match(/\bM(\d{3,4}(?:\.\d{2})?)\b/i);
     if (match) {
       const mcode = ('M' + match[1]).toUpperCase();
-      const found = MCODE_LIST.find(m => m.code === mcode);
+      const found = allMcodes.find(m => m.code === mcode);
       if (found) return { prefix, mcode, newName: `${prefix} - ${found.tr}` };
     }
     return { prefix, mcode: '', newName: '' };
@@ -239,13 +265,13 @@ export const Parasut: React.FC = () => {
   const updateRowPrefix = (id: string, prefix: string) => {
     setCatRows(prev => prev.map(r => {
       if (r.id !== id) return r;
-      const found = MCODE_LIST.find(m => m.code === r.mcode);
+      const found = allMcodes.find(m => m.code === r.mcode);
       return { ...r, prefix, newName: found ? `${prefix} - ${found.tr}` : r.newName };
     }));
   };
 
   const updateRow = (id: string, mcode: string) => {
-    const found = MCODE_LIST.find(m => m.code === mcode.trim().toUpperCase());
+    const found = allMcodes.find(m => m.code === mcode.trim().toUpperCase());
     setCatRows(prev => prev.map(r => {
       if (r.id !== id) return r;
       return { ...r, mcode: mcode.toUpperCase(), newName: found ? `${r.prefix} - ${found.tr}` : r.newName };
@@ -288,7 +314,7 @@ export const Parasut: React.FC = () => {
       const over   = String(row[4] || '').trim();
       const del    = String(row[5] || '').trim().toUpperCase() === 'EVET';
       if (!id) continue;
-      const found  = MCODE_LIST.find(m => m.code === mcode);
+      const found  = allMcodes.find(m => m.code === mcode);
       updates.push({ id, prefix, mcode, newName: over || (found ? `${prefix} - ${found.tr}` : ''), toDelete: del });
     }
     setCatRows(prev => prev.map(r => {
@@ -301,7 +327,7 @@ export const Parasut: React.FC = () => {
     const toDelete  = catRows.filter(r => r.toDelete);
     const toRename  = catRows.filter(r => !r.toDelete && r.newName.trim() && r.newName.trim() !== r.name);
     const usedCodes = new Set(catRows.filter(r => !r.toDelete && r.mcode).map(r => r.mcode));
-    const toCreate  = MCODE_LIST.filter(m => !usedCodes.has(m.code));
+    const toCreate  = allMcodes.filter(m => !usedCodes.has(m.code));
 
     setCatStep('confirming');
     // Fetch record counts sequentially to avoid rate-limiting
@@ -861,6 +887,11 @@ export const Parasut: React.FC = () => {
                     <input type="file" accept=".xlsx,.xls" className="hidden"
                       onChange={e => { const f = e.target.files?.[0]; if (f) importCatExcel(f); e.target.value = ''; }} />
                   </label>
+                  <button onClick={() => setShowNewMcode(v => !v)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-medium border transition-all ${showNewMcode ? 'bg-amber-50 border-amber-300 text-amber-700' : 'bg-white border-gray-200 text-gray-600 hover:border-amber-300 hover:text-amber-600'}`}>
+                    + Yeni Gider Kalemi
+                    {customMcodes.length > 0 && <span className="px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[10px] font-bold">{customMcodes.length}</span>}
+                  </button>
                   <div className="flex-1" />
                   <span className="text-xs text-gray-400">
                     {catRows.length} kategori
@@ -872,6 +903,48 @@ export const Parasut: React.FC = () => {
                     className="flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold bg-violet-600 text-white hover:brightness-110 transition-all disabled:opacity-40 shadow-sm shadow-violet-200">
                     İncele ve Onayla ({readyCount})
                   </button>
+                </div>
+              )}
+
+              {/* Yeni gider kalemi paneli */}
+              {catStep === 'ready' && showNewMcode && (
+                <div className="px-6 py-4 border-b border-amber-100 bg-amber-50/60 flex-shrink-0">
+                  <p className="text-xs font-semibold text-amber-700 mb-3">
+                    Yeni Gider / Gelir Kalemi — listede karşılığı olmayan kategoriler için
+                  </p>
+                  <div className="flex gap-2 mb-3">
+                    <input
+                      value={newMcodeForm.code}
+                      onChange={e => setNewMcodeForm(f => ({ ...f, code: e.target.value }))}
+                      placeholder="Kod (boş bırakılırsa Ö001...)"
+                      className="w-36 border border-amber-200 rounded-lg px-2 py-1.5 text-xs font-mono outline-none focus:border-amber-400 bg-white"
+                    />
+                    <input
+                      value={newMcodeForm.tr}
+                      onChange={e => setNewMcodeForm(f => ({ ...f, tr: e.target.value }))}
+                      onKeyDown={e => { if (e.key === 'Enter') addCustomMcode(); }}
+                      placeholder="Kalem adı (ör: Özel Lojistik Giderleri)"
+                      className="flex-1 border border-amber-200 rounded-lg px-2 py-1.5 text-xs outline-none focus:border-amber-400 bg-white"
+                    />
+                    <button onClick={addCustomMcode} disabled={!newMcodeForm.tr.trim()}
+                      className="px-4 py-1.5 rounded-lg bg-amber-500 text-white text-xs font-bold hover:brightness-110 disabled:opacity-40 transition-all">
+                      Ekle
+                    </button>
+                  </div>
+                  {customMcodes.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {customMcodes.map(m => (
+                        <div key={m.code} className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-white border border-amber-200 text-xs">
+                          <span className="font-mono text-amber-600 font-bold">{m.code}</span>
+                          <span className="text-gray-600">{m.tr}</span>
+                          <button onClick={() => deleteCustomMcode(m.code)}
+                            className="text-gray-300 hover:text-rose-400 transition-colors ml-1">
+                            <X size={11} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1078,7 +1151,7 @@ export const Parasut: React.FC = () => {
                               className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs font-mono outline-none focus:border-violet-400 bg-white disabled:opacity-40"
                             />
                             <datalist id={`mcode-list-${row.id}`}>
-                              {MCODE_LIST.map(m => (
+                              {allMcodes.map(m => (
                                 <option key={m.code} value={m.code}>{m.code} — {m.tr}</option>
                               ))}
                             </datalist>
