@@ -344,6 +344,16 @@ export const parasutService = {
     } catch { return []; }
   },
 
+  async deleteItemCategory(companyId: string, categoryId: string): Promise<boolean> {
+    try {
+      await this.requestWrite(`/${companyId}/item_categories/${categoryId}`, 'DELETE');
+      return true;
+    } catch (err) {
+      console.error('Kategori silme hatası:', err);
+      return false;
+    }
+  },
+
   async patchCategoryName(companyId: string, categoryId: string, newName: string): Promise<boolean> {
     try {
       await this.requestWrite(`/${companyId}/item_categories/${categoryId}`, 'PATCH', {

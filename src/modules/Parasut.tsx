@@ -15,6 +15,7 @@ import {
   Download,
   Upload,
   FileSpreadsheet,
+  Trash2,
 } from 'lucide-react';
 import { parasutService, type ParasutInvoice, type ParasutItem } from '../api/parasut';
 import { MCODE_LIST } from '../api/mcodeList';
@@ -203,6 +204,7 @@ export const Parasut: React.FC = () => {
   const [catStep, setCatStep]               = useState<CatStep>('idle');
   const [catRows, setCatRows]               = useState<CatRow[]>([]);
   const [catProgress, setCatProgress]       = useState({ done: 0, total: 0, errors: 0 });
+  const [deletingId, setDeletingId]         = useState<string | null>(null);
 
   const autoMatchCategory = (name: string): { prefix: string; mcode: string; newName: string } => {
     // Detect K/V prefix: look at the first non-space/dash character of the name
@@ -290,6 +292,16 @@ export const Parasut: React.FC = () => {
       const u = updates.find(x => x.id === r.id);
       return u ? { ...r, prefix: u.prefix, mcode: u.mcode, newName: u.newName } : r;
     }));
+  };
+
+  const deleteCategory = async (id: string) => {
+    setDeletingId(null);
+    setCatStep('uploading');
+    setCatProgress({ done: 0, total: 1, errors: 0 });
+    const ok = await parasutService.deleteItemCategory(companyId, id);
+    setCatProgress({ done: 1, total: 1, errors: ok ? 0 : 1 });
+    if (ok) setCatRows(prev => prev.filter(r => r.id !== id));
+    setCatStep('ready');
   };
 
   const applyMappings = async () => {
@@ -865,11 +877,12 @@ export const Parasut: React.FC = () => {
                         <th className="px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider text-left w-36">Operasyon</th>
                         <th className="px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider text-left w-36">M-Kodu</th>
                         <th className="px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider text-left">Yeni Ad</th>
+                        <th className="px-3 py-3 w-10" />
                       </tr>
                     </thead>
                     <tbody>
                       {catRows.map((row, i) => (
-                        <tr key={row.id} className={`border-b border-gray-50 ${i % 2 === 0 ? '' : 'bg-gray-50/40'}`}>
+                        <tr key={row.id} className={`border-b border-gray-50 ${i % 2 === 0 ? '' : 'bg-gray-50/40'} ${deletingId === row.id ? 'bg-rose-50' : ''}`}>
                           <td className="px-5 py-2 text-xs text-gray-700 font-medium">{row.name}</td>
                           <td className="px-5 py-2">
                             <select
@@ -896,12 +909,32 @@ export const Parasut: React.FC = () => {
                             </datalist>
                           </td>
                           <td className="px-5 py-2">
-                            <input
-                              value={row.newName}
-                              onChange={e => updateNewName(row.id, e.target.value)}
-                              placeholder="Otomatik dolar..."
-                              className={`w-full border rounded-lg px-2 py-1.5 text-xs outline-none focus:border-violet-400 bg-white ${row.newName ? 'border-emerald-300 text-emerald-700 font-medium' : 'border-gray-200 text-gray-400'}`}
-                            />
+                            {deletingId === row.id ? (
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-rose-600 font-medium">Silinsin mi?</span>
+                                <button onClick={() => deleteCategory(row.id)}
+                                  className="px-2 py-1 rounded-lg bg-rose-600 text-white text-xs font-bold hover:brightness-110">
+                                  Sil
+                                </button>
+                                <button onClick={() => setDeletingId(null)}
+                                  className="px-2 py-1 rounded-lg bg-gray-100 text-gray-600 text-xs hover:bg-gray-200">
+                                  İptal
+                                </button>
+                              </div>
+                            ) : (
+                              <input
+                                value={row.newName}
+                                onChange={e => updateNewName(row.id, e.target.value)}
+                                placeholder="Otomatik dolar..."
+                                className={`w-full border rounded-lg px-2 py-1.5 text-xs outline-none focus:border-violet-400 bg-white ${row.newName ? 'border-emerald-300 text-emerald-700 font-medium' : 'border-gray-200 text-gray-400'}`}
+                              />
+                            )}
+                          </td>
+                          <td className="px-3 py-2">
+                            <button onClick={() => setDeletingId(deletingId === row.id ? null : row.id)}
+                              className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 hover:text-rose-500 hover:bg-rose-50 transition-colors">
+                              <Trash2 size={13} />
+                            </button>
                           </td>
                         </tr>
                       ))}
