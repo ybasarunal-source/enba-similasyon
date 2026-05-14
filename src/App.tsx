@@ -857,7 +857,7 @@ export const App: React.FC = () => {
                 {activeModule === 'pnl'      && <PnL />}
                 {activeModule === 'fastplan' && <FastPlan />}
                 {activeModule === 'planning' && <DetailedPlanManager />}
-                {activeModule === 'parasut'  && <Parasut profile={userProfile} />}
+                {activeModule === 'parasut'  && <Parasut profile={userProfile} navigate={navigate} />}
                 {activeModule === 'ayarlar'  && <Ayarlar profile={userProfile} />}
                 {activeModule === 'varlik'   && <VarlikTakibi profile={userProfile} />}
               </React.Suspense>

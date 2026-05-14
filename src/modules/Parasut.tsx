@@ -164,8 +164,8 @@ const LoginForm: React.FC<{ onReady: (companyId: string) => void }> = ({ onReady
 type ActiveTab = 'invoices' | 'stock';
 
 // ─── Ana Modül ────────────────────────────────────────────────────
-interface ParasutProps { profile: UserProfile | null; }
-export const Parasut: React.FC<ParasutProps> = ({ profile }) => {
+interface ParasutProps { profile: UserProfile | null; navigate: (view: string) => void; }
+export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
   const savedCompany = parasutService.getCompany();
   const [ready, setReady]         = useState(parasutService.isLoggedIn() && !!savedCompany);
   const [companyId, setCompanyId] = useState(savedCompany?.id || '');
@@ -877,7 +877,9 @@ export const Parasut: React.FC<ParasutProps> = ({ profile }) => {
                     <input type="file" accept=".xlsx,.xls" className="hidden"
                       onChange={e => { const f = e.target.files?.[0]; if (f) importCatExcel(f); e.target.value = ''; }} />
                   </label>
-                  <span className="text-[11px] text-gray-400 italic">Özel kategoriler → <span className="font-medium text-violet-500">Finansal Ayarlar</span> modülü</span>
+                  <button onClick={() => { setShowCatModal(false); navigate('ayarlar'); }} className="text-[11px] text-gray-400 italic hover:text-violet-600 transition-colors">
+                    Özel kategoriler → <span className="font-medium text-violet-500 underline underline-offset-2">Finansal Ayarlar</span>
+                  </button>
                   <div className="flex-1" />
                   <span className="text-xs text-gray-400">
                     {catRows.length} kategori
