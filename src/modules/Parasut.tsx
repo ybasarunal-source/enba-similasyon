@@ -16,6 +16,8 @@ import {
   Upload,
   FileSpreadsheet,
   Trash2,
+  Check,
+  Plus,
 } from 'lucide-react';
 import { parasutService, type ParasutInvoice, type ParasutItem } from '../api/parasut';
 import { financialCategoriesAPI } from '../api/financialCategories';
@@ -221,6 +223,8 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
   const [uploadReport, setUploadReport]   = useState<UploadError[]>([]);
   const [openMcodeFor, setOpenMcodeFor]   = useState<string | null>(null);
   const [mcodeQuery, setMcodeQuery]       = useState('');
+  const [creatingMcodeFor, setCreatingMcodeFor] = useState<string | null>(null);
+  const [newMcodeName, setNewMcodeName]   = useState('');
 
   const allMcodes = subasCats;
 
@@ -265,6 +269,32 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
       const cats = await financialCategoriesAPI.getAll(profile.company_id, true);
       setSupabaseCats(cats.filter(c => c.is_active).map(c => ({ code: c.code, tr: c.name_tr })));
     } catch { /* ignore */ }
+  };
+
+  const handleCreateMcode = async (rowId: string) => {
+    if (!newMcodeName.trim() || !profile?.company_id) return;
+    const code = mcodeQuery.trim().toUpperCase();
+    const parent_code = code.includes('.') ? code.split('.')[0] : null;
+    try {
+      await financialCategoriesAPI.add(profile.company_id, {
+        code,
+        parent_code,
+        name_tr: newMcodeName.trim(),
+        is_custom: true,
+        sort_order: 9999,
+      });
+      await reloadMcodes();
+      setCatRows(prev => prev.map(r => r.id !== rowId ? r : {
+        ...r, mcode: code, newName: `${r.prefix} - ${newMcodeName.trim()}`,
+      }));
+    } catch (e: any) {
+      alert(e.message);
+    } finally {
+      setOpenMcodeFor(null);
+      setMcodeQuery('');
+      setCreatingMcodeFor(null);
+      setNewMcodeName('');
+    }
   };
 
   const toggleDelete = (id: string) => {
@@ -1188,21 +1218,59 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
                               }}
                             />
                             {openMcodeFor === row.id && (
-                              <div className="absolute left-0 top-full mt-1 w-96 bg-white border border-gray-200 rounded-xl shadow-xl z-50 max-h-52 overflow-y-auto">
+                              <div className="absolute left-0 top-full mt-1 w-96 bg-white border border-gray-200 rounded-xl shadow-xl z-50 max-h-64 overflow-y-auto">
                                 {(() => {
                                   const q = mcodeQuery.toLowerCase();
                                   const matches = allMcodes.filter(m =>
                                     !q || m.code.toLowerCase().includes(q) || m.tr.toLowerCase().includes(q)
                                   ).slice(0, 15);
-                                  return matches.length === 0
-                                    ? <div className="px-3 py-3 text-xs text-gray-400">Sonuç bulunamadı</div>
-                                    : matches.map(m => (
-                                      <button key={m.code} onMouseDown={() => { updateRow(row.id, m.code); setOpenMcodeFor(null); setMcodeQuery(''); }}
-                                        className="w-full text-left px-3 py-2 hover:bg-violet-50 transition-colors border-b border-gray-50 last:border-0 flex items-start gap-2">
-                                        <span className="font-mono text-[11px] font-bold text-violet-600 flex-shrink-0 mt-0.5">{m.code}</span>
-                                        <span className="text-[11px] text-gray-600 line-clamp-1">{m.tr}</span>
-                                      </button>
-                                    ));
+                                  const exactExists = allMcodes.some(m => m.code === mcodeQuery.trim().toUpperCase());
+                                  const canCreate = mcodeQuery.trim().length >= 2 && !exactExists;
+                                  return (
+                                    <>
+                                      {matches.length === 0 && !canCreate && (
+                                        <div className="px-3 py-3 text-xs text-gray-400">Sonuç bulunamadı</div>
+                                      )}
+                                      {matches.map(m => (
+                                        <button key={m.code} onMouseDown={() => { updateRow(row.id, m.code); setOpenMcodeFor(null); setMcodeQuery(''); }}
+                                          className="w-full text-left px-3 py-2 hover:bg-violet-50 transition-colors border-b border-gray-50 last:border-0 flex items-start gap-2">
+                                          <span className="font-mono text-[11px] font-bold text-violet-600 flex-shrink-0 mt-0.5">{m.code}</span>
+                                          <span className="text-[11px] text-gray-600 line-clamp-1">{m.tr}</span>
+                                        </button>
+                                      ))}
+                                      {canCreate && (
+                                        <div className="border-t border-gray-100">
+                                          {creatingMcodeFor === row.id ? (
+                                            <div className="p-2 flex items-center gap-2 bg-violet-50">
+                                              <span className="font-mono text-[11px] font-bold text-violet-600 flex-shrink-0">{mcodeQuery.trim().toUpperCase()}</span>
+                                              <input
+                                                autoFocus
+                                                type="text"
+                                                placeholder="Kategori adı..."
+                                                value={newMcodeName}
+                                                onChange={e => setNewMcodeName(e.target.value)}
+                                                onKeyDown={e => { if (e.key === 'Enter') handleCreateMcode(row.id); if (e.key === 'Escape') { setCreatingMcodeFor(null); setNewMcodeName(''); } }}
+                                                className="flex-1 text-xs border border-violet-200 rounded-lg px-2 py-1 outline-none focus:ring-1 focus:ring-violet-400"
+                                              />
+                                              <button onMouseDown={() => handleCreateMcode(row.id)} className="p-1 bg-violet-600 text-white rounded-lg hover:bg-violet-700">
+                                                <Check size={12} />
+                                              </button>
+                                              <button onMouseDown={() => { setCreatingMcodeFor(null); setNewMcodeName(''); }} className="p-1 text-gray-400 hover:text-gray-600">
+                                                <X size={12} />
+                                              </button>
+                                            </div>
+                                          ) : (
+                                            <button onMouseDown={() => setCreatingMcodeFor(row.id)}
+                                              className="w-full text-left px-3 py-2.5 text-[11px] text-violet-600 hover:bg-violet-50 flex items-center gap-2 font-medium">
+                                              <Plus size={11} />
+                                              <span className="font-mono font-bold">{mcodeQuery.trim().toUpperCase()}</span>
+                                              <span>yeni kod olarak ekle</span>
+                                            </button>
+                                          )}
+                                        </div>
+                                      )}
+                                    </>
+                                  );
                                 })()}
                               </div>
                             )}
