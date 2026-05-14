@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { parasutService, type ParasutInvoice, type ParasutItem } from '../api/parasut';
 import { financialCategoriesAPI } from '../api/financialCategories';
+import { MCODE_NOTES } from '../api/mcodeNotes';
 import type { UserProfile } from '../api/supabase';
 import { Ayarlar } from './Ayarlar';
 
@@ -1218,7 +1219,7 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
                               }}
                             />
                             {openMcodeFor === row.id && (
-                              <div className="absolute left-0 top-full mt-1 w-96 bg-white border border-gray-200 rounded-xl shadow-xl z-50 max-h-64 overflow-y-auto">
+                              <div className="absolute left-0 top-full mt-1 w-[460px] bg-white border border-gray-200 rounded-xl shadow-xl z-50 max-h-72 overflow-y-auto">
                                 {(() => {
                                   const q = mcodeQuery.toLowerCase();
                                   const matches = allMcodes.filter(m =>
@@ -1233,9 +1234,14 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
                                       )}
                                       {matches.map(m => (
                                         <button key={m.code} onMouseDown={() => { updateRow(row.id, m.code); setOpenMcodeFor(null); setMcodeQuery(''); }}
-                                          className="w-full text-left px-3 py-2 hover:bg-violet-50 transition-colors border-b border-gray-50 last:border-0 flex items-start gap-2">
-                                          <span className="font-mono text-[11px] font-bold text-violet-600 flex-shrink-0 mt-0.5">{m.code}</span>
-                                          <span className="text-[11px] text-gray-600 line-clamp-1">{m.tr}</span>
+                                          className="w-full text-left px-3 py-2 hover:bg-violet-50 transition-colors border-b border-gray-50 last:border-0">
+                                          <div className="flex items-start gap-2">
+                                            <span className="font-mono text-[11px] font-bold text-violet-600 flex-shrink-0 mt-0.5">{m.code}</span>
+                                            <span className="text-[11px] text-gray-700 font-medium line-clamp-1">{m.tr}</span>
+                                          </div>
+                                          {MCODE_NOTES[m.code] && (
+                                            <p className="text-[10px] text-gray-400 line-clamp-1 mt-0.5 pl-10">{MCODE_NOTES[m.code]}</p>
+                                          )}
                                         </button>
                                       ))}
                                       {canCreate && (
