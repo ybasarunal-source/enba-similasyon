@@ -217,6 +217,8 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
   const [catProgress, setCatProgress]     = useState({ done: 0, total: 0, errors: 0 });
   const [confirmData, setConfirmData]     = useState<ConfirmData | null>(null);
   const [subasCats, setSupabaseCats]      = useState<{ code: string; tr: string }[]>([]);
+  type UploadError = { op: string; name: string };
+  const [uploadReport, setUploadReport]   = useState<UploadError[]>([]);
 
   const allMcodes = subasCats;
 
@@ -361,16 +363,22 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
       confirmData.creates.length * confirmData.createOps.length;
     setCatProgress({ done: 0, total: totalOps, errors: 0 });
     setCatStep('uploading');
+    setUploadReport([]);
     let done = 0, errors = 0;
-    const tick = async (ok: boolean) => {
-      if (ok) done++; else errors++;
+    const errs: UploadError[] = [];
+    const tick = async (ok: boolean, errEntry?: UploadError) => {
+      if (ok) done++; else { errors++; if (errEntry) errs.push(errEntry); }
       setCatProgress({ done: done + errors, total: totalOps, errors });
       await new Promise(res => setTimeout(res, 250));
     };
-    for (const d of confirmData.deletes)
-      await tick(await parasutService.deleteItemCategory(companyId, d.id));
-    for (const r of confirmData.renames)
-      await tick(await parasutService.patchCategoryName(companyId, r.id, r.newName));
+    for (const d of confirmData.deletes) {
+      const ok = await parasutService.deleteItemCategory(companyId, d.id);
+      await tick(ok, ok ? undefined : { op: 'Silme', name: d.name });
+    }
+    for (const r of confirmData.renames) {
+      const ok = await parasutService.patchCategoryName(companyId, r.id, r.newName);
+      await tick(ok, ok ? undefined : { op: 'Yeniden Adlandır', name: `${r.oldName} → ${r.newName}` });
+    }
     for (const op of confirmData.createOps) {
       for (const c of confirmData.creates) {
         try {
@@ -378,12 +386,13 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
             data: { type: 'item_categories', attributes: { name: `${op} - ${c.tr}` } },
           });
           await tick(true);
-        } catch { await tick(false); }
+        } catch { await tick(false, { op: 'Yeni Oluştur', name: `${op} - ${c.tr}` }); }
       }
     }
     const cats = await parasutService.getItemCategories(companyId);
     setCatRows(cats.map(c => ({ id: c.id, name: c.name, ...autoMatchWith(c.name, subasCats), toDelete: false })));
     setConfirmData(null);
+    setUploadReport(errs);
     setCatStep('ready');
   };
 
@@ -1080,6 +1089,39 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
                         className="flex-1 px-5 py-2.5 rounded-xl text-sm font-bold bg-violet-600 text-white hover:brightness-110 transition-all shadow-sm shadow-violet-200">
                         Onayla ve Paraşüt'e Yükle
                       </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* ready — hata raporu */}
+                {catStep === 'ready' && uploadReport.length > 0 && (
+                  <div className="mx-6 mt-5 mb-1 rounded-xl border border-rose-200 bg-rose-50 overflow-hidden">
+                    <div className="flex items-center justify-between px-4 py-2.5 bg-rose-100/60 border-b border-rose-200">
+                      <span className="text-xs font-bold text-rose-600 flex items-center gap-1.5">
+                        <AlertCircle size={13} /> {uploadReport.length} işlem başarısız oldu
+                      </span>
+                      <button onClick={() => setUploadReport([])} className="text-rose-400 hover:text-rose-600 transition-colors">
+                        <X size={13} />
+                      </button>
+                    </div>
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="border-b border-rose-100">
+                          <th className="px-4 py-2 text-left text-rose-400 font-semibold">İşlem</th>
+                          <th className="px-4 py-2 text-left text-rose-400 font-semibold">Kategori</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {uploadReport.map((e, i) => (
+                          <tr key={i} className="border-t border-rose-100">
+                            <td className="px-4 py-1.5 text-rose-500 font-medium whitespace-nowrap">{e.op}</td>
+                            <td className="px-4 py-1.5 text-rose-700">{e.name}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <div className="px-4 py-2 text-[10px] text-rose-400 border-t border-rose-100">
+                      Paraşüt API genellikle rate limit (429) veya izin hatası nedeniyle reddeder. Birkaç dakika bekleyip tekrar dene.
                     </div>
                   </div>
                 )}
