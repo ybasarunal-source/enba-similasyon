@@ -223,15 +223,19 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
   const allMcodes = subasCats;
 
   const autoMatchWith = (name: string, mcodes: { code: string; tr: string }[]): { prefix: string; mcode: string; newName: string } => {
-    const firstChar = name.replace(/^[\s\-_]+/, '')[0]?.toUpperCase() || '';
-    const prefix = firstChar === 'K' ? 'K' : firstChar === 'V' ? 'V' : 'M';
-    // "M489", "M489.01", "489", "489.01" formatlarını yakala
-    const match = name.match(/\b[Mm]?([1-9]\d{2,3}(?:\.\d{2})?)\b/);
+    // Format: "K450-Personel", "M489-Maaş", "V369-Malzeme"
+    const match = name.match(/([KMVkmv])(\d{3,4}(?:\.\d{2})?)/);
     if (match) {
-      const mcode = ('M' + match[1]).toUpperCase();
+      const prefix = match[1].toUpperCase() as 'K' | 'M' | 'V';
+      const mcode = 'M' + match[2].toUpperCase();
       const found = mcodes.find(m => m.code === mcode);
       if (found) return { prefix, mcode, newName: `${prefix} - ${found.tr}` };
+      // Kod tanımlı değil ama prefix ve numara doğru
+      return { prefix, mcode, newName: '' };
     }
+    // Fallback: ilk harften prefix bul
+    const firstChar = name.replace(/^[\s\-_]+/, '')[0]?.toUpperCase() || '';
+    const prefix = firstChar === 'K' ? 'K' : firstChar === 'V' ? 'V' : 'M';
     return { prefix, mcode: '', newName: '' };
   };
 
