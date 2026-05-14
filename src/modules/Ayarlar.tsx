@@ -28,6 +28,7 @@ export const Ayarlar: React.FC<AyarlarProps> = ({ profile }) => {
   const [newChildName, setNewChildName] = useState('');
   const [addingParent, setAddingParent] = useState(false);
   const [newParentName, setNewParentName] = useState('');
+  const [newParentCode, setNewParentCode] = useState('');
 
   const load = useCallback(async (force = false) => {
     if (!companyId) return;
@@ -149,8 +150,9 @@ export const Ayarlar: React.FC<AyarlarProps> = ({ profile }) => {
   };
 
   const handleAddParent = async () => {
-    if (!newParentName.trim()) return;
-    const code = financialCategoriesAPI.nextCustomCode(cats);
+    if (!newParentName.trim() || !newParentCode.trim()) return;
+    const code = newParentCode.trim().toUpperCase();
+    if (cats.some(c => c.code === code)) { setError(`"${code}" kodu zaten mevcut.`); return; }
     setSaving('new');
     try {
       const cat = await financialCategoriesAPI.add(companyId, {
@@ -163,6 +165,7 @@ export const Ayarlar: React.FC<AyarlarProps> = ({ profile }) => {
       setCats(prev => [...prev, cat]);
       setAddingParent(false);
       setNewParentName('');
+      setNewParentCode('');
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -235,30 +238,38 @@ export const Ayarlar: React.FC<AyarlarProps> = ({ profile }) => {
           {/* Add parent form */}
           {addingParent && (
             <div className="flex items-center gap-3 px-4 py-3 bg-orange-50 border-b border-orange-100">
-              <span className="font-mono text-xs text-gray-400 w-16 flex-shrink-0">
-                {financialCategoriesAPI.nextCustomCode(cats)}
-              </span>
               <input
                 autoFocus
                 type="text"
-                placeholder="Yeni kategori adı..."
+                placeholder="Kod (ör. M369)"
+                value={newParentCode}
+                onChange={e => setNewParentCode(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') handleAddParent();
+                  if (e.key === 'Escape') { setAddingParent(false); setNewParentName(''); setNewParentCode(''); }
+                }}
+                className="w-24 font-mono text-sm border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-[var(--enba-orange)]/20 flex-shrink-0"
+              />
+              <input
+                type="text"
+                placeholder="Kategori adı..."
                 value={newParentName}
                 onChange={e => setNewParentName(e.target.value)}
                 onKeyDown={e => {
                   if (e.key === 'Enter') handleAddParent();
-                  if (e.key === 'Escape') { setAddingParent(false); setNewParentName(''); }
+                  if (e.key === 'Escape') { setAddingParent(false); setNewParentName(''); setNewParentCode(''); }
                 }}
                 className="flex-1 text-sm border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-[var(--enba-orange)]/20"
               />
               <button
                 onClick={handleAddParent}
-                disabled={saving === 'new' || !newParentName.trim()}
+                disabled={saving === 'new' || !newParentName.trim() || !newParentCode.trim()}
                 className="p-1.5 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 transition-all"
               >
                 <Check size={14} />
               </button>
               <button
-                onClick={() => { setAddingParent(false); setNewParentName(''); }}
+                onClick={() => { setAddingParent(false); setNewParentName(''); setNewParentCode(''); }}
                 className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
               >
                 <X size={14} />
