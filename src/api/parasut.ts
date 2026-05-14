@@ -306,7 +306,7 @@ export const parasutService = {
     });
   },
 
-  async requestWrite(path: string, method: 'POST' | 'PATCH' | 'DELETE', body?: any): Promise<any> {
+  async requestWrite(path: string, method: 'POST' | 'PATCH' | 'DELETE', body?: any, retryCount = 0): Promise<any> {
     const token = await this.getToken();
     if (!token) throw new Error('SESSION_EXPIRED');
     const url = new URL('/api/parasut-data', window.location.origin);
@@ -320,7 +320,12 @@ export const parasutService = {
       },
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
-    if (resp.status === 204 || resp.status === 200 && resp.headers.get('content-length') === '0') return null;
+    if (resp.status === 429 && retryCount < 4) {
+      const wait = (retryCount + 1) * 4000; // 4s, 8s, 12s, 16s
+      await this._sleep(wait);
+      return this.requestWrite(path, method, body, retryCount + 1);
+    }
+    if (resp.status === 204 || (resp.status === 200 && resp.headers.get('content-length') === '0')) return null;
     if (!resp.ok) {
       const text = await resp.text().catch(() => '');
       throw new Error(`Paraşüt yazma hatası ${resp.status}: ${text.slice(0, 300)}`);

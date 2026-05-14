@@ -369,7 +369,7 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
     const tick = async (ok: boolean, errEntry?: UploadError) => {
       if (ok) done++; else { errors++; if (errEntry) errs.push(errEntry); }
       setCatProgress({ done: done + errors, total: totalOps, errors });
-      await new Promise(res => setTimeout(res, 250));
+      await new Promise(res => setTimeout(res, 600));
     };
     for (const d of confirmData.deletes) {
       const ok = await parasutService.deleteItemCategory(companyId, d.id);
