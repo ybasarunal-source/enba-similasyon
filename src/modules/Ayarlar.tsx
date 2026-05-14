@@ -4,6 +4,7 @@ import {
   ToggleLeft, ToggleRight, Search, RefreshCw, AlertCircle,
 } from 'lucide-react';
 import { financialCategoriesAPI, type FinancialCategory } from '../api/financialCategories';
+import { MCODE_NOTES } from '../api/mcodeNotes';
 import type { UserProfile } from '../api/supabase';
 
 interface AyarlarProps {
@@ -330,7 +331,12 @@ export const Ayarlar: React.FC<AyarlarProps> = ({ profile }) => {
                           <button onClick={cancelEdit} className="p-1 text-gray-400 hover:text-gray-600"><X size={14} /></button>
                         </div>
                       ) : (
-                        <span className="text-sm text-gray-800 line-clamp-1">{parent.name_tr}</span>
+                        <>
+                          <span className="text-sm text-gray-800 line-clamp-1">{parent.name_tr}</span>
+                          {MCODE_NOTES[parent.code] && (
+                            <p className="text-[10px] text-gray-400 line-clamp-2 mt-0.5 leading-relaxed">{MCODE_NOTES[parent.code]}</p>
+                          )}
+                        </>
                       )}
                     </div>
                     <div className="px-3 py-2.5 flex justify-center">
@@ -386,7 +392,12 @@ export const Ayarlar: React.FC<AyarlarProps> = ({ profile }) => {
                               <button onClick={cancelEdit} className="p-1 text-gray-400 hover:text-gray-600"><X size={14} /></button>
                             </div>
                           ) : (
-                            <span className="text-sm text-gray-700 line-clamp-1">{child.name_tr}</span>
+                            <>
+                              <span className="text-sm text-gray-700 line-clamp-1">{child.name_tr}</span>
+                              {MCODE_NOTES[child.code] && (
+                                <p className="text-[10px] text-gray-400 line-clamp-2 mt-0.5 leading-relaxed">{MCODE_NOTES[child.code]}</p>
+                              )}
+                            </>
                           )}
                         </div>
                         <div className="px-3 py-2 flex justify-center">
