@@ -219,6 +219,8 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
   const [subasCats, setSupabaseCats]      = useState<{ code: string; tr: string }[]>([]);
   type UploadError = { op: string; name: string };
   const [uploadReport, setUploadReport]   = useState<UploadError[]>([]);
+  const [openMcodeFor, setOpenMcodeFor]   = useState<string | null>(null);
+  const [mcodeQuery, setMcodeQuery]       = useState('');
 
   const allMcodes = subasCats;
 
@@ -1140,7 +1142,7 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
                       <tr className="border-b border-gray-100">
                         <th className="px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider text-left">Mevcut Paraşüt Adı</th>
                         <th className="px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider text-left w-36">Operasyon</th>
-                        <th className="px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider text-left w-32">M-Kodu</th>
+                        <th className="px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider text-left w-56">M-Kodu</th>
                         <th className="px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider text-left">Yeni Ad</th>
                         <th className="px-3 py-3 w-10" />
                       </tr>
@@ -1171,20 +1173,39 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
                               ))}
                             </select>
                           </td>
-                          <td className="px-5 py-2">
+                          <td className="px-5 py-2 relative">
                             <input
-                              list={`mcode-list-${row.id}`}
-                              value={row.mcode}
+                              value={openMcodeFor === row.id ? mcodeQuery : row.mcode}
                               disabled={row.toDelete}
-                              onChange={e => updateRow(row.id, e.target.value)}
-                              placeholder="M105"
+                              placeholder="Ara: M489 veya 'personel'..."
                               className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs font-mono outline-none focus:border-violet-400 bg-white disabled:opacity-40"
+                              onFocus={() => { setOpenMcodeFor(row.id); setMcodeQuery(row.mcode); }}
+                              onChange={e => setMcodeQuery(e.target.value)}
+                              onBlur={() => {
+                                const exact = allMcodes.find(m => m.code === mcodeQuery.trim().toUpperCase());
+                                if (exact) updateRow(row.id, exact.code);
+                                setTimeout(() => setOpenMcodeFor(null), 150);
+                              }}
                             />
-                            <datalist id={`mcode-list-${row.id}`}>
-                              {allMcodes.map(m => (
-                                <option key={m.code} value={m.code}>{m.code} — {m.tr}</option>
-                              ))}
-                            </datalist>
+                            {openMcodeFor === row.id && (
+                              <div className="absolute left-0 top-full mt-1 w-96 bg-white border border-gray-200 rounded-xl shadow-xl z-50 max-h-52 overflow-y-auto">
+                                {(() => {
+                                  const q = mcodeQuery.toLowerCase();
+                                  const matches = allMcodes.filter(m =>
+                                    !q || m.code.toLowerCase().includes(q) || m.tr.toLowerCase().includes(q)
+                                  ).slice(0, 15);
+                                  return matches.length === 0
+                                    ? <div className="px-3 py-3 text-xs text-gray-400">Sonuç bulunamadı</div>
+                                    : matches.map(m => (
+                                      <button key={m.code} onMouseDown={() => { updateRow(row.id, m.code); setOpenMcodeFor(null); setMcodeQuery(''); }}
+                                        className="w-full text-left px-3 py-2 hover:bg-violet-50 transition-colors border-b border-gray-50 last:border-0 flex items-start gap-2">
+                                        <span className="font-mono text-[11px] font-bold text-violet-600 flex-shrink-0 mt-0.5">{m.code}</span>
+                                        <span className="text-[11px] text-gray-600 line-clamp-1">{m.tr}</span>
+                                      </button>
+                                    ));
+                                })()}
+                              </div>
+                            )}
                           </td>
                           <td className="px-5 py-2">
                             {!row.toDelete && (
