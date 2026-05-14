@@ -1,3 +1,14 @@
+export const config = { api: { bodyParser: false } };
+
+function readBody(req) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    req.on('data', chunk => chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)));
+    req.on('end', () => resolve(Buffer.concat(chunks).toString('utf-8')));
+    req.on('error', reject);
+  });
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
@@ -13,7 +24,6 @@ export default async function handler(req, res) {
 
   const isWrite = ['POST', 'PATCH', 'DELETE'].includes(req.method);
 
-  // For GET requests append remaining query params; for writes they go in the body
   const qs = !isWrite ? new URLSearchParams(rest).toString() : '';
   const upstream_url = `https://api.parasut.com${path}${qs ? '?' + qs : ''}`;
 
@@ -27,8 +37,9 @@ export default async function handler(req, res) {
       },
     };
 
-    if (isWrite && req.body) {
-      fetchOptions.body = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
+    if (isWrite) {
+      const rawBody = await readBody(req);
+      if (rawBody) fetchOptions.body = rawBody;
     }
 
     const upstream = await fetch(upstream_url, fetchOptions);
