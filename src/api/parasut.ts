@@ -244,7 +244,10 @@ export const parasutService = {
     };
     const findCategory = (id: string) => {
       const c = included.find((i: any) => i.id === id && i.type === 'item_categories');
-      return c?.attributes?.name || '';
+      if (!c) return '';
+      const ct: string = c.attributes?.category_type || '';
+      if (ct.toLowerCase().includes('contact')) return '';
+      return c.attributes?.name || '';
     };
     return (raw.data || []).filter((item: any) => item.attributes?.status !== 'cancelled' && item.attributes?.status !== 'void').map((item: any) => {
       const a = item.attributes || {};
@@ -325,13 +328,19 @@ export const parasutService = {
     return resp.json();
   },
 
-  async getItemCategories(companyId: string): Promise<{ id: string; name: string }[]> {
+  async getItemCategories(companyId: string): Promise<{ id: string; name: string; code: string }[]> {
     try {
       const raw = await this.requestAll(`/${companyId}/item_categories`);
-      return (raw.data || []).map((cat: any) => ({
-        id: cat.id,
-        name: cat.attributes?.name || '',
-      }));
+      return (raw.data || [])
+        .filter((cat: any) => {
+          const ct: string = cat.attributes?.category_type || '';
+          return !ct.toLowerCase().includes('contact');
+        })
+        .map((cat: any) => ({
+          id: cat.id,
+          name: cat.attributes?.name || '',
+          code: cat.attributes?.code || '',
+        }));
     } catch { return []; }
   },
 
