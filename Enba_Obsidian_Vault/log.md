@@ -404,6 +404,13 @@ grep "^## \[" log.md | tail -5
 
 ---
 
+## [2026-05-14] karar | M-Kodu uygulama geneli finansal taksonomi olarak belirlendi
+- Karar: `mcodeList.ts` tüm modüllerde tek finansal sınıflandırma sistemi olacak
+- Her gider/gelir girişi M-kodu ile eşleştirilecek (Supabase tablolarına `mcode VARCHAR` kolonu)
+- Etkilenecek modüller: Sabit Giderler, Makina, Personel, Üretim, Satış, FastPlan, PnL
+- Durum: Beklemede — talep gelince modül bazlı uygulanacak
+- Yeni sayfa: [[Kararlar/2026-05-MKodu-Finansal-Taksonomi]]
+
 ## [2026-05-14 00:00] geliştirme | Dashboard.tsx — özelleştirilebilir widget/kart sistemi
 - Yapılan: Dashboard.tsx tamamen yeniden yazıldı (481 → 851 satır)
   - 13 kart tipi tanımlandı (6 KPI + 7 liste/grafik)
@@ -418,3 +425,67 @@ grep "^## \[" log.md | tail -5
 - Etkilenen dosyalar: `src/modules/Dashboard.tsx`
 - Bir sonraki: DetailedPlan iyileştirmeleri (kullanıcı öncelik sırası #1)
 - Bir sonraki: Test — Gmail bağla → navigasyon → Mail'e dön → token hâlâ geçerli mi?
+
+
+---
+
+## [2026-05-14] geliştirme | Finansal Ayarlar modülü — migration_v25 + Ayarlar.tsx
+
+**Yapılan:**
+- Supabase migration_v25: `financial_categories` tablosu (company_id, code, parent_code, name_tr, name_en, is_custom, sort_order, is_active) + unique index + RLS company policy
+- `src/api/financialCategories.ts`: getAll (30s cache), seedIfEmpty (MCODE_LIST'ten 72 M-kodu otomatik), add, update, remove, nextCustomCode (Ö001...), nextChildCode (M489.05...)
+- `src/modules/Ayarlar.tsx`: hiyerarşik ağaç tablosu — parent/child satırlar, inline ad düzenleme (Enter/Esc), aktif toggle (optimistic update + rollback), alt/üst kategori ekleme formu, özel kategori silme
+- `src/App.tsx`: 'ayarlar' ModuleType eklendi, lazy import, rawMenuItems + MENU_GROUPS g5 (Sistem)
+- commit: 2531ddc
+
+**Mimari:**
+- İlk açılışta şirkette 0 kayıt varsa MCODE_LIST otomatik seed edilir
+- parent_code: M489.01 → 'M489', diğerleri null
+- Özel kategoriler: Ö001... prefix, is_custom=true, admin silebilir
+- Standart M-kodlar: sadece ad düzenlenebilir, silinemez
+
+**Bir sonraki:**
+- VarlıkTakibi modülü (Sabit Varlıklar + Depozitolar, TL/EUR çift görünüm)
+- Paraşüt matching → financial_categories Supabase tablosundan çeksin (mcodeList.ts yerine)
+
+---
+
+## [2026-05-14] geliştirme | Varlık Takibi modülü — migration_v26 + VarlikTakibi.tsx
+
+**Yapılan:**
+- Supabase migration_v26: `fixed_assets` (varlık adı, kategori, operasyon, alış tarihi, TL tutarı, kur, kullanım ömrü) + `asset_deposits` (depozito adı, tür, operasyon, ödeme tarihi, TL, kur, tahmini iade, durum) — her iki tabloya RLS policy
+- `src/api/varlikTakibi.ts`: fixedAssetsAPI + assetDepositsAPI (CRUD), yearsElapsed, annualDepreciation, assetBookValue hesap fonksiyonları
+- `src/modules/VarlikTakibi.tsx`: 2 sekme (Sabit Varlıklar / Depozitolar), TL/EUR toggle (kaydedilen kur üzerinden anlık çeviri), M/K/V operasyon filtresi, 3 özet kart, sağdan açılan form paneli, net defter değeri renk göstergesi, depozito durum toggle
+- `src/App.tsx`: 'varlik' ModuleType, lazy import, Finans & Muhasebe grubuna eklendi, Landmark ikonu
+- commit: 7926f57
+
+**Mimari:**
+- exchange_rate: alış anındaki TL/EUR kuru kalıcı olarak kaydedilir → historical EUR tutarı her zaman doğru
+- Net defter değeri = alış değeri − (yıllık amortisman × geçen yıl) — sıfırın altına düşmez
+- Depozitolar aktif/iade durumu optimistic toggle ile tek tıkla değişir
+
+**Bir sonraki:**
+- Paraşüt matching → financial_categories Supabase tablosundan çeksin (mcodeList.ts yerine)
+- DetailedPlan iyileştirmeleri
+
+---
+
+## [2026-05-14] geliştirme | Paraşüt → financial_categories Supabase entegrasyonu
+
+**Yapılan:**
+- `Parasut.tsx`: MCODE_LIST import kaldırıldı → `financialCategoriesAPI` eklendi
+- Modal açılışında `seedIfEmpty + getAll` çağrısı; aktif kategoriler `allMcodes` olarak kullanılır
+- `autoMatchWith(name, mcodes)` ayrı parametre alır (state asenkronluğunu önler)
+- `customMcodes` localStorage state'i tamamen kaldırıldı
+- "Yeni Gider Kalemi" paneli kaldırıldı → modal toolbar'da "Finansal Ayarlar" yönlendirmesi
+- Excel referans sayfası artık Supabase tablosunu yansıtır
+- `Parasut` bileşenine `profile` prop eklendi
+- commit: d9ab97d
+
+**Mimari:**
+- M-kodu taksonomi artık tek kaynaktan: `financial_categories` Supabase tablosu
+- Kategori eşleştirme, varlık takibi, (gelecekte) tüm modüller bu tabloyu kullanacak
+- localStorage tabanlı custom mcodes → Supabase tabanlı Ayarlar modülüne geçti
+
+**Bir sonraki:**
+- DetailedPlan iyileştirmeleri veya PnL operasyon bazlı ayrıştırma

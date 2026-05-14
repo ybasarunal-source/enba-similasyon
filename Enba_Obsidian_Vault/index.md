@@ -39,6 +39,7 @@
 | [[Kararlar/Mimari-Kararlar\|Mimari Kararlar]] | Custom history stack, no-Redux, Google implicit OAuth kararları | 2026-05-04 |
 | [[Kararlar/2026-05-RLS-Dersleri\|RLS Dersleri]] | 5 kural: DROP POLICY tuzakları, SECURITY DEFINER, auth.jwt(), HTTP 500 teşhisi | 2026-05-05 |
 | [[Kararlar/2026-05-Auth-Sorunlari\|Auth Sorunları]] | Tüm kırmızı liste kapatıldı — RLS, DataService, profil bant, SuperAdmin UI | 2026-05-05 |
+| [[Kararlar/2026-05-MKodu-Finansal-Taksonomi\|M-Kodu Finansal Taksonomi]] | financial_categories tablosu aktif; Paraşüt + diğer modüller henüz bağlanmadı | 2026-05-14 |
 
 ---
 
@@ -46,7 +47,9 @@
 
 | Sayfa | Özet | Son Güncelleme |
 |-------|------|----------------|
-| [[Moduller/00-Modul-Listesi\|Modül Listesi]] | 21 modülün tam listesi, core vs izinli, yeni modül adımları | 2026-05-04 |
+| [[Moduller/00-Modul-Listesi\|Modül Listesi]] | 23 modülün tam listesi, core vs izinli, sidebar grupları, yeni modül adımları | 2026-05-14 |
+| [[Moduller/Ayarlar\|Finansal Ayarlar]] | financial_categories Supabase tablosu, M-kodu hiyerarşi yönetimi, seed/özel kategori | 2026-05-14 |
+| [[Moduller/VarlikTakibi\|Varlık Takibi]] | Sabit varlıklar (amortisman) + depozitolar, TL/EUR çift görünüm, M/K/V filtre | 2026-05-14 |
 
 ---
 

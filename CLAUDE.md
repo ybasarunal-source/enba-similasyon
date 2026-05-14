@@ -191,11 +191,12 @@ Custom history stack — tüm navigasyon `App.tsx`'te:
 
 > ⚠️ localStorage key'leri değiştirme: `enba_fast_plans_v2`, `enba_detailed_plans`, `enba_language`, `enba_theme`
 
-### Modüller (21 adet)
+### Modüller (23 adet)
 `src/modules/` — bağımsız React component. Props: `navigate`, `profile`, `user`, `onBack?`
 
 **Core (her zaman görünür):** `dashboard`, `profile`, `tasks`, `calendar`, `modules`, `mail`, `fixedexpenses`
 **İzinli:** diğerleri → `profile.permissions[moduleId]`
+**Yeni (2026-05-14):** `ayarlar` (Finansal Kategoriler), `varlik` (Varlık Takibi)
 
 ---
 
@@ -324,20 +325,24 @@ Veri kaybı riski olan her adımı kullanıcıya açıkça belirt ve onay al.
 - [x] Mail hata göstergesi — Gmail API 403/401 görünür hata mesajı (commit ea2ac63)
 - [x] PnL kaydet fix — UUID mismatch + Supabase query chaining (commit a125eed)
 
+### Tamamlanan (2026-05-14)
+- [x] **Finansal Ayarlar modülü** (`ayarlar`) — financial_categories Supabase tablosu, M-kodu hiyerarşi yönetimi, seed/özel kategori (commit 2531ddc)
+- [x] **Varlık Takibi modülü** (`varlik`) — sabit varlıklar + depozitolar, TL/EUR çift görünüm, M/K/V filtre, amortisman hesabı (commit 7926f57)
+
 ### Kullanıcı Öncelik Sırası
 1. **DetailedPlan iyileştirmeleri**
-2. **Paraşüt tamamlama** — Enba stok ↔ Paraşüt item eşleştirmesi, yazma uç noktaları
-3. **PnL analizi güçlendirme**
+2. **Paraşüt tamamlama** — financial_categories tablosuna bağla, Enba stok ↔ Paraşüt item eşleştirmesi
+3. **PnL analizi güçlendirme** — operasyon (M/K/V) bazlı ayrıştırma
 4. **Yapay zeka asistanı** — siteye entegre AI chat
 
 ### Bekleyen Teknik Görevler
 - [ ] **Admin test hesabı** — Supabase'de `role='admin'` + geçerli `company_id` → şirket izolasyonunu doğrula
-- [ ] **Paraşüt tamamlama** — stok eşleştirmesi, kalan uç noktalar
+- [ ] **Paraşüt → financial_categories** — Paraşüt eşleştirme modalı mcodeList.ts yerine Supabase tablosundan çeksin
 - [ ] **E-fatura** — ertelendi (müşteri talebi olursa)
 - [ ] **Bordro/muhasebe** — ertelendi (müşteri talebi olursa)
 
 ### Bir Sonraki Oturumda İlk Yapılacak
-**DetailedPlan iyileştirmeleri** — öncelik sırasına göre belirlenecek
+**DetailedPlan iyileştirmeleri** veya **Paraşüt → financial_categories bağlantısı**
 
 ---
 

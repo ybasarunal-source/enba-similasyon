@@ -20,6 +20,7 @@ import {
 import { parasutService, type ParasutInvoice, type ParasutItem } from '../api/parasut';
 import { financialCategoriesAPI } from '../api/financialCategories';
 import type { UserProfile } from '../api/supabase';
+import { Ayarlar } from './Ayarlar';
 
 type DatePreset = 'this_month' | 'last_3' | 'this_year' | 'custom';
 type TypeFilter = 'all' | 'income' | 'expense';
@@ -210,6 +211,7 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
     { id: 'V', label: 'Varsak' },
   ];
   const [showCatModal, setShowCatModal]   = useState(false);
+  const [showAyarlarPanel, setShowAyarlarPanel] = useState(false);
   const [catStep, setCatStep]             = useState<CatStep>('idle');
   const [catRows, setCatRows]             = useState<CatRow[]>([]);
   const [catProgress, setCatProgress]     = useState({ done: 0, total: 0, errors: 0 });
@@ -246,6 +248,14 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
     const cats = await parasutService.getItemCategories(companyId);
     setCatRows(cats.map(c => ({ id: c.id, name: c.name, ...autoMatchWith(c.name, mcodes), toDelete: false })));
     setCatStep('ready');
+  };
+
+  const reloadMcodes = async () => {
+    if (!profile?.company_id) return;
+    try {
+      const cats = await financialCategoriesAPI.getAll(profile.company_id, true);
+      setSupabaseCats(cats.filter(c => c.is_active).map(c => ({ code: c.code, tr: c.name_tr })));
+    } catch { /* ignore */ }
   };
 
   const toggleDelete = (id: string) => {
@@ -833,6 +843,30 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
         </div>
       </>}
 
+      {/* ── Finansal Ayarlar Side Panel ───────────────────────────────────── */}
+      {showAyarlarPanel && (
+        <div className="fixed inset-0 z-[60] flex">
+          <div
+            className="flex-1 bg-black/40 backdrop-blur-sm"
+            onClick={async () => { setShowAyarlarPanel(false); await reloadMcodes(); }}
+          />
+          <div className="w-[680px] bg-white shadow-2xl flex flex-col h-full">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
+              <h2 className="text-base font-bold text-gray-800">Finansal Kategoriler</h2>
+              <button
+                onClick={async () => { setShowAyarlarPanel(false); await reloadMcodes(); }}
+                className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 hover:bg-gray-200 transition-colors"
+              >
+                <X size={15} />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              <Ayarlar profile={profile} />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Kategori Eşleştirme Modal ──────────────────────────────────────── */}
       {showCatModal && (() => {
         const toDelete  = catRows.filter(r => r.toDelete);
@@ -877,7 +911,7 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
                     <input type="file" accept=".xlsx,.xls" className="hidden"
                       onChange={e => { const f = e.target.files?.[0]; if (f) importCatExcel(f); e.target.value = ''; }} />
                   </label>
-                  <button onClick={() => { setShowCatModal(false); navigate('ayarlar'); }} className="text-[11px] text-gray-400 italic hover:text-violet-600 transition-colors">
+                  <button onClick={() => setShowAyarlarPanel(true)} className="text-[11px] text-gray-400 italic hover:text-violet-600 transition-colors">
                     Özel kategoriler → <span className="font-medium text-violet-500 underline underline-offset-2">Finansal Ayarlar</span>
                   </button>
                   <div className="flex-1" />
