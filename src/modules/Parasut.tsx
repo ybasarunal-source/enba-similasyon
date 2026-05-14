@@ -225,7 +225,8 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
   const autoMatchWith = (name: string, mcodes: { code: string; tr: string }[]): { prefix: string; mcode: string; newName: string } => {
     const firstChar = name.replace(/^[\s\-_]+/, '')[0]?.toUpperCase() || '';
     const prefix = firstChar === 'K' ? 'K' : firstChar === 'V' ? 'V' : 'M';
-    const match = name.match(/\bM(\d{3,4}(?:\.\d{2})?)\b/i);
+    // "M489", "M489.01", "489", "489.01" formatlarını yakala
+    const match = name.match(/\b[Mm]?([1-9]\d{2,3}(?:\.\d{2})?)\b/);
     if (match) {
       const mcode = ('M' + match[1]).toUpperCase();
       const found = mcodes.find(m => m.code === mcode);
@@ -267,8 +268,10 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
   const updateRowPrefix = (id: string, prefix: string) => {
     setCatRows(prev => prev.map(r => {
       if (r.id !== id) return r;
-      const found = allMcodes.find(m => m.code === r.mcode);
-      return { ...r, prefix, newName: found ? `${prefix} - ${found.tr}` : r.newName };
+      // Mcode yoksa col 1 adından yeniden çıkart
+      const mcode = r.mcode || autoMatchWith(r.name, allMcodes).mcode;
+      const found = allMcodes.find(m => m.code === mcode);
+      return { ...r, prefix, mcode, newName: found ? `${prefix} - ${found.tr}` : r.newName };
     }));
   };
 
