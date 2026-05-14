@@ -192,34 +192,32 @@ export const Parasut: React.FC = () => {
   const [dateTo,   setDateTo]   = useState(() => getRange('this_month').to);
 
   // Kategori eşleştirme
-  type CatRow = { id: string; name: string; code: string; prefix: string; mcode: string; newName: string };
+  type CatRow = { id: string; name: string; prefix: string; mcode: string; newName: string };
   type CatStep = 'idle' | 'fetching' | 'ready' | 'uploading';
-  const OPERATIONS = [
+  const CAT_OPERATIONS = [
     { id: 'M', label: 'Merkez' },
     { id: 'K', label: 'Kömürcüler' },
     { id: 'V', label: 'Varsak' },
   ];
-  const derivePrefix = (code: string) => {
-    const u = code.trim().toUpperCase();
-    if (u.startsWith('V')) return 'V';
-    if (u.startsWith('K')) return 'K';
-    return 'M';
-  };
   const [showCatModal, setShowCatModal]     = useState(false);
   const [catStep, setCatStep]               = useState<CatStep>('idle');
   const [catRows, setCatRows]               = useState<CatRow[]>([]);
-  const [catOp, setCatOp]                   = useState('M');
   const [catProgress, setCatProgress]       = useState({ done: 0, total: 0, errors: 0 });
 
   const fetchCategories = async () => {
     setCatStep('fetching');
     const cats = await parasutService.getItemCategories(companyId);
-    setCatRows(cats.map(c => ({
-      id: c.id, name: c.name, code: c.code,
-      prefix: derivePrefix(c.code),
-      mcode: '', newName: '',
-    })));
+    setCatRows(cats.map(c => ({ id: c.id, name: c.name, prefix: 'M', mcode: '', newName: '' })));
     setCatStep('ready');
+  };
+
+  const updateRowPrefix = (id: string, prefix: string) => {
+    setCatRows(prev => prev.map(r => {
+      if (r.id !== id) return r;
+      const found = MCODE_LIST.find(m => m.code === r.mcode);
+      const newName = found ? `${prefix} - ${found.tr}` : r.newName;
+      return { ...r, prefix, newName };
+    }));
   };
 
   const updateRow = (id: string, mcode: string) => {
@@ -239,11 +237,11 @@ export const Parasut: React.FC = () => {
     const xlsx = await import('xlsx');
     const wb = xlsx.utils.book_new();
     const data1 = [
-      ['ID', 'Kod', 'Operasyon', 'Mevcut Paraşüt Adı', 'M-Kodu', 'Yeni Ad (Otomatik / Düzenlenebilir)'],
-      ...catRows.map(r => [r.id, r.code, r.prefix, r.name, r.mcode, r.newName]),
+      ['ID', 'Mevcut Paraşüt Adı', 'Operasyon', 'M-Kodu', 'Yeni Ad (Otomatik / Düzenlenebilir)'],
+      ...catRows.map(r => [r.id, r.name, r.prefix, r.mcode, r.newName]),
     ];
     const ws1 = xlsx.utils.aoa_to_sheet(data1);
-    ws1['!cols'] = [{ wch: 10 }, { wch: 12 }, { wch: 14 }, { wch: 45 }, { wch: 14 }, { wch: 65 }];
+    ws1['!cols'] = [{ wch: 10 }, { wch: 45 }, { wch: 14 }, { wch: 14 }, { wch: 65 }];
     xlsx.utils.book_append_sheet(wb, ws1, 'Eşleştirme');
     const data2 = [
       ['M-Kodu', 'İngilizce Açıklama', 'Paraşüt Kategori Adı (TR)'],
@@ -261,27 +259,20 @@ export const Parasut: React.FC = () => {
     const wb = xlsx.read(buf);
     const ws = wb.Sheets[wb.SheetNames[0]];
     const rows = xlsx.utils.sheet_to_json(ws, { header: 1 }) as any[][];
-    const updates: { id: string; mcode: string; newName: string }[] = [];
+    const updates: { id: string; prefix: string; mcode: string; newName: string }[] = [];
     for (const row of rows.slice(1)) {
       const id       = String(row[0] || '').trim();
-      const mcode    = String(row[4] || '').trim().toUpperCase();
-      const override = String(row[5] || '').trim();
+      const prefix   = String(row[2] || 'M').trim().toUpperCase();
+      const mcode    = String(row[3] || '').trim().toUpperCase();
+      const override = String(row[4] || '').trim();
       if (!id) continue;
       const found = MCODE_LIST.find(m => m.code === mcode);
-      const newName = override || '';
-      if (!newName && found) {
-        // Will be rebuilt per-row with prefix on import
-        updates.push({ id, mcode, newName: '' });
-      } else {
-        updates.push({ id, mcode, newName });
-      }
+      const newName = override || (found ? `${prefix} - ${found.tr}` : '');
+      updates.push({ id, prefix, mcode, newName });
     }
     setCatRows(prev => prev.map(r => {
       const u = updates.find(x => x.id === r.id);
-      if (!u) return r;
-      const found = MCODE_LIST.find(m => m.code === u.mcode);
-      const newName = u.newName || (found ? `${r.prefix} - ${found.tr}` : '');
-      return { ...r, mcode: u.mcode, newName };
+      return u ? { ...r, prefix: u.prefix, mcode: u.mcode, newName: u.newName } : r;
     }));
   };
 
@@ -299,11 +290,7 @@ export const Parasut: React.FC = () => {
     }
     // Refresh
     const cats = await parasutService.getItemCategories(companyId);
-    setCatRows(cats.map(c => ({
-      id: c.id, name: c.name, code: c.code,
-      prefix: derivePrefix(c.code),
-      mcode: '', newName: '',
-    })));
+    setCatRows(cats.map(c => ({ id: c.id, name: c.name, prefix: 'M', mcode: '', newName: '' })));
     setCatStep('ready');
   };
 
@@ -766,8 +753,6 @@ export const Parasut: React.FC = () => {
       {/* ── Kategori Eşleştirme Modal ──────────────────────────────────────── */}
       {showCatModal && (() => {
         const toUpdate = catRows.filter(r => r.newName.trim());
-        const visibleRows = catRows.filter(r => r.prefix === catOp);
-        const visibleMatched = visibleRows.filter(r => r.newName.trim()).length;
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
             onClick={() => { if (catStep !== 'uploading') setShowCatModal(false); }}>
@@ -781,7 +766,7 @@ export const Parasut: React.FC = () => {
                     <FileSpreadsheet size={16} className="text-violet-500" /> Kategori Eşleştirme
                   </h2>
                   <p className="text-xs text-gray-400 mt-0.5">
-                    Operasyon seçin → M-kodu girin → Yeni Ad prefix'li dolar → Uygula ile Paraşüt'e yükle
+                    Operasyon seçin → M-kodu girin → Yeni Ad otomatik dolar → Uygula ile Paraşüt'e yükle
                   </p>
                 </div>
                 <button onClick={() => setShowCatModal(false)}
@@ -789,30 +774,6 @@ export const Parasut: React.FC = () => {
                   <X size={15} />
                 </button>
               </div>
-
-              {/* Operasyon sekmeleri */}
-              {catStep === 'ready' && (
-                <div className="flex items-center gap-1 px-6 pt-3 pb-0 flex-shrink-0">
-                  {OPERATIONS.map(op => {
-                    const opRows = catRows.filter(r => r.prefix === op.id);
-                    const opMatched = opRows.filter(r => r.newName.trim()).length;
-                    return (
-                      <button key={op.id} onClick={() => setCatOp(op.id)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-t-xl text-xs font-semibold border-b-2 transition-all ${
-                          catOp === op.id
-                            ? 'border-violet-500 text-violet-700 bg-violet-50'
-                            : 'border-transparent text-gray-400 hover:text-gray-600 bg-transparent'
-                        }`}>
-                        <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                          catOp === op.id ? 'bg-violet-500 text-white' : 'bg-gray-200 text-gray-500'
-                        }`}>{op.id}</span>
-                        {op.label}
-                        <span className="text-[10px] opacity-60">{opMatched}/{opRows.length}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
 
               {/* Toolbar */}
               <div className="flex items-center gap-3 px-6 py-3 border-b border-gray-100 bg-gray-50/50 flex-shrink-0 flex-wrap">
@@ -827,12 +788,7 @@ export const Parasut: React.FC = () => {
                 </label>
                 <div className="flex-1" />
                 {catStep === 'ready' && (
-                  <span className="text-xs text-gray-400">
-                    {visibleRows.length} kategori · {visibleMatched} eşleştirildi
-                    {toUpdate.length !== visibleMatched && (
-                      <span className="ml-1 text-violet-500">· toplam {toUpdate.length} hazır</span>
-                    )}
-                  </span>
+                  <span className="text-xs text-gray-400">{catRows.length} kategori · {toUpdate.length} eşleştirildi</span>
                 )}
                 <button onClick={applyMappings}
                   disabled={catStep !== 'ready' || toUpdate.length === 0}
@@ -885,15 +841,26 @@ export const Parasut: React.FC = () => {
                     <thead className="sticky top-0 bg-gray-50 z-10">
                       <tr className="border-b border-gray-100">
                         <th className="px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider text-left">Mevcut Paraşüt Adı</th>
+                        <th className="px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider text-left w-36">Operasyon</th>
                         <th className="px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider text-left w-36">M-Kodu</th>
-                        <th className="px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider text-left">Yeni Ad ({catOp} - ...)</th>
+                        <th className="px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider text-left">Yeni Ad</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {visibleRows.map((row, i) => (
+                      {catRows.map((row, i) => (
                         <tr key={row.id} className={`border-b border-gray-50 ${i % 2 === 0 ? '' : 'bg-gray-50/40'}`}>
-                          <td className="px-5 py-2.5 text-xs text-gray-700 font-medium">{row.name}</td>
-                          <td className="px-5 py-2.5">
+                          <td className="px-5 py-2 text-xs text-gray-700 font-medium">{row.name}</td>
+                          <td className="px-5 py-2">
+                            <select
+                              value={row.prefix}
+                              onChange={e => updateRowPrefix(row.id, e.target.value)}
+                              className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs outline-none focus:border-violet-400 bg-white">
+                              {CAT_OPERATIONS.map(op => (
+                                <option key={op.id} value={op.id}>{op.id} — {op.label}</option>
+                              ))}
+                            </select>
+                          </td>
+                          <td className="px-5 py-2">
                             <input
                               list={`mcode-list-${row.id}`}
                               value={row.mcode}
@@ -907,23 +874,16 @@ export const Parasut: React.FC = () => {
                               ))}
                             </datalist>
                           </td>
-                          <td className="px-5 py-2.5">
+                          <td className="px-5 py-2">
                             <input
                               value={row.newName}
                               onChange={e => updateNewName(row.id, e.target.value)}
-                              placeholder={`${row.prefix} - otomatik dolar...`}
+                              placeholder="Otomatik dolar..."
                               className={`w-full border rounded-lg px-2 py-1.5 text-xs outline-none focus:border-violet-400 bg-white ${row.newName ? 'border-emerald-300 text-emerald-700 font-medium' : 'border-gray-200 text-gray-400'}`}
                             />
                           </td>
                         </tr>
                       ))}
-                      {visibleRows.length === 0 && (
-                        <tr>
-                          <td colSpan={3} className="px-5 py-12 text-center text-xs text-gray-400">
-                            Bu operasyona ait kategori bulunamadı (kod: {catOp}* ile başlayanlar)
-                          </td>
-                        </tr>
-                      )}
                     </tbody>
                   </table>
                 )}
