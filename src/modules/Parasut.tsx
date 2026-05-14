@@ -204,10 +204,26 @@ export const Parasut: React.FC = () => {
   const [catRows, setCatRows]               = useState<CatRow[]>([]);
   const [catProgress, setCatProgress]       = useState({ done: 0, total: 0, errors: 0 });
 
+  const autoMatchCategory = (name: string): { prefix: string; mcode: string; newName: string } => {
+    // Detect K/V prefix: look at the first non-space/dash character of the name
+    const firstChar = name.replace(/^[\s\-_]+/, '')[0]?.toUpperCase() || '';
+    const prefix = firstChar === 'K' ? 'K' : firstChar === 'V' ? 'V' : 'M';
+
+    // Detect M-code: find pattern like M105, M489.01 anywhere in the name
+    const match = name.match(/\bM(\d{3,4}(?:\.\d{2})?)\b/i);
+    if (match) {
+      const mcode = ('M' + match[1]).toUpperCase();
+      const found = MCODE_LIST.find(m => m.code === mcode);
+      if (found) return { prefix, mcode, newName: `${prefix} - ${found.tr}` };
+    }
+
+    return { prefix, mcode: '', newName: '' };
+  };
+
   const fetchCategories = async () => {
     setCatStep('fetching');
     const cats = await parasutService.getItemCategories(companyId);
-    setCatRows(cats.map(c => ({ id: c.id, name: c.name, prefix: 'M', mcode: '', newName: '' })));
+    setCatRows(cats.map(c => ({ id: c.id, name: c.name, ...autoMatchCategory(c.name) })));
     setCatStep('ready');
   };
 
@@ -788,7 +804,12 @@ export const Parasut: React.FC = () => {
                 </label>
                 <div className="flex-1" />
                 {catStep === 'ready' && (
-                  <span className="text-xs text-gray-400">{catRows.length} kategori · {toUpdate.length} eşleştirildi</span>
+                  <span className="text-xs text-gray-400">
+                    {catRows.length} kategori · <span className="text-emerald-600 font-medium">{toUpdate.length} eşleştirildi</span>
+                    {catRows.length - toUpdate.length > 0 && (
+                      <span className="text-amber-500"> · {catRows.length - toUpdate.length} bekliyor</span>
+                    )}
+                  </span>
                 )}
                 <button onClick={applyMappings}
                   disabled={catStep !== 'ready' || toUpdate.length === 0}
