@@ -219,7 +219,7 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
   const [catProgress, setCatProgress]     = useState({ done: 0, total: 0, errors: 0 });
   const [confirmData, setConfirmData]     = useState<ConfirmData | null>(null);
   const [subasCats, setSupabaseCats]      = useState<{ code: string; tr: string }[]>([]);
-  type UploadError = { op: string; name: string };
+  type UploadError = { op: string; name: string; detail?: string };
   const [uploadReport, setUploadReport]   = useState<UploadError[]>([]);
   const [openMcodeFor, setOpenMcodeFor]   = useState<string | null>(null);
   const [mcodeQuery, setMcodeQuery]       = useState('');
@@ -434,7 +434,7 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
             data: { type: 'item_categories', attributes: { name: `${op} - ${c.tr}` } },
           });
           await tick(true);
-        } catch { await tick(false, { op: 'Yeni Oluştur', name: `${op} - ${c.tr}` }); }
+        } catch (e: any) { await tick(false, { op: 'Yeni Oluştur', name: `${op} - ${c.tr}`, detail: e.message }); }
       }
     }
     const cats = await parasutService.getItemCategories(companyId);
@@ -1241,6 +1241,7 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
                         <tr className="border-b border-rose-100">
                           <th className="px-4 py-2 text-left text-rose-400 font-semibold">İşlem</th>
                           <th className="px-4 py-2 text-left text-rose-400 font-semibold">Kategori</th>
+                          <th className="px-4 py-2 text-left text-rose-400 font-semibold">Hata</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1248,13 +1249,11 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
                           <tr key={i} className="border-t border-rose-100">
                             <td className="px-4 py-1.5 text-rose-500 font-medium whitespace-nowrap">{e.op}</td>
                             <td className="px-4 py-1.5 text-rose-700">{e.name}</td>
+                            <td className="px-4 py-1.5 text-rose-400 text-[10px] max-w-xs truncate" title={e.detail}>{e.detail || '—'}</td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
-                    <div className="px-4 py-2 text-[10px] text-rose-400 border-t border-rose-100">
-                      Paraşüt API genellikle rate limit (429) veya izin hatası nedeniyle reddeder. Birkaç dakika bekleyip tekrar dene.
-                    </div>
                   </div>
                 )}
 
