@@ -246,7 +246,7 @@ export const parasutService = {
       const c = included.find((i: any) => i.id === id && i.type === 'item_categories');
       if (!c) return '';
       const ct: string = c.attributes?.category_type?.toLowerCase() || '';
-      if (ct.includes('contact') || ct.includes('employee')) return '';
+      if (ct.includes('contact') || ct.includes('employee') || ct.includes('item')) return '';
       return c.attributes?.name || '';
     };
     return (raw.data || []).filter((item: any) => item.attributes?.status !== 'cancelled' && item.attributes?.status !== 'void').map((item: any) => {
@@ -334,7 +334,7 @@ export const parasutService = {
       return (raw.data || [])
         .filter((cat: any) => {
           const ct: string = cat.attributes?.category_type?.toLowerCase() || '';
-          return !ct.includes('contact') && !ct.includes('employee');
+          return !ct.includes('contact') && !ct.includes('employee') && !ct.includes('item');
         })
         .map((cat: any) => ({
           id: cat.id,
