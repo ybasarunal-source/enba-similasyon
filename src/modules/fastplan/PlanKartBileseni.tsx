@@ -31,41 +31,52 @@ export const PlanKartBileseni: React.FC<PlanKartProps> = ({
   const dispParams = selectedVer === 'current' ? plan.params : (versions[selectedVer as number]?.params ?? plan.params);
   const s = dispSonuc;
 
-  const seritRenk = s.ebitdaMarji >= 15 ? 'bg-emerald-400'
-    : s.ebitdaMarji >= 5 ? 'bg-yellow-400'
-    : s.ebitdaMarji > 0 ? 'bg-rose-400'
-    : 'bg-gray-200';
+  const stripColor = s.ebitdaMarji >= 15 ? 'bg-enba-green'
+    : s.ebitdaMarji >= 5 ? 'bg-enba-amber'
+    : s.ebitdaMarji > 0 ? 'bg-enba-red'
+    : 'bg-enba-line-2';
+
+  const marjPillCls = s.ebitdaMarji >= 15
+    ? 'bg-enba-green/15 text-enba-green'
+    : s.ebitdaMarji >= 5 ? 'bg-enba-amber/15 text-enba-amber'
+    : 'bg-enba-red/15 text-enba-red';
 
   return (
-    <div className={`bg-white rounded-[2.5rem] border-2 transition-all duration-300 overflow-hidden shadow-card ${
-      isSelectedForCompare ? 'border-blue-400 shadow-blue-200/50 shadow-lg' : aktif ? 'border-enba-orange shadow-enba-orange/10' : 'border-transparent'
+    <div className={`bg-enba-panel rounded-xl border transition-all duration-200 overflow-hidden ${
+      isSelectedForCompare
+        ? 'border-enba-blue/60 shadow-sm shadow-enba-blue/10'
+        : aktif
+          ? 'border-enba-orange/50 shadow-sm shadow-enba-orange/10'
+          : 'border-enba-line hover:border-enba-line-2'
     }`}>
-      <div className={`h-1 ${seritRenk}`} />
+      {/* Color strip */}
+      <div className={`h-0.5 ${stripColor}`} />
 
-      <div className={`px-8 py-5 ${aktif ? 'bg-enba-orange/5' : 'bg-gray-50'} border-b border-gray-100 flex items-start justify-between gap-4`}>
+      {/* Card header */}
+      <div className={`px-5 py-4 ${aktif ? 'bg-enba-orange/5' : 'bg-enba-panel-2/40'} border-b border-enba-line flex items-start justify-between gap-3`}>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-3 mb-1">
-            {aktif && <div className="w-2 h-2 rounded-full bg-enba-orange animate-pulse flex-shrink-0" />}
-            <h3 className="font-black text-enba-dark text-sm uppercase tracking-tight truncate">{plan.baslik}</h3>
+          <div className="flex items-center gap-2 mb-1">
+            {aktif && <div className="w-1.5 h-1.5 rounded-full bg-enba-orange animate-pulse flex-shrink-0" />}
+            <h3 className="font-semibold text-enba-text text-[13px] truncate">{plan.baslik}</h3>
           </div>
           {plan.etiket && (
-            <span className="inline-flex items-center mt-1 mb-1 px-2.5 py-0.5 bg-enba-dark/5 text-enba-dark text-[9px] font-black uppercase tracking-widest rounded-full">
+            <span className="inline-flex items-center mt-0.5 mb-1 px-2 py-0.5 bg-enba-panel-2 border border-enba-line text-enba-muted text-[10px] font-medium uppercase tracking-[0.1em] rounded-full">
               {plan.etiket}
             </span>
           )}
           {plan.aciklama && (
-            <p className="text-[10px] text-gray-400 font-medium truncate">{plan.aciklama}</p>
+            <p className="text-[11px] text-enba-muted truncate">{plan.aciklama}</p>
           )}
           {versions.length === 0 ? (
-            <div className="text-[9px] font-black text-gray-300 uppercase tracking-widest mt-1.5">
+            <div className="text-[10px] text-enba-dim mt-1">
               {new Date(plan.createdAt).toLocaleDateString('tr-TR')} · {fmtDec(dispParams.aylikTon)} ton/ay
             </div>
           ) : (
-            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
               <select
                 value={selectedVer === 'current' ? 'current' : String(selectedVer)}
                 onChange={e => setSelectedVer(e.target.value === 'current' ? 'current' : Number(e.target.value))}
-                className="text-[9px] font-black text-enba-orange bg-enba-orange/10 border-none rounded-lg px-2 py-1 outline-none cursor-pointer"
+                className="text-[10px] font-medium text-enba-orange bg-enba-orange/10 border border-enba-orange/20 rounded-md px-2 py-0.5 outline-none cursor-pointer"
               >
                 <option value="current">Güncel (V{versions.length + 1}) · {new Date(plan.updatedAt || plan.createdAt).toLocaleDateString('tr-TR')}</option>
                 {[...versions].map((v, i) => (
@@ -74,10 +85,10 @@ export const PlanKartBileseni: React.FC<PlanKartProps> = ({
                   </option>
                 )).reverse()}
               </select>
-              <span className="text-[9px] text-gray-300 font-black">{fmtDec(dispParams.aylikTon)} ton/ay</span>
+              <span className="text-[10px] text-enba-dim">{fmtDec(dispParams.aylikTon)} ton/ay</span>
               <button
                 onClick={() => onVersionCompare(selectedVer === 'current' ? versions.length - 1 : selectedVer as number)}
-                className="text-[9px] font-black text-gray-400 hover:text-blue-500 uppercase tracking-widest transition-colors"
+                className="text-[10px] font-medium text-enba-muted hover:text-enba-blue transition-colors"
               >
                 Kıyasla ↔
               </button>
@@ -87,53 +98,61 @@ export const PlanKartBileseni: React.FC<PlanKartProps> = ({
         <button
           onClick={onToggle}
           title={aktif ? 'Pasife Al' : 'Aktifleştir'}
-          className={`w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-2xl transition-all ${aktif ? 'bg-enba-orange text-white shadow-lg shadow-enba-orange/30' : 'bg-gray-100 text-gray-400 hover:bg-enba-orange/10 hover:text-enba-orange'}`}
+          className={`w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-lg transition-all ${
+            aktif
+              ? 'bg-enba-orange text-white shadow-sm shadow-enba-orange/30'
+              : 'bg-enba-panel-2 border border-enba-line text-enba-dim hover:border-enba-orange/40 hover:text-enba-orange'
+          }`}
         >
-          {aktif ? <Play size={16} className="fill-white" /> : <Play size={16} />}
+          {aktif ? <Play size={15} className="fill-white" /> : <Play size={15} />}
         </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-px bg-gray-100">
+      {/* KPI grid */}
+      <div className="grid grid-cols-2 divide-x divide-y divide-enba-line">
         {[
-          { label: 'Gelir', value: `₺${fmt(s.satisGeliri)}`, color: 'text-emerald-600' },
-          { label: 'Gider', value: `₺${fmt(s.totalGider)}`, color: 'text-rose-500' },
-          { label: 'FAVÖK', value: `₺${fmt(s.ebitda)}`, color: kpiColor(s.ebitda) },
-          { label: 'Net Kâr', value: `₺${fmt(s.netKar)}`, color: kpiColor(s.netKar) },
+          { label: 'Gelir',   value: `₺${fmt(s.satisGeliri)}`, color: 'text-enba-green' },
+          { label: 'Gider',   value: `₺${fmt(s.totalGider)}`,  color: 'text-enba-red'   },
+          { label: 'FAVÖK',   value: `₺${fmt(s.ebitda)}`,      color: kpiColor(s.ebitda) },
+          { label: 'Net Kâr', value: `₺${fmt(s.netKar)}`,      color: kpiColor(s.netKar) },
         ].map((kpi, i) => (
-          <div key={i} className="bg-white px-6 py-5">
-            <div className="text-[9px] font-black text-gray-400 uppercase tracking-[2px]">{kpi.label}</div>
-            <div className={`text-base font-black tabular-nums ${kpi.color} leading-tight mt-1`}>{kpi.value}</div>
+          <div key={i} className="px-5 py-4">
+            <div className="text-[10px] font-medium text-enba-muted uppercase tracking-[0.1em]">{kpi.label}</div>
+            <div className={`text-[15px] font-semibold tabular ${kpi.color} leading-tight mt-0.5`}>{kpi.value}</div>
           </div>
         ))}
       </div>
 
-      <div className="px-8 py-5 flex items-center justify-between">
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${s.ebitdaMarji >= 15 ? 'bg-emerald-100 text-emerald-700' : s.ebitdaMarji >= 5 ? 'bg-yellow-100 text-yellow-700' : 'bg-rose-100 text-rose-700'}`}>
+      {/* Footer */}
+      <div className="px-5 py-3 flex items-center justify-between border-t border-enba-line">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-[0.08em] ${marjPillCls}`}>
             EBITDA %{fmtDec(s.ebitdaMarji)}
-          </div>
+          </span>
           {s.birimMaliyet > 0 && (
-            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest tabular-nums">
+            <span className="text-[10px] text-enba-dim tabular">
               ₺{fmt(s.birimMaliyet)}/ton
             </span>
           )}
         </div>
-        <div className="flex items-center gap-1">
-          <button onClick={onEdit} title="Düzenle" className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-gray-100 text-gray-400 hover:text-enba-dark transition-all">
-            <Edit3 size={15} />
+        <div className="flex items-center gap-0.5">
+          <button onClick={onEdit} title="Düzenle" className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-enba-panel-2 text-enba-dim hover:text-enba-text transition-all">
+            <Edit3 size={14} />
           </button>
-          <button onClick={onCopy} title="Kopyala" className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-gray-100 text-gray-400 hover:text-enba-dark transition-all">
-            <Copy size={15} />
+          <button onClick={onCopy} title="Kopyala" className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-enba-panel-2 text-enba-dim hover:text-enba-text transition-all">
+            <Copy size={14} />
           </button>
           <button onClick={onCompare} title={isSelectedForCompare ? 'Seçimi Kaldır' : 'Karşılaştır'}
-            className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all ${isSelectedForCompare ? 'bg-blue-500 text-white' : 'hover:bg-blue-50 text-gray-400 hover:text-blue-500'}`}>
-            {isSelectedForCompare ? <X size={15} /> : <Scale size={15} />}
+            className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all ${
+              isSelectedForCompare ? 'bg-enba-blue text-white' : 'hover:bg-enba-panel-2 text-enba-dim hover:text-enba-blue'
+            }`}>
+            {isSelectedForCompare ? <X size={14} /> : <Scale size={14} />}
           </button>
-          <button onClick={onArchive} title="Arşivle" className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-gray-100 text-gray-400 hover:text-enba-dark transition-all">
-            <Archive size={15} />
+          <button onClick={onArchive} title="Arşivle" className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-enba-panel-2 text-enba-dim hover:text-enba-text transition-all">
+            <Archive size={14} />
           </button>
-          <button onClick={onDelete} title="Sil" className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-rose-50 text-gray-400 hover:text-rose-500 transition-all">
-            <Trash2 size={15} />
+          <button onClick={onDelete} title="Sil" className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-enba-red/10 text-enba-dim hover:text-enba-red transition-all">
+            <Trash2 size={14} />
           </button>
         </div>
       </div>
@@ -152,43 +171,43 @@ interface ArşivProps {
 export const ArşivBolumu: React.FC<ArşivProps> = ({ planlar, onRestore, onDelete, fmt, fmtDec }) => {
   const [acik, setAcik] = useState(false);
   return (
-    <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
+    <div className="bg-enba-panel border border-enba-line rounded-xl overflow-hidden">
       <button onClick={() => setAcik(v => !v)}
-        className="w-full flex items-center justify-between px-8 py-5 hover:bg-gray-50/50 transition-colors">
+        className="w-full flex items-center justify-between px-5 py-4 hover:bg-enba-panel-2/60 transition-colors">
         <div className="flex items-center gap-3">
-          <Archive size={16} className="text-gray-400" />
-          <span className="text-[10px] font-black text-gray-400 uppercase tracking-[3px]">
+          <Archive size={15} className="text-enba-muted" />
+          <span className="text-[11px] font-medium text-enba-muted uppercase tracking-[0.1em]">
             Arşivlenmiş Planlar — {planlar.length} Kart
           </span>
         </div>
-        {acik ? <ChevronUp size={16} className="text-gray-300" /> : <ChevronDown size={16} className="text-gray-300" />}
+        {acik ? <ChevronUp size={15} className="text-enba-dim" /> : <ChevronDown size={15} className="text-enba-dim" />}
       </button>
       {acik && (
-        <div className="px-8 pb-8 space-y-3">
+        <div className="px-5 pb-5 space-y-2 border-t border-enba-line pt-3">
           {planlar.map(plan => {
             const s = plan.sonuc;
             return (
-              <div key={plan.id} className="flex items-center gap-4 px-6 py-4 bg-gray-50 rounded-2xl opacity-70">
+              <div key={plan.id} className="flex items-center gap-3 px-4 py-3 bg-enba-panel-2 border border-enba-line rounded-lg opacity-70 hover:opacity-90 transition-opacity">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
-                    <span className="font-black text-sm text-gray-600 uppercase truncate">{plan.baslik}</span>
+                    <span className="font-medium text-[13px] text-enba-text truncate">{plan.baslik}</span>
                     {plan.etiket && (
-                      <span className="px-2 py-0.5 bg-gray-200 text-gray-500 text-[9px] font-black uppercase tracking-widest rounded-full flex-shrink-0">
+                      <span className="px-1.5 py-0.5 bg-enba-panel border border-enba-line text-enba-dim text-[10px] font-medium uppercase rounded-full flex-shrink-0">
                         {plan.etiket}
                       </span>
                     )}
                   </div>
-                  <div className="text-[9px] text-gray-400 font-medium">
+                  <div className="text-[10px] text-enba-dim">
                     {new Date(plan.createdAt).toLocaleDateString('tr-TR')} · {fmtDec(plan.params.aylikTon)} ton/ay · Net ₺{fmt(s.netKar)} · EBITDA %{fmtDec(s.ebitdaMarji)}
                   </div>
                 </div>
                 <button onClick={() => onRestore(plan.id)} title="Geri Al"
-                  className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-xl hover:bg-emerald-50 text-gray-400 hover:text-emerald-600 transition-all">
-                  <ArchiveRestore size={15} />
+                  className="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-lg hover:bg-enba-green/10 text-enba-dim hover:text-enba-green transition-all">
+                  <ArchiveRestore size={14} />
                 </button>
                 <button onClick={() => onDelete(plan.id)} title="Kalıcı Sil"
-                  className="w-9 h-9 flex-shrink-0 flex items-center justify-center rounded-xl hover:bg-rose-50 text-gray-400 hover:text-rose-500 transition-all">
-                  <Trash2 size={15} />
+                  className="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-lg hover:bg-enba-red/10 text-enba-dim hover:text-enba-red transition-all">
+                  <Trash2 size={14} />
                 </button>
               </div>
             );

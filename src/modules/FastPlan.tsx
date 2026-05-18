@@ -285,7 +285,7 @@ export const FastPlan: React.FC = () => {
 
   // ─── UI Helpers ──────────────────────────────────────────
   const kpiColor = (val: number) =>
-    val > 0 ? 'text-emerald-600' : val < 0 ? 'text-rose-600' : 'text-gray-400';
+    val > 0 ? 'text-enba-green' : val < 0 ? 'text-enba-red' : 'text-enba-dim';
 
   // ════════════════════════════════════════════════════════
   // VIEW: PLAN KARTLARI
@@ -298,18 +298,18 @@ export const FastPlan: React.FC = () => {
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-10">
           <div className="flex flex-col gap-3">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-enba-dark rounded-[1.2rem] flex items-center justify-center text-enba-orange shadow-2xl border border-white/5">
+              <div className="w-14 h-14 bg-enba-dark rounded-[1.2rem] flex items-center justify-center text-enba-orange shadow-enba border border-white/5">
                 <Zap size={28} className="fill-enba-orange" />
               </div>
               <div>
-                <h1 className="text-3xl font-black text-enba-dark tracking-tighter leading-none uppercase">Hızlı İş Planı</h1>
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[4px] mt-2">Anlık Kârlılık & Fizibilite — Kart Sistemi</p>
+                <h1 className="text-3xl font-semibold text-enba-text tracking-tighter leading-none uppercase">Hızlı İş Planı</h1>
+                <p className="text-[10px] font-semibold text-enba-muted uppercase tracking-[0.1em] mt-2">Anlık Kârlılık & Fizibilite — Kart Sistemi</p>
               </div>
             </div>
           </div>
           <button
             onClick={() => { setDuzenlemId(null); setBaslik(''); setAciklama(''); setEtiket(''); setParams(makeVarsayilanParams(appSettings)); setView('form'); }}
-            className="flex items-center gap-3 px-8 py-4 bg-enba-orange text-white rounded-[1.5rem] font-black text-[11px] uppercase tracking-[3px] shadow-2xl shadow-enba-orange/30 hover:brightness-110 transition-all active:scale-95"
+            className="flex items-center gap-3 px-8 py-4 bg-enba-orange text-white rounded-lg font-semibold text-[11px] uppercase tracking-[0.08em] shadow-enba shadow-enba-orange/30 hover:brightness-110 transition-all active:scale-95"
           >
             <Plus size={20} /> Yeni Plan Oluştur
           </button>
@@ -321,14 +321,14 @@ export const FastPlan: React.FC = () => {
             {/* Etiket filtresi — yalnızca etiketli plan varsa */}
             {tumEtiketler.length > 0 && (
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[9px] font-black text-gray-400 uppercase tracking-[2px]">Etiket</span>
+                <span className="text-[9px] font-semibold text-enba-muted uppercase tracking-[0.06em]">Etiket</span>
                 <button onClick={() => setFilterEtiket(null)}
-                  className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${!filterEtiket ? 'bg-enba-dark text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
+                  className={`px-3 py-1.5 rounded-full text-[10px] font-semibold uppercase tracking-[0.12em] transition-all ${!filterEtiket ? 'bg-enba-dark text-white' : 'bg-enba-panel-2 text-enba-muted hover:bg-enba-line'}`}>
                   Tümü
                 </button>
                 {tumEtiketler.map(t => (
                   <button key={t} onClick={() => setFilterEtiket(filterEtiket === t ? null : t)}
-                    className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${filterEtiket === t ? 'bg-enba-dark text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
+                    className={`px-3 py-1.5 rounded-full text-[10px] font-semibold uppercase tracking-[0.12em] transition-all ${filterEtiket === t ? 'bg-enba-dark text-white' : 'bg-enba-panel-2 text-enba-muted hover:bg-enba-line'}`}>
                     {t}
                   </button>
                 ))}
@@ -336,14 +336,14 @@ export const FastPlan: React.FC = () => {
             )}
             {/* Sıralama */}
             <div className="flex items-center gap-2 ml-auto">
-              <span className="text-[9px] font-black text-gray-400 uppercase tracking-[2px]">Sırala</span>
+              <span className="text-[9px] font-semibold text-enba-muted uppercase tracking-[0.06em]">Sırala</span>
               {([
                 { key: 'tarih', label: 'Tarih' },
                 { key: 'marj_desc', label: 'Marj ↓' },
                 { key: 'marj_asc', label: 'Marj ↑' },
               ] as const).map(opt => (
                 <button key={opt.key} onClick={() => setSortBy(opt.key)}
-                  className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${sortBy === opt.key ? 'bg-enba-orange text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
+                  className={`px-3 py-1.5 rounded-full text-[10px] font-semibold uppercase tracking-[0.12em] transition-all ${sortBy === opt.key ? 'bg-enba-orange text-white' : 'bg-enba-panel-2 text-enba-muted hover:bg-enba-line'}`}>
                   {opt.label}
                 </button>
               ))}
@@ -353,24 +353,24 @@ export const FastPlan: React.FC = () => {
 
         {/* Konsolide Panel — aktif planlar varsa */}
         {konsolide && aktifPlanlar.length > 0 && (
-          <div className="bg-enba-dark rounded-[2.5rem] p-10 border border-white/5 shadow-2xl shadow-enba-dark/30">
+          <div className="bg-enba-dark rounded-xl p-10 border border-white/5 shadow-enba shadow-enba-dark/30">
             <div className="flex items-center gap-4 mb-8">
               <Layout size={22} className="text-enba-orange" />
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-[4px]">
+              <span className="text-[10px] font-semibold text-enba-muted uppercase tracking-[0.1em]">
                 KONSOLİDE TESIS ÖZETI — {aktifPlanlar.length} Aktif Plan
               </span>
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-5 gap-6">
               {[
                 { label: 'Toplam Satış Tonu', value: `${fmtDec(konsolide.satisTon)} ton`, color: 'text-white' },
-                { label: 'Toplam Gelir', value: `₺${fmt(konsolide.satisGeliri)}`, color: 'text-emerald-400' },
-                { label: 'Toplam Gider', value: `₺${fmt(konsolide.totalGider)}`, color: 'text-rose-400' },
-                { label: 'FAVÖK', value: `₺${fmt(konsolide.ebitda)}`, color: konsolide.ebitda >= 0 ? 'text-emerald-400' : 'text-rose-400' },
-                { label: 'Net Kâr / Zarar', value: `₺${fmt(konsolide.netKar)}`, color: konsolide.netKar >= 0 ? 'text-enba-orange' : 'text-rose-400' },
+                { label: 'Toplam Gelir', value: `₺${fmt(konsolide.satisGeliri)}`, color: 'text-enba-green' },
+                { label: 'Toplam Gider', value: `₺${fmt(konsolide.totalGider)}`, color: 'text-enba-red' },
+                { label: 'FAVÖK', value: `₺${fmt(konsolide.ebitda)}`, color: konsolide.ebitda >= 0 ? 'text-enba-green' : 'text-enba-red' },
+                { label: 'Net Kâr / Zarar', value: `₺${fmt(konsolide.netKar)}`, color: konsolide.netKar >= 0 ? 'text-enba-orange' : 'text-enba-red' },
               ].map((kpi, i) => (
                 <div key={i} className="flex flex-col gap-1">
-                  <div className="text-[9px] font-black text-gray-500 uppercase tracking-[2px]">{kpi.label}</div>
-                  <div className={`text-xl font-black tabular-nums ${kpi.color}`}>{kpi.value}</div>
+                  <div className="text-[9px] font-semibold text-enba-muted uppercase tracking-[0.06em]">{kpi.label}</div>
+                  <div className={`text-xl font-semibold tabular-nums ${kpi.color}`}>{kpi.value}</div>
                 </div>
               ))}
             </div>
@@ -381,11 +381,11 @@ export const FastPlan: React.FC = () => {
                 <table className="w-full text-left" id="tkko-table">
                   <thead>
                     <tr className="border-b border-white/10">
-                      <th className="py-3 text-[9px] font-black text-gray-500 uppercase tracking-[2px]">Finansal Kalem</th>
+                      <th className="py-3 text-[9px] font-semibold text-enba-muted uppercase tracking-[0.06em]">Finansal Kalem</th>
                       {aktifPlanlar.map(p => (
-                        <th key={p.id} className="py-3 px-4 text-[9px] font-black text-white text-right uppercase tracking-[1px]">{p.baslik}</th>
+                        <th key={p.id} className="py-3 px-4 text-[9px] font-semibold text-white text-right uppercase tracking-[0.04em]">{p.baslik}</th>
                       ))}
-                      <th className="py-3 px-4 text-[9px] font-black text-enba-orange text-right uppercase tracking-[2px]">TOPLAM</th>
+                      <th className="py-3 px-4 text-[9px] font-semibold text-enba-orange text-right uppercase tracking-[0.06em]">TOPLAM</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
@@ -398,13 +398,13 @@ export const FastPlan: React.FC = () => {
                       const toplam = aktifPlanlar.reduce((s, p) => s + (p.sonuc[row.key] as number), 0);
                       return (
                         <tr key={row.key} className="hover:bg-white/5 transition-colors">
-                          <td className="py-3 text-[11px] font-black text-gray-400 uppercase tracking-[1px]">{row.label}</td>
+                          <td className="py-3 text-[11px] font-semibold text-enba-muted uppercase tracking-[0.04em]">{row.label}</td>
                           {aktifPlanlar.map(p => (
-                            <td key={p.id} className="py-3 px-4 text-right text-sm font-black text-gray-300 tabular-nums">
+                            <td key={p.id} className="py-3 px-4 text-right text-sm font-semibold text-enba-dim tabular-nums">
                               ₺{fmt(p.sonuc[row.key] as number)}
                             </td>
                           ))}
-                          <td className={`py-3 px-4 text-right text-sm font-black tabular-nums ${toplam >= 0 ? 'text-enba-orange' : 'text-rose-400'}`}>
+                          <td className={`py-3 px-4 text-right text-sm font-semibold tabular-nums ${toplam >= 0 ? 'text-enba-orange' : 'text-enba-red'}`}>
                             ₺{fmt(toplam)}
                           </td>
                         </tr>
@@ -419,15 +419,15 @@ export const FastPlan: React.FC = () => {
 
         {/* Karşılaştırma seçim banner'ı */}
         {compareIds.length === 1 && (
-          <div className="flex items-center justify-between gap-4 px-8 py-4 bg-blue-50 border border-blue-200 rounded-[2rem]">
+          <div className="flex items-center justify-between gap-4 px-8 py-4 bg-enba-blue/10 border border-enba-blue/30 rounded-xl">
             <div className="flex items-center gap-3">
-              <Scale size={18} className="text-blue-500" />
-              <span className="text-[11px] font-black text-blue-700 uppercase tracking-[2px]">
+              <Scale size={18} className="text-enba-blue" />
+              <span className="text-[11px] font-semibold text-enba-blue uppercase tracking-[0.06em]">
                 1 Plan Seçildi — Karşılaştırmak için 2. planın <Scale size={11} className="inline" /> butonuna tıklayın
               </span>
             </div>
             <button onClick={() => setCompareIds([])}
-              className="text-[10px] font-black text-blue-400 hover:text-blue-600 uppercase tracking-widest transition-colors">
+              className="text-[10px] font-semibold text-enba-blue hover:text-enba-blue uppercase tracking-[0.12em] transition-colors">
               İptal
             </button>
           </div>
@@ -435,17 +435,17 @@ export const FastPlan: React.FC = () => {
 
         {/* Boş durum */}
         {planlar.length === 0 && (
-          <div className="bg-white rounded-[2.5rem] p-20 border border-gray-100 shadow-card flex flex-col items-center gap-6 text-center">
-            <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center">
-              <FileText size={48} className="text-gray-200" />
+          <div className="bg-enba-panel rounded-xl p-20 border border-enba-line shadow-sm flex flex-col items-center gap-6 text-center">
+            <div className="w-24 h-24 bg-enba-panel-2 rounded-full flex items-center justify-center">
+              <FileText size={48} className="text-enba-dim" />
             </div>
             <div>
-              <div className="text-xl font-black text-enba-dark italic uppercase tracking-tight">Henüz Plan Yok</div>
-              <p className="text-sm text-gray-400 font-medium mt-2">Yeni Plan Oluştur butonuna tıklayarak ilk planınızı oluşturun.</p>
+              <div className="text-xl font-semibold text-enba-text italic uppercase tracking-tight">Henüz Plan Yok</div>
+              <p className="text-sm text-enba-muted font-medium mt-2">Yeni Plan Oluştur butonuna tıklayarak ilk planınızı oluşturun.</p>
             </div>
             <button
               onClick={() => { setDuzenlemId(null); setBaslik(''); setAciklama(''); setParams(makeVarsayilanParams(appSettings)); setView('form'); }}
-              className="flex items-center gap-3 px-8 py-4 bg-enba-dark text-white rounded-[1.5rem] font-black text-[11px] uppercase tracking-[3px] shadow-xl hover:bg-black transition-all"
+              className="flex items-center gap-3 px-8 py-4 bg-enba-dark text-white rounded-lg font-semibold text-[11px] uppercase tracking-[0.08em] shadow-sm hover:bg-black transition-all"
             >
               <Plus size={18} /> İlk Planı Oluştur
             </button>
@@ -459,8 +459,8 @@ export const FastPlan: React.FC = () => {
             {planlar.filter(p => p.status === 'pending').length > 0 && (
               <div>
                 <div className="flex items-center gap-3 mb-5">
-                  <div className="w-2.5 h-2.5 rounded-full bg-gray-300" />
-                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-[4px]">
+                  <div className="w-2.5 h-2.5 rounded-full bg-enba-dim" />
+                  <span className="text-[10px] font-semibold text-enba-muted uppercase tracking-[0.1em]">
                     Bekleyen Planlar — {filtrele(planlar.filter(p => p.status === 'pending')).length} Kart
                     {filterEtiket && ` · "${filterEtiket}" filtresi`}
                   </span>
@@ -489,7 +489,7 @@ export const FastPlan: React.FC = () => {
               <div>
                 <div className="flex items-center gap-3 mb-5">
                   <div className="w-2.5 h-2.5 rounded-full bg-enba-orange animate-pulse" />
-                  <span className="text-[10px] font-black text-enba-orange uppercase tracking-[4px]">
+                  <span className="text-[10px] font-semibold text-enba-orange uppercase tracking-[0.1em]">
                     Aktif Planlar — {filtrele(aktifPlanlar).length} Kart · Konsolide Hesaplamaya Dahil
                   </span>
                 </div>
@@ -539,23 +539,23 @@ export const FastPlan: React.FC = () => {
     // Fark hesaplayıcı: pozitif fark, A'nın B'ye göre farkı
     const fark = (a: number, b: number, yuksekIyi = true) => {
       const d = a - b;
-      if (d === 0) return { text: '—', cls: 'text-gray-300' };
+      if (d === 0) return { text: '—', cls: 'text-enba-dim' };
       const iyi = yuksekIyi ? d > 0 : d < 0;
-      return { text: `${d > 0 ? '+' : ''}₺${fmt(d)}`, cls: iyi ? 'text-emerald-600' : 'text-rose-500' };
+      return { text: `${d > 0 ? '+' : ''}₺${fmt(d)}`, cls: iyi ? 'text-enba-green' : 'text-enba-red' };
     };
     const farkPct = (a: number, b: number, yuksekIyi = true) => {
       const d = a - b;
-      if (d === 0) return { text: '—', cls: 'text-gray-300' };
+      if (d === 0) return { text: '—', cls: 'text-enba-dim' };
       const iyi = yuksekIyi ? d > 0 : d < 0;
-      return { text: `${d > 0 ? '+' : ''}${fmtDec(d)}pp`, cls: iyi ? 'text-emerald-600' : 'text-rose-500' };
+      return { text: `${d > 0 ? '+' : ''}${fmtDec(d)}pp`, cls: iyi ? 'text-enba-green' : 'text-enba-red' };
     };
     // Göreli % fark: (A - B) / |B| * 100
     const farkRel = (a: number, b: number, yuksekIyi = true) => {
-      if (b === 0) return { text: '—', cls: 'text-gray-300' };
+      if (b === 0) return { text: '—', cls: 'text-enba-dim' };
       const pct = ((a - b) / Math.abs(b)) * 100;
-      if (Math.abs(pct) < 0.05) return { text: '—', cls: 'text-gray-300' };
+      if (Math.abs(pct) < 0.05) return { text: '—', cls: 'text-enba-dim' };
       const iyi = yuksekIyi ? pct > 0 : pct < 0;
-      return { text: `${pct > 0 ? '+' : ''}${fmtDec(pct, 1)}%`, cls: iyi ? 'text-emerald-600' : 'text-rose-500' };
+      return { text: `${pct > 0 ? '+' : ''}${fmtDec(pct, 1)}%`, cls: iyi ? 'text-enba-green' : 'text-enba-red' };
     };
 
     // Aynı etikette tüm planlar — trend tablosu için
@@ -589,14 +589,14 @@ export const FastPlan: React.FC = () => {
         {/* Header */}
         <div className="flex items-center gap-5">
           <button onClick={() => { setView('cards'); setCompareIds([]); setComparePair(null); }}
-            className="w-12 h-12 rounded-2xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition-all">
+            className="w-12 h-12 rounded-lg bg-enba-panel-2 hover:bg-enba-line/40 flex items-center justify-center text-enba-muted transition-all">
             <ArrowRight size={20} className="rotate-180" />
           </button>
           <div>
-            <h1 className="text-3xl font-black text-enba-dark tracking-tighter leading-none italic uppercase">
+            <h1 className="text-3xl font-semibold text-enba-text tracking-tighter leading-none italic uppercase">
               {comparePair ? 'Versiyon Kıyası' : 'Karşılaştırma'}
             </h1>
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[3px] mt-1">
+            <p className="text-[10px] font-semibold text-enba-muted uppercase tracking-[0.08em] mt-1">
               {comparePair ? 'Aynı planın iki versiyonu arasındaki fark' : 'Plan bazlı P&L fark analizi'}
             </p>
           </div>
@@ -608,39 +608,39 @@ export const FastPlan: React.FC = () => {
             const label = comparePair
               ? (i === 0 ? 'Güncel' : 'Eski Versiyon')
               : (i === 0 ? 'Plan A' : 'Plan B');
-            const borderCls = i === 0 ? 'border-blue-300' : 'border-enba-orange/40';
-            const labelCls = i === 0 ? 'text-blue-500' : 'text-enba-orange';
+            const borderCls = i === 0 ? 'border-enba-blue/50' : 'border-enba-orange/40';
+            const labelCls = i === 0 ? 'text-enba-blue' : 'text-enba-orange';
             return (
-              <div key={`${p.id}-${i}`} className={`bg-white rounded-[2rem] px-8 py-6 border-2 ${borderCls} shadow-sm`}>
-                <div className={`text-[9px] font-black uppercase tracking-[3px] mb-1 ${labelCls}`}>{label}</div>
-                <div className="font-black text-enba-dark text-sm uppercase truncate">{p.baslik}</div>
-                {p.etiket && <span className="inline-block mt-1 px-2 py-0.5 bg-gray-100 text-gray-500 text-[9px] font-black uppercase rounded-full">{p.etiket}</span>}
-                <div className="text-[9px] text-gray-400 mt-1">{new Date(p.createdAt).toLocaleDateString('tr-TR')}</div>
+              <div key={`${p.id}-${i}`} className={`bg-enba-panel rounded-xl px-8 py-6 border-2 ${borderCls} shadow-sm`}>
+                <div className={`text-[9px] font-semibold uppercase tracking-[0.08em] mb-1 ${labelCls}`}>{label}</div>
+                <div className="font-semibold text-enba-text text-sm uppercase truncate">{p.baslik}</div>
+                {p.etiket && <span className="inline-block mt-1 px-2 py-0.5 bg-enba-panel-2 text-enba-muted text-[9px] font-semibold uppercase rounded-full">{p.etiket}</span>}
+                <div className="text-[9px] text-enba-muted mt-1">{new Date(p.createdAt).toLocaleDateString('tr-TR')}</div>
               </div>
             );
           })}
-          <div className="bg-gray-50 rounded-[2rem] px-8 py-6 border border-gray-100 flex flex-col justify-center">
-            <div className="text-[9px] font-black text-gray-400 uppercase tracking-[2px] mb-1">
+          <div className="bg-enba-panel-2 rounded-xl px-8 py-6 border border-enba-line flex flex-col justify-center">
+            <div className="text-[9px] font-semibold text-enba-muted uppercase tracking-[0.06em] mb-1">
               {comparePair ? 'Fark (Güncel − Eski)' : 'Fark (A − B)'}
             </div>
-            <div className={`text-lg font-black tabular-nums ${fark(sA.netKar, sB.netKar).cls}`}>{fark(sA.netKar, sB.netKar).text}</div>
-            <div className="text-[9px] text-gray-400 mt-0.5">Net Kâr</div>
+            <div className={`text-lg font-semibold tabular-nums ${fark(sA.netKar, sB.netKar).cls}`}>{fark(sA.netKar, sB.netKar).text}</div>
+            <div className="text-[9px] text-enba-muted mt-0.5">Net Kâr</div>
           </div>
         </div>
 
         {/* Karşılaştırma tablosu */}
-        <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">
+        <div className="bg-enba-panel rounded-xl shadow-sm border border-enba-line overflow-hidden">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-gray-100">
-                <th className="px-8 py-4 text-left text-[9px] font-black text-gray-400 uppercase tracking-[2px] w-1/4">Kalem</th>
-                <th className="px-4 py-4 text-right text-[9px] font-black text-blue-500 uppercase tracking-[1px]">{planA.baslik}</th>
-                <th className="px-4 py-4 text-right text-[9px] font-black text-enba-orange uppercase tracking-[1px]">{planB.baslik}</th>
-                <th className="px-4 py-4 text-right text-[9px] font-black text-gray-400 uppercase tracking-[1px]">Fark (A−B)</th>
-                <th className="px-6 py-4 text-right text-[9px] font-black text-gray-400 uppercase tracking-[1px]">%</th>
+              <tr className="border-b border-enba-line">
+                <th className="px-8 py-4 text-left text-[9px] font-semibold text-enba-muted uppercase tracking-[0.06em] w-1/4">Kalem</th>
+                <th className="px-4 py-4 text-right text-[9px] font-semibold text-enba-blue uppercase tracking-[0.04em]">{planA.baslik}</th>
+                <th className="px-4 py-4 text-right text-[9px] font-semibold text-enba-orange uppercase tracking-[0.04em]">{planB.baslik}</th>
+                <th className="px-4 py-4 text-right text-[9px] font-semibold text-enba-muted uppercase tracking-[0.04em]">Fark (A−B)</th>
+                <th className="px-6 py-4 text-right text-[9px] font-semibold text-enba-muted uppercase tracking-[0.04em]">%</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
+            <tbody className="divide-y divide-enba-line">
               {KARSILASTIRMA_SATIRLARI.map((row, i) => {
                 const f = row.isPct
                   ? farkPct(row.vA, row.vB, row.yuksekIyi ?? true)
@@ -650,16 +650,16 @@ export const FastPlan: React.FC = () => {
                   : farkRel(row.vA, row.vB, row.yuksekIyi ?? true);
                 const isSection = ['Satış Geliri', 'FAVÖK', 'Net Kâr'].includes(row.label);
                 return (
-                  <tr key={i} className={isSection ? 'bg-gray-50' : 'hover:bg-gray-50/50'}>
+                  <tr key={i} className={isSection ? 'bg-enba-panel-2' : 'hover:bg-enba-panel-2/50'}>
                     <td className={`px-8 py-3 text-[11px] font-${isSection ? 'black' : 'medium'} text-gray-${isSection ? '700' : '500'} uppercase tracking-wider`}>{row.label}</td>
-                    <td className="px-4 py-3 text-right text-sm font-black text-blue-600 tabular-nums">
+                    <td className="px-4 py-3 text-right text-sm font-semibold text-enba-blue tabular-nums">
                       {row.isPct ? `%${fmtDec(row.vA)}` : `₺${fmt(row.vA)}`}
                     </td>
-                    <td className="px-4 py-3 text-right text-sm font-black text-enba-orange tabular-nums">
+                    <td className="px-4 py-3 text-right text-sm font-semibold text-enba-orange tabular-nums">
                       {row.isPct ? `%${fmtDec(row.vB)}` : `₺${fmt(row.vB)}`}
                     </td>
-                    <td className={`px-4 py-3 text-right text-sm font-black tabular-nums ${f.cls}`}>{f.text}</td>
-                    <td className={`px-6 py-3 text-right text-xs font-black tabular-nums ${fr.cls}`}>{fr.text}</td>
+                    <td className={`px-4 py-3 text-right text-sm font-semibold tabular-nums ${f.cls}`}>{f.text}</td>
+                    <td className={`px-6 py-3 text-right text-xs font-semibold tabular-nums ${fr.cls}`}>{fr.text}</td>
                   </tr>
                 );
               })}
@@ -669,40 +669,40 @@ export const FastPlan: React.FC = () => {
 
         {/* Fiyat trendi — yalnızca aynı etikette */}
         {trendPlanlar.length > 1 && ortakEtiket && (
-          <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">
-            <div className="px-8 py-5 border-b border-gray-100 flex items-center gap-3">
+          <div className="bg-enba-panel rounded-xl shadow-sm border border-enba-line overflow-hidden">
+            <div className="px-8 py-5 border-b border-enba-line flex items-center gap-3">
               <BarChart3 size={16} className="text-enba-orange" />
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-[3px]">
+              <span className="text-[10px] font-semibold text-enba-muted uppercase tracking-[0.08em]">
                 {ortakEtiket} — Fiyat Geçmişi ({trendPlanlar.length} Plan)
               </span>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-gray-50">
-                    <th className="px-8 py-3 text-left text-[9px] font-black text-gray-400 uppercase tracking-[2px]">Plan</th>
-                    <th className="px-6 py-3 text-left text-[9px] font-black text-gray-400 uppercase tracking-[2px]">Tarih</th>
-                    <th className="px-6 py-3 text-right text-[9px] font-black text-gray-400 uppercase tracking-[2px]">Alış ₺/ton</th>
-                    <th className="px-6 py-3 text-right text-[9px] font-black text-gray-400 uppercase tracking-[2px]">Satış ₺/ton</th>
-                    <th className="px-6 py-3 text-right text-[9px] font-black text-gray-400 uppercase tracking-[2px]">EBITDA %</th>
-                    <th className="px-8 py-3 text-right text-[9px] font-black text-gray-400 uppercase tracking-[2px]">Net Kâr</th>
+                  <tr className="border-b border-enba-line">
+                    <th className="px-8 py-3 text-left text-[9px] font-semibold text-enba-muted uppercase tracking-[0.06em]">Plan</th>
+                    <th className="px-6 py-3 text-left text-[9px] font-semibold text-enba-muted uppercase tracking-[0.06em]">Tarih</th>
+                    <th className="px-6 py-3 text-right text-[9px] font-semibold text-enba-muted uppercase tracking-[0.06em]">Alış ₺/ton</th>
+                    <th className="px-6 py-3 text-right text-[9px] font-semibold text-enba-muted uppercase tracking-[0.06em]">Satış ₺/ton</th>
+                    <th className="px-6 py-3 text-right text-[9px] font-semibold text-enba-muted uppercase tracking-[0.06em]">EBITDA %</th>
+                    <th className="px-8 py-3 text-right text-[9px] font-semibold text-enba-muted uppercase tracking-[0.06em]">Net Kâr</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50">
+                <tbody className="divide-y divide-enba-line">
                   {trendPlanlar.map(p => {
                     const isSelected = compareIds.includes(p.id);
                     return (
-                      <tr key={p.id} className={isSelected ? 'bg-blue-50/50' : 'hover:bg-gray-50/50'}>
-                        <td className="px-8 py-3 text-[11px] font-black text-enba-dark truncate max-w-[180px]">
-                          {p.baslik}{isSelected && <span className="ml-2 text-[9px] text-blue-500">● seçili</span>}
+                      <tr key={p.id} className={isSelected ? 'bg-enba-blue/8' : 'hover:bg-enba-panel-2/50'}>
+                        <td className="px-8 py-3 text-[11px] font-semibold text-enba-text truncate max-w-[180px]">
+                          {p.baslik}{isSelected && <span className="ml-2 text-[9px] text-enba-blue">● seçili</span>}
                         </td>
-                        <td className="px-6 py-3 text-[11px] text-gray-400">{new Date(p.createdAt).toLocaleDateString('tr-TR')}</td>
-                        <td className="px-6 py-3 text-right text-sm font-black text-enba-dark tabular-nums">₺{fmt(p.params.alisFiyati)}</td>
-                        <td className="px-6 py-3 text-right text-sm font-black text-enba-dark tabular-nums">₺{fmt(p.params.satisFiyati)}</td>
-                        <td className={`px-6 py-3 text-right text-sm font-black tabular-nums ${p.sonuc.ebitdaMarji >= 15 ? 'text-emerald-600' : p.sonuc.ebitdaMarji >= 5 ? 'text-yellow-600' : 'text-rose-500'}`}>
+                        <td className="px-6 py-3 text-[11px] text-enba-muted">{new Date(p.createdAt).toLocaleDateString('tr-TR')}</td>
+                        <td className="px-6 py-3 text-right text-sm font-semibold text-enba-text tabular-nums">₺{fmt(p.params.alisFiyati)}</td>
+                        <td className="px-6 py-3 text-right text-sm font-semibold text-enba-text tabular-nums">₺{fmt(p.params.satisFiyati)}</td>
+                        <td className={`px-6 py-3 text-right text-sm font-semibold tabular-nums ${p.sonuc.ebitdaMarji >= 15 ? 'text-enba-green' : p.sonuc.ebitdaMarji >= 5 ? 'text-enba-amber' : 'text-enba-red'}`}>
                           %{fmtDec(p.sonuc.ebitdaMarji)}
                         </td>
-                        <td className={`px-8 py-3 text-right text-sm font-black tabular-nums ${p.sonuc.netKar >= 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
+                        <td className={`px-8 py-3 text-right text-sm font-semibold tabular-nums ${p.sonuc.netKar >= 0 ? 'text-enba-green' : 'text-enba-red'}`}>
                           ₺{fmt(p.sonuc.netKar)}
                         </td>
                       </tr>
@@ -725,68 +725,68 @@ export const FastPlan: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between gap-6">
         <div className="flex items-center gap-5">
-          <button onClick={resetForm} className="w-12 h-12 rounded-2xl bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition-all">
+          <button onClick={resetForm} className="w-12 h-12 rounded-lg bg-enba-panel-2 hover:bg-enba-line/40 flex items-center justify-center text-enba-muted transition-all">
             <ArrowRight size={20} className="rotate-180" />
           </button>
           <div>
-            <h1 className="text-3xl font-black text-enba-dark tracking-tighter leading-none italic uppercase">
+            <h1 className="text-3xl font-semibold text-enba-text tracking-tighter leading-none italic uppercase">
               {duzenlemId ? 'Planı Düzenle' : 'Yeni Hızlı Plan'}
             </h1>
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[3px] mt-1">Parametreleri girin, anlık sonuçları görün, kaydedin</p>
+            <p className="text-[10px] font-semibold text-enba-muted uppercase tracking-[0.08em] mt-1">Parametreleri girin, anlık sonuçları görün, kaydedin</p>
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <button onClick={resetForm} className="px-6 py-3 rounded-2xl border border-gray-200 text-gray-500 hover:bg-gray-50 font-black text-[11px] uppercase tracking-[2px] transition-all">
+          <button onClick={resetForm} className="px-6 py-3 rounded-lg border border-enba-line-2 text-enba-muted hover:bg-enba-panel-2 font-semibold text-[11px] uppercase tracking-[0.06em] transition-all">
             İptal
           </button>
           <button
             onClick={pdfIndir}
             disabled={isPdfGenerating}
-            className="flex items-center gap-2 px-6 py-3 rounded-2xl border border-gray-200 text-gray-500 hover:bg-red-50 hover:border-red-200 hover:text-red-500 font-black text-[11px] uppercase tracking-[2px] transition-all disabled:opacity-50"
+            className="flex items-center gap-2 px-6 py-3 rounded-lg border border-enba-line-2 text-enba-muted hover:bg-red-50 hover:border-red-200 hover:text-red-500 font-semibold text-[11px] uppercase tracking-[0.06em] transition-all disabled:opacity-50"
           >
             <FileText size={15} />
             {isPdfGenerating ? 'Hazırlanıyor...' : 'PDF'}
           </button>
-          <button onClick={handleKaydetClick} className="flex items-center gap-3 px-8 py-3.5 bg-enba-orange text-white rounded-2xl font-black text-[11px] uppercase tracking-[2px] shadow-xl shadow-enba-orange/30 hover:brightness-110 transition-all active:scale-95">
+          <button onClick={handleKaydetClick} className="flex items-center gap-3 px-8 py-3.5 bg-enba-orange text-white rounded-lg font-semibold text-[11px] uppercase tracking-[0.06em] shadow-sm shadow-enba-orange/30 hover:brightness-110 transition-all active:scale-95">
             <Save size={16} /> Planı Kaydet
           </button>
         </div>
       </div>
 
       {/* Plan Başlığı */}
-      <div className="bg-white rounded-[2.5rem] px-10 py-8 shadow-card border border-gray-100">
+      <div className="bg-enba-panel rounded-xl px-10 py-8 shadow-sm border border-enba-line">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-[3px]">Plan Başlığı *</label>
+            <label className="text-[10px] font-semibold text-enba-muted uppercase tracking-[0.08em]">Plan Başlığı *</label>
             <input
               type="text"
               value={baslik}
               onChange={e => setBaslik(e.target.value)}
               placeholder="Örn: 2026 LDPE Geri Dönüşüm Projesi..."
-              className="w-full bg-gray-50 border border-transparent rounded-2xl px-6 py-4 text-base font-black text-enba-dark focus:bg-white focus:ring-2 focus:ring-enba-orange/20 outline-none transition-all"
+              className="w-full bg-enba-panel-2 border border-transparent rounded-lg px-6 py-4 text-base font-semibold text-enba-text focus:bg-enba-panel focus:ring-2 focus:ring-enba-orange/20 outline-none transition-all"
             />
           </div>
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-[3px]">Kısa Açıklama</label>
+            <label className="text-[10px] font-semibold text-enba-muted uppercase tracking-[0.08em]">Kısa Açıklama</label>
             <input
               type="text"
               value={aciklama}
               onChange={e => setAciklama(e.target.value)}
               placeholder="Bu plan neyi hedefliyor?"
-              className="w-full bg-gray-50 border border-transparent rounded-2xl px-6 py-4 text-base font-medium text-gray-600 focus:bg-white focus:ring-2 focus:ring-enba-orange/20 outline-none transition-all"
+              className="w-full bg-enba-panel-2 border border-transparent rounded-lg px-6 py-4 text-base font-medium text-enba-muted focus:bg-enba-panel focus:ring-2 focus:ring-enba-orange/20 outline-none transition-all"
             />
           </div>
         </div>
         {/* Etiket */}
-        <div className="mt-6 pt-6 border-t border-gray-100 space-y-3">
-          <label className="text-[10px] font-black text-gray-400 uppercase tracking-[3px] flex items-center gap-2">
+        <div className="mt-6 pt-6 border-t border-enba-line space-y-3">
+          <label className="text-[10px] font-semibold text-enba-muted uppercase tracking-[0.08em] flex items-center gap-2">
             <Tag size={12} /> İş Tipi Etiketi
           </label>
           <div className="flex items-center gap-2 flex-wrap">
             {['LDPE', 'HDPE', 'PP', 'PET', 'PVC', 'PS', 'Kağıt', 'Cam', 'Metal', 'Tekstil'].map(t => (
               <button key={t} type="button"
                 onClick={() => setEtiket(etiket === t ? '' : t)}
-                className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${etiket === t ? 'bg-enba-dark text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
+                className={`px-3 py-1.5 rounded-full text-[10px] font-semibold uppercase tracking-[0.12em] transition-all ${etiket === t ? 'bg-enba-dark text-white' : 'bg-enba-panel-2 text-enba-muted hover:bg-enba-line'}`}>
                 {t}
               </button>
             ))}
@@ -795,7 +795,7 @@ export const FastPlan: React.FC = () => {
               value={etiket}
               onChange={e => setEtiket(e.target.value)}
               placeholder="veya yazın..."
-              className="flex-1 min-w-28 bg-gray-50 border border-transparent rounded-2xl px-4 py-2 text-sm font-medium text-enba-dark focus:bg-white focus:ring-2 focus:ring-enba-orange/20 outline-none transition-all"
+              className="flex-1 min-w-28 bg-enba-panel-2 border border-transparent rounded-lg px-4 py-2 text-sm font-medium text-enba-text focus:bg-enba-panel focus:ring-2 focus:ring-enba-orange/20 outline-none transition-all"
             />
           </div>
         </div>
@@ -804,15 +804,15 @@ export const FastPlan: React.FC = () => {
       {/* Anlık KPI Önizleme */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
         {[
-          { label: 'Satış Geliri', value: `₺${fmt(formSonuc.satisGeliri)}`, sub: `${fmtDec(formSonuc.satisTon)} ton`, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-          { label: 'Toplam Gider', value: `₺${fmt(formSonuc.totalGider)}`, sub: `₺${fmt(formSonuc.birimMaliyet)}/ton`, color: 'text-rose-600', bg: 'bg-rose-50' },
-          { label: 'FAVÖK', value: `₺${fmt(formSonuc.ebitda)}`, sub: `%${fmtDec(formSonuc.ebitdaMarji)} marj`, color: kpiColor(formSonuc.ebitda), bg: formSonuc.ebitda >= 0 ? 'bg-emerald-50' : 'bg-rose-50' },
-          { label: 'Net Kâr', value: `₺${fmt(formSonuc.netKar)}`, sub: formSonuc.netKar >= 0 ? 'Kârlı ✓' : 'Zarar ✗', color: kpiColor(formSonuc.netKar), bg: formSonuc.netKar >= 0 ? 'bg-emerald-50' : 'bg-rose-50' },
+          { label: 'Satış Geliri', value: `₺${fmt(formSonuc.satisGeliri)}`, sub: `${fmtDec(formSonuc.satisTon)} ton`, color: 'text-enba-green', bg: 'bg-enba-green/10' },
+          { label: 'Toplam Gider', value: `₺${fmt(formSonuc.totalGider)}`, sub: `₺${fmt(formSonuc.birimMaliyet)}/ton`, color: 'text-enba-red', bg: 'bg-enba-red/10' },
+          { label: 'FAVÖK', value: `₺${fmt(formSonuc.ebitda)}`, sub: `%${fmtDec(formSonuc.ebitdaMarji)} marj`, color: kpiColor(formSonuc.ebitda), bg: formSonuc.ebitda >= 0 ? 'bg-enba-green/10' : 'bg-enba-red/10' },
+          { label: 'Net Kâr', value: `₺${fmt(formSonuc.netKar)}`, sub: formSonuc.netKar >= 0 ? 'Kârlı ✓' : 'Zarar ✗', color: kpiColor(formSonuc.netKar), bg: formSonuc.netKar >= 0 ? 'bg-enba-green/10' : 'bg-enba-red/10' },
         ].map((kpi, i) => (
-          <div key={i} className={`${kpi.bg} rounded-[2.5rem] p-7`}>
-            <div className="text-[9px] font-black text-gray-400 uppercase tracking-[2px] mb-1">{kpi.label}</div>
-            <div className={`text-2xl font-black ${kpi.color} tabular-nums leading-none`}>{kpi.value}</div>
-            <div className="text-[10px] text-gray-400 mt-1">{kpi.sub}</div>
+          <div key={i} className={`${kpi.bg} rounded-xl p-7`}>
+            <div className="text-[9px] font-semibold text-enba-muted uppercase tracking-[0.06em] mb-1">{kpi.label}</div>
+            <div className={`text-2xl font-semibold ${kpi.color} tabular-nums leading-none`}>{kpi.value}</div>
+            <div className="text-[10px] text-enba-muted mt-1">{kpi.sub}</div>
           </div>
         ))}
       </div>
@@ -826,7 +826,7 @@ export const FastPlan: React.FC = () => {
             onToggle={() => setPanelSabitler(v => !v)}
             badge="Ayarlardan yüklendi"
           >
-            <div className="mb-3 flex items-center gap-2 text-[10px] text-gray-400 font-bold">
+            <div className="mb-3 flex items-center gap-2 text-[10px] text-enba-muted font-bold">
               <span>Varsayılanlar Ayarlar sayfasından gelir. Her plan kendi değerini taşır — değiştirirsen sadece bu planı etkiler.</span>
             </div>
             <InputRow label="Asgari Net Ücret (₺/ay)" value={params.asgariUcret} onChange={v => setParams(p => ({ ...p, asgariUcret: v }))} suffix="₺" />
@@ -843,12 +843,12 @@ export const FastPlan: React.FC = () => {
           >
             <div className="space-y-3 mb-5">
               {params.yatirimlar.map(y => (
-                <div key={y.id} className="flex items-center gap-4 px-5 py-4 bg-gray-50 rounded-2xl">
+                <div key={y.id} className="flex items-center gap-4 px-5 py-4 bg-enba-panel-2 rounded-lg">
                   <div className="flex-1">
-                    <div className="font-black text-sm text-enba-dark">{y.ad}</div>
+                    <div className="font-semibold text-sm text-enba-text">{y.ad}</div>
                   </div>
-                  <span className="text-sm font-black text-enba-orange tabular-nums">₺{fmt(y.tutar)}</span>
-                  <button onClick={() => yatirimSil(y.id)} className="w-8 h-8 flex items-center justify-center rounded-xl bg-rose-50 text-rose-400 hover:bg-rose-500 hover:text-white transition-all">
+                  <span className="text-sm font-semibold text-enba-orange tabular-nums">₺{fmt(y.tutar)}</span>
+                  <button onClick={() => yatirimSil(y.id)} className="w-8 h-8 flex items-center justify-center rounded-xl bg-enba-red/10 text-enba-red hover:bg-rose-500 hover:text-white transition-all">
                     <Trash2 size={14} />
                   </button>
                 </div>
@@ -857,18 +857,18 @@ export const FastPlan: React.FC = () => {
             <div className="grid grid-cols-12 gap-3">
               <input type="text" placeholder="Yatırım kalemi (Örn: Makine, Lisans...)" value={yeniYatirim.ad}
                 onChange={e => setYeniYatirim({ ...yeniYatirim, ad: e.target.value })}
-                className="col-span-7 bg-gray-50 border border-transparent rounded-2xl px-4 py-3 text-sm font-medium text-enba-dark outline-none focus:ring-2 focus:ring-enba-orange/20" />
+                className="col-span-7 bg-enba-panel-2 border border-transparent rounded-lg px-4 py-3 text-sm font-medium text-enba-text outline-none focus:ring-2 focus:ring-enba-orange/20" />
               <input type="number" placeholder="Tutar ₺" value={yeniYatirim.tutar}
                 onFocus={e => e.target.select()}
                 onChange={e => setYeniYatirim({ ...yeniYatirim, tutar: e.target.value })}
-                className="col-span-3 bg-gray-50 border border-transparent rounded-2xl px-4 py-3 text-sm font-medium text-enba-dark outline-none focus:ring-2 focus:ring-enba-orange/20" />
-              <button onClick={yatirimEkle} className="col-span-2 flex items-center justify-center gap-1 bg-enba-dark text-white rounded-2xl font-black text-[10px] uppercase tracking-[1px] hover:bg-black transition-all">
+                className="col-span-3 bg-enba-panel-2 border border-transparent rounded-lg px-4 py-3 text-sm font-medium text-enba-text outline-none focus:ring-2 focus:ring-enba-orange/20" />
+              <button onClick={yatirimEkle} className="col-span-2 flex items-center justify-center gap-1 bg-enba-dark text-white rounded-lg font-semibold text-[10px] uppercase tracking-[0.04em] hover:bg-black transition-all">
                 <Plus size={14} /> Ekle
               </button>
             </div>
-            <div className="mt-6 pt-6 border-t border-gray-100">
+            <div className="mt-6 pt-6 border-t border-enba-line">
                <InputRow label="Amortisman Süresi (Ay)" value={params.amortismanAy} onChange={v => setParam('amortismanAy', v)} suffix="ay" min={1} max={240} />
-               <div className="mt-2 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+               <div className="mt-2 text-[10px] font-semibold text-enba-muted uppercase tracking-[0.12em]">
                  Aylık Amortisman Gideri: <span className="text-enba-orange">₺{fmt(params.yatirimlar.reduce((s, y) => s + y.tutar, 0) / params.amortismanAy)}</span>
                </div>
             </div>
@@ -881,10 +881,10 @@ export const FastPlan: React.FC = () => {
             <InputRow label="Alış Nakliyesi" value={params.alisNakliye} onChange={v => setParam('alisNakliye', v)} suffix="₺/ton" />
             <InputRow label="Satış Nakliyesi" value={params.satisNakliye} onChange={v => setParam('satisNakliye', v)} suffix="₺/ton" />
             <InputRow label="Üretim Firesi" value={params.uretimFiresi} onChange={v => setParam('uretimFiresi', v)} suffix="%" max={99} step={0.5} />
-            <div className="flex items-center justify-between py-3 border-b border-gray-50">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-[2px]">Ayıklama / Ayrıştırma</label>
+            <div className="flex items-center justify-between py-3 border-b border-enba-line">
+              <label className="text-[10px] font-semibold text-enba-muted uppercase tracking-[0.06em]">Ayıklama / Ayrıştırma</label>
               <button onClick={() => setParam('ayiklamaVar', !params.ayiklamaVar)}
-                className={`w-12 h-6 rounded-full transition-colors relative ${params.ayiklamaVar ? 'bg-enba-orange' : 'bg-gray-200'}`}>
+                className={`w-12 h-6 rounded-full transition-colors relative ${params.ayiklamaVar ? 'bg-enba-orange' : 'bg-enba-line-2'}`}>
                 <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-all shadow ${params.ayiklamaVar ? 'left-7' : 'left-1'}`} />
               </button>
             </div>
@@ -904,18 +904,18 @@ export const FastPlan: React.FC = () => {
             {/* ... (Personel listesi içeriği aynı kalıyor) ... */}
             <div className="space-y-3 mb-5">
               {params.personelListesi.map(p => (
-                <div key={p.id} className="flex items-center gap-4 px-5 py-4 bg-gray-50 rounded-2xl">
+                <div key={p.id} className="flex items-center gap-4 px-5 py-4 bg-enba-panel-2 rounded-lg">
                   <div className="flex-1">
-                    <div className="font-black text-sm text-enba-dark">{p.unvan}</div>
-                    <div className="text-[10px] text-gray-400 font-bold mt-0.5">
+                    <div className="font-semibold text-sm text-enba-text">{p.unvan}</div>
+                    <div className="text-[10px] text-enba-muted font-bold mt-0.5">
                       {p.kisiSayisi}×{params.vardiyaSayisi} = {p.kisiSayisi * params.vardiyaSayisi} kişi
                       {p.isAyiklama && ' · Ayıklama'}
                     </div>
                   </div>
-                  <span className="text-sm font-black text-enba-orange tabular-nums">
+                  <span className="text-sm font-semibold text-enba-orange tabular-nums">
                     ₺{fmt((ASGARI_NET + p.ekMaas) * p.kisiSayisi * params.vardiyaSayisi)}
                   </span>
-                  <button onClick={() => personelSil(p.id)} className="w-8 h-8 flex items-center justify-center rounded-xl bg-rose-50 text-rose-400 hover:bg-rose-500 hover:text-white transition-all">
+                  <button onClick={() => personelSil(p.id)} className="w-8 h-8 flex items-center justify-center rounded-xl bg-enba-red/10 text-enba-red hover:bg-rose-500 hover:text-white transition-all">
                     <Trash2 size={14} />
                   </button>
                 </div>
@@ -924,23 +924,23 @@ export const FastPlan: React.FC = () => {
             <div className="grid grid-cols-5 gap-3">
               <input type="text" placeholder="Unvan..." value={yeniPersonel.unvan}
                 onChange={e => setYeniPersonel({ ...yeniPersonel, unvan: e.target.value })}
-                className="col-span-2 bg-gray-50 border border-transparent rounded-2xl px-4 py-3 text-sm font-medium text-enba-dark outline-none focus:ring-2 focus:ring-enba-orange/20" />
+                className="col-span-2 bg-enba-panel-2 border border-transparent rounded-lg px-4 py-3 text-sm font-medium text-enba-text outline-none focus:ring-2 focus:ring-enba-orange/20" />
               <input type="number" placeholder="Kişi" min={1} value={yeniPersonel.kisiSayisi}
                 onFocus={e => e.target.select()}
                 onChange={e => setYeniPersonel({ ...yeniPersonel, kisiSayisi: Number(e.target.value) })}
-                className="bg-gray-50 border border-transparent rounded-2xl px-4 py-3 text-sm font-medium text-enba-dark outline-none focus:ring-2 focus:ring-enba-orange/20" />
+                className="bg-enba-panel-2 border border-transparent rounded-lg px-4 py-3 text-sm font-medium text-enba-text outline-none focus:ring-2 focus:ring-enba-orange/20" />
               <div className="relative">
                 <input type="number" placeholder="0" min={0} value={yeniPersonel.ekMaas || ''}
                   onFocus={e => e.target.select()}
                   onChange={e => setYeniPersonel({ ...yeniPersonel, ekMaas: e.target.value === '' ? 0 : Number(e.target.value) })}
-                  className="w-full bg-gray-50 border border-transparent rounded-2xl px-4 py-3 text-sm font-medium text-enba-dark outline-none focus:ring-2 focus:ring-enba-orange/20" />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-gray-400">+₺</span>
+                  className="w-full bg-enba-panel-2 border border-transparent rounded-lg px-4 py-3 text-sm font-medium text-enba-text outline-none focus:ring-2 focus:ring-enba-orange/20" />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-semibold text-enba-muted">+₺</span>
               </div>
-              <button onClick={personelEkle} className="flex items-center justify-center gap-1 bg-enba-dark text-white rounded-2xl font-black text-[10px] uppercase tracking-[1px] hover:bg-black transition-all">
+              <button onClick={personelEkle} className="flex items-center justify-center gap-1 bg-enba-dark text-white rounded-lg font-semibold text-[10px] uppercase tracking-[0.04em] hover:bg-black transition-all">
                 <Plus size={14} /> Ekle
               </button>
             </div>
-            <div className="flex gap-2 mt-2 text-[9px] font-black text-gray-300 uppercase tracking-widest px-1">
+            <div className="flex gap-2 mt-2 text-[9px] font-semibold text-enba-dim uppercase tracking-[0.12em] px-1">
               <span className="col-span-2 flex-[2]">Unvan</span>
               <span className="flex-1 text-center">Kişi</span>
               <span className="flex-1 text-center">Asgari Üzeri Ek</span>
@@ -950,7 +950,7 @@ export const FastPlan: React.FC = () => {
           <Panel title="IV. İşletme Giderleri" icon={<Package size={18} />} open={panelGider} onToggle={() => setPanelGider(v => !v)}>
             {/* Sabit Giderler */}
             <div className="mb-6 space-y-1">
-              <div className="text-[10px] font-black text-enba-orange uppercase tracking-[3px] mb-3 px-1">Sabit İşletme Giderleri</div>
+              <div className="text-[10px] font-semibold text-enba-orange uppercase tracking-[0.08em] mb-3 px-1">Sabit İşletme Giderleri</div>
               <InputRow label="Elektrik Faturası" value={params.elektrikGider} onChange={v => setParam('elektrikGider', v)} suffix="₺" step={1000} />
               <InputRow label="Kira (Tesis)" value={params.kiraGider} onChange={v => setParam('kiraGider', v)} suffix="₺" step={1000} />
               <InputRow label="Forklift Kira/Gider" value={params.forkliftGider} onChange={v => setParam('forkliftGider', v)} suffix="₺" step={500} />
@@ -959,18 +959,18 @@ export const FastPlan: React.FC = () => {
               <InputRow label="Çevre Mühendisliği" value={params.cevreMuhGider} onChange={v => setParam('cevreMuhGider', v)} suffix="₺" step={500} />
             </div>
 
-            <div className="h-px bg-gray-100 my-6" />
+            <div className="h-px bg-enba-line my-6" />
 
-            <div className="text-[10px] font-black text-enba-orange uppercase tracking-[3px] mb-4 px-1">Değişken / Ekstra Giderler</div>
+            <div className="text-[10px] font-semibold text-enba-orange uppercase tracking-[0.08em] mb-4 px-1">Değişken / Ekstra Giderler</div>
             <div className="space-y-3 mb-4">
               {params.ektraGiderler.map(g => (
-                <div key={g.id} className="flex items-center gap-4 px-5 py-4 bg-gray-50 rounded-2xl">
+                <div key={g.id} className="flex items-center gap-4 px-5 py-4 bg-enba-panel-2 rounded-lg">
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-enba-dark truncate">{g.ad}</div>
-                    <div className="text-[9px] font-black text-gray-400 uppercase tracking-widest mt-0.5">{KALEM_LABEL[g.kalem ?? 'diger']}</div>
+                    <div className="text-sm font-medium text-enba-text truncate">{g.ad}</div>
+                    <div className="text-[9px] font-semibold text-enba-muted uppercase tracking-[0.12em] mt-0.5">{KALEM_LABEL[g.kalem ?? 'diger']}</div>
                   </div>
-                  <span className="font-black text-rose-500 tabular-nums text-sm flex-shrink-0">₺{fmt(g.tutar)}</span>
-                  <button onClick={() => giderSil(g.id)} className="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-xl bg-rose-50 text-rose-400 hover:bg-rose-500 hover:text-white transition-all">
+                  <span className="font-semibold text-enba-red tabular-nums text-sm flex-shrink-0">₺{fmt(g.tutar)}</span>
+                  <button onClick={() => giderSil(g.id)} className="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-xl bg-enba-red/10 text-enba-red hover:bg-rose-500 hover:text-white transition-all">
                     <Trash2 size={14} />
                   </button>
                 </div>
@@ -979,17 +979,17 @@ export const FastPlan: React.FC = () => {
             <div className="grid grid-cols-12 gap-2">
               <input type="text" placeholder="Gider adı..." value={yeniGider.ad}
                 onChange={e => setYeniGider({ ...yeniGider, ad: e.target.value })}
-                className="col-span-4 bg-gray-50 rounded-2xl px-4 py-3 text-sm font-medium text-enba-dark outline-none focus:ring-2 focus:ring-enba-orange/20" />
+                className="col-span-4 bg-enba-panel-2 rounded-lg px-4 py-3 text-sm font-medium text-enba-text outline-none focus:ring-2 focus:ring-enba-orange/20" />
               <select value={yeniGider.kalem}
                 onChange={e => setYeniGider({ ...yeniGider, kalem: e.target.value as GiderKalem })}
-                className="col-span-4 bg-gray-50 rounded-2xl px-3 py-3 text-sm font-medium text-enba-dark outline-none focus:ring-2 focus:ring-enba-orange/20 cursor-pointer">
+                className="col-span-4 bg-enba-panel-2 rounded-lg px-3 py-3 text-sm font-medium text-enba-text outline-none focus:ring-2 focus:ring-enba-orange/20 cursor-pointer">
                 {KALEM_ORDER.map(k => <option key={k} value={k}>{KALEM_LABEL[k]}</option>)}
               </select>
               <input type="number" placeholder="₺" value={yeniGider.tutar}
                 onFocus={e => e.target.select()}
                 onChange={e => setYeniGider({ ...yeniGider, tutar: e.target.value })}
-                className="col-span-2 bg-gray-50 rounded-2xl px-3 py-3 text-sm font-medium text-enba-dark outline-none focus:ring-2 focus:ring-enba-orange/20" />
-              <button onClick={giderEkle} className="col-span-2 flex items-center justify-center gap-1 bg-enba-dark text-white rounded-2xl font-black text-[10px] uppercase tracking-[1px] hover:bg-black transition-all">
+                className="col-span-2 bg-enba-panel-2 rounded-lg px-3 py-3 text-sm font-medium text-enba-text outline-none focus:ring-2 focus:ring-enba-orange/20" />
+              <button onClick={giderEkle} className="col-span-2 flex items-center justify-center gap-1 bg-enba-dark text-white rounded-lg font-semibold text-[10px] uppercase tracking-[0.04em] hover:bg-black transition-all">
                 <Plus size={14} /> Ekle
               </button>
             </div>
@@ -999,167 +999,167 @@ export const FastPlan: React.FC = () => {
         {/* Sağ: Detaylı P&L önizleme */}
         <div className="xl:col-span-5 space-y-5 sticky top-10">
           {/* Kütle Dengesi */}
-          <div className="bg-enba-dark rounded-[2.5rem] p-8 text-white border border-white/5">
-            <div className="text-[9px] font-black text-gray-500 uppercase tracking-[3px] mb-5 flex items-center gap-2">
+          <div className="bg-enba-dark rounded-xl p-8 text-white border border-white/5">
+            <div className="text-[9px] font-semibold text-enba-muted uppercase tracking-[0.08em] mb-5 flex items-center gap-2">
               <Factory size={14} className="text-enba-orange" /> Kütle Dengesi
             </div>
             {[
               { label: 'Giren Hammadde', value: `${fmtDec(params.aylikTon)} ton`, color: 'text-white' },
               { label: 'Çöp / Ayrışma', value: params.ayiklamaVar ? `-${fmtDec(params.aylikTon * params.copOrani / 100)} ton` : 'Yok', color: 'text-yellow-400' },
-              { label: 'Üretim Firesi', value: `-${fmtDec(params.aylikTon * params.uretimFiresi / 100)} ton`, color: 'text-rose-400' },
-              { label: 'Net Satış Tonu', value: `${fmtDec(formSonuc.satisTon)} ton`, color: 'text-emerald-400' },
+              { label: 'Üretim Firesi', value: `-${fmtDec(params.aylikTon * params.uretimFiresi / 100)} ton`, color: 'text-enba-red' },
+              { label: 'Net Satış Tonu', value: `${fmtDec(formSonuc.satisTon)} ton`, color: 'text-enba-green' },
             ].map((r, i) => (
               <div key={i} className="flex justify-between py-2 border-b border-white/5 last:border-0">
-                <span className="text-[10px] font-black text-gray-400 uppercase tracking-[1px]">{r.label}</span>
-                <span className={`font-black tabular-nums ${r.color}`}>{r.value}</span>
+                <span className="text-[10px] font-semibold text-enba-muted uppercase tracking-[0.04em]">{r.label}</span>
+                <span className={`font-semibold tabular-nums ${r.color}`}>{r.value}</span>
               </div>
             ))}
           </div>
 
           {/* P&L Tablosu */}
-          <div className="bg-white rounded-[2.5rem] p-8 shadow-card border border-gray-100 space-y-4">
-            <div className="text-[9px] font-black text-gray-400 uppercase tracking-[3px] flex items-center gap-2 mb-2">
+          <div className="bg-enba-panel rounded-xl p-8 shadow-sm border border-enba-line space-y-4">
+            <div className="text-[9px] font-semibold text-enba-muted uppercase tracking-[0.08em] flex items-center gap-2 mb-2">
               <BarChart3 size={14} className="text-enba-orange" /> Standart P&L Analizi
             </div>
 
             {/* I. HASILAT */}
             <div className="space-y-1.5">
-              <div className="text-[10px] font-black text-enba-dark uppercase tracking-widest bg-gray-50 px-4 py-2 rounded-lg">I. HASILAT</div>
+              <div className="text-[10px] font-semibold text-enba-text uppercase tracking-[0.12em] bg-enba-panel-2 px-4 py-2 rounded-lg">I. HASILAT</div>
               <div className="flex justify-between px-5 py-1 text-sm">
-                <span className="text-gray-400 font-medium">Satış Geliri</span>
-                <span className="font-black text-emerald-600 tabular-nums">₺{fmt(formSonuc.satisGeliri)}</span>
+                <span className="text-enba-muted font-medium">Satış Geliri</span>
+                <span className="font-semibold text-enba-green tabular-nums">₺{fmt(formSonuc.satisGeliri)}</span>
               </div>
               <div className="flex justify-between px-5 py-1 text-sm">
-                <span className="text-gray-400 font-medium">Satış Nakliye</span>
-                <span className="font-black text-rose-400 tabular-nums">-₺{fmt(formSonuc.satisNakliyeGideri)}</span>
+                <span className="text-enba-muted font-medium">Satış Nakliye</span>
+                <span className="font-semibold text-enba-red tabular-nums">-₺{fmt(formSonuc.satisNakliyeGideri)}</span>
               </div>
-              <div className="flex justify-between px-5 py-2 border-t border-gray-50 font-black text-enba-dark text-[11px]">
+              <div className="flex justify-between px-5 py-2 border-t border-enba-line font-semibold text-enba-text text-[11px]">
                 <span className="uppercase tracking-wider">HASILAT</span>
-                <span className="tabular-nums text-emerald-600">₺{fmt(formSonuc.satisGeliri - formSonuc.satisNakliyeGideri)}</span>
+                <span className="tabular-nums text-enba-green">₺{fmt(formSonuc.satisGeliri - formSonuc.satisNakliyeGideri)}</span>
               </div>
             </div>
 
             {/* II. MAL MALİYETLERİ */}
             <div className="space-y-1.5 pt-2">
-              <div className="text-[10px] font-black text-enba-dark uppercase tracking-widest bg-gray-50 px-4 py-2 rounded-lg">II. MAL MALİYETLERİ</div>
+              <div className="text-[10px] font-semibold text-enba-text uppercase tracking-[0.12em] bg-enba-panel-2 px-4 py-2 rounded-lg">II. MAL MALİYETLERİ</div>
               <div className="flex justify-between px-5 py-1 text-sm">
-                <span className="text-gray-400 font-medium">Mal Alım</span>
-                <span className="font-black text-rose-400 tabular-nums">-₺{fmt(formSonuc.malAlisGideri)}</span>
+                <span className="text-enba-muted font-medium">Mal Alım</span>
+                <span className="font-semibold text-enba-red tabular-nums">-₺{fmt(formSonuc.malAlisGideri)}</span>
               </div>
               <div className="flex justify-between px-5 py-1 text-sm">
-                <span className="text-gray-400 font-medium">Alım Nakliye</span>
-                <span className="font-black text-rose-400 tabular-nums">-₺{fmt(formSonuc.alisNakliyeGideri)}</span>
+                <span className="text-enba-muted font-medium">Alım Nakliye</span>
+                <span className="font-semibold text-enba-red tabular-nums">-₺{fmt(formSonuc.alisNakliyeGideri)}</span>
               </div>
-              <div className="flex justify-between px-5 py-2 border-t border-gray-50 font-black text-enba-dark text-[11px]">
+              <div className="flex justify-between px-5 py-2 border-t border-enba-line font-semibold text-enba-text text-[11px]">
                 <span className="uppercase tracking-wider">KATKI</span>
-                <span className="tabular-nums text-emerald-600">₺{fmt((formSonuc.satisGeliri - formSonuc.satisNakliyeGideri) - (formSonuc.malAlisGideri + formSonuc.alisNakliyeGideri))}</span>
+                <span className="tabular-nums text-enba-green">₺{fmt((formSonuc.satisGeliri - formSonuc.satisNakliyeGideri) - (formSonuc.malAlisGideri + formSonuc.alisNakliyeGideri))}</span>
               </div>
             </div>
 
             {/* III. ENERJİ MALİYETLERİ */}
             {formSonuc.giderKırılım.enerji > 0 && (
               <div className="space-y-1.5 pt-2">
-                <div className="text-[10px] font-black text-enba-dark uppercase tracking-widest bg-gray-50 px-4 py-2 rounded-lg">III. ENERJİ MALİYETLERİ</div>
+                <div className="text-[10px] font-semibold text-enba-text uppercase tracking-[0.12em] bg-enba-panel-2 px-4 py-2 rounded-lg">III. ENERJİ MALİYETLERİ</div>
                 <div className="flex justify-between px-5 py-1 text-sm">
-                  <span className="text-gray-400 font-medium">Enerji & Hizmetler</span>
-                  <span className="font-black text-rose-400 tabular-nums">-₺{fmt(formSonuc.giderKırılım.enerji)}</span>
+                  <span className="text-enba-muted font-medium">Enerji & Hizmetler</span>
+                  <span className="font-semibold text-enba-red tabular-nums">-₺{fmt(formSonuc.giderKırılım.enerji)}</span>
                 </div>
               </div>
             )}
 
             {/* IV. PERSONEL MALİYETLERİ */}
             <div className="space-y-1.5 pt-2">
-              <div className="text-[10px] font-black text-enba-dark uppercase tracking-widest bg-gray-50 px-4 py-2 rounded-lg">IV. PERSONEL MALİYETLERİ</div>
+              <div className="text-[10px] font-semibold text-enba-text uppercase tracking-[0.12em] bg-enba-panel-2 px-4 py-2 rounded-lg">IV. PERSONEL MALİYETLERİ</div>
               <div className="flex justify-between px-5 py-1 text-sm">
-                <span className="text-gray-400 font-medium">Maaşlar</span>
-                <span className="font-black text-rose-400 tabular-nums">-₺{fmt(formSonuc.toplamMaas)}</span>
+                <span className="text-enba-muted font-medium">Maaşlar</span>
+                <span className="font-semibold text-enba-red tabular-nums">-₺{fmt(formSonuc.toplamMaas)}</span>
               </div>
               <div className="flex justify-between px-5 py-1 text-sm">
-                <span className="text-gray-400 font-medium">Sigortalar</span>
-                <span className="font-black text-rose-400 tabular-nums">-₺{fmt(formSonuc.toplamSgk)}</span>
+                <span className="text-enba-muted font-medium">Sigortalar</span>
+                <span className="font-semibold text-enba-red tabular-nums">-₺{fmt(formSonuc.toplamSgk)}</span>
               </div>
               <div className="flex justify-between px-5 py-1 text-sm">
-                <span className="text-gray-400 font-medium">Yemek</span>
-                <span className="font-black text-rose-400 tabular-nums">-₺{fmt(formSonuc.toplamYemek)}</span>
+                <span className="text-enba-muted font-medium">Yemek</span>
+                <span className="font-semibold text-enba-red tabular-nums">-₺{fmt(formSonuc.toplamYemek)}</span>
               </div>
             </div>
 
             {/* V. DİĞER GİDERLER */}
             {(formSonuc.giderKırılım.bakim > 0 || formSonuc.giderKırılım.kira > 0 || formSonuc.giderKırılım.pazarlama > 0 || formSonuc.giderKırılım.yonetim > 0 || formSonuc.giderKırılım.diger > 0) && (
               <div className="space-y-1.5 pt-2">
-                <div className="text-[10px] font-black text-enba-dark uppercase tracking-widest bg-gray-50 px-4 py-2 rounded-lg">V. DİĞER GİDERLER</div>
+                <div className="text-[10px] font-semibold text-enba-text uppercase tracking-[0.12em] bg-enba-panel-2 px-4 py-2 rounded-lg">V. DİĞER GİDERLER</div>
                 {formSonuc.giderKırılım.bakim > 0 && (
                   <div className="flex justify-between px-5 py-1 text-sm">
-                    <span className="text-gray-400 font-medium">Bakım Onarım</span>
-                    <span className="font-black text-rose-400 tabular-nums">-₺{fmt(formSonuc.giderKırılım.bakim)}</span>
+                    <span className="text-enba-muted font-medium">Bakım Onarım</span>
+                    <span className="font-semibold text-enba-red tabular-nums">-₺{fmt(formSonuc.giderKırılım.bakim)}</span>
                   </div>
                 )}
                 {formSonuc.giderKırılım.kira > 0 && (
                   <div className="flex justify-between px-5 py-1 text-sm">
-                    <span className="text-gray-400 font-medium">Kira & Tesis</span>
-                    <span className="font-black text-rose-400 tabular-nums">-₺{fmt(formSonuc.giderKırılım.kira)}</span>
+                    <span className="text-enba-muted font-medium">Kira & Tesis</span>
+                    <span className="font-semibold text-enba-red tabular-nums">-₺{fmt(formSonuc.giderKırılım.kira)}</span>
                   </div>
                 )}
                 {formSonuc.giderKırılım.pazarlama > 0 && (
                   <div className="flex justify-between px-5 py-1 text-sm">
-                    <span className="text-gray-400 font-medium">Pazarlama & Satış</span>
-                    <span className="font-black text-rose-400 tabular-nums">-₺{fmt(formSonuc.giderKırılım.pazarlama)}</span>
+                    <span className="text-enba-muted font-medium">Pazarlama & Satış</span>
+                    <span className="font-semibold text-enba-red tabular-nums">-₺{fmt(formSonuc.giderKırılım.pazarlama)}</span>
                   </div>
                 )}
                 {formSonuc.giderKırılım.yonetim > 0 && (
                   <div className="flex justify-between px-5 py-1 text-sm">
-                    <span className="text-gray-400 font-medium">Yönetim & Ofis</span>
-                    <span className="font-black text-rose-400 tabular-nums">-₺{fmt(formSonuc.giderKırılım.yonetim)}</span>
+                    <span className="text-enba-muted font-medium">Yönetim & Ofis</span>
+                    <span className="font-semibold text-enba-red tabular-nums">-₺{fmt(formSonuc.giderKırılım.yonetim)}</span>
                   </div>
                 )}
                 {formSonuc.giderKırılım.diger > 0 && (
                   <div className="flex justify-between px-5 py-1 text-sm">
-                    <span className="text-gray-400 font-medium">Diğer Giderler</span>
-                    <span className="font-black text-rose-400 tabular-nums">-₺{fmt(formSonuc.giderKırılım.diger)}</span>
+                    <span className="text-enba-muted font-medium">Diğer Giderler</span>
+                    <span className="font-semibold text-enba-red tabular-nums">-₺{fmt(formSonuc.giderKırılım.diger)}</span>
                   </div>
                 )}
               </div>
             )}
 
-            <div className="h-px bg-gray-100 my-4" />
+            <div className="h-px bg-enba-line my-4" />
 
-            <div className={`flex justify-between px-5 py-4 rounded-xl ${formSonuc.ebitda >= 0 ? 'bg-emerald-50' : 'bg-rose-50'}`}>
-              <span className="text-[10px] font-black uppercase tracking-[2px] text-gray-600">FAVÖK (EBITDA)</span>
-              <span className={`font-black tabular-nums ${kpiColor(formSonuc.ebitda)}`}>₺{fmt(formSonuc.ebitda)}</span>
+            <div className={`flex justify-between px-5 py-4 rounded-xl ${formSonuc.ebitda >= 0 ? 'bg-enba-green/10' : 'bg-enba-red/10'}`}>
+              <span className="text-[10px] font-semibold uppercase tracking-[0.06em] text-enba-muted">FAVÖK (EBITDA)</span>
+              <span className={`font-semibold tabular-nums ${kpiColor(formSonuc.ebitda)}`}>₺{fmt(formSonuc.ebitda)}</span>
             </div>
 
             {formSonuc.aylikAmortisman > 0 && (
               <div className="flex justify-between px-5 py-1 text-sm">
-                <span className="text-gray-400 font-medium">Amortisman</span>
-                <span className="font-black text-gray-400 tabular-nums">-₺{fmt(formSonuc.aylikAmortisman)}</span>
+                <span className="text-enba-muted font-medium">Amortisman</span>
+                <span className="font-semibold text-enba-muted tabular-nums">-₺{fmt(formSonuc.aylikAmortisman)}</span>
               </div>
             )}
 
-            <div className={`flex justify-between px-6 py-5 rounded-[1.25rem] ${formSonuc.netKar >= 0 ? 'bg-enba-dark' : 'bg-rose-600'} text-white shadow-xl`}>
-              <span className="text-[10px] font-black uppercase tracking-[2px]">NET KÂR / ZARAR</span>
-              <span className="font-black tabular-nums text-lg">₺{fmt(formSonuc.netKar)}</span>
+            <div className={`flex justify-between px-6 py-5 rounded-lg ${formSonuc.netKar >= 0 ? 'bg-enba-dark' : 'bg-rose-600'} text-white shadow-sm`}>
+              <span className="text-[10px] font-semibold uppercase tracking-[0.06em]">NET KÂR / ZARAR</span>
+              <span className="font-semibold tabular-nums text-lg">₺{fmt(formSonuc.netKar)}</span>
             </div>
           </div>
 
           {/* Gider Dağılım Çizelgesi */}
           {formSonuc.totalGider > 0 && (
-            <div className="bg-white rounded-[2.5rem] p-8 shadow-card border border-gray-100">
-              <div className="text-[9px] font-black text-gray-400 uppercase tracking-[3px] mb-5">Gider Dağılımı</div>
+            <div className="bg-enba-panel rounded-xl p-8 shadow-sm border border-enba-line">
+              <div className="text-[9px] font-semibold text-enba-muted uppercase tracking-[0.08em] mb-5">Gider Dağılımı</div>
               {[
                 { label: 'Mal Alım', value: formSonuc.malAlisGideri, color: 'bg-rose-400' },
                 { label: 'Nakliye', value: formSonuc.alisNakliyeGideri + formSonuc.satisNakliyeGideri, color: 'bg-orange-400' },
                 { label: 'Personel', value: formSonuc.toplamMaas + formSonuc.toplamSgk + formSonuc.toplamYemek, color: 'bg-blue-400' },
                 { label: 'Enerji', value: formSonuc.giderKırılım.enerji, color: 'bg-yellow-400' },
-                { label: 'Diğer', value: formSonuc.toplamEktra - formSonuc.giderKırılım.enerji, color: 'bg-gray-300' },
+                { label: 'Diğer', value: formSonuc.toplamEktra - formSonuc.giderKırılım.enerji, color: 'bg-enba-dim' },
               ].filter(item => item.value > 0).map(item => {
                 const pct = (item.value / formSonuc.totalGider) * 100;
                 return (
                   <div key={item.label} className="mb-4 last:mb-0">
                     <div className="flex justify-between mb-1.5">
-                      <span className="text-[9px] font-black text-gray-500 uppercase tracking-[1px]">{item.label}</span>
-                      <span className="text-[9px] font-black text-gray-600 tabular-nums">%{fmtDec(pct, 0)} · ₺{fmt(item.value)}</span>
+                      <span className="text-[9px] font-semibold text-enba-muted uppercase tracking-[0.04em]">{item.label}</span>
+                      <span className="text-[9px] font-semibold text-enba-muted tabular-nums">%{fmtDec(pct, 0)} · ₺{fmt(item.value)}</span>
                     </div>
-                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-2 bg-enba-panel-2 rounded-full overflow-hidden">
                       <div className={`h-full ${item.color} rounded-full transition-all duration-500`} style={{ width: `${pct}%` }} />
                     </div>
                   </div>
@@ -1170,30 +1170,30 @@ export const FastPlan: React.FC = () => {
 
           {/* Yatırım Analizi */}
           {params.yatirimlar.length > 0 && (
-            <div className="bg-white rounded-[2.5rem] p-8 shadow-card border border-gray-100">
-              <div className="text-[9px] font-black text-gray-400 uppercase tracking-[3px] flex items-center gap-2 mb-5">
+            <div className="bg-enba-panel rounded-xl p-8 shadow-sm border border-enba-line">
+              <div className="text-[9px] font-semibold text-enba-muted uppercase tracking-[0.08em] flex items-center gap-2 mb-5">
                 <TrendingUp size={14} className="text-enba-orange" /> Yatırım Analizi
               </div>
-              <div className="flex justify-between items-center py-3 border-b border-gray-50">
-                <span className="text-[10px] font-black text-gray-400 uppercase tracking-[1px]">Toplam CAPEX</span>
-                <span className="font-black text-enba-dark tabular-nums">₺{fmt(params.yatirimlar.reduce((s, y) => s + y.tutar, 0))}</span>
+              <div className="flex justify-between items-center py-3 border-b border-enba-line">
+                <span className="text-[10px] font-semibold text-enba-muted uppercase tracking-[0.04em]">Toplam CAPEX</span>
+                <span className="font-semibold text-enba-text tabular-nums">₺{fmt(params.yatirimlar.reduce((s, y) => s + y.tutar, 0))}</span>
               </div>
-              <div className="flex justify-between items-center py-3 border-b border-gray-50">
-                <span className="text-[10px] font-black text-gray-400 uppercase tracking-[1px]">Başabaş Noktası</span>
-                <span className={`font-black tabular-nums ${formSonuc.basabasNokta === Infinity ? 'text-rose-500' : 'text-enba-dark'}`}>
+              <div className="flex justify-between items-center py-3 border-b border-enba-line">
+                <span className="text-[10px] font-semibold text-enba-muted uppercase tracking-[0.04em]">Başabaş Noktası</span>
+                <span className={`font-semibold tabular-nums ${formSonuc.basabasNokta === Infinity ? 'text-enba-red' : 'text-enba-text'}`}>
                   {formSonuc.basabasNokta === Infinity ? '— kâra geçilemiyor' : `${fmtDec(formSonuc.basabasNokta, 1)} ton/ay`}
                 </span>
               </div>
-              <div className="flex justify-between items-center py-3 border-b border-gray-50">
-                <span className="text-[10px] font-black text-gray-400 uppercase tracking-[1px]">Kapasite Kullanımı (BB)</span>
-                <span className={`font-black tabular-nums ${formSonuc.basabasNokta <= params.aylikTon ? 'text-emerald-600' : 'text-rose-500'}`}>
+              <div className="flex justify-between items-center py-3 border-b border-enba-line">
+                <span className="text-[10px] font-semibold text-enba-muted uppercase tracking-[0.04em]">Kapasite Kullanımı (BB)</span>
+                <span className={`font-semibold tabular-nums ${formSonuc.basabasNokta <= params.aylikTon ? 'text-enba-green' : 'text-enba-red'}`}>
                   {formSonuc.basabasNokta === Infinity || params.aylikTon === 0 ? '—'
                     : `%${fmtDec((formSonuc.basabasNokta / params.aylikTon) * 100, 1)}`}
                 </span>
               </div>
               <div className="flex justify-between items-center py-3">
-                <span className="text-[10px] font-black text-gray-400 uppercase tracking-[1px]">Geri Ödeme Süresi</span>
-                <span className={`font-black tabular-nums ${formSonuc.geriOdemeSuresi === null ? 'text-gray-300' : formSonuc.geriOdemeSuresi <= 36 ? 'text-emerald-600' : formSonuc.geriOdemeSuresi <= 60 ? 'text-yellow-600' : 'text-rose-500'}`}>
+                <span className="text-[10px] font-semibold text-enba-muted uppercase tracking-[0.04em]">Geri Ödeme Süresi</span>
+                <span className={`font-semibold tabular-nums ${formSonuc.geriOdemeSuresi === null ? 'text-enba-dim' : formSonuc.geriOdemeSuresi <= 36 ? 'text-enba-green' : formSonuc.geriOdemeSuresi <= 60 ? 'text-enba-amber' : 'text-enba-red'}`}>
                   {formSonuc.geriOdemeSuresi === null ? '— (zarar)' : `${fmtDec(formSonuc.geriOdemeSuresi, 1)} ay`}
                 </span>
               </div>
@@ -1202,34 +1202,34 @@ export const FastPlan: React.FC = () => {
 
           {/* Duyarlılık Tablosu */}
           {params.satisFiyati > 0 && (
-            <div className="bg-white rounded-[2.5rem] p-8 shadow-card border border-gray-100 overflow-hidden">
-              <div className="text-[9px] font-black text-gray-400 uppercase tracking-[3px] flex items-center gap-2 mb-5">
+            <div className="bg-enba-panel rounded-xl p-8 shadow-sm border border-enba-line overflow-hidden">
+              <div className="text-[9px] font-semibold text-enba-muted uppercase tracking-[0.08em] flex items-center gap-2 mb-5">
                 <BarChart3 size={14} className="text-enba-orange" /> Duyarlılık — Satış Fiyatı
               </div>
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-gray-100">
-                    <th className="pb-2 text-left text-[8px] font-black text-gray-400 uppercase tracking-[1px]">Senaryo</th>
-                    <th className="pb-2 text-right text-[8px] font-black text-gray-400 uppercase tracking-[1px]">₺/ton</th>
-                    <th className="pb-2 text-right text-[8px] font-black text-gray-400 uppercase tracking-[1px]">FAVÖK</th>
-                    <th className="pb-2 text-right text-[8px] font-black text-gray-400 uppercase tracking-[1px]">Marj</th>
+                  <tr className="border-b border-enba-line">
+                    <th className="pb-2 text-left text-[8px] font-semibold text-enba-muted uppercase tracking-[0.04em]">Senaryo</th>
+                    <th className="pb-2 text-right text-[8px] font-semibold text-enba-muted uppercase tracking-[0.04em]">₺/ton</th>
+                    <th className="pb-2 text-right text-[8px] font-semibold text-enba-muted uppercase tracking-[0.04em]">FAVÖK</th>
+                    <th className="pb-2 text-right text-[8px] font-semibold text-enba-muted uppercase tracking-[0.04em]">Marj</th>
                   </tr>
                 </thead>
                 <tbody>
                   {duyarlilik.map(({ pct, sonuc: ds }) => {
                     const isCurrent = pct === 0;
                     return (
-                      <tr key={pct} className={isCurrent ? 'bg-enba-orange/5' : 'hover:bg-gray-50/50'}>
-                        <td className={`py-2.5 text-[10px] font-black ${pct < 0 ? 'text-rose-500' : pct > 0 ? 'text-emerald-600' : 'text-enba-orange'}`}>
+                      <tr key={pct} className={isCurrent ? 'bg-enba-orange/8' : 'hover:bg-enba-panel-2/50'}>
+                        <td className={`py-2.5 text-[10px] font-semibold ${pct < 0 ? 'text-enba-red' : pct > 0 ? 'text-enba-green' : 'text-enba-orange'}`}>
                           {pct === 0 ? 'Baz' : `${pct > 0 ? '+' : ''}${pct}%`}
                         </td>
-                        <td className="py-2.5 text-right text-[10px] font-black text-gray-600 tabular-nums">
+                        <td className="py-2.5 text-right text-[10px] font-semibold text-enba-muted tabular-nums">
                           ₺{fmt(params.satisFiyati * (1 + pct / 100))}
                         </td>
-                        <td className={`py-2.5 text-right text-[10px] font-black tabular-nums ${kpiColor(ds.ebitda)}`}>
+                        <td className={`py-2.5 text-right text-[10px] font-semibold tabular-nums ${kpiColor(ds.ebitda)}`}>
                           ₺{fmt(ds.ebitda)}
                         </td>
-                        <td className={`py-2.5 text-right text-[10px] font-black tabular-nums ${ds.ebitdaMarji >= 10 ? 'text-emerald-600' : ds.ebitdaMarji >= 0 ? 'text-yellow-600' : 'text-rose-500'}`}>
+                        <td className={`py-2.5 text-right text-[10px] font-semibold tabular-nums ${ds.ebitdaMarji >= 10 ? 'text-enba-green' : ds.ebitdaMarji >= 0 ? 'text-enba-amber' : 'text-enba-red'}`}>
                           %{fmtDec(ds.ebitdaMarji)}
                         </td>
                       </tr>
