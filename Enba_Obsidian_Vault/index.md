@@ -40,6 +40,8 @@
 | [[Kararlar/2026-05-RLS-Dersleri\|RLS Dersleri]] | 5 kural: DROP POLICY tuzakları, SECURITY DEFINER, auth.jwt(), HTTP 500 teşhisi | 2026-05-05 |
 | [[Kararlar/2026-05-Auth-Sorunlari\|Auth Sorunları]] | Tüm kırmızı liste kapatıldı — RLS, DataService, profil bant, SuperAdmin UI | 2026-05-05 |
 | [[Kararlar/2026-05-MKodu-Finansal-Taksonomi\|M-Kodu Finansal Taksonomi]] | financial_categories tablosu aktif; Paraşüt + diğer modüller henüz bağlanmadı | 2026-05-14 |
+| [[Kararlar/2026-05-DetailedPlan-Veri-Girisi\|DetailedPlan Veri Girişi]] | Karar bekleniyor — plan oluşturma akışı, Supabase şeması, inline editing, aktüeller | 2026-05-19 |
+| [[Kararlar/2026-05-Parasut-Token-Supabase\|Paraşüt Token Supabase]] | Karar verildi — localStorage → parasut_tokens tablosu, RLS, company izolasyonu | 2026-05-19 |
 
 ---
 

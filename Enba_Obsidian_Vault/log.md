@@ -513,3 +513,27 @@ grep "^## \[" log.md | tail -5
 - **Etkilenen dosyalar:** `src/modules/detailedplan/` (yeni klasör, 9 dosya), `src/App.tsx` (import + render güncellendi), `src/modules/detailedplan/ExpensePanel.tsx` (ReferenceLine bug düzeltildi), `tailwind.config.js` + `src/index.css` (yeni CSS değişkenleri — önceki oturumda)
 - **Bağımlılık eklendi:** `recharts` (npm install)
 - **Bir sonraki:** Paraşüt → financial_categories bağlantısı veya PnL operasyon bazlı ayrıştırma
+
+---
+
+## [2026-05-19] karar | DetailedPlan veri girişi + Paraşüt token mimarisi notlandı
+
+- **Konu:** İki mimari karar notu wiki'ye eklendi
+- **DetailedPlan:** Plan oluşturma akışı (FastPlan gibi kart listesi önce önerisi), ürün girişi, Supabase şeması (business_plans JSON blob), inline editing + debounce auto-save, aktüel veri girişi (kısa vade: manuel)
+- **Paraşüt token:** localStorage → Supabase `parasut_tokens` tablosu; company_id ile RLS izolasyonu; saveToken/loadTokenFromSupabase/disconnect değişiklikleri; migration plan
+- **Yeni sayfalar:** `Kararlar/2026-05-DetailedPlan-Veri-Girisi.md`, `Kararlar/2026-05-Parasut-Token-Supabase.md`
+- **Bir sonraki:** Önceliklendirme — DetailedPlan gerçek veri bağlantısı mı, Paraşüt token migrasyonu mu?
+
+---
+
+## [2026-05-19] oturum kapanışı | DetailedPlan + FastPlan reskin + mimari notlar
+
+**Bu oturumda yapılanlar:**
+- DetailedPlan design handoff tamamlandı: BudgetTrackPanel + DetailedPlanShell yazıldı, App.tsx güncellendi, ExpensePanel ReferenceLine bug düzeltildi (commit 33f43d7)
+- DetailedPlan iç sidebar daraltılabilir hale getirildi — w-12 icon-only modu, chevron toggle (commit f8b1686)
+- FastPlan tüm design language'ı DetailedPlan'a uyumlu reskin edildi — gray/white → enba token'ları, rounded-[2.5rem] → rounded-xl, font-black → font-semibold (commit 18d73b8)
+- İki mimari karar notu wiki'ye eklendi: DetailedPlan veri girişi mimarisi (karar bekleniyor), Paraşüt token Supabase migrasyonu (karar verildi)
+
+**CLAUDE.md Aktif Görevler güncellendi.**
+
+**Sonraki oturumda:** DetailedPlan gerçek veri bağlantısı veya Paraşüt token migrasyonu — kullanıcı öncelik belirler.

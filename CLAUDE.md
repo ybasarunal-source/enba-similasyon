@@ -329,20 +329,29 @@ Veri kaybı riski olan her adımı kullanıcıya açıkça belirt ve onay al.
 - [x] **Finansal Ayarlar modülü** (`ayarlar`) — financial_categories Supabase tablosu, M-kodu hiyerarşi yönetimi, seed/özel kategori (commit 2531ddc)
 - [x] **Varlık Takibi modülü** (`varlik`) — sabit varlıklar + depozitolar, TL/EUR çift görünüm, M/K/V filtre, amortisman hesabı (commit 7926f57)
 
+### Tamamlanan (2026-05-18 – 2026-05-19)
+- [x] **DetailedPlan design handoff** — 9 dosya: dpData.ts, DPPrimitives, 6 panel, DetailedPlanShell (commit 33f43d7)
+- [x] **DetailedPlan sidebar daralt/genişlet** — chevron toggle, w-12 icon-only modu (commit f8b1686)
+- [x] **FastPlan reskin** — DetailedPlan design language'a uyumlu: enba token'ları, rounded-xl, font-semibold (commit 18d73b8)
+- [x] **Mimari karar notları** — DetailedPlan veri girişi + Paraşüt token Supabase migrasyonu wiki'ye eklendi
+
 ### Kullanıcı Öncelik Sırası
-1. **DetailedPlan iyileştirmeleri**
-2. **Paraşüt tamamlama** — financial_categories tablosuna bağla, Enba stok ↔ Paraşüt item eşleştirmesi
-3. **PnL analizi güçlendirme** — operasyon (M/K/V) bazlı ayrıştırma
-4. **Yapay zeka asistanı** — siteye entegre AI chat
+1. **DetailedPlan → gerçek veri** — plan oluşturma listesi + Supabase bağlantısı (mimari karar notu hazır)
+2. **Paraşüt token → Supabase** — parasut_tokens tablosu + company izolasyonu (migration notu hazır)
+3. **Paraşüt → financial_categories** — eşleştirme modalı mcodeList.ts yerine Supabase tablosundan
+4. **PnL analizi güçlendirme** — operasyon (M/K/V) bazlı ayrıştırma
+5. **Yapay zeka asistanı** — siteye entegre AI chat
 
 ### Bekleyen Teknik Görevler
-- [x] **Admin test hesabı** — Supabase'de `role='admin'` + geçerli `company_id` → şirket izolasyonu doğrulandı (2026-05-18)
-- [ ] **Paraşüt → financial_categories** — Paraşüt eşleştirme modalı mcodeList.ts yerine Supabase tablosundan çeksin
-- [ ] **E-fatura** — ertelendi (müşteri talebi olursa)
-- [ ] **Bordro/muhasebe** — ertelendi (müşteri talebi olursa)
+- [x] **Admin test hesabı** — doğrulandı (2026-05-18)
+- [ ] **DetailedPlan veri girişi** — plan listesi + Supabase JSON blob → bkz. `Kararlar/2026-05-DetailedPlan-Veri-Girisi.md`
+- [ ] **Paraşüt token migrasyonu** — parasut_tokens tablosu + RLS → bkz. `Kararlar/2026-05-Parasut-Token-Supabase.md`
+- [ ] **Paraşüt → financial_categories** — eşleştirme modalı Supabase tablosundan çeksin
+- [ ] **E-fatura** — ertelendi
+- [ ] **Bordro/muhasebe** — ertelendi
 
 ### Bir Sonraki Oturumda İlk Yapılacak
-**DetailedPlan iyileştirmeleri** veya **Paraşüt → financial_categories bağlantısı**
+**DetailedPlan gerçek veri bağlantısı** veya **Paraşüt token Supabase migrasyonu** — hangisi önce olduğunu kullanıcı belirler
 
 ---
 
