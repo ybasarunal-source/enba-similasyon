@@ -74,9 +74,13 @@ export const parasutService = {
     if (profile.parasut_data?.token) {
       _memToken = profile.parasut_data.token;
       try { localStorage.setItem(TOKEN_KEY, JSON.stringify(_memToken)); } catch { /* ignore */ }
+    } else {
+      this.logout();
     }
     if (profile.parasut_data?.company) {
       try { localStorage.setItem(COMPANY_KEY, JSON.stringify(profile.parasut_data.company)); } catch { /* ignore */ }
+    } else {
+      try { localStorage.removeItem(COMPANY_KEY); } catch { /* ignore */ }
     }
   },
 

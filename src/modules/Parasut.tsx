@@ -544,19 +544,12 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
   };
 
 
-  if (!ready) return <LoginForm onReady={handleReady} />;
-
   const filtered = React.useMemo(() => {
     return invoices.filter(inv => {
       if (typeFilter === 'income'  && inv.type !== 'sales_invoices')  return false;
       if (typeFilter === 'expense' && inv.type === 'sales_invoices') return false;
-      
-      // Category selection filter
       if (categoryFilter !== 'all' && inv.category_name !== categoryFilter) return false;
-      
-      // Dedicated category search filter
       if (catSearch && !inv.category_name?.toLowerCase().includes(catSearch.toLowerCase())) return false;
-      
       if (search) {
         const q = search.toLowerCase();
         return inv.description.toLowerCase().includes(q)
@@ -573,18 +566,15 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
     return [...filtered].sort((a, b) => {
       let aVal: any = a[key];
       let bVal: any = b[key];
-      
       if (aVal === bVal) return 0;
       if (aVal === undefined || aVal === null) return 1;
       if (bVal === undefined || bVal === null) return -1;
-      
       let res = 0;
       if (typeof aVal === 'string' && typeof bVal === 'string') {
         res = aVal.localeCompare(bVal, 'tr');
       } else {
         res = aVal < bVal ? -1 : 1;
       }
-      
       return direction === 'asc' ? res : -res;
     });
   }, [filtered, sortConfig]);
@@ -594,6 +584,8 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
     invoices.forEach(inv => { if (inv.category_name) set.add(inv.category_name); });
     return Array.from(set).sort();
   }, [invoices]);
+
+  if (!ready) return <LoginForm onReady={handleReady} />;
 
   const totalIncome  = invoices.filter(i => i.type === 'sales_invoices').reduce((s, i) => s + i.gross_total, 0);
   const totalExpense = invoices.filter(i => i.type !== 'sales_invoices').reduce((s, i) => s + i.gross_total, 0);
