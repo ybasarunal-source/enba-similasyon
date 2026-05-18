@@ -336,7 +336,7 @@ Veri kaybı riski olan her adımı kullanıcıya açıkça belirt ve onay al.
 4. **Yapay zeka asistanı** — siteye entegre AI chat
 
 ### Bekleyen Teknik Görevler
-- [ ] **Admin test hesabı** — Supabase'de `role='admin'` + geçerli `company_id` → şirket izolasyonunu doğrula
+- [x] **Admin test hesabı** — Supabase'de `role='admin'` + geçerli `company_id` → şirket izolasyonu doğrulandı (2026-05-18)
 - [ ] **Paraşüt → financial_categories** — Paraşüt eşleştirme modalı mcodeList.ts yerine Supabase tablosundan çeksin
 - [ ] **E-fatura** — ertelendi (müşteri talebi olursa)
 - [ ] **Bordro/muhasebe** — ertelendi (müşteri talebi olursa)

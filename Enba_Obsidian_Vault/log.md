@@ -489,3 +489,27 @@ grep "^## \[" log.md | tail -5
 
 **Bir sonraki:**
 - DetailedPlan iyileştirmeleri veya PnL operasyon bazlı ayrıştırma
+
+---
+
+## [2026-05-14 23:30] geliştirme | Paraşüt M-kodu açıklamaları + oturum devam
+
+- **Yapılan:** `Parasut_TR_Muhasebe_Eslestirme.xlsx` 2. sütunundan (Açıklama/Notlar) 71 M-kodu için Türkçe muhasebe açıklamaları çıkarıldı. `src/api/mcodeNotes.ts` oluşturuldu. Paraşüt kategori eşleştirme combobox'ı her kodun altında açıklama satırı gösteriyor. Dropdown 460px genişliğe çıkarıldı.
+- **Etkilenen dosyalar:** `src/api/mcodeNotes.ts` (yeni), `src/modules/Parasut.tsx`
+- **Önceki oturumdan devam:** Inline Ayarlar paneli, upload hata raporu, 429 retry, özel M-kodu oluşturma, mcodeList.ts 71 kodla güncellendi (önceki oturumda tamamlanmıştı)
+- **Bekleyen:** `migration_mcode_update.sql` → Supabase'de çalıştırılmalı (financial_categories tablosunu güncel TDHP adlarıyla günceller)
+- **Bir sonraki:** DetailedPlan iyileştirmeleri veya PnL operasyon bazlı ayrıştırma
+
+---
+
+## [2026-05-18] geliştirme | DetailedPlan design handoff — tüm paneller tamamlandı
+
+- **Yapılan:** `design_handoff_detailed_plan/` JSX prototipinden tam TypeScript dönüşümü tamamlandı. 9 dosya oluşturuldu:
+  - `dpData.ts` — veri modeli, hesaplama yardımcıları, TypeScript arayüzleri
+  - `DPPrimitives.tsx` — temel UI bileşenleri + ikon seti + `useChartColors`
+  - `OverviewPanel.tsx`, `RevenuePanel.tsx`, `ExpensePanel.tsx`, `CashFlowPanel.tsx`, `ScenarioPanel.tsx` — plan panelleri
+  - `BudgetTrackPanel.tsx` — bütçe takip, period scrubber, BVA KPI'lar, YTD karşılaştırma, kalem sapma tablosu, varyans ısı haritası
+  - `DetailedPlanShell.tsx` — iç sidebar (6 bölüm), header (senaryo chip'leri, dönem kontrolü), panel yönlendirme
+- **Etkilenen dosyalar:** `src/modules/detailedplan/` (yeni klasör, 9 dosya), `src/App.tsx` (import + render güncellendi), `src/modules/detailedplan/ExpensePanel.tsx` (ReferenceLine bug düzeltildi), `tailwind.config.js` + `src/index.css` (yeni CSS değişkenleri — önceki oturumda)
+- **Bağımlılık eklendi:** `recharts` (npm install)
+- **Bir sonraki:** Paraşüt → financial_categories bağlantısı veya PnL operasyon bazlı ayrıştırma

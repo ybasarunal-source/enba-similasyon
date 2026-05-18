@@ -35,7 +35,7 @@ const Licensing         = lazyRetry(() => import('./modules/Licensing').then(m =
 const PnL               = lazyRetry(() => import('./modules/PnL').then(m => ({ default: m.PnL })));
 const Settings          = lazyRetry(() => import('./modules/Settings').then(m => ({ default: m.Settings })));
 const Profile           = lazyRetry(() => import('./modules/Profile').then(m => ({ default: m.Profile })));
-const DetailedPlanManager = lazyRetry(() => import('./modules/planning/DetailedPlanManager').then(m => ({ default: m.DetailedPlanManager })));
+const DetailedPlanShell   = lazyRetry(() => import('./modules/detailedplan/DetailedPlanShell').then(m => ({ default: m.DetailedPlanShell })));
 const FastPlan          = lazyRetry(() => import('./modules/FastPlan').then(m => ({ default: m.FastPlan })));
 const CalendarModule    = lazyRetry(() => import('./modules/Calendar').then(m => ({ default: m.Calendar })));
 const Parasut           = lazyRetry(() => import('./modules/Parasut').then(m => ({ default: m.Parasut })));
@@ -858,7 +858,7 @@ export const App: React.FC = () => {
                 {activeModule === 'company_admin' && <CompanyAdmin />}
                 {activeModule === 'pnl'      && <PnL />}
                 {activeModule === 'fastplan' && <FastPlan />}
-                {activeModule === 'planning' && <DetailedPlanManager />}
+                {activeModule === 'planning' && <DetailedPlanShell navigate={navigate} />}
                 {activeModule === 'parasut'  && <Parasut profile={userProfile} navigate={navigate} />}
                 {activeModule === 'ayarlar'  && <Ayarlar profile={userProfile} />}
                 {activeModule === 'varlik'   && <VarlikTakibi profile={userProfile} />}
