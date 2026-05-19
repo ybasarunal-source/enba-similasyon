@@ -344,6 +344,7 @@ Veri kaybı riski olan her adımı kullanıcıya açıkça belirt ve onay al.
 
 ### Bekleyen Teknik Görevler
 - [x] **Admin test hesabı** — doğrulandı (2026-05-18)
+- [ ] **Kök dizin .jsx temizliği** — 26 eski prototip dosyası silinecek; önce ai-assistant.jsx + org-chart-module.jsx içerik kontrolü
 - [ ] **DetailedPlan veri girişi** — plan listesi + Supabase JSON blob → bkz. `Kararlar/2026-05-DetailedPlan-Veri-Girisi.md`
 - [ ] **Paraşüt token migrasyonu** — parasut_tokens tablosu + RLS → bkz. `Kararlar/2026-05-Parasut-Token-Supabase.md`
 - [ ] **Paraşüt → financial_categories** — eşleştirme modalı Supabase tablosundan çeksin
