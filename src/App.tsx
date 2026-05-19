@@ -703,7 +703,7 @@ export const App: React.FC = () => {
                   style={{ fontFamily: "'Poppins', sans-serif" }}
                   className="text-[10px] font-medium text-[var(--enba-orange)] mt-0.5"
                 >
-                  {user.role === 'super_admin' ? 'Sistem Yöneticisi' : (companyName ?? 'Şirket bilgisi yükleniyor…')}
+                  {user.role === 'super_admin' ? `super_admin · ${companyName ?? '…'}` : (companyName ?? 'Şirket bilgisi yükleniyor…')}
                 </span>
               </div>
               <div className="w-8 h-8 rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center border border-gray-200 relative flex-shrink-0">
@@ -741,7 +741,7 @@ export const App: React.FC = () => {
                     {user?.name || 'User'}
                   </div>
                   <div style={{ fontFamily: "'Poppins', sans-serif", fontSize: '10px', color: 'var(--enba-orange)', fontWeight: 600 }}>
-                    {user.role === 'super_admin' ? 'Sistem Yöneticisi' : (companyName ?? 'Şirket bilgisi yükleniyor…')}
+                    {user.role === 'super_admin' ? `super_admin · ${companyName ?? '…'}` : (companyName ?? 'Şirket bilgisi yükleniyor…')}
                   </div>
                 </div>
 
