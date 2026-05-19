@@ -105,7 +105,10 @@ export const parasutService = {
         .select('access_token, refresh_token, expires_at, parasut_company_data')
         .eq('company_id', companyId)
         .maybeSingle();
-      if (error || !data) return false;
+      if (error || !data) {
+        console.log('[parasut] loadTokenFromSupabase: false —', error?.message ?? 'no data');
+        return false;
+      }
       _memToken = {
         access_token: data.access_token,
         refresh_token: data.refresh_token,
@@ -126,7 +129,7 @@ export const parasutService = {
       _memToken = profile.parasut_data.token;
       try { localStorage.setItem(TOKEN_KEY, JSON.stringify(_memToken)); } catch { /* ignore */ }
     } else {
-      this.logout();
+      this.clearSession();
     }
     if (profile.parasut_data?.company) {
       try { localStorage.setItem(COMPANY_KEY, JSON.stringify(profile.parasut_data.company)); } catch { /* ignore */ }
