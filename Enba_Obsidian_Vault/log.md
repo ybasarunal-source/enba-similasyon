@@ -526,6 +526,20 @@ grep "^## \[" log.md | tail -5
 
 ---
 
+## [2026-05-19] oturum kapanışı | Temizlik + güvenlik + M/K/V düzeltmesi
+
+**Bu oturumda yapılanlar:**
+- Kök dizin .jsx temizliği: 26 eski prototip dosyası silindi (commit 9571b0d) — ai-assistant.jsx ve org-chart-module.jsx src/ karşılığı yok ama korunmaya değmez
+- Hardcoded credential güvenlik fix: `supabase.ts` + `Notes.tsx` içindeki fallback URL ve anon key kaldırıldı, .env yoksa açık exception fırlatılıyor (commit dffb33b)
+- M/K/V tanımı düzeltildi: Mamul/Komponent/Varlık değil → **Merkez/Kömürcüler/Varsak** (operasyon lokasyonları). CLAUDE.md + memory güncellendi.
+- Test kullanıcısı SQL scripti hazırlandı — kullanıcı oluşturma Dashboard'dan yapılacak, company_id seçimi bekleniyor
+
+**Etkilenen dosyalar:** 26 .jsx silindi, `src/api/supabase.ts`, `src/modules/Notes.tsx`, `CLAUDE.md`
+
+**Sonraki oturumda:** DetailedPlan gerçek veri bağlantısı veya Paraşüt token migrasyonu — kullanıcı belirler
+
+---
+
 ## [2026-05-19] oturum kapanışı | DetailedPlan + FastPlan reskin + mimari notlar
 
 **Bu oturumda yapılanlar:**

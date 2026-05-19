@@ -339,12 +339,12 @@ Veri kaybı riski olan her adımı kullanıcıya açıkça belirt ve onay al.
 1. **DetailedPlan → gerçek veri** — plan oluşturma listesi + Supabase bağlantısı (mimari karar notu hazır)
 2. **Paraşüt token → Supabase** — parasut_tokens tablosu + company izolasyonu (migration notu hazır)
 3. **Paraşüt → financial_categories** — eşleştirme modalı mcodeList.ts yerine Supabase tablosundan
-4. **PnL analizi güçlendirme** — operasyon (M/K/V) bazlı ayrıştırma
+4. **PnL analizi güçlendirme** — operasyon (M=Merkez / K=Kömürcüler / V=Varsak) bazlı ayrıştırma
 5. **Yapay zeka asistanı** — siteye entegre AI chat
 
 ### Bekleyen Teknik Görevler
 - [x] **Admin test hesabı** — doğrulandı (2026-05-18)
-- [ ] **Kök dizin .jsx temizliği** — 26 eski prototip dosyası silinecek; önce ai-assistant.jsx + org-chart-module.jsx içerik kontrolü
+- [x] **Kök dizin .jsx temizliği** — 26 dosya silindi (commit 9571b0d)
 - [ ] **DetailedPlan veri girişi** — plan listesi + Supabase JSON blob → bkz. `Kararlar/2026-05-DetailedPlan-Veri-Girisi.md`
 - [ ] **Paraşüt token migrasyonu** — parasut_tokens tablosu + RLS → bkz. `Kararlar/2026-05-Parasut-Token-Supabase.md`
 - [ ] **Paraşüt → financial_categories** — eşleştirme modalı Supabase tablosundan çeksin
@@ -353,6 +353,9 @@ Veri kaybı riski olan her adımı kullanıcıya açıkça belirt ve onay al.
 
 ### Bir Sonraki Oturumda İlk Yapılacak
 **DetailedPlan gerçek veri bağlantısı** veya **Paraşüt token Supabase migrasyonu** — hangisi önce olduğunu kullanıcı belirler
+
+### Bekleyen Kullanıcı Aksiyonu
+- Test kullanıcısı oluşturma: Supabase Dashboard → Auth → Add user → profil SQL'ini çalıştır (company_id seçimi gerekiyor)
 
 ---
 
