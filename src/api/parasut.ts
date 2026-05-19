@@ -59,12 +59,14 @@ function saveToken(raw: any): StoredToken {
   (async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
+      console.log('[parasut] saveToken user:', user?.id ?? 'null');
       if (!user) return;
-      const { data: profile } = await supabase
+      const { data: profile, error: pe } = await supabase
         .from('profiles')
         .select('company_id')
         .eq('id', user.id)
         .maybeSingle();
+      console.log('[parasut] saveToken profile.company_id:', profile?.company_id ?? 'null', pe?.message ?? '');
       if (!profile?.company_id) return;
       _companyId = profile.company_id;
       const { error } = await supabase.from('parasut_tokens').upsert({
@@ -74,8 +76,8 @@ function saveToken(raw: any): StoredToken {
         expires_at: data.expires_at,
         updated_at: new Date().toISOString(),
       }, { onConflict: 'company_id' });
-      if (error) console.warn('Paraşüt token Supabase kayıt hatası:', error.message);
-    } catch { /* ignore */ }
+      console.log('[parasut] upsert error:', error?.message ?? 'none');
+    } catch (e) { console.error('[parasut] saveToken exception:', e); }
   })();
   return data;
 }
