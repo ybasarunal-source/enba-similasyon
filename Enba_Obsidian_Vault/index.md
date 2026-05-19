@@ -78,6 +78,7 @@
 |--------|-----|------|---------|
 | [[Ham-Kaynaklar/Karpathy-LLM-Wiki\|Karpathy LLM-Wiki]] | Makale | Kalıcı wiki pattern, index+log, Obsidian+Claude Code entegrasyonu | 2026-05-04 |
 | CLAUDE.md (vault içi) | Schema | Oturum protokolü, wiki bakım kuralları, mimari özet | 2026-05-04 |
+| [[Ham-Kaynaklar/2026-05-Nakit-Akisi-Uretim-Ozeti\|Nakit Akışı & Üretim Özeti]] | Operasyonel özet | Gerçek nakit tablosu, üretim parametreleri, 3 ay projeksiyon, KDV mahsup — DetailedPlan için ilk gerçek veri | 2026-05-19 |
 
 ---
 

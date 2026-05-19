@@ -526,6 +526,15 @@ grep "^## \[" log.md | tail -5
 
 ---
 
+## [2026-05-19] ingest | Nakit Akışı & Üretim Planı Özeti
+- Kaynak: Operasyonel finansal özet — nakit tablosu, üretim parametreleri, 3 ay projeksiyon, KDV mahsup
+- Güncellenen sayfalar: `index.md`
+- Yeni sayfalar: `Ham-Kaynaklar/2026-05-Nakit-Akisi-Uretim-Ozeti.md`
+- Önemli çıkarım: Bu belge DetailedPlan modülünün ilk gerçek kullanım senaryosu; KDV takip ve alıcı tablosu yeni modül ihtiyacı olarak belirlendi
+- Bekleyen: Hammadde fiyatı çelişkisi (18 vs 20 TL/kg) + hangi M/K/V operasyonu soruları yanıtsız
+
+---
+
 ## [2026-05-19] oturum kapanışı | Temizlik + güvenlik + M/K/V düzeltmesi
 
 **Bu oturumda yapılanlar:**
