@@ -3,6 +3,7 @@ import React from 'react';
 
 export interface Product {
   id: string;
+  mcode: string;         // M105, M149 vb.
   name: string;
   category: string;
   unit: string;
@@ -17,10 +18,16 @@ export interface Product {
 
 export interface FixedExpense {
   id: string;
+  mcode: string;                                        // M369, M405, M610 vb.
+  costCategory: 'purchase' | 'production' | 'overhead'; // alış / üretim / sabit
   name: string;
   group: string;
   monthly: number;
   growth: number;
+  // Alış kalemleri için ek alanlar (costCategory === 'purchase')
+  unit?: string;
+  unitPrice?: number;
+  monthlyQty?: number;
 }
 
 export interface Scenario {
@@ -90,52 +97,60 @@ export const PERIODS: Period[] = buildMonths(24, 2025, 0);
 
 export const PRODUCTS: Product[] = [
   {
-    id: 'p1', name: 'PET Granül (Şeffaf)', category: 'Granül Üretim', unit: 'ton',
+    id: 'p1', mcode: 'M105', name: 'PET Granül (Şeffaf)', category: 'Granül Üretim', unit: 'ton',
     price: 28500, priceGrowth: 0.08,
     seasonality: [0.9,0.95,1.0,1.05,1.1,1.15,1.1,1.05,1.05,1.0,0.95,0.9],
-    volume: 120, volumeGrowth: 0.18, varCostRatio: 0.62, color: '#E35205',
+    volume: 120, volumeGrowth: 0.18, varCostRatio: 0, color: '#E35205',
   },
   {
-    id: 'p2', name: 'PET Granül (Renkli)', category: 'Granül Üretim', unit: 'ton',
+    id: 'p2', mcode: 'M105', name: 'PET Granül (Renkli)', category: 'Granül Üretim', unit: 'ton',
     price: 22800, priceGrowth: 0.07,
     seasonality: [0.85,0.9,1.0,1.05,1.1,1.15,1.15,1.05,1.0,0.95,0.95,0.85],
-    volume: 95, volumeGrowth: 0.14, varCostRatio: 0.66, color: '#FF8A3D',
+    volume: 95, volumeGrowth: 0.14, varCostRatio: 0, color: '#FF8A3D',
   },
   {
-    id: 'p3', name: 'HDPE Granül', category: 'Granül Üretim', unit: 'ton',
+    id: 'p3', mcode: 'M105', name: 'HDPE Granül', category: 'Granül Üretim', unit: 'ton',
     price: 24200, priceGrowth: 0.06,
     seasonality: [0.95,1.0,1.05,1.05,1.0,1.0,0.95,0.95,1.0,1.05,1.05,0.95],
-    volume: 60, volumeGrowth: 0.10, varCostRatio: 0.64, color: '#F2A93B',
+    volume: 60, volumeGrowth: 0.10, varCostRatio: 0, color: '#F2A93B',
   },
   {
-    id: 'p4', name: 'Pelet (LDPE)', category: 'Granül Üretim', unit: 'ton',
+    id: 'p4', mcode: 'M105', name: 'Pelet (LDPE)', category: 'Granül Üretim', unit: 'ton',
     price: 19500, priceGrowth: 0.05,
     seasonality: [1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0],
-    volume: 40, volumeGrowth: 0.08, varCostRatio: 0.68, color: '#9A9A9A',
+    volume: 40, volumeGrowth: 0.08, varCostRatio: 0, color: '#9A9A9A',
   },
   {
-    id: 'p5', name: 'Atık Toplama Hizmeti', category: 'Hizmet', unit: 'sefer',
+    id: 'p5', mcode: 'M105', name: 'Atık Toplama Hizmeti', category: 'Hizmet', unit: 'sefer',
     price: 1850, priceGrowth: 0.12,
     seasonality: [0.9,0.95,1.0,1.05,1.05,1.0,0.95,0.9,1.0,1.1,1.1,1.0],
-    volume: 220, volumeGrowth: 0.20, varCostRatio: 0.42, color: '#5B9DFF',
+    volume: 220, volumeGrowth: 0.20, varCostRatio: 0, color: '#5B9DFF',
   },
   {
-    id: 'p6', name: 'Geri Dönüşüm Sertifikası', category: 'Hizmet', unit: 'adet',
+    id: 'p6', mcode: 'M149', name: 'Geri Dönüşüm Sertifikası', category: 'Hizmet', unit: 'adet',
     price: 4200, priceGrowth: 0.04,
     seasonality: [0.7,0.8,1.0,1.1,1.2,1.3,1.2,1.1,1.0,0.95,0.85,0.8],
-    volume: 30, volumeGrowth: 0.25, varCostRatio: 0.18, color: '#3DBE7C',
+    volume: 30, volumeGrowth: 0.25, varCostRatio: 0, color: '#3DBE7C',
   },
 ];
 
 export const FIXED_EXPENSES: FixedExpense[] = [
-  { id: 'e1', name: 'Personel Giderleri',   group: 'Sabit',           monthly: 285000, growth: 0.20 },
-  { id: 'e2', name: 'Kira & Aidat',         group: 'Sabit',           monthly:  72000, growth: 0.30 },
-  { id: 'e3', name: 'Elektrik & Doğalgaz',  group: 'Sabit',           monthly: 138000, growth: 0.35 },
-  { id: 'e4', name: 'Bakım & Onarım',       group: 'Sabit',           monthly:  48000, growth: 0.18 },
-  { id: 'e5', name: 'Lojistik & Nakliye',   group: 'Yarı Değişken',   monthly:  92000, growth: 0.22 },
-  { id: 'e6', name: 'Pazarlama & Satış',    group: 'Sabit',           monthly:  36000, growth: 0.15 },
-  { id: 'e7', name: 'Sigorta & Yasal',      group: 'Sabit',           monthly:  28000, growth: 0.10 },
-  { id: 'e8', name: 'Yönetim & Genel',      group: 'Sabit',           monthly:  54000, growth: 0.12 },
+  // Alış Maliyetleri — M369
+  { id: 'e0a', mcode: 'M369', costCategory: 'purchase', name: 'PET Şişe Atık Alışı',  group: 'Yarı Değişken', monthly: 380000, growth: 0.15, unit: 'ton', unitPrice: 3800, monthlyQty: 100 },
+  { id: 'e0b', mcode: 'M369', costCategory: 'purchase', name: 'HDPE Plastik Alışı',   group: 'Yarı Değişken', monthly:  96000, growth: 0.12, unit: 'ton', unitPrice: 3200, monthlyQty: 30  },
+  // Üretim Maliyetleri
+  { id: 'e3',  mcode: 'M405', costCategory: 'production', name: 'Elektrik Enerjisi',   group: 'Sabit', monthly: 138000, growth: 0.35 },
+  { id: 'e1',  mcode: 'M489', costCategory: 'production', name: 'Üretim Personeli',    group: 'Sabit', monthly: 185000, growth: 0.20 },
+  { id: 'e4',  mcode: 'M509', costCategory: 'production', name: 'Bakım & Onarım',      group: 'Sabit', monthly:  48000, growth: 0.18 },
+  { id: 'e9',  mcode: 'M529', costCategory: 'production', name: 'Çevre & İSG',         group: 'Sabit', monthly:  22000, growth: 0.10 },
+  { id: 'e10', mcode: 'M604', costCategory: 'production', name: 'Taşeron Hizmet',      group: 'Yarı Değişken', monthly: 65000, growth: 0.12 },
+  // Sabit / Genel Giderler
+  { id: 'e1b', mcode: 'M489', costCategory: 'overhead',  name: 'İdari Personel',       group: 'Sabit', monthly: 100000, growth: 0.20 },
+  { id: 'e2',  mcode: 'M610', costCategory: 'overhead',  name: 'Kira & Aidat',         group: 'Sabit', monthly:  72000, growth: 0.30 },
+  { id: 'e5',  mcode: 'M604', costCategory: 'overhead',  name: 'Lojistik & Nakliye',   group: 'Yarı Değişken', monthly: 92000, growth: 0.22 },
+  { id: 'e6',  mcode: 'M630', costCategory: 'overhead',  name: 'Pazarlama & Satış',    group: 'Sabit', monthly:  36000, growth: 0.15 },
+  { id: 'e7',  mcode: 'M635', costCategory: 'overhead',  name: 'Sigorta',              group: 'Sabit', monthly:  28000, growth: 0.10 },
+  { id: 'e8',  mcode: 'M660', costCategory: 'overhead',  name: 'Yönetim & Genel',      group: 'Sabit', monthly:  54000, growth: 0.12 },
 ];
 
 export const SCENARIOS: Record<string, Scenario> = {
@@ -304,11 +319,11 @@ export const createNewPlan = (title: string, year: number): DPlan => ({
   startYear: year,
   startMonth: 0,
   horizon: 24,
-  openingCash: OPENING_CASH,
+  openingCash: 0,
   actualsThrough: 0,
-  products:      PRODUCTS.map(p => ({ ...p })),
-  fixedExpenses: FIXED_EXPENSES.map(e => ({ ...e })),
-  cashEvents:    CASH_EVENTS.map(ev => ({ ...ev, months: ev.months.map(m => ({ ...m })) })),
+  products:      [],
+  fixedExpenses: [],
+  cashEvents:    [],
 });
 
 export interface PlanDataCtxValue {
