@@ -151,9 +151,9 @@ export const Segmented = ({ options, value, onChange, size = 'sm' }:
 );
 
 // ---- Btn ----
-export const Btn = ({ children, variant = 'ghost', onClick, icon, size = 'md', className = '' }:
+export const Btn = ({ children, variant = 'ghost', onClick, icon, size = 'md', className = '', disabled = false }:
   { children?: React.ReactNode; variant?: 'primary'|'ghost'|'outline'|'danger'; onClick?: () => void;
-    icon?: React.ReactNode; size?: 'sm'|'md'; className?: string }) => {
+    icon?: React.ReactNode; size?: 'sm'|'md'; className?: string; disabled?: boolean }) => {
   const variants: Record<string, string> = {
     primary: 'bg-enba-orange text-white hover:bg-enba-orange-2 border border-enba-orange',
     ghost:   'bg-enba-panel-2 text-enba-text hover:bg-enba-line border border-enba-line',
@@ -165,8 +165,8 @@ export const Btn = ({ children, variant = 'ghost', onClick, icon, size = 'md', c
     md: 'h-9 px-3.5 text-[13px] gap-2',
   };
   return (
-    <button onClick={onClick}
-      className={cx('inline-flex items-center font-medium rounded-lg transition-colors', variants[variant], sizes[size], className)}>
+    <button onClick={onClick} disabled={disabled}
+      className={cx('inline-flex items-center font-medium rounded-lg transition-colors', variants[variant], sizes[size], disabled && 'opacity-40 cursor-not-allowed pointer-events-none', className)}>
       {icon}{children}
     </button>
   );
