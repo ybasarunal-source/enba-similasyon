@@ -786,7 +786,7 @@ export const App: React.FC = () => {
                 <button
                   onClick={() => {
                     microsoftService.clearStorage();
-                    parasutService.logout();
+                    parasutService.clearSession();
                     supabase.auth.signOut();
                     setUserMenuOpen(false);
                   }}
