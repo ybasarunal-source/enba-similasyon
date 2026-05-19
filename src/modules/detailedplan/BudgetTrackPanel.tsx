@@ -7,10 +7,10 @@ import {
   cx, useChartColors, I, Card, SectionTitle, Badge, Btn, Select, Variance,
 } from './DPPrimitives';
 import {
-  PERIODS, PRODUCTS, FIXED_EXPENSES, SCENARIOS, ACTUALS_THROUGH,
+  SCENARIOS,
   bvaForPeriod, revenueFor, varCostFor, fixedCostFor,
   actualRevenueFor, actualVarCostFor, actualFixedCostFor,
-  fmtTL, Scenario,
+  fmtTL, Scenario, usePlanData,
 } from './dpData';
 
 /* ─── BudgetTrackPanel ─── */
@@ -22,26 +22,27 @@ interface BudgetTrackPanelProps {
 export function BudgetTrackPanel({ scenarioId }: BudgetTrackPanelProps) {
   const scen = SCENARIOS[scenarioId];
   const cc = useChartColors();
-  const [periodIdx, setPeriodIdx] = useState(ACTUALS_THROUGH - 1);
+  const { products, fixedExpenses, periods, actualsThrough } = usePlanData();
+  const [periodIdx, setPeriodIdx] = useState(Math.max(0, actualsThrough - 1));
 
   const ytd = useMemo(() => {
     let bRev = 0, aRev = 0, bOp = 0, aOp = 0, bEb = 0, aEb = 0;
-    for (let i = 0; i < ACTUALS_THROUGH; i++) {
-      const bva = bvaForPeriod(i, scen);
+    for (let i = 0; i < actualsThrough; i++) {
+      const bva = bvaForPeriod(i, scen, products, fixedExpenses, actualsThrough);
       bRev += bva.budget.revenue; bOp += bva.budget.opex; bEb += bva.budget.ebitda;
       aRev += bva.actual.revenue; aOp += bva.actual.opex; aEb += bva.actual.ebitda;
     }
     return { bRev, aRev, bOp, aOp, bEb, aEb };
-  }, [scen]);
+  }, [scen, products, fixedExpenses, actualsThrough]);
 
-  const sel = useMemo(() => bvaForPeriod(periodIdx, scen), [periodIdx, scen]);
+  const sel = useMemo(() => bvaForPeriod(periodIdx, scen, products, fixedExpenses, actualsThrough), [periodIdx, scen, products, fixedExpenses, actualsThrough]);
 
   const trendData = useMemo(() => {
     const out = [];
-    for (let i = 0; i < Math.min(24, PERIODS.length); i++) {
-      const bva = bvaForPeriod(i, scen);
+    for (let i = 0; i < Math.min(24, periods.length); i++) {
+      const bva = bvaForPeriod(i, scen, products, fixedExpenses, actualsThrough);
       out.push({
-        label: PERIODS[i].label,
+        label: periods[i].label,
         budget: bva.budget.revenue,
         actual: bva.hasActual ? bva.actual.revenue : null,
         budgetEbitda: bva.budget.ebitda,
@@ -50,7 +51,7 @@ export function BudgetTrackPanel({ scenarioId }: BudgetTrackPanelProps) {
       });
     }
     return out;
-  }, [scen]);
+  }, [scen, products, fixedExpenses, periods, actualsThrough]);
 
   return (
     <div className="space-y-5">
@@ -67,11 +68,11 @@ export function BudgetTrackPanel({ scenarioId }: BudgetTrackPanelProps) {
                 <I.Chevron size={13} className="rotate-90" />
               </button>
               <div className="text-[15px] font-semibold tabular px-2 min-w-[100px] text-center">
-                {PERIODS[periodIdx]?.label}
+                {periods[periodIdx]?.label}
               </div>
               <button
-                onClick={() => setPeriodIdx(Math.min(ACTUALS_THROUGH - 1, periodIdx + 1))}
-                disabled={periodIdx >= ACTUALS_THROUGH - 1}
+                onClick={() => setPeriodIdx(Math.min(actualsThrough - 1, periodIdx + 1))}
+                disabled={periodIdx >= actualsThrough - 1}
                 className="w-7 h-7 rounded-md border border-enba-line bg-enba-panel-2 hover:bg-enba-line text-enba-muted hover:text-enba-text inline-flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <I.Chevron size={13} className="-rotate-90" />
@@ -86,7 +87,7 @@ export function BudgetTrackPanel({ scenarioId }: BudgetTrackPanelProps) {
             <div className="text-[10.5px] uppercase tracking-[0.14em] text-enba-muted">Veri Durumu</div>
             <div className="mt-1 flex items-center gap-1.5">
               <Badge tone="green"><span className="w-1.5 h-1.5 rounded-full bg-enba-green inline-block mr-1" />Kapanmış</Badge>
-              <span className="text-[10.5px] text-enba-dim">{ACTUALS_THROUGH} ay aktif</span>
+              <span className="text-[10.5px] text-enba-dim">{actualsThrough} ay aktif</span>
             </div>
           </div>
         </div>
@@ -152,7 +153,7 @@ export function BudgetTrackPanel({ scenarioId }: BudgetTrackPanelProps) {
               <XAxis dataKey="label" tickLine={false} axisLine={false} interval={1} tick={{ fontSize: 10, fill: cc.muted }} />
               <YAxis tickFormatter={(v) => (v / 1_000_000).toFixed(1) + 'M'} tickLine={false} axisLine={false} width={48} tick={{ fontSize: 10, fill: cc.muted }} />
               <ReferenceLine
-                x={PERIODS[ACTUALS_THROUGH - 1]?.label}
+                x={periods[actualsThrough - 1]?.label}
                 stroke="#5B9DFF"
                 strokeDasharray="3 3"
                 label={{ value: 'Bugün', position: 'top', fill: '#5B9DFF', fontSize: 10 }}
@@ -173,7 +174,7 @@ export function BudgetTrackPanel({ scenarioId }: BudgetTrackPanelProps) {
         <div className="flex items-center justify-between mb-4">
           <div>
             <div className="text-[11px] uppercase tracking-[0.14em] text-enba-muted mb-1">
-              Yıl Başından Bugüne (YTD) · {ACTUALS_THROUGH} ay
+              Yıl Başından Bugüne (YTD) · {actualsThrough} ay
             </div>
             <h3 className="text-base font-semibold">Kümülatif Bütçe vs Gerçekleşen</h3>
           </div>
@@ -196,7 +197,7 @@ export function BudgetTrackPanel({ scenarioId }: BudgetTrackPanelProps) {
         <div className="px-5 py-3 border-b border-enba-line flex items-center justify-between">
           <div className="flex items-center gap-2">
             <h4 className="text-[13px] font-semibold">Kalem Bazlı Sapma Analizi</h4>
-            <span className="text-[11px] text-enba-dim">· {PERIODS[periodIdx]?.label}</span>
+            <span className="text-[11px] text-enba-dim">· {periods[periodIdx]?.label}</span>
           </div>
           <div className="flex items-center gap-1.5 text-[11px]">
             <Badge tone="green">İyi: {'>'}%0</Badge>
@@ -227,10 +228,11 @@ interface PeriodScrubberProps {
 }
 
 function PeriodScrubber({ selected, onSelect }: PeriodScrubberProps) {
+  const { periods, actualsThrough } = usePlanData();
   return (
     <div className="flex items-stretch gap-0.5 mt-3">
-      {PERIODS.slice(0, 24).map((p, i) => {
-        const isActual = i < ACTUALS_THROUGH;
+      {periods.slice(0, 24).map((p, i) => {
+        const isActual = i < actualsThrough;
         const isSel = i === selected;
         const isStartOfYear = p.m === 0;
         return (
@@ -387,9 +389,10 @@ interface LineItemTableProps {
 }
 
 function LineItemTable({ periodIdx, scen }: LineItemTableProps) {
+  const { products, fixedExpenses } = usePlanData();
   const rows = useMemo(() => {
     const out: { id: string; group: string; name: string; budget: number; actual: number; higherIsBetter: boolean; color: string }[] = [];
-    PRODUCTS.forEach(p => {
+    products.forEach(p => {
       out.push({
         id: 'rev-' + p.id,
         group: 'Gelir',
@@ -400,7 +403,7 @@ function LineItemTable({ periodIdx, scen }: LineItemTableProps) {
         color: p.color,
       });
     });
-    FIXED_EXPENSES.forEach(e => {
+    fixedExpenses.forEach(e => {
       out.push({
         id: 'fix-' + e.id,
         group: 'Sabit Gider',
@@ -413,7 +416,7 @@ function LineItemTable({ periodIdx, scen }: LineItemTableProps) {
     });
     out.sort((a, b) => Math.abs(b.actual - b.budget) - Math.abs(a.actual - a.budget));
     return out;
-  }, [periodIdx, scen]);
+  }, [periodIdx, scen, products, fixedExpenses]);
 
   return (
     <div className="overflow-x-auto">
@@ -486,36 +489,37 @@ function BulletBar({ budget, actual, positive }: { budget: number; actual: numbe
 
 /* ─── VarianceHeatmap ─── */
 function VarianceHeatmap({ scen }: { scen: Scenario }) {
+  const { products, fixedExpenses, periods, actualsThrough } = usePlanData();
   const categories = [
     {
       id: 'rev', label: 'Gelir', higherIsBetter: true,
       resolver: (i: number) => {
-        const b = PRODUCTS.reduce((s, p) => s + revenueFor(p, i, scen), 0);
-        const a = PRODUCTS.reduce((s, p) => s + (actualRevenueFor(p, i, scen) ?? 0), 0);
-        return { b, a, has: i < ACTUALS_THROUGH };
+        const b = products.reduce((s, p) => s + revenueFor(p, i, scen), 0);
+        const a = products.reduce((s, p) => s + (actualRevenueFor(p, i, scen) ?? 0), 0);
+        return { b, a, has: i < actualsThrough };
       },
     },
     {
       id: 'var', label: 'Değişken Gider', higherIsBetter: false,
       resolver: (i: number) => {
-        const b = PRODUCTS.reduce((s, p) => s + varCostFor(p, i, scen), 0);
-        const a = PRODUCTS.reduce((s, p) => s + (actualVarCostFor(p, i, scen) ?? 0), 0);
-        return { b, a, has: i < ACTUALS_THROUGH };
+        const b = products.reduce((s, p) => s + varCostFor(p, i, scen), 0);
+        const a = products.reduce((s, p) => s + (actualVarCostFor(p, i, scen) ?? 0), 0);
+        return { b, a, has: i < actualsThrough };
       },
     },
     {
       id: 'fix', label: 'Sabit Gider', higherIsBetter: false,
       resolver: (i: number) => {
-        const b = FIXED_EXPENSES.reduce((s, e) => s + fixedCostFor(e, i, scen), 0);
-        const a = FIXED_EXPENSES.reduce((s, e) => s + (actualFixedCostFor(e, i, scen) ?? 0), 0);
-        return { b, a, has: i < ACTUALS_THROUGH };
+        const b = fixedExpenses.reduce((s, e) => s + fixedCostFor(e, i, scen), 0);
+        const a = fixedExpenses.reduce((s, e) => s + (actualFixedCostFor(e, i, scen) ?? 0), 0);
+        return { b, a, has: i < actualsThrough };
       },
     },
     {
       id: 'eb', label: 'EBITDA', higherIsBetter: true,
       resolver: (i: number) => {
-        const bva = bvaForPeriod(i, scen);
-        return { b: bva.budget.ebitda, a: bva.actual.ebitda, has: i < ACTUALS_THROUGH };
+        const bva = bvaForPeriod(i, scen, products, fixedExpenses, actualsThrough);
+        return { b: bva.budget.ebitda, a: bva.actual.ebitda, has: i < actualsThrough };
       },
     },
   ];
@@ -535,7 +539,7 @@ function VarianceHeatmap({ scen }: { scen: Scenario }) {
         <thead>
           <tr className="text-enba-muted">
             <th className="text-left font-medium px-2 py-1.5 sticky left-0 bg-enba-panel z-10 min-w-[140px]">Kategori</th>
-            {PERIODS.slice(0, 24).map(p => (
+            {periods.slice(0, 24).map(p => (
               <th
                 key={p.key}
                 className={cx('text-center font-medium px-1 py-1.5 min-w-[40px]', p.m === 0 && 'text-enba-orange')}
@@ -551,7 +555,7 @@ function VarianceHeatmap({ scen }: { scen: Scenario }) {
               <td className="px-2 py-1.5 text-enba-text font-medium sticky left-0 bg-enba-panel z-10 border-r border-enba-line">
                 {cat.label}
               </td>
-              {PERIODS.slice(0, 24).map((p, i) => {
+              {periods.slice(0, 24).map((p, i) => {
                 const { b, a, has } = cat.resolver(i);
                 const diff = a - b;
                 const pct = b !== 0 ? diff / b : 0;

@@ -4,8 +4,8 @@ import {
   PieChart, Pie, Cell, LineChart, Line, Area, ReferenceLine,
 } from 'recharts';
 import {
-  SCENARIOS, PRODUCTS, PERIODS, FIXED_EXPENSES, fmtTL, fmtPct,
-  revenueFor, varCostFor, fixedCostFor, Scenario,
+  SCENARIOS, fmtTL, fmtPct,
+  revenueFor, varCostFor, fixedCostFor, Scenario, usePlanData,
 } from './dpData';
 import { cx, Card, SectionTitle, Segmented, Btn, Badge, I, useChartColors } from './DPPrimitives';
 
@@ -13,17 +13,18 @@ export const ExpensePanel = ({ scenarioId, periodGranularity }:
   { scenarioId: string; periodGranularity: string }) => {
   const scen: Scenario = SCENARIOS[scenarioId];
   const cc = useChartColors();
+  const { products, fixedExpenses, periods } = usePlanData();
   const [horizon, setHorizon] = useState(12);
   const [activeTab, setActiveTab] = useState('all');
   const [editing, setEditing] = useState<string | null>(null);
 
-  const visiblePeriods = PERIODS.slice(0, horizon);
+  const visiblePeriods = periods.slice(0, horizon);
 
   const totals = useMemo(() => {
     let fixed = 0, variable = 0;
     for (let i = 0; i < visiblePeriods.length; i++) {
-      fixed    += FIXED_EXPENSES.reduce((s, e) => s + fixedCostFor(e, i, scen), 0);
-      variable += PRODUCTS.reduce((s, p) => s + varCostFor(p, i, scen), 0);
+      fixed    += fixedExpenses.reduce((s, e) => s + fixedCostFor(e, i, scen), 0);
+      variable += products.reduce((s, p) => s + varCostFor(p, i, scen), 0);
     }
     return { fixed, variable, total: fixed + variable };
   }, [scenarioId, horizon]);
@@ -32,17 +33,17 @@ export const ExpensePanel = ({ scenarioId, periodGranularity }:
 
   const monthlySeries = useMemo(() => visiblePeriods.map((p, i) => ({
     label: p.label,
-    sabit: FIXED_EXPENSES.reduce((s, e) => s + fixedCostFor(e, i, scen), 0),
-    degisken: PRODUCTS.reduce((s, prod) => s + varCostFor(prod, i, scen), 0),
+    sabit: fixedExpenses.reduce((s, e) => s + fixedCostFor(e, i, scen), 0),
+    degisken: products.reduce((s, prod) => s + varCostFor(prod, i, scen), 0),
   })), [scenarioId, horizon]);
 
-  const fixedTotals = useMemo(() => FIXED_EXPENSES.map(e => {
+  const fixedTotals = useMemo(() => fixedExpenses.map(e => {
     let sum = 0;
     for (let i = 0; i < visiblePeriods.length; i++) sum += fixedCostFor(e, i, scen);
     return { ...e, sum };
   }), [scenarioId, horizon]);
 
-  const variableTotals = useMemo(() => PRODUCTS.map(p => {
+  const variableTotals = useMemo(() => products.map(p => {
     let sum = 0;
     for (let i = 0; i < visiblePeriods.length; i++) sum += varCostFor(p, i, scen);
     return { ...p, sum };
@@ -113,9 +114,9 @@ export const ExpensePanel = ({ scenarioId, periodGranularity }:
       <div className="flex items-center justify-between">
         <div className="inline-flex items-center bg-enba-panel border border-enba-line rounded-lg p-0.5">
           {[
-            { value: 'all', label: 'Tümü', n: FIXED_EXPENSES.length + PRODUCTS.length },
-            { value: 'fixed', label: 'Sabit Giderler', n: FIXED_EXPENSES.length },
-            { value: 'variable', label: 'Değişken Giderler', n: PRODUCTS.length },
+            { value: 'all', label: 'Tümü', n: fixedExpenses.length + products.length },
+            { value: 'fixed', label: 'Sabit Giderler', n: fixedExpenses.length },
+            { value: 'variable', label: 'Değişken Giderler', n: products.length },
           ].map(t => (
             <button key={t.value} onClick={() => setActiveTab(t.value)}
               className={cx('px-3 py-1.5 rounded-md text-[12.5px] inline-flex items-center gap-2 transition-colors',
@@ -140,7 +141,7 @@ export const ExpensePanel = ({ scenarioId, periodGranularity }:
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-enba-orange"/>
               <h4 className="text-[13px] font-semibold">Sabit Giderler</h4>
-              <span className="text-[11px] text-enba-dim">· {FIXED_EXPENSES.length} kalem</span>
+              <span className="text-[11px] text-enba-dim">· {fixedExpenses.length} kalem</span>
             </div>
             <span className="text-[12px] text-enba-muted tabular">{fmtTL(totals.fixed)}</span>
           </div>
@@ -204,7 +205,7 @@ export const ExpensePanel = ({ scenarioId, periodGranularity }:
                   <td className="border-t-2 border-enba-orange/40 px-2 py-3"/>
                   <td className="border-t-2 border-enba-orange/40 px-2 py-3"/>
                   {visiblePeriods.map((_, i) => {
-                    const sum = FIXED_EXPENSES.reduce((s, x) => s + fixedCostFor(x, i, scen), 0);
+                    const sum = fixedExpenses.reduce((s, x) => s + fixedCostFor(x, i, scen), 0);
                     return (
                       <td key={i} className={cx('border-t-2 border-enba-orange/40 px-2 py-3 text-right text-enba-text font-semibold',
                         i % 3 === 2 && 'border-r border-enba-line/60')}>
@@ -228,7 +229,7 @@ export const ExpensePanel = ({ scenarioId, periodGranularity }:
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-enba-amber"/>
               <h4 className="text-[13px] font-semibold">Değişken Giderler</h4>
-              <span className="text-[11px] text-enba-dim">· {PRODUCTS.length} ürün/hizmete bağlı</span>
+              <span className="text-[11px] text-enba-dim">· {products.length} ürün/hizmete bağlı</span>
               <Badge tone="amber">Gelirle ilişkili</Badge>
             </div>
             <span className="text-[12px] text-enba-muted tabular">{fmtTL(totals.variable)}</span>
@@ -267,7 +268,7 @@ export const ExpensePanel = ({ scenarioId, periodGranularity }:
                     </td>
                     <td className="border-b border-enba-line px-2 py-2.5 text-right"><Badge tone="amber">% gelir</Badge></td>
                     {visiblePeriods.map((_, i) => {
-                      const product = PRODUCTS.find(p => p.id === id)!;
+                      const product = products.find(p => p.id === id)!;
                       const actual = varCostFor(product, i, scen);
                       return (
                         <td key={i} className={cx('border-b border-enba-line px-2 py-2.5 text-right text-enba-text',
@@ -285,7 +286,7 @@ export const ExpensePanel = ({ scenarioId, periodGranularity }:
                   <td className="border-t-2 border-enba-amber/40 px-2 py-3"/>
                   <td className="border-t-2 border-enba-amber/40 px-2 py-3"/>
                   {visiblePeriods.map((_, i) => {
-                    const sum = PRODUCTS.reduce((s, p) => s + varCostFor(p, i, scen), 0);
+                    const sum = products.reduce((s, p) => s + varCostFor(p, i, scen), 0);
                     return (
                       <td key={i} className={cx('border-t-2 border-enba-amber/40 px-2 py-3 text-right text-enba-text font-semibold',
                         i % 3 === 2 && 'border-r border-enba-line/60')}>
@@ -385,10 +386,11 @@ const ExpenseComposition = ({ data, cc }: { data: any[]; cc: any }) => {
 };
 
 const ExpenseRatioChart = ({ scen, horizon, cc }: { scen: Scenario; horizon: number; cc: any }) => {
-  const data = PERIODS.slice(0, horizon).map((p, i) => {
-    const rev  = PRODUCTS.reduce((s, prod) => s + revenueFor(prod, i, scen), 0);
-    const opex = PRODUCTS.reduce((s, prod) => s + varCostFor(prod, i, scen), 0)
-      + FIXED_EXPENSES.reduce((s, e) => s + fixedCostFor(e, i, scen), 0);
+  const { products, fixedExpenses, periods } = usePlanData();
+  const data = periods.slice(0, horizon).map((p, i) => {
+    const rev  = products.reduce((s, prod) => s + revenueFor(prod, i, scen), 0);
+    const opex = products.reduce((s, prod) => s + varCostFor(prod, i, scen), 0)
+      + fixedExpenses.reduce((s, e) => s + fixedCostFor(e, i, scen), 0);
     return { label: p.label, ratio: rev > 0 ? opex/rev : 0 };
   });
   const avg = data.reduce((s, x) => s + x.ratio, 0) / data.length;

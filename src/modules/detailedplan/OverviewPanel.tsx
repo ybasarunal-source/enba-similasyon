@@ -4,8 +4,8 @@ import {
   ReferenceLine, Area, Line, AreaChart, Bar, BarChart,
 } from 'recharts';
 import {
-  SCENARIOS, PRODUCTS, PERIODS, buildSeries, fmtTL, fmtPct,
-  revenueFor, Scenario,
+  SCENARIOS, buildSeries, fmtTL, fmtPct,
+  revenueFor, Scenario, usePlanData,
 } from './dpData';
 import { cx, Card, SectionTitle, KpiCard, Sparkline, Variance, I, useChartColors } from './DPPrimitives';
 
@@ -13,7 +13,8 @@ export const OverviewPanel = ({ scenarioId, periodGranularity }:
   { scenarioId: string; periodGranularity: string }) => {
   const scen: Scenario = SCENARIOS[scenarioId];
   const cc = useChartColors();
-  const series = useMemo(() => buildSeries(scen), [scenarioId]);
+  const { products, fixedExpenses, periods } = usePlanData();
+  const series = useMemo(() => buildSeries(products, fixedExpenses, periods, scen), [scenarioId, products, fixedExpenses, periods]);
 
   const grouped = useMemo(() => {
     if (periodGranularity === 'month') return series;
@@ -140,7 +141,7 @@ export const OverviewPanel = ({ scenarioId, periodGranularity }:
           <SectionTitle eyebrow="Karşılaştırma" title="Senaryo Özeti"/>
           <div className="space-y-2">
             {Object.values(SCENARIOS).map(s => {
-              const ss = buildSeries(s);
+              const ss = buildSeries(products, fixedExpenses, periods, s);
               const rev = ss.reduce((a, x) => a + x.revenue, 0);
               const eb = ss.reduce((a, x) => a + x.ebitda, 0);
               const margin = eb / rev;
@@ -184,7 +185,7 @@ export const OverviewPanel = ({ scenarioId, periodGranularity }:
               <h3 className="text-base font-semibold">Aylık Gelir Dağılımı (Ürün Bazında)</h3>
             </div>
             <div className="flex items-center gap-2">
-              {PRODUCTS.slice(0,6).map(p => (
+              {products.slice(0,6).map(p => (
                 <div key={p.id} className="flex items-center gap-1.5 text-[10.5px] text-enba-muted">
                   <span className="w-2 h-2 rounded-sm" style={{background: p.color}}/>
                   <span className="truncate max-w-[80px]">{p.name.split(' ')[0]}</span>
@@ -194,16 +195,16 @@ export const OverviewPanel = ({ scenarioId, periodGranularity }:
           </div>
           <div className="h-[230px] px-2">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={PERIODS.slice(0,12).map((p, i) => {
+              <BarChart data={periods.slice(0,12).map((p, i) => {
                 const row: any = { label: p.label };
-                PRODUCTS.forEach(prod => { row[prod.id] = revenueFor(prod, i, scen); });
+                products.forEach(prod => { row[prod.id] = revenueFor(prod, i, scen); });
                 return row;
               })} margin={{ top: 6, right: 12, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="2 4" stroke={cc.grid} vertical={false}/>
                 <XAxis dataKey="label" tickLine={false} axisLine={false}/>
                 <YAxis tickFormatter={(v) => (v/1000).toFixed(0)+'K'} tickLine={false} axisLine={false} width={42}/>
-                <Tooltip formatter={(v: any, k: any) => [fmtTL(v), PRODUCTS.find(p => p.id === k)?.name || k]}/>
-                {PRODUCTS.map((p) => (
+                <Tooltip formatter={(v: any, k: any) => [fmtTL(v), products.find(p => p.id === k)?.name || k]}/>
+                {products.map((p) => (
                   <Bar key={p.id} dataKey={p.id} stackId="rev" fill={p.color}/>
                 ))}
               </BarChart>

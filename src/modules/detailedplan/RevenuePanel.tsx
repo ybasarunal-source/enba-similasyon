@@ -4,8 +4,8 @@ import {
   ReferenceLine, Line, PieChart, Pie, Cell,
 } from 'recharts';
 import {
-  SCENARIOS, PRODUCTS, PERIODS, MONTHS_TR, fmtTL, fmtPct, fmtNum,
-  revenueFor, varCostFor, monthlyVolumeFor, Scenario,
+  SCENARIOS, MONTHS_TR, fmtTL, fmtPct, fmtNum,
+  revenueFor, varCostFor, monthlyVolumeFor, Scenario, usePlanData,
 } from './dpData';
 import {
   cx, Card, SectionTitle, Sparkline, Segmented, Btn, Select,
@@ -16,13 +16,14 @@ export const RevenuePanel = ({ scenarioId, periodGranularity }:
   { scenarioId: string; periodGranularity: string }) => {
   const scen: Scenario = SCENARIOS[scenarioId];
   const cc = useChartColors();
+  const { products: allProducts, periods } = usePlanData();
   const [horizon, setHorizon] = useState(12);
   const [filterCat, setFilterCat] = useState('all');
-  const [expanded, setExpanded] = useState<Set<string>>(() => new Set(['p1']));
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
   const [editing, setEditing] = useState<string | null>(null);
 
-  const visiblePeriods = PERIODS.slice(0, horizon);
-  const products = PRODUCTS.filter(p => filterCat === 'all' || p.category === filterCat);
+  const visiblePeriods = periods.slice(0, horizon);
+  const products = allProducts.filter(p => filterCat === 'all' || p.category === filterCat);
 
   const productTotals = useMemo(() => products.map(p => {
     let rev = 0, vol = 0, cost = 0;
@@ -89,7 +90,7 @@ export const RevenuePanel = ({ scenarioId, periodGranularity }:
           <div className="bg-enba-panel border border-enba-line rounded-xl p-4">
             <div className="text-[10.5px] uppercase tracking-[0.14em] text-enba-muted mb-2">Ürün/Hizmet Sayısı</div>
             <div className="text-2xl font-semibold tabular">{products.length}</div>
-            <div className="text-[10.5px] text-enba-dim mt-1">{PRODUCTS.length - products.length} adet filtrelendi</div>
+            <div className="text-[10.5px] text-enba-dim mt-1">{allProducts.length - products.length} adet filtrelendi</div>
           </div>
           <div className="bg-enba-panel border border-enba-line rounded-xl p-4">
             <div className="text-[10.5px] uppercase tracking-[0.14em] text-enba-muted mb-2">Ort. Hacim Büyümesi</div>
@@ -261,15 +262,15 @@ export const RevenuePanel = ({ scenarioId, periodGranularity }:
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={MONTHS_TR.map((m, i) => {
                 const row: any = { month: m };
-                PRODUCTS.forEach(p => { row[p.id] = p.seasonality[i]; });
+                allProducts.forEach(p => { row[p.id] = p.seasonality[i]; });
                 return row;
               })}>
                 <CartesianGrid strokeDasharray="2 4" stroke={cc.grid} vertical={false}/>
                 <XAxis dataKey="month" tickLine={false} axisLine={false}/>
                 <YAxis domain={[0.6, 1.4]} ticks={[0.7, 1.0, 1.3]} tickLine={false} axisLine={false} width={32}/>
                 <ReferenceLine y={1} stroke={cc.refLine} strokeDasharray="3 3"/>
-                <Tooltip formatter={(v: any, k: any) => [(v as number).toFixed(2), PRODUCTS.find(p => p.id === k)?.name || k]}/>
-                {PRODUCTS.map(p => (
+                <Tooltip formatter={(v: any, k: any) => [(v as number).toFixed(2), allProducts.find(p => p.id === k)?.name || k]}/>
+                {allProducts.map(p => (
                   <Line key={p.id} type="monotone" dataKey={p.id} stroke={p.color} strokeWidth={1.6} dot={false}/>
                 ))}
               </LineChart>
@@ -299,7 +300,8 @@ const EditableCell = ({ value, isEditing, onClick, onBlur }:
 };
 
 const RevenueMix = ({ scen, cc }: { scen: Scenario; cc: any }) => {
-  const data = PRODUCTS.map(p => {
+  const { products: allProducts } = usePlanData();
+  const data = allProducts.map(p => {
     let rev = 0;
     for (let i = 0; i < 24; i++) rev += revenueFor(p, i, scen);
     return { name: p.name, value: rev, color: p.color, id: p.id };

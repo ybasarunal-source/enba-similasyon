@@ -4,9 +4,9 @@ import {
   LineChart, Line,
 } from 'recharts';
 import {
-  SCENARIOS, PERIODS, buildSeries, fmtTL, fmtPct,
+  SCENARIOS, buildSeries, fmtTL, fmtPct,
   monthlyPriceFor, monthlyVolumeFor, varCostFor, fixedCostFor,
-  PRODUCTS, FIXED_EXPENSES, Scenario,
+  Scenario, usePlanData,
 } from './dpData';
 import {
   cx, Card, SectionTitle, Btn, Badge, I, useChartColors,
@@ -15,12 +15,13 @@ import {
 export const ScenarioPanel = ({ scenarioId, periodGranularity }:
   { scenarioId: string; periodGranularity: string }) => {
   const cc = useChartColors();
+  const { products, fixedExpenses, periods } = usePlanData();
   const [focused, setFocused] = useState(scenarioId);
 
   const metrics = useMemo(() => {
     const all: Record<string, any> = {};
     Object.values(SCENARIOS).forEach(s => {
-      const series = buildSeries(s);
+      const series = buildSeries(products, fixedExpenses, periods, s);
       const totalRev = series.reduce((a, x) => a + x.revenue, 0);
       const totalOp  = series.reduce((a, x) => a + x.opex, 0);
       const totalEb  = series.reduce((a, x) => a + x.ebitda, 0);
@@ -136,7 +137,7 @@ export const ScenarioPanel = ({ scenarioId, periodGranularity }:
         <div className="h-[260px] px-2">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
-              data={PERIODS.slice(0, 24).map((p, i) => {
+              data={periods.slice(0, 24).map((p, i) => {
                 const row: any = { label: p.label };
                 Object.values(SCENARIOS).forEach(s => {
                   let cum = 0;
@@ -286,18 +287,19 @@ const SensitivityAnalysis = () => {
   const [volShift, setVolShift]     = useState(0);
   const [costShift, setCostShift]   = useState(0);
 
+  const { products, fixedExpenses, periods } = usePlanData();
   const baseScen = SCENARIOS.baz;
   const result = useMemo(() => {
     let rev = 0, opex = 0;
     for (let i = 0; i < 24; i++) {
-      const periodRev = PRODUCTS.reduce((s, p) => {
+      const periodRev = products.reduce((s, p) => {
         return s + monthlyPriceFor(p, i) * (1 + priceShift) * monthlyVolumeFor(p, i) * (1 + volShift);
       }, 0);
-      const periodVar = PRODUCTS.reduce((s, p) => {
+      const periodVar = products.reduce((s, p) => {
         const baseRev = monthlyPriceFor(p, i) * (1 + priceShift) * monthlyVolumeFor(p, i) * (1 + volShift);
         return s + baseRev * p.varCostRatio * (1 + costShift);
       }, 0);
-      const periodFix = FIXED_EXPENSES.reduce((s, e) => s + fixedCostFor(e, i, baseScen) * (1 + costShift), 0);
+      const periodFix = fixedExpenses.reduce((s, e) => s + fixedCostFor(e, i, baseScen) * (1 + costShift), 0);
       rev += periodRev; opex += periodVar + periodFix;
     }
     const ebitda = rev - opex;
@@ -305,7 +307,7 @@ const SensitivityAnalysis = () => {
   }, [priceShift, volShift, costShift]);
 
   const baseMetrics = useMemo(() => {
-    const series = buildSeries(baseScen);
+    const series = buildSeries(products, fixedExpenses, periods, baseScen);
     const rev = series.reduce((a, x) => a + x.revenue, 0);
     const eb  = series.reduce((a, x) => a + x.ebitda, 0);
     return { rev, eb };

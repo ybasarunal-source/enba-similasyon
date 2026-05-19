@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { cx, I, Badge, Btn, Select, ScenarioChip } from './DPPrimitives';
-import { SCENARIOS } from './dpData';
+import { SCENARIOS, DPlan, PlanCtx, buildMonths } from './dpData';
 import { OverviewPanel }    from './OverviewPanel';
 import { RevenuePanel }     from './RevenuePanel';
 import { ExpensePanel }     from './ExpensePanel';
@@ -26,17 +26,32 @@ const NAV: NavItem[] = [
 ];
 
 interface DetailedPlanShellProps {
+  plan?: DPlan;
+  onSave?: (p: DPlan) => void;
+  onBack?: () => void;
   navigate?: (module: string) => void;
 }
 
-export function DetailedPlanShell({ navigate }: DetailedPlanShellProps) {
+export function DetailedPlanShell({ plan, onSave, onBack, navigate }: DetailedPlanShellProps) {
   const [active, setActive]           = useState<SectionId>('overview');
   const [scenarioId, setScenarioId]   = useState('baz');
   const [periodGran, setPeriodGran]   = useState('month');
-  const [horizon, setHorizon]         = useState(24);
+  const [horizon, setHorizon]         = useState(plan?.horizon ?? 24);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  return (
+  const ctxValue = useMemo(() => {
+    if (!plan) return undefined;
+    return {
+      products:      plan.products,
+      fixedExpenses: plan.fixedExpenses,
+      periods:       buildMonths(plan.horizon, plan.startYear, plan.startMonth),
+      cashEvents:    plan.cashEvents,
+      openingCash:   plan.openingCash,
+      actualsThrough: plan.actualsThrough,
+    };
+  }, [plan]);
+
+  const shell = (
     <div className="h-full flex bg-enba-bg overflow-hidden">
       {/* Internal sidebar */}
       <aside className={cx(
@@ -127,31 +142,35 @@ export function DetailedPlanShell({ navigate }: DetailedPlanShellProps) {
         {/* Header row 1: title + actions */}
         <div className="bg-enba-panel border-b border-enba-line flex-none">
           <div className="h-[60px] flex items-center px-5 gap-3">
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="w-8 h-8 rounded-lg text-enba-muted hover:text-enba-text hover:bg-enba-panel-2 inline-flex items-center justify-center flex-none"
+                title="Planlara dön"
+              >
+                <I.Chevron size={14} className="rotate-90" />
+              </button>
+            )}
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 min-w-0">
                 <h1 className="text-[15px] font-semibold text-enba-text truncate">
-                  2025-2026 Üretim &amp; Geri Dönüşüm Bütçesi
+                  {plan?.title ?? 'Detaylı İş Planı'}
                 </h1>
-                <button className="text-enba-dim hover:text-enba-text flex-none" title="Plan adını düzenle">
-                  <I.Edit size={13} />
-                </button>
-                <Badge tone="green">Aktif</Badge>
+                <Badge tone={plan?.status === 'active' ? 'green' : plan?.status === 'archived' ? 'neutral' : 'amber'}>
+                  {plan?.status === 'active' ? 'Aktif' : plan?.status === 'archived' ? 'Arşiv' : 'Taslak'}
+                </Badge>
               </div>
               <div className="text-[10.5px] text-enba-dim mt-0.5 flex items-center gap-2">
-                <span>v1.4</span>
+                <span>{plan?.startYear ?? 2025}</span>
                 <span>·</span>
-                <span>Son kaydedilme 14 dk önce</span>
-                <span>·</span>
-                <span>Murat K. tarafından</span>
+                <span>{plan?.horizon ?? 24} ay</span>
               </div>
             </div>
 
             <div className="flex items-center gap-2 flex-none">
-              <button className="w-9 h-9 rounded-lg border border-enba-line bg-enba-panel-2 text-enba-muted hover:text-enba-text inline-flex items-center justify-center relative">
-                <I.Bell size={15} />
-                <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-enba-orange" />
-              </button>
-              <Btn variant="ghost" size="md" icon={<I.Save size={14} />}>Kaydet</Btn>
+              {onSave && plan && (
+                <Btn variant="ghost" size="md" icon={<I.Save size={14} />} onClick={() => onSave(plan)}>Kaydet</Btn>
+              )}
               <Btn variant="primary" size="md" icon={<I.Pdf size={14} />}>PDF</Btn>
             </div>
           </div>
@@ -214,4 +233,9 @@ export function DetailedPlanShell({ navigate }: DetailedPlanShellProps) {
       </div>
     </div>
   );
+
+  if (ctxValue) {
+    return <PlanCtx.Provider value={ctxValue}>{shell}</PlanCtx.Provider>;
+  }
+  return shell;
 }

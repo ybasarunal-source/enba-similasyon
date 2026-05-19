@@ -4,8 +4,8 @@ import {
   ReferenceLine, Bar, Line,
 } from 'recharts';
 import {
-  SCENARIOS, PERIODS, CASH_EVENTS, OPENING_CASH,
-  cashFlowFor, fmtTL, Scenario,
+  SCENARIOS,
+  cashFlowFor, fmtTL, Scenario, usePlanData,
 } from './dpData';
 import { cx, Card, Segmented, Btn, Badge, I, useChartColors } from './DPPrimitives';
 
@@ -13,20 +13,21 @@ export const CashFlowPanel = ({ scenarioId, periodGranularity }:
   { scenarioId: string; periodGranularity: string }) => {
   const scen: Scenario = SCENARIOS[scenarioId];
   const cc = useChartColors();
+  const { products, fixedExpenses, periods, cashEvents, openingCash } = usePlanData();
   const [horizon, setHorizon] = useState(24);
 
   const series = useMemo(() => {
-    let balance = OPENING_CASH;
+    let balance = openingCash;
     const rows: any[] = [];
     let minBalance = balance, minIdx = -1;
     for (let i = 0; i < horizon; i++) {
-      const f = cashFlowFor(i, scen);
+      const f = cashFlowFor(i, scen, products, fixedExpenses, cashEvents);
       balance += f.net;
       if (balance < minBalance) { minBalance = balance; minIdx = i; }
-      rows.push({ ...PERIODS[i], idx: i, ...f, balance });
+      rows.push({ ...(periods[i] ?? { label: `M${i+1}`, key: `m${i}` }), idx: i, ...f, balance });
     }
     return { rows, minBalance, minIdx };
-  }, [scenarioId, horizon]);
+  }, [scenarioId, horizon, products, fixedExpenses, periods, cashEvents, openingCash]);
 
   const totals = useMemo(() => series.rows.reduce((a: any, r: any) => ({
     operating: a.operating + r.operating,
@@ -35,7 +36,7 @@ export const CashFlowPanel = ({ scenarioId, periodGranularity }:
     net: a.net + r.net,
   }), { operating: 0, investing: 0, financing: 0, net: 0 }), [series]);
 
-  const endingBalance = OPENING_CASH + totals.net;
+  const endingBalance = openingCash + totals.net;
 
   const chartData = useMemo(() => {
     if (horizon <= 12) return series.rows.map((r: any) => ({
@@ -60,7 +61,7 @@ export const CashFlowPanel = ({ scenarioId, periodGranularity }:
     <div className="space-y-5">
       {/* KPIs */}
       <div className="grid grid-cols-12 gap-4">
-        <CashKpi label="Dönem Başı Nakit" value={fmtTL(OPENING_CASH)} sub="01 Oca 2025" accent="neutral" icon={<I.Calendar size={14}/>} span={2}/>
+        <CashKpi label="Dönem Başı Nakit" value={fmtTL(openingCash)} sub="01 Oca 2025" accent="neutral" icon={<I.Calendar size={14}/>} span={2}/>
         <CashKpi label="Faaliyet Nakit Akışı" value={fmtTL(totals.operating)} sub="EBITDA − vergi (24 ay)" accent="green" icon={<I.Bolt size={14}/>} span={3}/>
         <CashKpi label="Yatırım Nakit Akışı" value={fmtTL(totals.investing)} sub="CAPEX + ekipman" accent="red" icon={<I.Down size={14}/>} span={2}/>
         <CashKpi label="Finansman Nakit Akışı" value={fmtTL(totals.financing)} sub="Kredi + sermaye"
@@ -114,7 +115,7 @@ export const CashFlowPanel = ({ scenarioId, periodGranularity }:
           <div className="flex-1">
             <div className="text-[13px] font-semibold text-enba-red">Negatif Bakiye Uyarısı</div>
             <div className="text-[12px] text-enba-muted mt-0.5">
-              <span className="text-enba-text font-medium">{PERIODS[series.minIdx]?.label}</span> döneminde nakit bakiyesi{' '}
+              <span className="text-enba-text font-medium">{periods[series.minIdx]?.label}</span> döneminde nakit bakiyesi{' '}
               <span className="text-enba-red tabular font-medium">{fmtTL(series.minBalance)}</span> seviyesine iniyor.
               Ek kredi limiti veya ödeme planı revizyonu önerilir.
             </div>
@@ -141,7 +142,7 @@ export const CashFlowPanel = ({ scenarioId, periodGranularity }:
           <div className="px-5 py-3 border-b border-enba-line flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-enba-red"/>
             <h4 className="text-[13px] font-semibold">Yatırım Faaliyetleri</h4>
-            <span className="text-[11px] text-enba-dim">· {CASH_EVENTS.filter(e => e.type === 'investing').length} kalem</span>
+            <span className="text-[11px] text-enba-dim">· {cashEvents.filter(e => e.type === 'investing').length} kalem</span>
           </div>
           <EventList type="investing"/>
         </Card>
@@ -149,7 +150,7 @@ export const CashFlowPanel = ({ scenarioId, periodGranularity }:
           <div className="px-5 py-3 border-b border-enba-line flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-enba-blue"/>
             <h4 className="text-[13px] font-semibold">Finansman Faaliyetleri</h4>
-            <span className="text-[11px] text-enba-dim">· {CASH_EVENTS.filter(e => e.type === 'financing').length} kalem</span>
+            <span className="text-[11px] text-enba-dim">· {cashEvents.filter(e => e.type === 'financing').length} kalem</span>
           </div>
           <EventList type="financing"/>
         </Card>
@@ -175,6 +176,7 @@ const CashKpi = ({ label, value, sub, accent = 'neutral', icon, span = 3 }:
 };
 
 const CashStatementTable = ({ rows, scen }: { rows: any[]; scen: Scenario }) => {
+  const { openingCash } = usePlanData();
   const quarters = useMemo(() => {
     const out: any[] = [];
     for (let i = 0; i < rows.length; i += 3) {
@@ -210,7 +212,7 @@ const CashStatementTable = ({ rows, scen }: { rows: any[]; scen: Scenario }) => 
           </tr>
         </thead>
         <tbody>
-          <StatementRow label="Dönem Başı Nakit" rows={quarters} resolver={(_q: any, i: number) => i === 0 ? OPENING_CASH : quarters[i-1].balance} total={OPENING_CASH} muted/>
+          <StatementRow label="Dönem Başı Nakit" rows={quarters} resolver={(_q: any, i: number) => i === 0 ? openingCash : quarters[i-1].balance} total={openingCash} muted/>
           <SectionDivider label="Faaliyet Nakit Akışları" tone="green"/>
           <StatementRow label="Faaliyetlerden Net Nakit" rows={quarters} resolver={(q: any) => q.operating} total={total.operating} accent="green"/>
           <SectionDivider label="Yatırım Faaliyetleri" tone="red"/>
@@ -230,7 +232,7 @@ const CashStatementTable = ({ rows, scen }: { rows: any[]; scen: Scenario }) => 
             {quarters.map((q: any, i: number) => (
               <td key={i} className="border-b border-enba-line px-3 py-3 text-right font-semibold tabular text-enba-text">{fmtTL(q.balance)}</td>
             ))}
-            <td className="border-b border-l border-enba-line px-5 py-3 text-right font-semibold text-enba-orange">{fmtTL(last?.balance ?? OPENING_CASH)}</td>
+            <td className="border-b border-l border-enba-line px-5 py-3 text-right font-semibold text-enba-orange">{fmtTL(last?.balance ?? openingCash)}</td>
           </tr>
         </tbody>
       </table>
@@ -277,14 +279,15 @@ const SectionDivider = ({ label, tone }: { label: string; tone: string }) => {
 };
 
 const EventList = ({ type }: { type: 'investing' | 'financing' }) => {
-  const items = CASH_EVENTS.filter(e => e.type === type);
+  const { cashEvents, periods } = usePlanData();
+  const items = cashEvents.filter(e => e.type === type);
   return (
     <div className="divide-y divide-enba-line">
       {items.map(ev => {
         const total = ev.months.reduce((s, m) => s + m.amount, 0);
         const positive = total >= 0;
         let schedule = '';
-        if (ev.months.length === 1) schedule = PERIODS[ev.months[0].idx]?.label || '—';
+        if (ev.months.length === 1) schedule = periods[ev.months[0].idx]?.label || '—';
         else if (ev.months.length >= 12) schedule = `Aylık · ${ev.months.length} dönem`;
         else schedule = `${ev.months.length} dönem`;
         return (

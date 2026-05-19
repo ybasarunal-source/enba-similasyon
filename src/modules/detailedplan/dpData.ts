@@ -1,4 +1,5 @@
 // DetailedPlan — data model, mock data, and calculation helpers
+import React from 'react';
 
 export interface Product {
   id: string;
@@ -45,6 +46,24 @@ export interface CashEvent {
   months: { idx: number; amount: number }[];
 }
 
+// ─── Plan veri modeli (Supabase business_plans.data JSONB) ──────────────────
+export interface DPlan {
+  id: string;
+  supabaseId?: string;
+  title: string;
+  baslik: string;          // usePlanSync uyumluluğu
+  status: 'draft' | 'active' | 'archived';
+  year: number;
+  startYear: number;
+  startMonth: number;      // 0–11
+  horizon: number;         // ay sayısı
+  openingCash: number;
+  actualsThrough: number;  // bu indekse kadar gerçekleşen var (0 = hiç yok)
+  products: Product[];
+  fixedExpenses: FixedExpense[];
+  cashEvents: CashEvent[];
+}
+
 export interface SeriesPoint extends Period {
   idx: number;
   revenue: number;
@@ -57,7 +76,7 @@ export interface SeriesPoint extends Period {
 
 export const MONTHS_TR = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
 
-const buildMonths = (count: number, startYear = 2025, startMonth = 0): Period[] => {
+export const buildMonths = (count: number, startYear = 2025, startMonth = 0): Period[] => {
   const out: Period[] = [];
   for (let i = 0; i < count; i++) {
     const m = (startMonth + i) % 12;
@@ -159,11 +178,14 @@ export const varCostFor = (p: Product, i: number, scen: Scenario = SCENARIOS.baz
 export const fixedCostFor = (e: FixedExpense, i: number, scen: Scenario = SCENARIOS.baz) =>
   e.monthly * Math.pow(1 + e.growth, i / 12) * scen.cost;
 
-export const buildSeries = (scen: Scenario = SCENARIOS.baz): SeriesPoint[] =>
-  PERIODS.map((p, i) => {
-    const revenue = PRODUCTS.reduce((s, prod) => s + revenueFor(prod, i, scen), 0);
-    const varCost = PRODUCTS.reduce((s, prod) => s + varCostFor(prod, i, scen), 0);
-    const fixCost = FIXED_EXPENSES.reduce((s, e) => s + fixedCostFor(e, i, scen), 0);
+export const buildSeries = (
+  products: Product[], fixedExpenses: FixedExpense[], periods: Period[],
+  scen: Scenario = SCENARIOS.baz,
+): SeriesPoint[] =>
+  periods.map((p, i) => {
+    const revenue = products.reduce((s, prod) => s + revenueFor(prod, i, scen), 0);
+    const varCost = products.reduce((s, prod) => s + varCostFor(prod, i, scen), 0);
+    const fixCost = fixedExpenses.reduce((s, e) => s + fixedCostFor(e, i, scen), 0);
     const opex = varCost + fixCost;
     const ebitda = revenue - opex;
     const depreciation = 145000;
@@ -172,16 +194,19 @@ export const buildSeries = (scen: Scenario = SCENARIOS.baz): SeriesPoint[] =>
     return { ...p, idx: i, revenue, varCost, fixCost, opex, ebitda, net };
   });
 
-export const cashFlowFor = (i: number, scen: Scenario) => {
-  const rev  = PRODUCTS.reduce((s, p) => s + revenueFor(p, i, scen), 0);
-  const varc = PRODUCTS.reduce((s, p) => s + varCostFor(p, i, scen), 0);
-  const fixc = FIXED_EXPENSES.reduce((s, e) => s + fixedCostFor(e, i, scen), 0);
+export const cashFlowFor = (
+  i: number, scen: Scenario,
+  products: Product[], fixedExpenses: FixedExpense[], cashEvents: CashEvent[],
+) => {
+  const rev  = products.reduce((s, p) => s + revenueFor(p, i, scen), 0);
+  const varc = products.reduce((s, p) => s + varCostFor(p, i, scen), 0);
+  const fixc = fixedExpenses.reduce((s, e) => s + fixedCostFor(e, i, scen), 0);
   const ebitda = rev - varc - fixc;
   const dep = 145_000;
   const tax = Math.max(0, ebitda - dep) * 0.22;
   const operating = ebitda - tax;
   let investing = 0, financing = 0;
-  CASH_EVENTS.forEach(ev => {
+  cashEvents.forEach(ev => {
     const m = ev.months.find(x => x.idx === i);
     if (m) {
       if (ev.type === 'investing') investing += m.amount;
@@ -199,44 +224,47 @@ const hash = (s: string) => {
   return h / 0xffffffff;
 };
 
-export const actualRevenueFor = (p: Product, i: number, scen: Scenario = SCENARIOS.baz): number | null => {
-  if (i >= ACTUALS_THROUGH) return null;
+export const actualRevenueFor = (p: Product, i: number, scen: Scenario = SCENARIOS.baz, actualsThrough = ACTUALS_THROUGH): number | null => {
+  if (i >= actualsThrough) return null;
   const n = (hash(p.id + '|r|' + i) - 0.5) * 0.28;
   const bias = (p.id === 'p5' || p.id === 'p6') ? 0.06 : 0;
   const seasonalBoost = (i % 12 >= 4 && i % 12 <= 7) ? 0.05 : 0;
   return revenueFor(p, i, scen) * (1 + n + bias + seasonalBoost);
 };
 
-export const actualVarCostFor = (p: Product, i: number, scen: Scenario = SCENARIOS.baz): number | null => {
-  if (i >= ACTUALS_THROUGH) return null;
-  const rev = actualRevenueFor(p, i, scen)!;
+export const actualVarCostFor = (p: Product, i: number, scen: Scenario = SCENARIOS.baz, actualsThrough = ACTUALS_THROUGH): number | null => {
+  if (i >= actualsThrough) return null;
+  const rev = actualRevenueFor(p, i, scen, actualsThrough)!;
   const n = (hash(p.id + '|c|' + i) - 0.4) * 0.20;
   return rev * p.varCostRatio * (1 + n);
 };
 
-export const actualFixedCostFor = (e: FixedExpense, i: number, scen: Scenario = SCENARIOS.baz): number | null => {
-  if (i >= ACTUALS_THROUGH) return null;
+export const actualFixedCostFor = (e: FixedExpense, i: number, scen: Scenario = SCENARIOS.baz, actualsThrough = ACTUALS_THROUGH): number | null => {
+  if (i >= actualsThrough) return null;
   const budget = fixedCostFor(e, i, scen);
   const n = (hash(e.id + '|f|' + i) - 0.45) * 0.16;
   return budget * (1 + n);
 };
 
-export const bvaForPeriod = (i: number, scen: Scenario) => {
-  const budgetRev  = PRODUCTS.reduce((s, p) => s + revenueFor(p, i, scen), 0);
-  const budgetVar  = PRODUCTS.reduce((s, p) => s + varCostFor(p, i, scen), 0);
-  const budgetFix  = FIXED_EXPENSES.reduce((s, e) => s + fixedCostFor(e, i, scen), 0);
+export const bvaForPeriod = (
+  i: number, scen: Scenario,
+  products: Product[], fixedExpenses: FixedExpense[], actualsThrough: number,
+) => {
+  const budgetRev  = products.reduce((s, p) => s + revenueFor(p, i, scen), 0);
+  const budgetVar  = products.reduce((s, p) => s + varCostFor(p, i, scen), 0);
+  const budgetFix  = fixedExpenses.reduce((s, e) => s + fixedCostFor(e, i, scen), 0);
   const budgetOpex = budgetVar + budgetFix;
   const budgetEb   = budgetRev - budgetOpex;
 
-  if (i >= ACTUALS_THROUGH) return {
+  if (i >= actualsThrough) return {
     hasActual: false,
     budget: { revenue: budgetRev, opex: budgetOpex, ebitda: budgetEb, varCost: budgetVar, fixCost: budgetFix },
     actual: { revenue: 0, opex: 0, ebitda: 0, varCost: 0, fixCost: 0 },
   };
 
-  const actualRev  = PRODUCTS.reduce((s, p) => s + (actualRevenueFor(p, i, scen) ?? 0), 0);
-  const actualVar  = PRODUCTS.reduce((s, p) => s + (actualVarCostFor(p, i, scen) ?? 0), 0);
-  const actualFix  = FIXED_EXPENSES.reduce((s, e) => s + (actualFixedCostFor(e, i, scen) ?? 0), 0);
+  const actualRev  = products.reduce((s, p) => s + (actualRevenueFor(p, i, scen, actualsThrough) ?? 0), 0);
+  const actualVar  = products.reduce((s, p) => s + (actualVarCostFor(p, i, scen, actualsThrough) ?? 0), 0);
+  const actualFix  = fixedExpenses.reduce((s, e) => s + (actualFixedCostFor(e, i, scen, actualsThrough) ?? 0), 0);
   const actualOpex = actualVar + actualFix;
   const actualEb   = actualRev - actualOpex;
   return {
@@ -264,3 +292,41 @@ export const fmtPct = (n: number | null | undefined, digits = 1): string =>
 
 export const fmtNum = (n: number | null | undefined, digits = 0): string =>
   (n == null || isNaN(n)) ? '—' : n.toLocaleString('tr-TR', {minimumFractionDigits: digits, maximumFractionDigits: digits});
+
+// ─── Plan fabrika + React context ───────────────────────────────────────────
+
+export const createNewPlan = (title: string, year: number): DPlan => ({
+  id: crypto.randomUUID(),
+  title,
+  baslik: title,
+  status: 'draft',
+  year,
+  startYear: year,
+  startMonth: 0,
+  horizon: 24,
+  openingCash: OPENING_CASH,
+  actualsThrough: 0,
+  products:      PRODUCTS.map(p => ({ ...p })),
+  fixedExpenses: FIXED_EXPENSES.map(e => ({ ...e })),
+  cashEvents:    CASH_EVENTS.map(ev => ({ ...ev, months: ev.months.map(m => ({ ...m })) })),
+});
+
+export interface PlanDataCtxValue {
+  products: Product[];
+  fixedExpenses: FixedExpense[];
+  periods: Period[];
+  cashEvents: CashEvent[];
+  openingCash: number;
+  actualsThrough: number;
+}
+
+export const PlanCtx = React.createContext<PlanDataCtxValue>({
+  products:      PRODUCTS,
+  fixedExpenses: FIXED_EXPENSES,
+  periods:       PERIODS,
+  cashEvents:    CASH_EVENTS,
+  openingCash:   OPENING_CASH,
+  actualsThrough: ACTUALS_THROUGH,
+});
+
+export const usePlanData = (): PlanDataCtxValue => React.useContext(PlanCtx);
