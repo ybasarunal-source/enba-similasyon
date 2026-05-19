@@ -146,6 +146,7 @@ export const parasutService = {
   // Tam bağlantı kesme: bellek + localStorage + Supabase satırını sil.
   // Kullanıcı Paraşüt'ten "bağlantıyı kes" butonuna bastığında çağrılır.
   logout(): void {
+    console.trace('[parasut] logout() çağrıldı');
     _memToken = null;
     try { localStorage.removeItem(TOKEN_KEY); } catch { /* ignore */ }
     try { localStorage.removeItem(COMPANY_KEY); } catch { /* ignore */ }
