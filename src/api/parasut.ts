@@ -46,6 +46,8 @@ export interface ParasutItem {
 // In-memory cache so localStorage failures don't break the session
 let _memToken: StoredToken | null = null;
 let _companyId: string | null = null;
+// super_admin için hedef şirket override — null ise saveToken kendi profile'dan çeker
+let _targetCompanyId: string | null = null;
 
 function saveToken(raw: any): StoredToken {
   const data: StoredToken = {
@@ -55,31 +57,33 @@ function saveToken(raw: any): StoredToken {
   };
   _memToken = data;
   try { localStorage.setItem(TOKEN_KEY, JSON.stringify(data)); } catch { /* ignore */ }
-  // Supabase'e kaydet — company_id'yi her zaman auth'tan anlık çek
+  // Supabase'e kaydet — super_admin için _targetCompanyId, diğerleri için auth'tan çek
   (async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      console.log('[parasut] saveToken user:', user?.id ?? 'null');
-      if (!user) return;
-      const { data: profile, error: pe } = await supabase
-        .from('profiles')
-        .select('company_id')
-        .eq('id', user.id)
-        .maybeSingle();
-      console.log('[parasut] saveToken profile.company_id:', profile?.company_id ?? 'null', pe?.message ?? '');
-      if (!profile?.company_id) return;
-      _companyId = profile.company_id;
+      let useCid = _targetCompanyId;
+      if (!useCid) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('company_id')
+          .eq('id', user.id)
+          .maybeSingle();
+        if (!profile?.company_id) return;
+        useCid = profile.company_id;
+      }
+      _companyId = useCid;
       // saveCompany localStorage'ı senkron set eder, buraya gelindiğinde hazırdır
       const savedComp = (() => { try { return JSON.parse(localStorage.getItem(COMPANY_KEY) || 'null'); } catch { return null; } })();
       const { error } = await supabase.from('parasut_tokens').upsert({
-        company_id: profile.company_id,
+        company_id: useCid,
         access_token: data.access_token,
         refresh_token: data.refresh_token,
         expires_at: data.expires_at,
         ...(savedComp ? { parasut_company_data: savedComp } : {}),
         updated_at: new Date().toISOString(),
       }, { onConflict: 'company_id' });
-      console.log('[parasut] upsert error:', error?.message ?? 'none', '| company:', savedComp?.id ?? 'none');
+      if (error) console.error('[parasut] upsert error:', error.message);
     } catch (e) { console.error('[parasut] saveToken exception:', e); }
   })();
   return data;
@@ -108,10 +112,7 @@ export const parasutService = {
         .select('access_token, refresh_token, expires_at, parasut_company_data')
         .eq('company_id', companyId)
         .maybeSingle();
-      if (error || !data) {
-        console.log('[parasut] loadTokenFromSupabase: false —', error?.message ?? 'no data');
-        return false;
-      }
+      if (error || !data) { return false; }
       _memToken = {
         access_token: data.access_token,
         refresh_token: data.refresh_token,
@@ -121,7 +122,6 @@ export const parasutService = {
       if (data.parasut_company_data) {
         try { localStorage.setItem(COMPANY_KEY, JSON.stringify(data.parasut_company_data)); } catch { /* ignore */ }
       }
-      console.log('[parasut] loadTokenFromSupabase: true — company:', (data.parasut_company_data as any)?.id ?? 'none');
       return true;
     } catch { return false; }
   },
@@ -146,6 +146,7 @@ export const parasutService = {
   // Enba oturumu kapanırken çağrılır; Paraşüt token'ı Supabase'de kalır.
   clearSession(): void {
     _memToken = null;
+    _targetCompanyId = null;
     try { localStorage.removeItem(TOKEN_KEY); } catch { /* ignore */ }
     try { localStorage.removeItem(COMPANY_KEY); } catch { /* ignore */ }
   },
@@ -153,8 +154,8 @@ export const parasutService = {
   // Tam bağlantı kesme: bellek + localStorage + Supabase satırını sil.
   // Kullanıcı Paraşüt'ten "bağlantıyı kes" butonuna bastığında çağrılır.
   logout(): void {
-    console.trace('[parasut] logout() çağrıldı');
     _memToken = null;
+    _targetCompanyId = null;
     try { localStorage.removeItem(TOKEN_KEY); } catch { /* ignore */ }
     try { localStorage.removeItem(COMPANY_KEY); } catch { /* ignore */ }
     const cid = _companyId;
@@ -175,7 +176,7 @@ export const parasutService = {
     try { localStorage.setItem(COMPANY_KEY, JSON.stringify(company)); } catch { /* ignore */ }
     (async () => {
       try {
-        const cid = _companyId || await (async () => {
+        const cid = _targetCompanyId || _companyId || await (async () => {
           const { data: { user } } = await supabase.auth.getUser();
           if (!user) return null;
           const { data: p } = await supabase.from('profiles').select('company_id').eq('id', user.id).maybeSingle();
@@ -190,6 +191,12 @@ export const parasutService = {
         if (error) console.warn('Paraşüt şirket Supabase kayıt hatası:', error.message);
       } catch { /* ignore */ }
     })();
+  },
+
+  // super_admin için hedef şirket override — login/saveCompany bu company_id'ye yazar
+  setTargetCompanyId(id: string | null): void {
+    _targetCompanyId = id;
+    if (id) _companyId = id;
   },
 
   getCompany(): ParasutCompany | null {

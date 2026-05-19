@@ -18,10 +18,11 @@ import {
   Trash2,
   Check,
   Plus,
+  Building2,
 } from 'lucide-react';
 import { parasutService, type ParasutInvoice, type ParasutItem } from '../api/parasut';
 import { financialCategoriesAPI } from '../api/financialCategories';
-import type { UserProfile } from '../api/supabase';
+import { companiesAPI, type Company, type UserProfile } from '../api/supabase';
 import { Ayarlar } from './Ayarlar';
 
 type DatePreset = 'this_month' | 'last_3' | 'this_year' | 'custom';
@@ -173,19 +174,30 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
   const [ready, setReady]         = useState(parasutService.isLoggedIn() && !!savedCompany);
   const [companyId, setCompanyId] = useState(savedCompany?.id || '');
 
+  const isSuperAdmin = profile?.role === 'super_admin';
+  const [enbaCompanies, setEnbaCompanies]               = useState<Company[]>([]);
+  const [selectedEnbaCompanyId, setSelectedEnbaCompanyId] = useState<string>(profile?.company_id ?? '');
+
+  // super_admin için tüm şirketleri yükle
+  useEffect(() => {
+    if (!isSuperAdmin) return;
+    companiesAPI.getAll().then(setEnbaCompanies);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSuperAdmin]);
+
   // Async token yüklemesi mount'tan sonra tamamlanmışsa ready'yi güncelle
   useEffect(() => {
-    console.log('[parasut] Parasut useEffect — ready:', ready, 'company_id:', profile?.company_id ?? 'null');
     if (ready) return;
-    if (!profile?.company_id) return;
-    parasutService.loadTokenFromSupabase(profile.company_id).then(restored => {
+    const targetId = (isSuperAdmin ? selectedEnbaCompanyId : null) || profile?.company_id;
+    if (!targetId) return;
+    parasutService.loadTokenFromSupabase(targetId).then(restored => {
       const co = parasutService.getCompany();
-      console.log('[parasut] Parasut useEffect restored:', restored, 'company:', co?.id ?? 'null');
       if (!restored || !parasutService.isLoggedIn()) return;
       if (co) { setCompanyId(co.id); setReady(true); }
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.company_id]);
+
   const [activeTab, setActiveTab] = useState<ActiveTab>('invoices');
 
   // Fatura state
@@ -557,6 +569,25 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
     setError('');
   };
 
+  // super_admin şirket değiştirince token'ı yenile
+  const handleEnbaCompanyChange = (newId: string) => {
+    setSelectedEnbaCompanyId(newId);
+    setReady(false);
+    setInvoices([]);
+    setItems([]);
+    setItemsLoaded(false);
+    setError('');
+    parasutService.clearSession();
+    parasutService.setTargetCompanyId(newId);
+    parasutService.loadTokenFromSupabase(newId).then(restored => {
+      const co = parasutService.getCompany();
+      if (restored && parasutService.isLoggedIn() && co) {
+        setCompanyId(co.id);
+        setReady(true);
+      }
+    });
+  };
+
 
   const filtered = React.useMemo(() => {
     return invoices.filter(inv => {
@@ -599,7 +630,26 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
     return Array.from(set).sort();
   }, [invoices]);
 
-  if (!ready) return <LoginForm onReady={handleReady} />;
+  if (!ready) return (
+    <div className="p-8 animate-in fade-in duration-500">
+      {isSuperAdmin && enbaCompanies.length > 0 && (
+        <div className="mb-4 max-w-sm mx-auto flex items-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+          <Building2 size={15} className="text-amber-600 flex-shrink-0" />
+          <span className="text-xs font-semibold text-amber-700 whitespace-nowrap">Şirket:</span>
+          <select
+            value={selectedEnbaCompanyId}
+            onChange={e => handleEnbaCompanyChange(e.target.value)}
+            className="flex-1 text-xs px-2 py-1.5 rounded-lg border border-amber-200 bg-white focus:outline-none focus:ring-1 focus:ring-amber-400"
+          >
+            {enbaCompanies.map(c => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
+      <LoginForm onReady={handleReady} />
+    </div>
+  );
 
   const totalIncome  = invoices.filter(i => i.type === 'sales_invoices').reduce((s, i) => s + i.gross_total, 0);
   const totalExpense = invoices.filter(i => i.type !== 'sales_invoices').reduce((s, i) => s + i.gross_total, 0);
@@ -613,6 +663,23 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
 
   return (
     <div className="p-8 space-y-6 animate-in fade-in duration-500">
+
+      {/* super_admin şirket seçici */}
+      {isSuperAdmin && enbaCompanies.length > 0 && (
+        <div className="flex items-center gap-3 px-4 py-2.5 bg-amber-50 border border-amber-200 rounded-xl">
+          <Building2 size={14} className="text-amber-600 flex-shrink-0" />
+          <span className="text-xs font-semibold text-amber-700 whitespace-nowrap">Şirket bağlamı:</span>
+          <select
+            value={selectedEnbaCompanyId}
+            onChange={e => handleEnbaCompanyChange(e.target.value)}
+            className="flex-1 text-xs px-2 py-1 rounded-lg border border-amber-200 bg-white focus:outline-none focus:ring-1 focus:ring-amber-400"
+          >
+            {enbaCompanies.map(c => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* Header */}
       <div className="flex items-center justify-between">
