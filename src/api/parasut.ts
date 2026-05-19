@@ -69,14 +69,17 @@ function saveToken(raw: any): StoredToken {
       console.log('[parasut] saveToken profile.company_id:', profile?.company_id ?? 'null', pe?.message ?? '');
       if (!profile?.company_id) return;
       _companyId = profile.company_id;
+      // saveCompany localStorage'ı senkron set eder, buraya gelindiğinde hazırdır
+      const savedComp = (() => { try { return JSON.parse(localStorage.getItem(COMPANY_KEY) || 'null'); } catch { return null; } })();
       const { error } = await supabase.from('parasut_tokens').upsert({
         company_id: profile.company_id,
         access_token: data.access_token,
         refresh_token: data.refresh_token,
         expires_at: data.expires_at,
+        ...(savedComp ? { parasut_company_data: savedComp } : {}),
         updated_at: new Date().toISOString(),
       }, { onConflict: 'company_id' });
-      console.log('[parasut] upsert error:', error?.message ?? 'none');
+      console.log('[parasut] upsert error:', error?.message ?? 'none', '| company:', savedComp?.id ?? 'none');
     } catch (e) { console.error('[parasut] saveToken exception:', e); }
   })();
   return data;
