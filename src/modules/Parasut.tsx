@@ -172,6 +172,18 @@ export const Parasut: React.FC<ParasutProps> = ({ profile, navigate }) => {
   const savedCompany = parasutService.getCompany();
   const [ready, setReady]         = useState(parasutService.isLoggedIn() && !!savedCompany);
   const [companyId, setCompanyId] = useState(savedCompany?.id || '');
+
+  // Async token yüklemesi mount'tan sonra tamamlanmışsa ready'yi güncelle
+  useEffect(() => {
+    if (ready) return;
+    if (!profile?.company_id) return;
+    parasutService.loadTokenFromSupabase(profile.company_id).then(restored => {
+      if (!restored || !parasutService.isLoggedIn()) return;
+      const co = parasutService.getCompany();
+      if (co) { setCompanyId(co.id); setReady(true); }
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [activeTab, setActiveTab] = useState<ActiveTab>('invoices');
 
   // Fatura state

@@ -165,14 +165,23 @@ export const parasutService = {
 
   saveCompany(company: ParasutCompany): void {
     try { localStorage.setItem(COMPANY_KEY, JSON.stringify(company)); } catch { /* ignore */ }
-    if (_companyId) {
-      supabase.from('parasut_tokens').update({
-        parasut_company_data: company,
-        updated_at: new Date().toISOString(),
-      }).eq('company_id', _companyId).then(({ error }) => {
+    (async () => {
+      try {
+        const cid = _companyId || await (async () => {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) return null;
+          const { data: p } = await supabase.from('profiles').select('company_id').eq('id', user.id).maybeSingle();
+          if (p?.company_id) _companyId = p.company_id;
+          return p?.company_id ?? null;
+        })();
+        if (!cid) return;
+        const { error } = await supabase.from('parasut_tokens').update({
+          parasut_company_data: company,
+          updated_at: new Date().toISOString(),
+        }).eq('company_id', cid);
         if (error) console.warn('Paraşüt şirket Supabase kayıt hatası:', error.message);
-      });
-    }
+      } catch { /* ignore */ }
+    })();
   },
 
   getCompany(): ParasutCompany | null {
