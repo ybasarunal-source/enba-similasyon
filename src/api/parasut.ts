@@ -121,6 +121,7 @@ export const parasutService = {
       if (data.parasut_company_data) {
         try { localStorage.setItem(COMPANY_KEY, JSON.stringify(data.parasut_company_data)); } catch { /* ignore */ }
       }
+      console.log('[parasut] loadTokenFromSupabase: true — company:', (data.parasut_company_data as any)?.id ?? 'none');
       return true;
     } catch { return false; }
   },
