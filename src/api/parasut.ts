@@ -55,17 +55,28 @@ function saveToken(raw: any): StoredToken {
   };
   _memToken = data;
   try { localStorage.setItem(TOKEN_KEY, JSON.stringify(data)); } catch { /* ignore */ }
-  if (_companyId) {
-    supabase.from('parasut_tokens').upsert({
-      company_id: _companyId,
-      access_token: data.access_token,
-      refresh_token: data.refresh_token,
-      expires_at: data.expires_at,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: 'company_id' }).then(({ error }) => {
+  // Supabase'e kaydet — company_id'yi her zaman auth'tan anlık çek
+  (async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('company_id')
+        .eq('id', user.id)
+        .maybeSingle();
+      if (!profile?.company_id) return;
+      _companyId = profile.company_id;
+      const { error } = await supabase.from('parasut_tokens').upsert({
+        company_id: profile.company_id,
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+        expires_at: data.expires_at,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'company_id' });
       if (error) console.warn('Paraşüt token Supabase kayıt hatası:', error.message);
-    });
-  }
+    } catch { /* ignore */ }
+  })();
   return data;
 }
 
@@ -91,7 +102,7 @@ export const parasutService = {
         .from('parasut_tokens')
         .select('access_token, refresh_token, expires_at, parasut_company_data')
         .eq('company_id', companyId)
-        .single();
+        .maybeSingle();
       if (error || !data) return false;
       _memToken = {
         access_token: data.access_token,
@@ -126,8 +137,17 @@ export const parasutService = {
     _memToken = null;
     try { localStorage.removeItem(TOKEN_KEY); } catch { /* ignore */ }
     try { localStorage.removeItem(COMPANY_KEY); } catch { /* ignore */ }
-    if (_companyId) {
-      supabase.from('parasut_tokens').delete().eq('company_id', _companyId).then(() => {});
+    const cid = _companyId;
+    if (cid) {
+      supabase.from('parasut_tokens').delete().eq('company_id', cid).then(() => {});
+    } else {
+      supabase.auth.getUser().then(({ data: { user } }) => {
+        if (!user) return;
+        supabase.from('profiles').select('company_id').eq('id', user.id).maybeSingle()
+          .then(({ data: p }) => {
+            if (p?.company_id) supabase.from('parasut_tokens').delete().eq('company_id', p.company_id).then(() => {});
+          });
+      });
     }
   },
 
