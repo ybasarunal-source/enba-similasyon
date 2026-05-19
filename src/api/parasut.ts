@@ -1,3 +1,5 @@
+import { supabase } from './supabase';
+
 const OAUTH_URL = '/api/parasut-oauth';
 const API_BASE = '/api/parasut-data';
 
@@ -43,6 +45,7 @@ export interface ParasutItem {
 
 // In-memory cache so localStorage failures don't break the session
 let _memToken: StoredToken | null = null;
+let _companyId: string | null = null;
 
 function saveToken(raw: any): StoredToken {
   const data: StoredToken = {
@@ -52,6 +55,17 @@ function saveToken(raw: any): StoredToken {
   };
   _memToken = data;
   try { localStorage.setItem(TOKEN_KEY, JSON.stringify(data)); } catch { /* ignore */ }
+  if (_companyId) {
+    supabase.from('parasut_tokens').upsert({
+      company_id: _companyId,
+      access_token: data.access_token,
+      refresh_token: data.refresh_token,
+      expires_at: data.expires_at,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'company_id' }).then(({ error }) => {
+      if (error) console.warn('Paraşüt token Supabase kayıt hatası:', error.message);
+    });
+  }
   return data;
 }
 
@@ -69,8 +83,32 @@ export const parasutService = {
     return loadToken() !== null;
   },
 
-  // Profil verilerinden oturumu geri yükle
+  // Supabase'den token yükle — login sonrası çağrılır, localStorage fallback'ten önce gelir
+  async loadTokenFromSupabase(companyId: string): Promise<boolean> {
+    _companyId = companyId;
+    try {
+      const { data, error } = await supabase
+        .from('parasut_tokens')
+        .select('access_token, refresh_token, expires_at, parasut_company_data')
+        .eq('company_id', companyId)
+        .single();
+      if (error || !data) return false;
+      _memToken = {
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+        expires_at: data.expires_at,
+      };
+      try { localStorage.setItem(TOKEN_KEY, JSON.stringify(_memToken)); } catch { /* ignore */ }
+      if (data.parasut_company_data) {
+        try { localStorage.setItem(COMPANY_KEY, JSON.stringify(data.parasut_company_data)); } catch { /* ignore */ }
+      }
+      return true;
+    } catch { return false; }
+  },
+
+  // Profil verilerinden oturumu geri yükle (localStorage fallback)
   resumeSession(profile: any) {
+    if (profile.company_id) _companyId = profile.company_id;
     if (profile.parasut_data?.token) {
       _memToken = profile.parasut_data.token;
       try { localStorage.setItem(TOKEN_KEY, JSON.stringify(_memToken)); } catch { /* ignore */ }
@@ -88,10 +126,21 @@ export const parasutService = {
     _memToken = null;
     try { localStorage.removeItem(TOKEN_KEY); } catch { /* ignore */ }
     try { localStorage.removeItem(COMPANY_KEY); } catch { /* ignore */ }
+    if (_companyId) {
+      supabase.from('parasut_tokens').delete().eq('company_id', _companyId).then(() => {});
+    }
   },
 
   saveCompany(company: ParasutCompany): void {
     try { localStorage.setItem(COMPANY_KEY, JSON.stringify(company)); } catch { /* ignore */ }
+    if (_companyId) {
+      supabase.from('parasut_tokens').update({
+        parasut_company_data: company,
+        updated_at: new Date().toISOString(),
+      }).eq('company_id', _companyId).then(({ error }) => {
+        if (error) console.warn('Paraşüt şirket Supabase kayıt hatası:', error.message);
+      });
+    }
   },
 
   getCompany(): ParasutCompany | null {

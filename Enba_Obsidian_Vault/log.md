@@ -549,6 +549,26 @@ grep "^## \[" log.md | tail -5
 
 ---
 
+## [2026-05-19] geliştirme | Paraşüt token — localStorage'dan Supabase'e migrasyon
+
+**Yapılan:**
+- `scratch/migration_v25_parasut_tokens.sql` — `parasut_tokens` tablosu + company_id unique index + RLS politikası
+- `src/api/parasut.ts`:
+  - `supabase` import eklendi
+  - `_companyId` in-memory state eklendi (company izolasyonu için)
+  - `saveToken()` — fire-and-forget Supabase upsert eklendi (token yenilemede de çalışır)
+  - `loadTokenFromSupabase(companyId)` — yeni async metod; Supabase'den token yükler, localStorage'a da sync eder
+  - `logout()` — Supabase satırını da siler
+  - `saveCompany()` — Supabase'deki `parasut_company_data`'yı da günceller
+  - `resumeSession()` — `_companyId` set eder (backward compat için korundu)
+- `src/App.tsx` — `parasutService.resumeSession(profile)` yerine `loadTokenFromSupabase` + fallback
+
+**Etkilenen dosyalar:** `scratch/migration_v25_parasut_tokens.sql`, `src/api/parasut.ts`, `src/App.tsx`
+**tsc:** temiz (exit 0)
+**Bir sonraki:** Supabase'de `migration_v25_parasut_tokens.sql` çalıştır → test: iki hesapla giriş/çıkış → token izolasyonu doğrula
+
+---
+
 ## [2026-05-19] oturum kapanışı | DetailedPlan + FastPlan reskin + mimari notlar
 
 **Bu oturumda yapılanlar:**

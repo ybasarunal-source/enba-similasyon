@@ -218,7 +218,13 @@ export const App: React.FC = () => {
             // Otomatik Entegrasyon Geri Yükleme
             microsoftService.resumeSession(profile);
             googleService.resumeSession(profile);
-            parasutService.resumeSession(profile);
+            if (profile.company_id) {
+              parasutService.loadTokenFromSupabase(profile.company_id).then(restored => {
+                if (!restored) parasutService.resumeSession(profile);
+              });
+            } else {
+              parasutService.resumeSession(profile);
+            }
           }
         })
         .catch(() => {

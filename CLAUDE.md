@@ -346,7 +346,7 @@ Veri kaybı riski olan her adımı kullanıcıya açıkça belirt ve onay al.
 - [x] **Admin test hesabı** — doğrulandı (2026-05-18)
 - [x] **Kök dizin .jsx temizliği** — 26 dosya silindi (commit 9571b0d)
 - [ ] **DetailedPlan veri girişi** — plan listesi + Supabase JSON blob → bkz. `Kararlar/2026-05-DetailedPlan-Veri-Girisi.md`
-- [ ] **Paraşüt token migrasyonu** — parasut_tokens tablosu + RLS → bkz. `Kararlar/2026-05-Parasut-Token-Supabase.md`
+- [x] **Paraşüt token migrasyonu** — `migration_v25_parasut_tokens.sql` + parasut.ts + App.tsx tamamlandı; **Supabase'de SQL çalıştırılmalı**
 - [ ] **Paraşüt → financial_categories** — eşleştirme modalı Supabase tablosundan çeksin
 - [ ] **E-fatura** — ertelendi
 - [ ] **Bordro/muhasebe** — ertelendi
