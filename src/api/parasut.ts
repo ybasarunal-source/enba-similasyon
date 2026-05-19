@@ -135,6 +135,16 @@ export const parasutService = {
     }
   },
 
+  // Sadece bellek ve localStorage temizle — Supabase'e dokunma.
+  // Enba oturumu kapanırken çağrılır; Paraşüt token'ı Supabase'de kalır.
+  clearSession(): void {
+    _memToken = null;
+    try { localStorage.removeItem(TOKEN_KEY); } catch { /* ignore */ }
+    try { localStorage.removeItem(COMPANY_KEY); } catch { /* ignore */ }
+  },
+
+  // Tam bağlantı kesme: bellek + localStorage + Supabase satırını sil.
+  // Kullanıcı Paraşüt'ten "bağlantıyı kes" butonuna bastığında çağrılır.
   logout(): void {
     _memToken = null;
     try { localStorage.removeItem(TOKEN_KEY); } catch { /* ignore */ }
