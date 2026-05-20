@@ -130,7 +130,7 @@ function MCodeSelect({
               className="w-full bg-enba-panel-2 border border-enba-line rounded-lg px-3 py-1.5 text-[12.5px] text-enba-text outline-none focus:border-enba-orange/60"
             />
           </div>
-          <ul className="max-h-[220px] overflow-y-auto py-1">
+          <ul className="max-h-[420px] overflow-y-auto py-1">
             {filtered.length === 0 && (
               <li className="px-4 py-3 text-[12px] text-enba-dim text-center">Sonuç yok</li>
             )}
