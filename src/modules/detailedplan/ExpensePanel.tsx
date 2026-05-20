@@ -1,108 +1,105 @@
 import React, { useState, useMemo } from 'react';
 import {
   ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Bar,
-  PieChart, Pie, Cell, LineChart, Line, Area, ReferenceLine,
+  LineChart, Area, ReferenceLine,
 } from 'recharts';
 import {
   SCENARIOS, fmtTL, fmtPct,
-  revenueFor, varCostFor, fixedCostFor, Scenario, usePlanData,
+  revenueFor, varCostFor, fixedCostFor, facilityShareFor,
+  Scenario, usePlanData, ActiveProject, FixedExpense, Period,
 } from './dpData';
-import { cx, Card, SectionTitle, Segmented, Btn, Badge, I, useChartColors } from './DPPrimitives';
+import { cx, Card, SectionTitle, Segmented, Badge, useChartColors } from './DPPrimitives';
+
+type TabId = 'all' | 'facility' | 'project' | 'variable';
 
 export const ExpensePanel = ({ scenarioId, periodGranularity }:
   { scenarioId: string; periodGranularity: string }) => {
   const scen: Scenario = SCENARIOS[scenarioId];
   const cc = useChartColors();
-  const { products, fixedExpenses, periods } = usePlanData();
+  const { facilityExpenses, projects, products, fixedExpenses, periods } = usePlanData();
   const [horizon, setHorizon] = useState(12);
-  const [activeTab, setActiveTab] = useState('all');
-  const [editing, setEditing] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<TabId>('all');
 
   const visiblePeriods = periods.slice(0, horizon);
+  const allProducts      = useMemo(() => projects.flatMap(p => p.revenues), [projects]);
+  const allProjExpenses  = useMemo(() => projects.flatMap(p => p.expenses), [projects]);
 
   const totals = useMemo(() => {
-    let fixed = 0, variable = 0;
+    let facility = 0, projFixed = 0, variable = 0;
     for (let i = 0; i < visiblePeriods.length; i++) {
-      fixed    += fixedExpenses.reduce((s, e) => s + fixedCostFor(e, i, scen), 0);
-      variable += products.reduce((s, p) => s + varCostFor(p, i, scen), 0);
+      facility  += facilityExpenses.reduce((s, e) => s + fixedCostFor(e, i, scen), 0);
+      projFixed += allProjExpenses.reduce((s, e) => s + fixedCostFor(e, i, scen), 0);
+      variable  += allProducts.reduce((s, p) => s + varCostFor(p, i, scen), 0);
     }
-    return { fixed, variable, total: fixed + variable };
-  }, [scenarioId, horizon]);
-
-  const fixedShare = totals.fixed / (totals.total || 1);
+    return { facility, projFixed, variable, total: facility + projFixed + variable };
+  }, [scenarioId, horizon, facilityExpenses, projects]);
 
   const monthlySeries = useMemo(() => visiblePeriods.map((p, i) => ({
-    label: p.label,
-    sabit: fixedExpenses.reduce((s, e) => s + fixedCostFor(e, i, scen), 0),
-    degisken: products.reduce((s, prod) => s + varCostFor(prod, i, scen), 0),
-  })), [scenarioId, horizon]);
+    label:    p.label,
+    tesis:    facilityExpenses.reduce((s, e) => s + fixedCostFor(e, i, scen), 0),
+    proje:    allProjExpenses.reduce((s, e) => s + fixedCostFor(e, i, scen), 0),
+    degisken: allProducts.reduce((s, prod) => s + varCostFor(prod, i, scen), 0),
+  })), [scenarioId, horizon, facilityExpenses, projects]);
 
-  const fixedTotals = useMemo(() => fixedExpenses.map(e => {
+  const facilityTotals = useMemo(() => facilityExpenses.map(e => {
     let sum = 0;
     for (let i = 0; i < visiblePeriods.length; i++) sum += fixedCostFor(e, i, scen);
     return { ...e, sum };
-  }), [scenarioId, horizon]);
+  }), [scenarioId, horizon, facilityExpenses]);
 
-  const variableTotals = useMemo(() => products.map(p => {
-    let sum = 0;
-    for (let i = 0; i < visiblePeriods.length; i++) sum += varCostFor(p, i, scen);
-    return { ...p, sum };
-  }), [scenarioId, horizon]);
+  const fShare = totals.facility   / (totals.total || 1);
+  const pShare = totals.projFixed  / (totals.total || 1);
+  const vShare = totals.variable   / (totals.total || 1);
+
+  const tabs: { value: TabId; label: string; count?: number }[] = [
+    { value: 'all',      label: 'Tümü' },
+    { value: 'facility', label: 'Tesis Giderleri',   count: facilityExpenses.length },
+    { value: 'project',  label: 'Proje Giderleri',   count: projects.length },
+    { value: 'variable', label: 'Değişken Giderler', count: allProducts.length },
+  ];
 
   return (
     <div className="space-y-5">
+      {/* ── Özet kartları ── */}
       <div className="grid grid-cols-12 gap-4">
-        <Card className="col-span-5">
-          <div className="flex items-start justify-between">
-            <div>
-              <div className="text-[11px] uppercase tracking-[0.14em] text-enba-muted mb-1">{horizon} ay · {scen.label}</div>
-              <h3 className="text-base font-semibold">Toplam Gider</h3>
-            </div>
-            <Badge tone="orange">{horizon} aylık</Badge>
-          </div>
-          <div className="text-[28px] font-semibold text-enba-orange tabular mt-3 leading-none">{fmtTL(totals.total)}</div>
-          <div className="text-[11px] text-enba-dim mt-2">
-            Aylık ortalama <span className="text-enba-text tabular">{fmtTL(totals.total / horizon)}</span>
-          </div>
+        <Card className="col-span-4">
+          <div className="text-[11px] uppercase tracking-[0.14em] text-enba-muted mb-1">{horizon} ay · {scen.label}</div>
+          <h3 className="text-base font-semibold mb-3">Toplam Gider</h3>
+          <div className="text-[28px] font-semibold text-enba-orange tabular leading-none">{fmtTL(totals.total)}</div>
+          <div className="text-[11px] text-enba-dim mt-2">Aylık ort. <span className="text-enba-text tabular">{fmtTL(totals.total / Math.max(1, horizon))}</span></div>
           <div className="mt-4 h-2.5 bg-enba-panel-2 rounded-full overflow-hidden flex">
-            <div className="bg-enba-orange" style={{ width: (fixedShare*100)+'%' }}/>
-            <div className="bg-enba-amber" style={{ width: ((1-fixedShare)*100)+'%' }}/>
+            <div className="bg-enba-orange"           style={{ width: (fShare*100)+'%' }}/>
+            <div style={{ width: (pShare*100)+'%', background: '#5B9DFF' }}/>
+            <div className="bg-enba-amber"            style={{ width: (vShare*100)+'%' }}/>
           </div>
-          <div className="flex items-center justify-between mt-2.5 text-[11.5px]">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-enba-orange"/>
-              <span className="text-enba-muted">Sabit</span>
-              <span className="font-medium tabular">{fmtTL(totals.fixed)}</span>
-              <span className="text-enba-dim tabular">({fmtPct(fixedShare, 0)})</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-enba-amber"/>
-              <span className="text-enba-muted">Değişken</span>
-              <span className="font-medium tabular">{fmtTL(totals.variable)}</span>
-              <span className="text-enba-dim tabular">({fmtPct(1-fixedShare, 0)})</span>
-            </div>
+          <div className="mt-3 space-y-1.5">
+            <LegendRow color="#E35205" label="Tesis sabit"  value={totals.facility}  pct={fShare}/>
+            <LegendRow color="#5B9DFF" label="Proje sabit"  value={totals.projFixed} pct={pShare}/>
+            <LegendRow color="#F2A93B" label="Değişken"     value={totals.variable}  pct={vShare}/>
           </div>
         </Card>
 
-        <Card className="col-span-7" padded={false}>
+        <Card className="col-span-8" padded={false}>
           <div className="px-5 pt-5 pb-3 flex items-center justify-between">
             <div>
               <div className="text-[11px] uppercase tracking-[0.14em] text-enba-muted mb-1">Aylık Trend</div>
-              <h3 className="text-base font-semibold">Sabit + Değişken Gider Akışı</h3>
+              <h3 className="text-base font-semibold">Gider Bileşimi</h3>
             </div>
             <div className="flex items-center gap-3 text-[10.5px] text-enba-muted">
-              <span className="inline-flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-enba-orange"/>Sabit</span>
+              <span className="inline-flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-enba-orange"/>Tesis</span>
+              <span className="inline-flex items-center gap-1.5"><span className="w-2 h-2 rounded-full" style={{background:'#5B9DFF'}}/>Proje sabit</span>
               <span className="inline-flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-enba-amber"/>Değişken</span>
             </div>
           </div>
-          <div className="h-[160px] px-2">
+          <div className="h-[180px] px-2">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={monthlySeries} margin={{ top: 6, right: 12, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="2 4" stroke={cc.grid} vertical={false}/>
                 <XAxis dataKey="label" tickLine={false} axisLine={false} interval={Math.max(0, Math.floor(horizon/8)-1)}/>
                 <YAxis tickFormatter={(v) => (v/1000).toFixed(0)+'K'} tickLine={false} axisLine={false} width={42}/>
                 <Tooltip formatter={(v: any) => fmtTL(v)}/>
-                <Bar dataKey="sabit" stackId="x" fill="#E35205"/>
+                <Bar dataKey="tesis"    stackId="x" fill="#E35205"/>
+                <Bar dataKey="proje"    stackId="x" fill="#5B9DFF"/>
                 <Bar dataKey="degisken" stackId="x" fill="#F2A93B" radius={[3,3,0,0]}/>
               </BarChart>
             </ResponsiveContainer>
@@ -110,220 +107,69 @@ export const ExpensePanel = ({ scenarioId, periodGranularity }:
         </Card>
       </div>
 
-      {/* Tabs */}
+      {/* ── Sekmeler ── */}
       <div className="flex items-center justify-between">
         <div className="inline-flex items-center bg-enba-panel border border-enba-line rounded-lg p-0.5">
-          {[
-            { value: 'all', label: 'Tümü', n: fixedExpenses.length + products.length },
-            { value: 'fixed', label: 'Sabit Giderler', n: fixedExpenses.length },
-            { value: 'variable', label: 'Değişken Giderler', n: products.length },
-          ].map(t => (
+          {tabs.map(t => (
             <button key={t.value} onClick={() => setActiveTab(t.value)}
               className={cx('px-3 py-1.5 rounded-md text-[12.5px] inline-flex items-center gap-2 transition-colors',
                 activeTab === t.value ? 'bg-enba-orange text-white' : 'text-enba-muted hover:text-enba-text')}>
               {t.label}
-              <span className={cx('text-[10.5px] px-1.5 py-0.5 rounded',
-                activeTab === t.value ? 'bg-white/15' : 'bg-enba-panel-2 text-enba-dim')}>{t.n}</span>
+              {t.count !== undefined && (
+                <span className={cx('text-[10.5px] px-1.5 py-0.5 rounded',
+                  activeTab === t.value ? 'bg-white/15' : 'bg-enba-panel-2 text-enba-dim')}>{t.count}</span>
+              )}
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-2">
-          <Segmented options={[{value:6,label:'6 ay'},{value:12,label:'12 ay'},{value:18,label:'18 ay'},{value:24,label:'24 ay'}]}
-            value={horizon} onChange={setHorizon}/>
-          <Btn variant="primary" size="sm" icon={<I.Plus size={13}/>}>Yeni Kalem</Btn>
-        </div>
+        <Segmented
+          options={[{value:6,label:'6 ay'},{value:12,label:'12 ay'},{value:18,label:'18 ay'},{value:24,label:'24 ay'}]}
+          value={horizon} onChange={setHorizon}/>
       </div>
 
-      {/* Fixed expenses grid */}
-      {(activeTab === 'all' || activeTab === 'fixed') && (
-        <Card padded={false} className="overflow-hidden">
-          <div className="px-5 py-3 flex items-center justify-between border-b border-enba-line">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-enba-orange"/>
-              <h4 className="text-[13px] font-semibold">Sabit Giderler</h4>
-              <span className="text-[11px] text-enba-dim">· {fixedExpenses.length} kalem</span>
-            </div>
-            <span className="text-[12px] text-enba-muted tabular">{fmtTL(totals.fixed)}</span>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-[12.5px] tabular">
-              <thead>
-                <tr className="text-enba-muted bg-enba-panel-2/40">
-                  <th className="sticky left-0 z-10 bg-enba-panel-2/95 border-b border-r border-enba-line px-3 py-2.5 text-left font-medium min-w-[240px]">Kalem</th>
-                  <th className="border-b border-enba-line px-2 py-2.5 text-right font-medium whitespace-nowrap">Aylık Tutar</th>
-                  <th className="border-b border-enba-line px-2 py-2.5 text-right font-medium whitespace-nowrap">Yıllık Artış</th>
-                  {visiblePeriods.map((p, i) => (
-                    <th key={p.key} className={cx('border-b border-enba-line px-2 py-2.5 text-right font-medium whitespace-nowrap min-w-[78px]',
-                      i % 3 === 2 && 'border-r border-enba-line/60')}>
-                      <span className={cx('text-[11px]', p.m === 0 && 'text-enba-orange')}>{p.label}</span>
-                    </th>
-                  ))}
-                  <th className="border-b border-l border-enba-line px-3 py-2.5 text-right font-medium whitespace-nowrap min-w-[110px]">Toplam</th>
-                </tr>
-              </thead>
-              <tbody>
-                {fixedTotals.map(e => (
-                  <tr key={e.id} className="group hover:bg-enba-panel-2/40 transition-colors">
-                    <td className="sticky left-0 z-10 bg-enba-panel group-hover:bg-enba-panel-2/90 border-b border-r border-enba-line px-3 py-2.5">
-                      <div className="flex items-center gap-2.5">
-                        <ExpenseAvatar name={e.name}/>
-                        <div className="min-w-0">
-                          <div className="text-[13px] font-medium text-enba-text leading-tight">{e.name}</div>
-                          <div className="text-[10.5px] text-enba-dim mt-0.5">{e.group}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="border-b border-enba-line px-2 py-2.5 text-right">
-                      <EditableCellExp value={fmtTL(e.monthly, {compact:false})}
-                        isEditing={editing === `${e.id}-m`}
-                        onClick={() => setEditing(`${e.id}-m`)}
-                        onBlur={() => setEditing(null)}/>
-                    </td>
-                    <td className="border-b border-enba-line px-2 py-2.5 text-right">
-                      <span className={cx('text-[12px] tabular px-1.5 py-0.5 rounded',
-                        e.growth >= 0.25 ? 'text-enba-red bg-enba-red/10' :
-                        e.growth >= 0.15 ? 'text-enba-amber bg-enba-amber/10' :
-                        'text-enba-green bg-enba-green/10')}>
-                        +{fmtPct(e.growth, 0)}
-                      </span>
-                    </td>
-                    {visiblePeriods.map((_, i) => {
-                      const v = fixedCostFor(e, i, scen);
-                      return (
-                        <td key={i} className={cx('border-b border-enba-line px-2 py-2.5 text-right text-enba-text',
-                          i % 3 === 2 && 'border-r border-enba-line/60')}>
-                          {(v/1000).toLocaleString('tr-TR', { maximumFractionDigits: 0 })}
-                          <span className="text-enba-dim text-[10px]">K</span>
-                        </td>
-                      );
-                    })}
-                    <td className="border-b border-l border-enba-line px-3 py-2.5 text-right font-medium text-enba-orange">{fmtTL(e.sum)}</td>
-                  </tr>
-                ))}
-                <tr className="bg-enba-orange/5">
-                  <td className="sticky left-0 z-10 bg-enba-orange/[0.07] border-t-2 border-enba-orange/40 border-r border-enba-line px-3 py-3 font-semibold">Alt Toplam</td>
-                  <td className="border-t-2 border-enba-orange/40 px-2 py-3"/>
-                  <td className="border-t-2 border-enba-orange/40 px-2 py-3"/>
-                  {visiblePeriods.map((_, i) => {
-                    const sum = fixedExpenses.reduce((s, x) => s + fixedCostFor(x, i, scen), 0);
-                    return (
-                      <td key={i} className={cx('border-t-2 border-enba-orange/40 px-2 py-3 text-right text-enba-text font-semibold',
-                        i % 3 === 2 && 'border-r border-enba-line/60')}>
-                        {(sum/1000).toLocaleString('tr-TR', {maximumFractionDigits: 0})}
-                        <span className="text-enba-dim text-[10px]">K</span>
-                      </td>
-                    );
-                  })}
-                  <td className="border-t-2 border-l border-enba-orange/40 px-3 py-3 text-right text-enba-orange font-semibold">{fmtTL(totals.fixed)}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </Card>
+      {/* ── Tesis Giderleri ── */}
+      {(activeTab === 'all' || activeTab === 'facility') && (
+        <FacilitySection facilityTotals={facilityTotals} totalFacility={totals.facility} visiblePeriods={visiblePeriods} scen={scen}/>
       )}
 
-      {/* Variable expenses */}
+      {/* ── Proje Giderleri ── */}
+      {(activeTab === 'all' || activeTab === 'project') && (
+        <ProjectSection projects={projects} facilityExpenses={facilityExpenses} visiblePeriods={visiblePeriods} scen={scen} totalProjFixed={totals.projFixed}/>
+      )}
+
+      {/* ── Değişken Giderler ── */}
       {(activeTab === 'all' || activeTab === 'variable') && (
-        <Card padded={false} className="overflow-hidden">
-          <div className="px-5 py-3 flex items-center justify-between border-b border-enba-line">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-enba-amber"/>
-              <h4 className="text-[13px] font-semibold">Değişken Giderler</h4>
-              <span className="text-[11px] text-enba-dim">· {products.length} ürün/hizmete bağlı</span>
-              <Badge tone="amber">Gelirle ilişkili</Badge>
-            </div>
-            <span className="text-[12px] text-enba-muted tabular">{fmtTL(totals.variable)}</span>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-[12.5px] tabular">
-              <thead>
-                <tr className="text-enba-muted bg-enba-panel-2/40">
-                  <th className="sticky left-0 z-10 bg-enba-panel-2/95 border-b border-r border-enba-line px-3 py-2.5 text-left font-medium min-w-[240px]">Kalem</th>
-                  <th className="border-b border-enba-line px-2 py-2.5 text-right font-medium whitespace-nowrap">Maliyet %</th>
-                  <th className="border-b border-enba-line px-2 py-2.5 text-right font-medium whitespace-nowrap">Tip</th>
-                  {visiblePeriods.map((p, i) => (
-                    <th key={p.key} className={cx('border-b border-enba-line px-2 py-2.5 text-right font-medium whitespace-nowrap min-w-[78px]',
-                      i % 3 === 2 && 'border-r border-enba-line/60')}>
-                      <span className={cx('text-[11px]', p.m === 0 && 'text-enba-orange')}>{p.label}</span>
-                    </th>
-                  ))}
-                  <th className="border-b border-l border-enba-line px-3 py-2.5 text-right font-medium whitespace-nowrap min-w-[110px]">Toplam</th>
-                </tr>
-              </thead>
-              <tbody>
-                {variableTotals.map(({ id, name, category, color, varCostRatio, sum }) => (
-                  <tr key={id} className="group hover:bg-enba-panel-2/40 transition-colors">
-                    <td className="sticky left-0 z-10 bg-enba-panel group-hover:bg-enba-panel-2/90 border-b border-r border-enba-line px-3 py-2.5">
-                      <div className="flex items-center gap-2.5">
-                        <span className="w-1 h-7 rounded-sm flex-none" style={{ background: color }}/>
-                        <div className="min-w-0">
-                          <div className="text-[13px] font-medium text-enba-text leading-tight">{name}</div>
-                          <div className="text-[10.5px] text-enba-dim mt-0.5">{category}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="border-b border-enba-line px-2 py-2.5 text-right">
-                      <span className="text-enba-text">{fmtPct(varCostRatio, 0)}</span>
-                      <span className="text-enba-dim text-[10.5px]"> /gelir</span>
-                    </td>
-                    <td className="border-b border-enba-line px-2 py-2.5 text-right"><Badge tone="amber">% gelir</Badge></td>
-                    {visiblePeriods.map((_, i) => {
-                      const product = products.find(p => p.id === id)!;
-                      const actual = varCostFor(product, i, scen);
-                      return (
-                        <td key={i} className={cx('border-b border-enba-line px-2 py-2.5 text-right text-enba-text',
-                          i % 3 === 2 && 'border-r border-enba-line/60')}>
-                          {(actual/1000).toLocaleString('tr-TR', { maximumFractionDigits: 0 })}
-                          <span className="text-enba-dim text-[10px]">K</span>
-                        </td>
-                      );
-                    })}
-                    <td className="border-b border-l border-enba-line px-3 py-2.5 text-right font-medium text-enba-amber">{fmtTL(sum)}</td>
-                  </tr>
-                ))}
-                <tr className="bg-enba-amber/5">
-                  <td className="sticky left-0 z-10 bg-enba-amber/[0.07] border-t-2 border-enba-amber/40 border-r border-enba-line px-3 py-3 font-semibold">Alt Toplam</td>
-                  <td className="border-t-2 border-enba-amber/40 px-2 py-3"/>
-                  <td className="border-t-2 border-enba-amber/40 px-2 py-3"/>
-                  {visiblePeriods.map((_, i) => {
-                    const sum = products.reduce((s, p) => s + varCostFor(p, i, scen), 0);
-                    return (
-                      <td key={i} className={cx('border-t-2 border-enba-amber/40 px-2 py-3 text-right text-enba-text font-semibold',
-                        i % 3 === 2 && 'border-r border-enba-line/60')}>
-                        {(sum/1000).toLocaleString('tr-TR', {maximumFractionDigits: 0})}
-                        <span className="text-enba-dim text-[10px]">K</span>
-                      </td>
-                    );
-                  })}
-                  <td className="border-t-2 border-l border-enba-amber/40 px-3 py-3 text-right text-enba-amber font-semibold">{fmtTL(totals.variable)}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </Card>
+        <VariableSection projects={projects} visiblePeriods={visiblePeriods} scen={scen} totalVariable={totals.variable}/>
       )}
 
-      {/* Composition + ratio */}
-      <div className="grid grid-cols-12 gap-4">
-        <Card className="col-span-5">
-          <SectionTitle eyebrow="Dağılım" title="Sabit Gider Kompozisyonu"/>
-          <ExpenseComposition data={fixedTotals} cc={cc}/>
-        </Card>
-        <Card className="col-span-7">
-          <SectionTitle eyebrow="Verimlilik" title="Gider / Gelir Oranı"
-            action={<span className="text-[10.5px] text-enba-dim">Düşük = daha verimli</span>}/>
-          <ExpenseRatioChart scen={scen} horizon={horizon} cc={cc}/>
-        </Card>
-      </div>
+      {/* ── Alt: Gider / Gelir oranı ── */}
+      <Card>
+        <SectionTitle eyebrow="Verimlilik" title="Gider / Gelir Oranı"
+          action={<span className="text-[10.5px] text-enba-dim">Düşük = daha verimli</span>}/>
+        <ExpenseRatioChart scen={scen} horizon={horizon} cc={cc}/>
+      </Card>
     </div>
   );
 };
 
+/* ─── LegendRow ─────────────────────────────────────────────────────────────── */
+function LegendRow({ color, label, value, pct }: { color: string; label: string; value: number; pct: number }) {
+  return (
+    <div className="flex items-center gap-2 text-[11.5px]">
+      <span className="w-2 h-2 rounded-full flex-none" style={{ background: color }}/>
+      <span className="text-enba-muted flex-1">{label}</span>
+      <span className="font-medium tabular">{fmtTL(value)}</span>
+      <span className="text-enba-dim tabular w-9 text-right">{fmtPct(pct, 0)}</span>
+    </div>
+  );
+}
+
+/* ─── ExpenseAvatar ──────────────────────────────────────────────────────────── */
 const ExpenseAvatar = ({ name }: { name: string }) => {
   const initials = name.split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase();
-  const palette = ['#E35205','#F2A93B','#5B9DFF','#3DBE7C','#9A6CFF','#D87CC4'];
-  const h = name.split('').reduce((s, c) => s + c.charCodeAt(0), 0);
-  const color = palette[h % palette.length];
+  const palette  = ['#E35205','#F2A93B','#5B9DFF','#3DBE7C','#9A6CFF','#D87CC4'];
+  const h        = name.split('').reduce((s, c) => s + c.charCodeAt(0), 0);
+  const color    = palette[h % palette.length];
   return (
     <span className="w-7 h-7 rounded-md flex items-center justify-center text-[10px] font-semibold flex-none"
       style={{ background: color + '20', color }}>
@@ -332,68 +178,429 @@ const ExpenseAvatar = ({ name }: { name: string }) => {
   );
 };
 
-const EditableCellExp = ({ value, isEditing, onClick, onBlur }:
-  { value: string; isEditing: boolean; onClick: () => void; onBlur: () => void }) => {
-  if (isEditing) {
+/* ─── FacilitySection ────────────────────────────────────────────────────────── */
+function FacilitySection({ facilityTotals, totalFacility, visiblePeriods, scen }: {
+  facilityTotals: (FixedExpense & { sum: number })[];
+  totalFacility: number;
+  visiblePeriods: Period[];
+  scen: Scenario;
+}) {
+  if (facilityTotals.length === 0) {
     return (
-      <input autoFocus defaultValue={value} onBlur={onBlur}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === 'Escape') onBlur(); }}
-        className="w-full text-right bg-enba-bg border border-enba-orange rounded px-1.5 py-0.5 text-enba-text outline-none tabular text-[12.5px]"/>
+      <Card>
+        <div className="text-center py-8 text-[12px] text-enba-dim">
+          Tesis gideri girilmemiş. Plan sihirbazında <strong>Tesis Sabit Giderleri</strong> adımından ekleyin.
+        </div>
+      </Card>
     );
   }
   return (
-    <button onClick={onClick}
-      className="w-full text-right text-enba-text hover:bg-enba-orange/10 hover:text-enba-orange rounded px-1.5 py-0.5 -my-0.5 transition-colors">
-      {value}
-    </button>
+    <Card padded={false} className="overflow-hidden">
+      <div className="px-5 py-3 flex items-center justify-between border-b border-enba-line">
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-enba-orange"/>
+          <h4 className="text-[13px] font-semibold">Tesis Giderleri</h4>
+          <span className="text-[11px] text-enba-dim">· {facilityTotals.length} kalem · planın tamamında akar</span>
+        </div>
+        <span className="text-[12px] text-enba-muted tabular">{fmtTL(totalFacility)}</span>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-[12.5px] tabular">
+          <thead>
+            <tr className="text-enba-muted bg-enba-panel-2/40">
+              <th className="sticky left-0 z-10 bg-enba-panel-2/95 border-b border-r border-enba-line px-3 py-2.5 text-left font-medium min-w-[220px]">Kalem</th>
+              <th className="border-b border-enba-line px-2 py-2.5 text-right font-medium whitespace-nowrap">Aylık</th>
+              <th className="border-b border-enba-line px-2 py-2.5 text-right font-medium whitespace-nowrap">Artış</th>
+              {visiblePeriods.map((p, i) => (
+                <th key={p.key} className={cx('border-b border-enba-line px-2 py-2.5 text-right font-medium whitespace-nowrap min-w-[72px]',
+                  i % 3 === 2 && 'border-r border-enba-line/60')}>
+                  <span className={cx('text-[11px]', p.m === 0 && 'text-enba-orange')}>{p.label}</span>
+                </th>
+              ))}
+              <th className="border-b border-l border-enba-line px-3 py-2.5 text-right font-medium min-w-[100px]">Toplam</th>
+            </tr>
+          </thead>
+          <tbody>
+            {facilityTotals.map(e => (
+              <tr key={e.id} className="group hover:bg-enba-panel-2/40 transition-colors">
+                <td className="sticky left-0 z-10 bg-enba-panel group-hover:bg-enba-panel-2/90 border-b border-r border-enba-line px-3 py-2.5">
+                  <div className="flex items-center gap-2.5">
+                    <ExpenseAvatar name={e.name}/>
+                    <div className="min-w-0">
+                      <div className="text-[12.5px] font-medium text-enba-text leading-tight truncate">{e.name}</div>
+                      <div className="text-[10.5px] text-enba-dim mt-0.5">{e.mcode}</div>
+                    </div>
+                  </div>
+                </td>
+                <td className="border-b border-enba-line px-2 py-2.5 text-right text-enba-text">{fmtTL(e.monthly)}</td>
+                <td className="border-b border-enba-line px-2 py-2.5 text-right">
+                  <span className={cx('text-[12px] tabular px-1.5 py-0.5 rounded',
+                    e.growth >= 0.25 ? 'text-enba-red bg-enba-red/10' :
+                    e.growth >= 0.15 ? 'text-enba-amber bg-enba-amber/10' :
+                    'text-enba-green bg-enba-green/10')}>
+                    +{fmtPct(e.growth, 0)}
+                  </span>
+                </td>
+                {visiblePeriods.map((_, i) => {
+                  const v = fixedCostFor(e, i, scen);
+                  return (
+                    <td key={i} className={cx('border-b border-enba-line px-2 py-2.5 text-right text-enba-text',
+                      i % 3 === 2 && 'border-r border-enba-line/60')}>
+                      {(v/1000).toLocaleString('tr-TR', { maximumFractionDigits: 0 })}
+                      <span className="text-enba-dim text-[10px]">K</span>
+                    </td>
+                  );
+                })}
+                <td className="border-b border-l border-enba-line px-3 py-2.5 text-right font-medium text-enba-orange">{fmtTL(e.sum)}</td>
+              </tr>
+            ))}
+            <tr className="bg-enba-orange/5">
+              <td className="sticky left-0 z-10 bg-enba-orange/[0.07] border-t-2 border-enba-orange/40 border-r border-enba-line px-3 py-3 font-semibold">Alt Toplam</td>
+              <td className="border-t-2 border-enba-orange/40 px-2 py-3"/>
+              <td className="border-t-2 border-enba-orange/40 px-2 py-3"/>
+              {visiblePeriods.map((_, i) => {
+                const sum = facilityTotals.reduce((s, e) => s + fixedCostFor(e, i, scen), 0);
+                return (
+                  <td key={i} className={cx('border-t-2 border-enba-orange/40 px-2 py-3 text-right font-semibold text-enba-text',
+                    i % 3 === 2 && 'border-r border-enba-line/60')}>
+                    {(sum/1000).toLocaleString('tr-TR', { maximumFractionDigits: 0 })}
+                    <span className="text-enba-dim text-[10px]">K</span>
+                  </td>
+                );
+              })}
+              <td className="border-t-2 border-l border-enba-orange/40 px-3 py-3 text-right text-enba-orange font-semibold">{fmtTL(totalFacility)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </Card>
   );
-};
+}
 
-const ExpenseComposition = ({ data, cc }: { data: any[]; cc: any }) => {
-  const total = data.reduce((s: number, x: any) => s + x.sum, 0);
-  const palette = ['#E35205','#F2A93B','#5B9DFF','#3DBE7C','#9A6CFF','#D87CC4','#E5484D','#9A9A9A'];
-  const items = data.map((d: any, i: number) => ({ ...d, color: palette[i % palette.length] }))
-    .sort((a: any, b: any) => b.sum - a.sum);
+/* ─── ProjectSection ─────────────────────────────────────────────────────────── */
+function ProjectSection({ projects, facilityExpenses, visiblePeriods, scen, totalProjFixed }: {
+  projects: ActiveProject[];
+  facilityExpenses: FixedExpense[];
+  visiblePeriods: Period[];
+  scen: Scenario;
+  totalProjFixed: number;
+}) {
+  if (projects.length === 0) {
+    return (
+      <Card>
+        <div className="text-center py-8 text-[12px] text-enba-dim">
+          Henüz proje girilmemiş. Plan sihirbazında <strong>Projeler</strong> adımından ekleyin.
+        </div>
+      </Card>
+    );
+  }
   return (
-    <div className="flex items-center gap-5">
-      <div className="w-[150px] h-[150px] flex-none">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie data={items} dataKey="sum" innerRadius={48} outerRadius={70} stroke={cc.sliceSep} strokeWidth={2}>
-              {items.map((d: any, i: number) => <Cell key={i} fill={d.color}/>)}
-            </Pie>
-            <Tooltip formatter={(v: any) => fmtTL(v)}/>
-          </PieChart>
-        </ResponsiveContainer>
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 px-1">
+        <span className="w-2 h-2 rounded-full" style={{ background: '#5B9DFF' }}/>
+        <h4 className="text-[13px] font-semibold">Proje Giderleri</h4>
+        <span className="text-[11px] text-enba-dim">· {projects.length} proje</span>
+        <span className="ml-auto text-[12px] text-enba-muted tabular">{fmtTL(totalProjFixed)}</span>
       </div>
-      <div className="flex-1 space-y-1.5">
-        {items.map((d: any) => {
-          const pct = d.sum / total;
-          return (
-            <div key={d.id} className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full flex-none" style={{background: d.color}}/>
-              <span className="flex-1 text-[12px] text-enba-text truncate">{d.name}</span>
-              <span className="text-[11.5px] text-enba-muted tabular w-12 text-right">{fmtPct(pct, 1)}</span>
-              <div className="w-12 h-1.5 bg-enba-panel-2 rounded-full overflow-hidden">
-                <div className="h-full rounded-full" style={{ width: (pct*100)+'%', background: d.color }}/>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      {projects.map(project => (
+        <ProjectExpenseCard
+          key={project.id}
+          project={project}
+          facilityExpenses={facilityExpenses}
+          allProjects={projects}
+          visiblePeriods={visiblePeriods}
+          scen={scen}
+        />
+      ))}
     </div>
   );
-};
+}
 
+/* ─── ProjectExpenseCard ─────────────────────────────────────────────────────── */
+function ProjectExpenseCard({ project, facilityExpenses, allProjects, visiblePeriods, scen }: {
+  project: ActiveProject;
+  facilityExpenses: FixedExpense[];
+  allProjects: ActiveProject[];
+  visiblePeriods: Period[];
+  scen: Scenario;
+}) {
+  const expenseTotals = useMemo(() => project.expenses.map(e => {
+    let sum = 0;
+    for (let i = 0; i < visiblePeriods.length; i++) sum += fixedCostFor(e, i, scen);
+    return { ...e, sum };
+  }), [project.expenses, visiblePeriods.length, scen]);
+
+  const facilityAllocPerPeriod = useMemo(() => visiblePeriods.map((_, i) => {
+    const facilityTotal = facilityExpenses.reduce((s, e) => s + fixedCostFor(e, i, scen), 0);
+    return facilityTotal * facilityShareFor(project, i, allProjects);
+  }), [project, facilityExpenses, allProjects, visiblePeriods.length, scen]);
+
+  const totalExpense   = expenseTotals.reduce((s, e) => s + e.sum, 0);
+  const totalAllocated = facilityAllocPerPeriod.reduce((s, v) => s + v, 0);
+  const projectColor   = project.color || '#5B9DFF';
+
+  return (
+    <Card padded={false} className="overflow-hidden" style={{ borderLeft: `3px solid ${projectColor}` }}>
+      {/* Proje başlığı */}
+      <div className="px-5 py-3 flex items-center gap-3 border-b border-enba-line">
+        <div className="w-3 h-3 rounded-sm flex-none" style={{ background: projectColor }}/>
+        <div className="flex-1 min-w-0">
+          <div className="text-[13px] font-semibold text-enba-text">{project.name}</div>
+          <div className="text-[10.5px] text-enba-dim">Ağırlık {project.allocationWeight} · {expenseTotals.length} kalem</div>
+        </div>
+        <div className="text-right">
+          <div className="text-[12px] text-enba-muted tabular">
+            Proje: <span className="text-enba-text font-medium">{fmtTL(totalExpense)}</span>
+          </div>
+          <div className="text-[11px] text-enba-dim tabular">
+            +Tesis payı: {fmtTL(totalAllocated)}
+          </div>
+        </div>
+      </div>
+
+      {expenseTotals.length === 0 ? (
+        <div className="px-5 py-4 flex items-center justify-between border-b border-enba-line">
+          <span className="text-[12px] text-enba-dim italic">Bu projeye ait özel gider girilmemiş.</span>
+          {totalAllocated > 0 && (
+            <div className="text-right">
+              <div className="text-[10.5px] text-enba-dim">Tesis payı (ağırlığa göre)</div>
+              <div className="text-[13px] font-medium text-enba-orange">{fmtTL(totalAllocated)}</div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-[12.5px] tabular">
+            <thead>
+              <tr className="text-enba-muted bg-enba-panel-2/40">
+                <th className="sticky left-0 z-10 bg-enba-panel-2/95 border-b border-r border-enba-line px-3 py-2.5 text-left font-medium min-w-[200px]">Kalem</th>
+                <th className="border-b border-enba-line px-2 py-2.5 text-right font-medium whitespace-nowrap">Aylık</th>
+                <th className="border-b border-enba-line px-2 py-2.5 text-right font-medium whitespace-nowrap">Artış</th>
+                {visiblePeriods.map((p, i) => (
+                  <th key={p.key} className={cx('border-b border-enba-line px-2 py-2.5 text-right font-medium whitespace-nowrap min-w-[72px]',
+                    i % 3 === 2 && 'border-r border-enba-line/60')}>
+                    <span className={cx('text-[11px]', p.m === 0 && 'text-enba-orange')}>{p.label}</span>
+                  </th>
+                ))}
+                <th className="border-b border-l border-enba-line px-3 py-2.5 text-right font-medium min-w-[100px]">Toplam</th>
+              </tr>
+            </thead>
+            <tbody>
+              {expenseTotals.map(e => (
+                <tr key={e.id} className="group hover:bg-enba-panel-2/40 transition-colors">
+                  <td className="sticky left-0 z-10 bg-enba-panel group-hover:bg-enba-panel-2/90 border-b border-r border-enba-line px-3 py-2.5">
+                    <div className="flex items-center gap-2.5">
+                      <ExpenseAvatar name={e.name}/>
+                      <div className="min-w-0">
+                        <div className="text-[12.5px] font-medium text-enba-text leading-tight truncate">{e.name}</div>
+                        <div className="text-[10.5px] text-enba-dim mt-0.5">{e.mcode}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="border-b border-enba-line px-2 py-2.5 text-right text-enba-text">{fmtTL(e.monthly)}</td>
+                  <td className="border-b border-enba-line px-2 py-2.5 text-right">
+                    <span className={cx('text-[12px] tabular px-1.5 py-0.5 rounded',
+                      e.growth >= 0.25 ? 'text-enba-red bg-enba-red/10' :
+                      e.growth >= 0.15 ? 'text-enba-amber bg-enba-amber/10' :
+                      'text-enba-green bg-enba-green/10')}>
+                      +{fmtPct(e.growth, 0)}
+                    </span>
+                  </td>
+                  {visiblePeriods.map((_, i) => {
+                    const v = fixedCostFor(e, i, scen);
+                    return (
+                      <td key={i} className={cx('border-b border-enba-line px-2 py-2.5 text-right text-enba-text',
+                        i % 3 === 2 && 'border-r border-enba-line/60')}>
+                        {(v/1000).toLocaleString('tr-TR', { maximumFractionDigits: 0 })}
+                        <span className="text-enba-dim text-[10px]">K</span>
+                      </td>
+                    );
+                  })}
+                  <td className="border-b border-l border-enba-line px-3 py-2.5 text-right font-medium" style={{ color: projectColor }}>{fmtTL(e.sum)}</td>
+                </tr>
+              ))}
+
+              {/* Tesis payı bilgi satırı */}
+              <tr className="bg-enba-orange/[0.04]">
+                <td className="sticky left-0 z-10 bg-enba-orange/[0.06] border-t border-enba-orange/20 border-r border-enba-line px-3 py-2">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-enba-orange flex-none"/>
+                    <span className="text-[11.5px] text-enba-muted italic">Tesis Payı (ağırlığa göre)</span>
+                  </div>
+                </td>
+                <td className="border-t border-enba-orange/20 px-2 py-2"/>
+                <td className="border-t border-enba-orange/20 px-2 py-2"/>
+                {facilityAllocPerPeriod.map((v, i) => (
+                  <td key={i} className={cx('border-t border-enba-orange/20 px-2 py-2 text-right text-enba-dim italic',
+                    i % 3 === 2 && 'border-r border-enba-line/60')}>
+                    {(v/1000).toLocaleString('tr-TR', { maximumFractionDigits: 0 })}
+                    <span className="text-[10px]">K</span>
+                  </td>
+                ))}
+                <td className="border-t border-l border-enba-orange/20 px-3 py-2 text-right text-enba-orange/70 font-medium">{fmtTL(totalAllocated)}</td>
+              </tr>
+
+              {/* Proje toplam (kendi gider + tesis payı) */}
+              <tr className="bg-enba-panel-2">
+                <td className="sticky left-0 z-10 bg-enba-panel-2 border-t-2 border-enba-line border-r border-enba-line px-3 py-3 font-semibold">Proje Toplam</td>
+                <td className="border-t-2 border-enba-line px-2 py-3"/>
+                <td className="border-t-2 border-enba-line px-2 py-3"/>
+                {visiblePeriods.map((_, i) => {
+                  const exp   = expenseTotals.reduce((s, e) => s + fixedCostFor(e, i, scen), 0);
+                  const total = exp + facilityAllocPerPeriod[i];
+                  return (
+                    <td key={i} className={cx('border-t-2 border-enba-line px-2 py-3 text-right font-semibold text-enba-text',
+                      i % 3 === 2 && 'border-r border-enba-line/60')}>
+                      {(total/1000).toLocaleString('tr-TR', { maximumFractionDigits: 0 })}
+                      <span className="text-enba-dim text-[10px]">K</span>
+                    </td>
+                  );
+                })}
+                <td className="border-t-2 border-l border-enba-line px-3 py-3 text-right font-semibold" style={{ color: projectColor }}>
+                  {fmtTL(totalExpense + totalAllocated)}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Card>
+  );
+}
+
+/* ─── VariableSection ────────────────────────────────────────────────────────── */
+function VariableSection({ projects, visiblePeriods, scen, totalVariable }: {
+  projects: ActiveProject[];
+  visiblePeriods: Period[];
+  scen: Scenario;
+  totalVariable: number;
+}) {
+  const projectsWithRev = projects.filter(p => p.revenues.length > 0);
+  if (projectsWithRev.length === 0) {
+    return (
+      <Card>
+        <div className="text-center py-8 text-[12px] text-enba-dim">
+          Henüz gelir/değişken maliyet girilmemiş.
+        </div>
+      </Card>
+    );
+  }
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 px-1">
+        <span className="w-2 h-2 rounded-full bg-enba-amber"/>
+        <h4 className="text-[13px] font-semibold">Değişken Giderler</h4>
+        <span className="text-[11px] text-enba-dim">· gelirle ilişkili, proje bazında</span>
+        <span className="ml-auto text-[12px] text-enba-muted tabular">{fmtTL(totalVariable)}</span>
+      </div>
+      {projectsWithRev.map(project => (
+        <VariableProjectCard key={project.id} project={project} visiblePeriods={visiblePeriods} scen={scen}/>
+      ))}
+    </div>
+  );
+}
+
+/* ─── VariableProjectCard ────────────────────────────────────────────────────── */
+function VariableProjectCard({ project, visiblePeriods, scen }: {
+  project: ActiveProject;
+  visiblePeriods: Period[];
+  scen: Scenario;
+}) {
+  const varTotals = useMemo(() => project.revenues.map(p => {
+    let sum = 0;
+    for (let i = 0; i < visiblePeriods.length; i++) sum += varCostFor(p, i, scen);
+    return { ...p, sum };
+  }), [project.revenues, visiblePeriods.length, scen]);
+
+  const totalVar     = varTotals.reduce((s, p) => s + p.sum, 0);
+  const projectColor = project.color || '#5B9DFF';
+
+  return (
+    <Card padded={false} className="overflow-hidden" style={{ borderLeft: `3px solid ${projectColor}` }}>
+      <div className="px-5 py-3 flex items-center gap-3 border-b border-enba-line">
+        <div className="w-3 h-3 rounded-sm flex-none" style={{ background: projectColor }}/>
+        <div className="flex-1 min-w-0">
+          <div className="text-[13px] font-semibold text-enba-text">{project.name}</div>
+          <div className="text-[10.5px] text-enba-dim">{varTotals.length} ürün/hizmet · gelirle bağlı değişken maliyet</div>
+        </div>
+        <span className="text-[12px] text-enba-muted tabular font-medium">{fmtTL(totalVar)}</span>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-[12.5px] tabular">
+          <thead>
+            <tr className="text-enba-muted bg-enba-panel-2/40">
+              <th className="sticky left-0 z-10 bg-enba-panel-2/95 border-b border-r border-enba-line px-3 py-2.5 text-left font-medium min-w-[200px]">Ürün / Hizmet</th>
+              <th className="border-b border-enba-line px-2 py-2.5 text-right font-medium whitespace-nowrap">Maliyet %</th>
+              {visiblePeriods.map((p, i) => (
+                <th key={p.key} className={cx('border-b border-enba-line px-2 py-2.5 text-right font-medium whitespace-nowrap min-w-[72px]',
+                  i % 3 === 2 && 'border-r border-enba-line/60')}>
+                  <span className={cx('text-[11px]', p.m === 0 && 'text-enba-orange')}>{p.label}</span>
+                </th>
+              ))}
+              <th className="border-b border-l border-enba-line px-3 py-2.5 text-right font-medium min-w-[100px]">Toplam</th>
+            </tr>
+          </thead>
+          <tbody>
+            {varTotals.map(prod => (
+              <tr key={prod.id} className="group hover:bg-enba-panel-2/40 transition-colors">
+                <td className="sticky left-0 z-10 bg-enba-panel group-hover:bg-enba-panel-2/90 border-b border-r border-enba-line px-3 py-2.5">
+                  <div className="flex items-center gap-2.5">
+                    <span className="w-1 h-7 rounded-sm flex-none" style={{ background: prod.color }}/>
+                    <div className="min-w-0">
+                      <div className="text-[12.5px] font-medium text-enba-text leading-tight truncate">{prod.name}</div>
+                      <div className="text-[10.5px] text-enba-dim mt-0.5">{prod.mcode}</div>
+                    </div>
+                  </div>
+                </td>
+                <td className="border-b border-enba-line px-2 py-2.5 text-right">
+                  <span className="text-enba-text">{fmtPct(prod.varCostRatio, 0)}</span>
+                  <span className="text-enba-dim text-[10.5px]"> /gelir</span>
+                </td>
+                {visiblePeriods.map((_, i) => {
+                  const v = varCostFor(prod, i, scen);
+                  return (
+                    <td key={i} className={cx('border-b border-enba-line px-2 py-2.5 text-right text-enba-text',
+                      i % 3 === 2 && 'border-r border-enba-line/60')}>
+                      {(v/1000).toLocaleString('tr-TR', { maximumFractionDigits: 0 })}
+                      <span className="text-enba-dim text-[10px]">K</span>
+                    </td>
+                  );
+                })}
+                <td className="border-b border-l border-enba-line px-3 py-2.5 text-right font-medium text-enba-amber">{fmtTL(prod.sum)}</td>
+              </tr>
+            ))}
+            <tr className="bg-enba-amber/5">
+              <td className="sticky left-0 z-10 bg-enba-amber/[0.07] border-t-2 border-enba-amber/40 border-r border-enba-line px-3 py-3 font-semibold">Alt Toplam</td>
+              <td className="border-t-2 border-enba-amber/40 px-2 py-3"/>
+              {visiblePeriods.map((_, i) => {
+                const sum = project.revenues.reduce((s, p) => s + varCostFor(p, i, scen), 0);
+                return (
+                  <td key={i} className={cx('border-t-2 border-enba-amber/40 px-2 py-3 text-right font-semibold text-enba-text',
+                    i % 3 === 2 && 'border-r border-enba-line/60')}>
+                    {(sum/1000).toLocaleString('tr-TR', { maximumFractionDigits: 0 })}
+                    <span className="text-enba-dim text-[10px]">K</span>
+                  </td>
+                );
+              })}
+              <td className="border-t-2 border-l border-enba-amber/40 px-3 py-3 text-right text-enba-amber font-semibold">{fmtTL(totalVar)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </Card>
+  );
+}
+
+/* ─── ExpenseRatioChart ──────────────────────────────────────────────────────── */
 const ExpenseRatioChart = ({ scen, horizon, cc }: { scen: Scenario; horizon: number; cc: any }) => {
   const { products, fixedExpenses, periods } = usePlanData();
   const data = periods.slice(0, horizon).map((p, i) => {
     const rev  = products.reduce((s, prod) => s + revenueFor(prod, i, scen), 0);
     const opex = products.reduce((s, prod) => s + varCostFor(prod, i, scen), 0)
-      + fixedExpenses.reduce((s, e) => s + fixedCostFor(e, i, scen), 0);
-    return { label: p.label, ratio: rev > 0 ? opex/rev : 0 };
+               + fixedExpenses.reduce((s, e) => s + fixedCostFor(e, i, scen), 0);
+    return { label: p.label, ratio: rev > 0 ? opex / rev : 0 };
   });
-  const avg = data.reduce((s, x) => s + x.ratio, 0) / data.length;
+  const avg = data.length > 0 ? data.reduce((s, x) => s + x.ratio, 0) / data.length : 0;
   return (
     <div>
       <div className="flex items-end gap-6 mb-3">
