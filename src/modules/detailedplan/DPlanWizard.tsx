@@ -83,30 +83,80 @@ function MCodeTag({ code, mcodes }: { code: string; mcodes: MCodeEntry[] }) {
   );
 }
 
-/** Mcode seçici — seçince altta TR açıklama gösterir */
+/** Mcode seçici — arama destekli combobox */
 function MCodeSelect({
   value, onChange, mcodes, label,
 }: { value: string; onChange: (v: string) => void; mcodes: MCodeEntry[]; label: string }) {
-  const entry = mcodes.find(m => m.code === value);
-  const parts  = entry ? entry.tr.split(' - ') : [];
-  const acctNo = parts[0] ?? '';
-  const desc   = parts.slice(1).join(' - ');
+  const [open,   setOpen]   = useState(false);
+  const [query,  setQuery]  = useState('');
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
+  const entry   = mcodes.find(m => m.code === value);
+  const acctNo  = entry ? entry.tr.split(' - ')[0] : '';
+  const desc     = entry ? entry.tr.split(' - ').slice(1).join(' - ') : '';
+
+  const filtered = useMemo(() => {
+    const q = query.toLowerCase();
+    return q ? mcodes.filter(m => m.tr.toLowerCase().includes(q) || m.code.toLowerCase().includes(q)) : mcodes;
+  }, [query, mcodes]);
+
+  const select = (code: string) => { onChange(code); setOpen(false); setQuery(''); };
 
   return (
-    <div>
+    <div className="relative">
       <label className="block text-[11px] uppercase tracking-wider text-enba-dim mb-1.5">{label}</label>
-      <select
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        className="w-full bg-enba-panel-2 border border-enba-line rounded-lg px-3 py-2 text-[13px] text-enba-text font-mono focus:border-enba-orange/60 focus:ring-1 focus:ring-enba-orange/30 outline-none appearance-none"
+
+      {/* Trigger */}
+      <button
+        type="button"
+        onClick={() => { setOpen(o => !o); setTimeout(() => inputRef.current?.focus(), 50); }}
+        className="w-full bg-enba-panel-2 border border-enba-line rounded-lg px-3 py-2 text-[13px] text-left flex items-center gap-2 focus:border-enba-orange/60 focus:ring-1 focus:ring-enba-orange/30 outline-none transition-colors"
       >
-        {mcodes.map(m => {
-          const desc = m.tr.split(' - ').slice(1).join(' - ');
-          return (
-            <option key={m.code} value={m.code}>{m.code} — {desc}</option>
-          );
-        })}
-      </select>
+        <span className="font-mono text-enba-orange flex-none">{value}</span>
+        <span className="text-enba-muted truncate text-[12px] flex-1">{desc}</span>
+        <I.Chevron size={12} className={cx('flex-none text-enba-dim transition-transform', open ? 'rotate-180' : '')} />
+      </button>
+
+      {/* Dropdown */}
+      {open && (
+        <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-enba-panel border border-enba-line rounded-xl shadow-xl overflow-hidden">
+          <div className="p-2 border-b border-enba-line">
+            <input
+              ref={inputRef}
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="Ara…"
+              className="w-full bg-enba-panel-2 border border-enba-line rounded-lg px-3 py-1.5 text-[12.5px] text-enba-text outline-none focus:border-enba-orange/60"
+            />
+          </div>
+          <ul className="max-h-[220px] overflow-y-auto py-1">
+            {filtered.length === 0 && (
+              <li className="px-4 py-3 text-[12px] text-enba-dim text-center">Sonuç yok</li>
+            )}
+            {filtered.map(m => {
+              const mDesc = m.tr.split(' - ').slice(1).join(' - ');
+              const active = m.code === value;
+              return (
+                <li key={m.code}>
+                  <button
+                    type="button"
+                    onClick={() => select(m.code)}
+                    className={cx(
+                      'w-full text-left px-4 py-2.5 flex items-center gap-3 hover:bg-enba-panel-2 transition-colors',
+                      active ? 'bg-enba-orange/10' : '',
+                    )}
+                  >
+                    <span className="font-mono text-[12px] text-enba-orange flex-none w-[72px]">{m.code}</span>
+                    <span className="text-[12px] text-enba-text leading-snug">{mDesc}</span>
+                    {active && <I.Check size={12} className="text-enba-orange flex-none ml-auto" />}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+
       {entry && (
         <div className="mt-1 flex items-baseline gap-1.5 text-[10.5px]">
           <span className="font-mono text-enba-dim">{acctNo}</span>
