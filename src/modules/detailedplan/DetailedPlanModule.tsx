@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { usePlanSync } from '../../hooks/usePlanSync';
 import { SyncBanner } from '../../components/SyncBanner';
 import { DetailedPlanShell } from './DetailedPlanShell';
 import { DPlanWizard } from './DPlanWizard';
-import { DPlan } from './dpData';
+import { DPlan, migratePlanFormat } from './dpData';
 import { I, cx, Badge, Btn } from './DPPrimitives';
 
 const LOCAL_KEY = 'enba_dp2_plans';
@@ -22,8 +22,22 @@ export function DetailedPlanModule({ navigate }: Props) {
 
   const [view, setView]             = useState<View>('list');
   const [activePlanId, setActivePlanId] = useState<string | null>(null);
+  const migratedOnce = useRef(false);
 
-  const activePlan = activePlanId ? planlar.find(p => p.id === activePlanId) ?? null : null;
+  // Eski format planları (facilityExpenses) bir kez migrate et
+  useEffect(() => {
+    if (migratedOnce.current || planlar.length === 0) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const needsMigration = planlar.some((p: any) => !p.facilities);
+    if (needsMigration) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      kaydet(planlar.map((p: any) => migratePlanFormat(p)));
+    }
+    migratedOnce.current = true;
+  }, [planlar.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const activePlan = activePlanId ? migratePlanFormat(planlar.find(p => p.id === activePlanId) as any) ?? null : null;
 
   const upsert = (updated: DPlan) => {
     const exists = planlar.some(p => p.id === updated.id);
@@ -102,7 +116,8 @@ export function DetailedPlanModule({ navigate }: Props) {
             {planlar.map(plan => (
               <PlanCard
                 key={plan.id}
-                plan={plan}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                plan={migratePlanFormat(plan as any)}
                 onOpen={() => openPlan(plan)}
                 onEdit={() => openWizardForEdit(plan)}
                 onDelete={() => handleDelete(plan.id)}
@@ -117,9 +132,12 @@ export function DetailedPlanModule({ navigate }: Props) {
 
 /* ─── PlanCard ─── */
 function PlanCard({ plan, onOpen, onEdit, onDelete }: { plan: DPlan; onOpen: () => void; onEdit: () => void; onDelete: () => void }) {
-  const isDraft = plan.status === 'draft';
-  const tone    = plan.status === 'active' ? 'green' : plan.status === 'archived' ? 'neutral' : 'amber';
-  const label   = plan.status === 'active' ? 'Aktif' : plan.status === 'archived' ? 'Arşiv' : 'Taslak';
+  const isDraft       = plan.status === 'draft';
+  const tone          = plan.status === 'active' ? 'green' : plan.status === 'archived' ? 'neutral' : 'amber';
+  const label         = plan.status === 'active' ? 'Aktif' : plan.status === 'archived' ? 'Arşiv' : 'Taslak';
+  const activeProjects = plan.projects.filter(p => p.isActive).length;
+  const totalExpenses  = plan.facilities.reduce((s, f) => s + f.fixedExpenses.length, 0);
+
   return (
     <div className="bg-enba-panel border border-enba-line rounded-xl p-5 hover:border-enba-orange/40 transition-colors flex flex-col gap-4">
       <div className="flex items-start justify-between gap-3">
@@ -131,8 +149,8 @@ function PlanCard({ plan, onOpen, onEdit, onDelete }: { plan: DPlan; onOpen: () 
       </div>
 
       <div className="grid grid-cols-3 gap-3 text-center">
-        <MiniStat label="Proje" value={String(plan.projects.length)} />
-        <MiniStat label="Tesis Gider" value={String(plan.facilityExpenses.length)} />
+        <MiniStat label="Proje" value={String(plan.projects.length)} sub={activeProjects > 0 ? `${activeProjects} aktif` : undefined} />
+        <MiniStat label="Tesis Gider" value={String(totalExpenses)} sub={plan.facilities.length > 1 ? `${plan.facilities.length} merkez` : undefined} />
         <MiniStat label="Gerçek." value={`${plan.actualsThrough} ay`} accent={plan.actualsThrough > 0} />
       </div>
 
@@ -161,11 +179,12 @@ function PlanCard({ plan, onOpen, onEdit, onDelete }: { plan: DPlan; onOpen: () 
   );
 }
 
-function MiniStat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+function MiniStat({ label, value, accent, sub }: { label: string; value: string; accent?: boolean; sub?: string }) {
   return (
     <div className="bg-enba-panel-2 rounded-lg px-2 py-2.5">
       <div className="text-[10px] text-enba-dim uppercase tracking-wider mb-1">{label}</div>
       <div className={cx('text-[13px] font-semibold', accent ? 'text-enba-green' : '')}>{value}</div>
+      {sub && <div className="text-[10px] text-enba-dim mt-0.5">{sub}</div>}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { cx, I, Btn } from './DPPrimitives';
 import {
-  DPlan, Product, FixedExpense, ActiveProject,
+  DPlan, Product, FixedExpense, ActiveProject, Facility,
   buildMonths, buildSeries, fmtTL, SCENARIOS,
 } from './dpData';
 
@@ -234,18 +234,18 @@ function Step1({ title, setTitle, startYear, setStartYear, startMonth, setStartM
 }
 
 /* ══════════════════════════════════════════════════════
-   ADIM 2 — Tesis Sabit Giderleri
+   ADIM 2 — Sabit Gider Merkezleri
 ══════════════════════════════════════════════════════ */
-function emptyFacility(): FixedExpense {
+function emptyFacilityExpense(): FixedExpense {
   return { id: crypto.randomUUID(), mcode: 'M610', costCategory: 'facility', name: '', group: 'Sabit', monthly: 0, growth: 0.10, startOffset: 0 };
 }
 
-function FacilityStep({ items, setItems }: { items: FixedExpense[]; setItems: (v: FixedExpense[]) => void }) {
+function FacilityExpenseList({ items, setItems }: { items: FixedExpense[]; setItems: (v: FixedExpense[]) => void }) {
   const [adding, setAdding] = useState(false);
-  const [draft,  setDraft]  = useState<FixedExpense>(emptyFacility());
+  const [draft,  setDraft]  = useState<FixedExpense>(emptyFacilityExpense());
   const [editId, setEditId] = useState<string | null>(null);
 
-  const startAdd  = () => { setDraft(emptyFacility()); setEditId(null); setAdding(true); };
+  const startAdd  = () => { setDraft(emptyFacilityExpense()); setEditId(null); setAdding(true); };
   const startEdit = (item: FixedExpense) => { setDraft({ ...item }); setEditId(item.id); setAdding(true); };
   const cancel    = () => { setAdding(false); setEditId(null); };
 
@@ -256,22 +256,10 @@ function FacilityStep({ items, setItems }: { items: FixedExpense[]; setItems: (v
     setAdding(false); setEditId(null);
   };
 
-  const totalMonthly = items.reduce((s, e) => s + e.monthly, 0);
-
   return (
-    <div className="space-y-4">
-      <StepHeader step={2} total={3} title="Tesis Sabit Giderleri"
-        sub="Tesis hiç çalışmasa da akan giderler: kira, aidat, muhasebe, sigorta, çevre mühendisliği vb." />
-
-      {items.length > 0 && (
-        <div className="bg-enba-panel border border-enba-line rounded-xl px-4 py-3 flex items-center justify-between">
-          <span className="text-[11px] text-enba-dim">{items.length} kalem · her ay sabit</span>
-          <span className="text-[14px] font-semibold tabular">{fmtTL(totalMonthly)}<span className="text-[11px] text-enba-dim font-normal ml-1">/ ay</span></span>
-        </div>
-      )}
-
+    <div className="space-y-2">
       {items.map(item => (
-        <div key={item.id} className="bg-enba-panel border border-enba-line rounded-xl px-4 py-3 flex items-center gap-3">
+        <div key={item.id} className="bg-enba-panel-2 border border-enba-line rounded-lg px-3 py-2.5 flex items-center gap-3">
           <MCodeTag code={item.mcode} mcodes={MCODES_FACILITY} />
           <div className="flex-1 min-w-0">
             <div className="text-[13px] font-semibold text-enba-text">{item.name}</div>
@@ -281,7 +269,7 @@ function FacilityStep({ items, setItems }: { items: FixedExpense[]; setItems: (v
             </div>
           </div>
           <span className="text-[13px] font-semibold tabular">{fmtTL(item.monthly)}<span className="text-[11px] text-enba-dim font-normal">/ay</span></span>
-          <button onClick={() => startEdit(item)} className="w-7 h-7 rounded-md text-enba-dim hover:text-enba-text hover:bg-enba-panel-2 inline-flex items-center justify-center">
+          <button onClick={() => startEdit(item)} className="w-7 h-7 rounded-md text-enba-dim hover:text-enba-text hover:bg-enba-panel inline-flex items-center justify-center">
             <I.Edit size={13} />
           </button>
           <button onClick={() => setItems(items.filter(i => i.id !== item.id))} className="w-7 h-7 rounded-md text-enba-dim hover:text-enba-red hover:bg-enba-red/10 inline-flex items-center justify-center">
@@ -291,7 +279,7 @@ function FacilityStep({ items, setItems }: { items: FixedExpense[]; setItems: (v
       ))}
 
       {adding ? (
-        <FieldCard>
+        <div className="bg-enba-panel border border-enba-line rounded-xl p-4 space-y-4">
           <MCodeSelect value={draft.mcode} onChange={v => setDraft({ ...draft, mcode: v })} mcodes={MCODES_FACILITY} label="Hesap Kodu" />
           <Field label="Gider Adı">
             <input value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })}
@@ -330,17 +318,113 @@ function FacilityStep({ items, setItems }: { items: FixedExpense[]; setItems: (v
             <button onClick={cancel} className="h-8 px-4 rounded-lg border border-enba-line text-[12px] text-enba-muted hover:bg-enba-panel-2">İptal</button>
             <Btn variant="primary" size="sm" onClick={save} disabled={!draft.name.trim()}>{editId ? 'Güncelle' : 'Ekle'}</Btn>
           </div>
-        </FieldCard>
+        </div>
       ) : (
         <button onClick={startAdd}
-          className="w-full border-2 border-dashed border-enba-line rounded-xl h-11 flex items-center justify-center gap-2 text-[13px] text-enba-dim hover:border-enba-orange/40 hover:text-enba-muted transition-colors">
-          <I.Plus size={14} /> Tesis Gideri Ekle
+          className="w-full border-2 border-dashed border-enba-line rounded-lg h-9 flex items-center justify-center gap-2 text-[12px] text-enba-dim hover:border-enba-orange/40 hover:text-enba-muted transition-colors">
+          <I.Plus size={13} /> Gider Ekle
         </button>
       )}
+    </div>
+  );
+}
 
-      {items.length === 0 && !adding && (
+function FacilitiesStep({ facilities, setFacilities }:
+  { facilities: Facility[]; setFacilities: (v: Facility[]) => void }) {
+
+  const [editingNameId, setEditingNameId] = useState<string | null>(null);
+  const [nameDraft, setNameDraft] = useState('');
+
+  const totalMonthly = facilities.reduce((s, f) =>
+    s + f.fixedExpenses.reduce((ss, e) => ss + e.monthly, 0), 0);
+
+  const startRename = (f: Facility) => { setEditingNameId(f.id); setNameDraft(f.name); };
+  const commitRename = (id: string) => {
+    if (nameDraft.trim()) setFacilities(facilities.map(f => f.id === id ? { ...f, name: nameDraft.trim() } : f));
+    setEditingNameId(null);
+  };
+
+  const updateExpenses = (id: string, expenses: FixedExpense[]) =>
+    setFacilities(facilities.map(f => f.id === id ? { ...f, fixedExpenses: expenses } : f));
+
+  const deleteFacility = (id: string) => {
+    if (!window.confirm('Bu maliyet merkezi ve tüm giderleri silinecek. Emin misiniz?')) return;
+    setFacilities(facilities.filter(f => f.id !== id));
+  };
+
+  const addFacility = () => {
+    const newF: Facility = { id: crypto.randomUUID(), name: `Maliyet Merkezi ${facilities.length + 1}`, fixedExpenses: [] };
+    setFacilities([...facilities, newF]);
+    setEditingNameId(newF.id);
+    setNameDraft(newF.name);
+  };
+
+  return (
+    <div className="space-y-4">
+      <StepHeader step={2} total={3} title="Sabit Gider Merkezleri"
+        sub="Projelerden bağımsız akan giderler: kira, aidat, muhasebe, sigorta vb. Aktif projeler bu maliyeti paylaşır." />
+
+      {totalMonthly > 0 && (
+        <div className="bg-enba-panel border border-enba-line rounded-xl px-4 py-3 flex items-center justify-between">
+          <span className="text-[11px] text-enba-dim">
+            {facilities.length} merkez · {facilities.reduce((s, f) => s + f.fixedExpenses.length, 0)} kalem
+          </span>
+          <span className="text-[14px] font-semibold tabular">
+            {fmtTL(totalMonthly)}<span className="text-[11px] text-enba-dim font-normal ml-1">/ ay toplam</span>
+          </span>
+        </div>
+      )}
+
+      {facilities.map(f => {
+        const fTotal = f.fixedExpenses.reduce((s, e) => s + e.monthly, 0);
+        return (
+          <div key={f.id} className="bg-enba-panel border border-enba-line rounded-xl overflow-hidden">
+            {/* Tesis başlık */}
+            <div className="flex items-center gap-3 px-4 py-3 border-b border-enba-line bg-enba-panel-2/40">
+              <span className="w-2 h-2 rounded-full bg-enba-orange flex-none" />
+              {editingNameId === f.id ? (
+                <input
+                  autoFocus
+                  value={nameDraft}
+                  onChange={e => setNameDraft(e.target.value)}
+                  onBlur={() => commitRename(f.id)}
+                  onKeyDown={e => { if (e.key === 'Enter') commitRename(f.id); if (e.key === 'Escape') setEditingNameId(null); }}
+                  className="flex-1 bg-transparent border-b border-enba-orange text-[13px] font-semibold text-enba-text outline-none py-0.5"
+                />
+              ) : (
+                <span className="flex-1 text-[13px] font-semibold text-enba-text">{f.name}</span>
+              )}
+              <span className="text-[12px] text-enba-muted tabular">{fmtTL(fTotal)}/ay</span>
+              <button onClick={() => startRename(f)}
+                className="w-7 h-7 rounded-md text-enba-dim hover:text-enba-text hover:bg-enba-panel inline-flex items-center justify-center">
+                <I.Edit size={12} />
+              </button>
+              {facilities.length > 1 && (
+                <button onClick={() => deleteFacility(f.id)}
+                  className="w-7 h-7 rounded-md text-enba-dim hover:text-enba-red hover:bg-enba-red/10 inline-flex items-center justify-center">
+                  <I.Trash size={12} />
+                </button>
+              )}
+            </div>
+            {/* Gider listesi */}
+            <div className="p-4">
+              <FacilityExpenseList
+                items={f.fixedExpenses}
+                setItems={items => updateExpenses(f.id, items)}
+              />
+            </div>
+          </div>
+        );
+      })}
+
+      <button onClick={addFacility}
+        className="w-full border-2 border-dashed border-enba-line rounded-xl h-11 flex items-center justify-center gap-2 text-[13px] text-enba-dim hover:border-enba-orange/40 hover:text-enba-muted transition-colors">
+        <I.Plus size={14} /> Yeni Maliyet Merkezi Ekle
+      </button>
+
+      {facilities.every(f => f.fixedExpenses.length === 0) && (
         <p className="text-[11.5px] text-enba-dim text-center">
-          Tesis gideri olmayan planlar da oluşturulabilir — sonradan eklenebilir.
+          Sabit gideri olmayan planlar da oluşturulabilir — sonradan eklenebilir.
         </p>
       )}
     </div>
@@ -350,9 +434,11 @@ function FacilityStep({ items, setItems }: { items: FixedExpense[]; setItems: (v
 /* ══════════════════════════════════════════════════════
    ADIM 3 — Projeler
 ══════════════════════════════════════════════════════ */
-function emptyProject(idx: number): ActiveProject {
+function emptyProject(idx: number, facilityId: string): ActiveProject {
   return {
     id: crypto.randomUUID(),
+    facilityId,
+    isActive: true,
     name: '',
     color: PROJECT_COLORS[idx % PROJECT_COLORS.length],
     allocationWeight: 1,
@@ -582,8 +668,8 @@ function ProjectRevenueList({ items, setItems, projectIdx }: { items: Product[];
 /* ── Proje Düzenleyici ── */
 type ProjectTab = 'temel' | 'giderler' | 'gelirler';
 
-function ProjectEditor({ project, idx, horizon, onSave, onCancel }:
-  { project: ActiveProject; idx: number; horizon: number; onSave: (p: ActiveProject) => void; onCancel: () => void }) {
+function ProjectEditor({ project, idx, horizon, facilities, onSave, onCancel }:
+  { project: ActiveProject; idx: number; horizon: number; facilities: Facility[]; onSave: (p: ActiveProject) => void; onCancel: () => void }) {
   const [tab,     setTab]     = useState<ProjectTab>('temel');
   const [draft,   setDraft]   = useState<ActiveProject>({ ...project });
 
@@ -613,6 +699,35 @@ function ProjectEditor({ project, idx, horizon, onSave, onCancel }:
       <div className="p-4 space-y-4">
         {tab === 'temel' && (
           <>
+            {/* Aktif / Pasif toggle */}
+            <div
+              className={cx(
+                'flex items-center gap-3 px-4 py-3 rounded-xl border transition-colors cursor-pointer select-none',
+                draft.isActive
+                  ? 'bg-enba-green/8 border-enba-green/30'
+                  : 'bg-enba-panel-2 border-enba-line',
+              )}
+              onClick={() => setDraft({ ...draft, isActive: !draft.isActive })}
+            >
+              <div className={cx(
+                'w-9 h-5 rounded-full flex items-center transition-all relative flex-none',
+                draft.isActive ? 'bg-enba-green' : 'bg-enba-dim/40',
+              )}>
+                <div className={cx(
+                  'w-4 h-4 rounded-full bg-white shadow absolute transition-all',
+                  draft.isActive ? 'left-[18px]' : 'left-[2px]',
+                )} />
+              </div>
+              <div>
+                <div className={cx('text-[13px] font-semibold', draft.isActive ? 'text-enba-green' : 'text-enba-dim')}>
+                  {draft.isActive ? 'Aktif — Tesis maliyeti alıyor' : 'Pasif — Maliyet almıyor'}
+                </div>
+                <div className="text-[11px] text-enba-dim mt-0.5">
+                  Pasif projeler tesis gideri payına girmez
+                </div>
+              </div>
+            </div>
+
             <Field label="Proje Adı">
               <input value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })}
                 placeholder="örn. PET Geri Dönüşüm Hattı" className={inputCls} />
@@ -626,7 +741,17 @@ function ProjectEditor({ project, idx, horizon, onSave, onCancel }:
                 ))}
               </div>
             </Field>
-            <Field label="Tesis Gideri Dağılım Ağırlığı" hint="Göreceli sayı — tüm aktif projelerle karşılaştırılır. (örn: 2 ve 1 → %67 / %33)">
+            {/* Tesis seçici — birden fazla tesis varsa göster */}
+            {facilities.length > 1 && (
+              <Field label="Bağlı Tesis">
+                <select value={draft.facilityId}
+                  onChange={e => setDraft({ ...draft, facilityId: e.target.value })}
+                  className={selectCls}>
+                  {facilities.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+                </select>
+              </Field>
+            )}
+            <Field label="Tesis Gideri Dağılım Ağırlığı" hint="Göreceli sayı — aynı tesisin aktif projeleriyle karşılaştırılır. (örn: 2 ve 1 → %67 / %33)">
               <input type="number" value={draft.allocationWeight} min={0.1} step={0.1}
                 onChange={e => setDraft({ ...draft, allocationWeight: Number(e.target.value) })}
                 className={inputCls} />
@@ -678,63 +803,101 @@ function ProjectEditor({ project, idx, horizon, onSave, onCancel }:
 }
 
 /* ── Step 3 — Projeler ana görünüm ── */
-function ProjectsStep({ projects, setProjects, horizon, facilityExpenses }:
-  { projects: ActiveProject[]; setProjects: (v: ActiveProject[]) => void; horizon: number; facilityExpenses: FixedExpense[] }) {
+function ProjectsStep({ projects, setProjects, horizon, facilities }:
+  { projects: ActiveProject[]; setProjects: (v: ActiveProject[]) => void; horizon: number; facilities: Facility[] }) {
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const totalWeight  = projects.reduce((s, p) => s + p.allocationWeight, 0);
-  const facilityTotal = facilityExpenses.reduce((s, e) => s + e.monthly, 0);
+  const defaultFacilityId = facilities[0]?.id ?? '';
+  const activeProjects    = projects.filter(p => p.isActive);
+  const totalWeight       = activeProjects.reduce((s, p) => s + p.allocationWeight, 0);
 
-  const saveProject  = (updated: ActiveProject) => {
+  const facilityTotals = facilities.reduce<Record<string, number>>((acc, f) => {
+    acc[f.id] = f.fixedExpenses.reduce((s, e) => s + e.monthly, 0);
+    return acc;
+  }, {});
+
+  const saveProject   = (updated: ActiveProject) => {
     setProjects(projects.map(p => p.id === updated.id ? updated : p));
     setEditingId(null);
   };
-  const addProject   = () => {
-    const np = emptyProject(projects.length);
+  const toggleActive  = (id: string) =>
+    setProjects(projects.map(p => p.id === id ? { ...p, isActive: !p.isActive } : p));
+  const addProject    = () => {
+    const np = emptyProject(projects.length, defaultFacilityId);
     setProjects([...projects, np]);
     setEditingId(np.id);
   };
   const deleteProject = (id: string) => setProjects(projects.filter(p => p.id !== id));
 
+  // Tesis bazlı dağılım özeti — her tesis için ayrı bar
+  const facilityBars = facilities.map(f => {
+    const fps    = activeProjects.filter(p => p.facilityId === f.id);
+    const fTotal = facilityTotals[f.id] ?? 0;
+    const wTotal = fps.reduce((s, p) => s + p.allocationWeight, 0);
+    return { facility: f, fTotal, fps, wTotal };
+  }).filter(fb => fb.fps.length > 0 || fb.fTotal > 0);
+
   return (
     <div className="space-y-4">
       <StepHeader step={3} total={3} title="Projeler"
-        sub="Her proje kendi giderleri ve gelirlerini taşır. Tesis yükü aktif projelere ağırlığa göre dağıtılır." />
+        sub="Her proje kendi giderlerini ve gelirlerini taşır. Aktif projeler tesis sabit giderini ağırlığa göre paylaşır." />
 
-      {/* Dağılım özeti */}
-      {projects.length > 0 && facilityTotal > 0 && (
-        <div className="bg-enba-panel border border-enba-line rounded-xl px-4 py-3 space-y-2">
-          <div className="text-[11px] text-enba-dim uppercase tracking-wider">Tesis Gideri Dağılımı · {fmtTL(facilityTotal)}/ay</div>
-          <div className="flex gap-1 h-2 rounded-full overflow-hidden">
-            {projects.map(p => (
-              <div key={p.id} className="h-full rounded-full transition-all"
-                style={{ background: p.color, width: `${(p.allocationWeight / (totalWeight || 1)) * 100}%` }} />
+      {/* Tesis dağılım özeti */}
+      {facilityBars.map(({ facility, fTotal, fps, wTotal }) => fps.length > 0 && fTotal > 0 && (
+        <div key={facility.id} className="bg-enba-panel border border-enba-line rounded-xl px-4 py-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] text-enba-dim uppercase tracking-wider">{facility.name} · Tesis Gideri</span>
+            <span className="text-[12px] font-semibold tabular">{fmtTL(fTotal)}/ay</span>
+          </div>
+          <div className="flex gap-1 h-2 rounded-full overflow-hidden bg-enba-panel-2">
+            {fps.map(p => (
+              <div key={p.id} className="h-full transition-all"
+                style={{ background: p.color, width: `${(p.allocationWeight / (wTotal || 1)) * 100}%` }} />
             ))}
           </div>
           <div className="flex flex-wrap gap-3">
-            {projects.map(p => (
+            {fps.map(p => (
               <div key={p.id} className="flex items-center gap-1.5 text-[11px]">
                 <span className="w-2 h-2 rounded-full" style={{ background: p.color }} />
                 <span className="text-enba-text font-medium">{p.name || 'İsimsiz'}</span>
-                <span className="text-enba-dim">%{Math.round((p.allocationWeight / (totalWeight || 1)) * 100)}</span>
+                <span className="text-enba-dim">%{Math.round((p.allocationWeight / (wTotal || 1)) * 100)}</span>
                 <span className="text-enba-dim">·</span>
-                <span className="text-enba-dim">{fmtTL((p.allocationWeight / (totalWeight || 1)) * facilityTotal)}/ay</span>
+                <span className="text-enba-dim">{fmtTL((p.allocationWeight / (wTotal || 1)) * fTotal)}/ay</span>
               </div>
             ))}
           </div>
         </div>
-      )}
+      ))}
 
       {/* Proje kartları */}
       {projects.map((p, idx) => editingId === p.id ? (
-        <ProjectEditor key={p.id} project={p} idx={idx} horizon={horizon}
+        <ProjectEditor key={p.id} project={p} idx={idx} horizon={horizon} facilities={facilities}
           onSave={saveProject} onCancel={() => setEditingId(null)} />
       ) : (
-        <div key={p.id} className="bg-enba-panel border border-enba-line rounded-xl px-4 py-3 flex items-center gap-3" style={{ borderLeftColor: p.color, borderLeftWidth: 4 }}>
+        <div key={p.id}
+          className={cx(
+            'bg-enba-panel border rounded-xl px-4 py-3 flex items-center gap-3 transition-opacity',
+            p.isActive ? 'border-enba-line' : 'border-enba-line opacity-60',
+          )}
+          style={{ borderLeftColor: p.color, borderLeftWidth: 4 }}>
           <span className="w-3 h-3 rounded-full flex-none" style={{ background: p.color }} />
           <div className="flex-1 min-w-0">
-            <div className="text-[13px] font-semibold text-enba-text">{p.name || 'İsimsiz Proje'}</div>
+            <div className="flex items-center gap-2">
+              <span className="text-[13px] font-semibold text-enba-text">{p.name || 'İsimsiz Proje'}</span>
+              <span className={cx(
+                'px-1.5 py-0.5 rounded text-[10px] font-medium',
+                p.isActive ? 'bg-enba-green/15 text-enba-green' : 'bg-enba-dim/15 text-enba-dim',
+              )}>
+                {p.isActive ? 'Aktif' : 'Pasif'}
+              </span>
+            </div>
             <div className="text-[11px] text-enba-dim mt-0.5 flex items-center gap-2">
+              {facilities.length > 1 && (
+                <>
+                  <span>{facilities.find(f => f.id === p.facilityId)?.name ?? '—'}</span>
+                  <span>·</span>
+                </>
+              )}
               <span>Ağırlık: {p.allocationWeight}</span>
               <span>·</span>
               <span>{p.startOffset + 1}. ay{p.endOffset ? ` – ${p.endOffset}. ay` : ' → son'}</span>
@@ -742,6 +905,21 @@ function ProjectsStep({ projects, setProjects, horizon, facilityExpenses }:
               <span>{p.expenses.length} gider, {p.revenues.length} ürün</span>
             </div>
           </div>
+          {/* Aktif toggle */}
+          <button
+            onClick={() => toggleActive(p.id)}
+            title={p.isActive ? 'Pasife al' : 'Aktife al'}
+            className={cx(
+              'w-8 h-8 rounded-lg inline-flex items-center justify-center transition-colors',
+              p.isActive
+                ? 'text-enba-green bg-enba-green/10 hover:bg-enba-green/20'
+                : 'text-enba-dim bg-enba-panel-2 hover:text-enba-green hover:bg-enba-green/10',
+            )}>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+              <rect x="1" y="4" width="14" height="8" rx="4" fill="currentColor" opacity={p.isActive ? '1' : '0.3'} />
+              <circle cx={p.isActive ? '11' : '5'} cy="8" r="3" fill="white" className="transition-all" />
+            </svg>
+          </button>
           <button onClick={() => setEditingId(p.id)}
             className="w-8 h-8 rounded-lg text-enba-dim hover:text-enba-orange hover:bg-enba-orange/10 inline-flex items-center justify-center">
             <I.Edit size={14} />
@@ -764,6 +942,18 @@ function ProjectsStep({ projects, setProjects, horizon, facilityExpenses }:
         <p className="text-[11.5px] text-enba-dim text-center">
           En az bir proje tanımlamanız önerilir — sonradan da eklenebilir.
         </p>
+      )}
+
+      {projects.length > 0 && activeProjects.length === 0 && (
+        <div className="text-[11.5px] text-enba-amber text-center bg-enba-amber/8 border border-enba-amber/20 rounded-lg py-2 px-3">
+          Tüm projeler pasif — tesis maliyeti hiçbir projeye dağıtılmıyor.
+        </div>
+      )}
+
+      {activeProjects.length > 0 && (
+        <div className="text-[11px] text-enba-dim text-center">
+          {activeProjects.length} aktif proje · toplam ağırlık {totalWeight}
+        </div>
       )}
     </div>
   );
@@ -799,20 +989,30 @@ export function DPlanWizard({ onDone, onCancel, onSave, initialPlan }: Props) {
   const [openingCash, setOpeningCash] = useState(initialPlan?.openingCash ?? 0);
 
   /* Adım 2 */
-  const [facilityExpenses, setFacilityExpenses] = useState<FixedExpense[]>(
-    initialPlan?.facilityExpenses ?? []
-  );
+  const [facilities, setFacilities] = useState<Facility[]>(() => {
+    if (initialPlan?.facilities?.length) return initialPlan.facilities;
+    // Eski format fallback
+    const raw = initialPlan as (typeof initialPlan & { facilityExpenses?: FixedExpense[] });
+    const facilityId = crypto.randomUUID();
+    return [{ id: facilityId, name: 'Tesis', fixedExpenses: raw?.facilityExpenses ?? [] }];
+  });
 
   /* Adım 3 */
-  const [projects, setProjects] = useState<ActiveProject[]>(
-    initialPlan?.projects ?? []
-  );
+  const [projects, setProjects] = useState<ActiveProject[]>(() => {
+    const fid = initialPlan?.facilities?.[0]?.id ?? facilities[0]?.id ?? '';
+    return (initialPlan?.projects ?? []).map(p => ({
+      ...p,
+      facilityId: (p as ActiveProject & { facilityId?: string }).facilityId ?? fid,
+      isActive:   (p as ActiveProject & { isActive?: boolean }).isActive ?? true,
+    }));
+  });
 
   /* Önizleme (adım 3) */
   const preview = useMemo(() => {
     const allProducts  = projects.flatMap(p => p.revenues);
+    const allFacilityExp = facilities.flatMap(f => f.fixedExpenses);
     const allExpenses  = [
-      ...facilityExpenses,
+      ...allFacilityExp,
       ...projects.flatMap(p => p.expenses),
     ];
     if (!allProducts.length && !allExpenses.length) return null;
@@ -823,25 +1023,25 @@ export function DPlanWizard({ onDone, onCancel, onSave, initialPlan }: Props) {
       opex:   s.reduce((a, x) => a + x.opex,    0),
       ebitda: s.reduce((a, x) => a + x.ebitda,  0),
     };
-  }, [projects, facilityExpenses, startYear, startMonth]);
+  }, [projects, facilities, startYear, startMonth]);
 
   const next = () => { setSaved(false); setStep(s => Math.min(3, s + 1) as WStep); };
   const prev = () => { setSaved(false); setStep(s => Math.max(1, s - 1) as WStep); };
 
   const buildPlan = (status: DPlan['status'] = 'draft'): DPlan => ({
-    id:               planId.current,
-    title:            title.trim() || 'İsimsiz Plan',
-    baslik:           title.trim() || 'İsimsiz Plan',
+    id:             planId.current,
+    title:          title.trim() || 'İsimsiz Plan',
+    baslik:         title.trim() || 'İsimsiz Plan',
     status,
-    year:             startYear,
+    year:           startYear,
     startYear,
     startMonth,
     horizon,
     openingCash,
-    actualsThrough:   initialPlan?.actualsThrough ?? 0,
-    facilityExpenses,
+    actualsThrough: initialPlan?.actualsThrough ?? 0,
+    facilities,
     projects,
-    cashEvents:       initialPlan?.cashEvents ?? [],
+    cashEvents:     initialPlan?.cashEvents ?? [],
   });
 
   const handleSave = () => {
@@ -929,12 +1129,12 @@ export function DPlanWizard({ onDone, onCancel, onSave, initialPlan }: Props) {
               />
             )}
             {step === 2 && (
-              <FacilityStep items={facilityExpenses} setItems={setFacilityExpenses} />
+              <FacilitiesStep facilities={facilities} setFacilities={setFacilities} />
             )}
             {step === 3 && (
               <ProjectsStep
                 projects={projects} setProjects={setProjects}
-                horizon={horizon} facilityExpenses={facilityExpenses}
+                horizon={horizon} facilities={facilities}
               />
             )}
           </div>
