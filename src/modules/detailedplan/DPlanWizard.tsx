@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { cx, I, Btn } from './DPPrimitives';
 import {
-  DPlan, Product, FixedExpense, ActiveProject, CostCenter, Supplier,
+  DPlan, Product, FixedExpense, ActiveProject, CostCenter, Supplier, Customer,
   buildMonths, buildSeries, fmtTL, SCENARIOS,
 } from './dpData';
 
@@ -714,7 +714,7 @@ function TotalRow({ total }: { total: number }) {
 }
 
 /* ── Proje Gelir Listesi ── */
-function ProjectRevenueList({ items, setItems, projectIdx }: { items: Product[]; setItems: (v: Product[]) => void; projectIdx: number }) {
+function ProjectRevenueList({ items, setItems, projectIdx, customers = [] }: { items: Product[]; setItems: (v: Product[]) => void; projectIdx: number; customers?: Customer[] }) {
   const [adding, setAdding] = useState(false);
   const [draft,  setDraft]  = useState<Product>(emptyRevenue(projectIdx));
   const [editId, setEditId] = useState<string | null>(null);
@@ -732,21 +732,41 @@ function ProjectRevenueList({ items, setItems, projectIdx }: { items: Product[];
 
   return (
     <div className="space-y-3">
-      {items.map(item => (
-        <div key={item.id} className="bg-enba-panel-2 border border-enba-line rounded-lg px-3 py-2.5 flex items-center gap-3">
-          <span className="w-2.5 h-2.5 rounded-full flex-none" style={{ background: item.color }} />
-          <div className="flex-1 min-w-0">
-            <div className="text-[12.5px] font-semibold text-enba-text">{item.name}</div>
-            <div className="text-[10.5px] text-enba-dim">{fmtTL(item.price)}/{item.unit} · {item.volume.toLocaleString('tr-TR')} {item.unit}/ay</div>
+      {items.map(item => {
+        const cust = customers.find(c => c.id === item.customerId);
+        return (
+          <div key={item.id} className="bg-enba-panel-2 border border-enba-line rounded-lg px-3 py-2.5 flex items-center gap-3">
+            <span className="w-2.5 h-2.5 rounded-full flex-none" style={{ background: item.color }} />
+            <div className="flex-1 min-w-0">
+              <div className="text-[12.5px] font-semibold text-enba-text">{item.name}</div>
+              <div className="text-[10.5px] text-enba-dim">
+                {fmtTL(item.price)}/{item.unit} · {item.volume.toLocaleString('tr-TR')} {item.unit}/ay
+                {cust && <span className="ml-1.5 text-enba-blue">· {cust.name}</span>}
+              </div>
+            </div>
+            <span className="text-[12.5px] font-semibold tabular text-enba-orange">{fmtTL(item.price * item.volume)}/ay</span>
+            <button onClick={() => startEdit(item)} className="w-6 h-6 rounded text-enba-dim hover:text-enba-text hover:bg-enba-panel inline-flex items-center justify-center"><I.Edit size={12} /></button>
+            <button onClick={() => setItems(items.filter(i => i.id !== item.id))} className="w-6 h-6 rounded text-enba-dim hover:text-enba-red inline-flex items-center justify-center"><I.Trash size={12} /></button>
           </div>
-          <span className="text-[12.5px] font-semibold tabular text-enba-orange">{fmtTL(item.price * item.volume)}/ay</span>
-          <button onClick={() => startEdit(item)} className="w-6 h-6 rounded text-enba-dim hover:text-enba-text hover:bg-enba-panel inline-flex items-center justify-center"><I.Edit size={12} /></button>
-          <button onClick={() => setItems(items.filter(i => i.id !== item.id))} className="w-6 h-6 rounded text-enba-dim hover:text-enba-red inline-flex items-center justify-center"><I.Trash size={12} /></button>
-        </div>
-      ))}
+        );
+      })}
 
       {adding ? (
         <div className="bg-enba-panel border border-enba-line rounded-xl p-4 space-y-3">
+          {customers.length > 0 && (
+            <Field label="Müşteri">
+              <select
+                value={draft.customerId ?? ''}
+                onChange={e => setDraft({ ...draft, customerId: e.target.value || undefined })}
+                className={selectCls}
+              >
+                <option value="">— atanmamış —</option>
+                {customers.map(c => (
+                  <option key={c.id} value={c.id}>{c.name}{c.sector ? ` · ${c.sector}` : ''}</option>
+                ))}
+              </select>
+            </Field>
+          )}
           <Field label="Ürün / Hizmet Adı">
             <input value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })}
               placeholder="örn. PET Granül" className={inputCls} />
@@ -802,8 +822,8 @@ function ProjectRevenueList({ items, setItems, projectIdx }: { items: Product[];
 /* ── Proje Düzenleyici ── */
 type ProjectTab = 'temel' | 'alim' | 'uretim' | 'personel' | 'satis' | 'gelirler';
 
-function ProjectEditor({ project, idx, horizon, costCenters, suppliers = [], onSave, onCancel }:
-  { project: ActiveProject; idx: number; horizon: number; costCenters: CostCenter[]; suppliers?: Supplier[]; onSave: (p: ActiveProject) => void; onCancel: () => void }) {
+function ProjectEditor({ project, idx, horizon, costCenters, suppliers = [], customers = [], onSave, onCancel }:
+  { project: ActiveProject; idx: number; horizon: number; costCenters: CostCenter[]; suppliers?: Supplier[]; customers?: Customer[]; onSave: (p: ActiveProject) => void; onCancel: () => void }) {
   const [tab,   setTab]   = useState<ProjectTab>('temel');
   const [draft, setDraft] = useState<ActiveProject>({ ...project });
 
@@ -957,7 +977,7 @@ function ProjectEditor({ project, idx, horizon, costCenters, suppliers = [], onS
         {tab === 'gelirler' && (
           <>
             <p className="text-[11.5px] text-enba-dim">Bu projenin üretip sattığı ürün ve hizmetler.</p>
-            <ProjectRevenueList items={draft.revenues} setItems={v => setDraft({ ...draft, revenues: v })} projectIdx={idx} />
+            <ProjectRevenueList items={draft.revenues} setItems={v => setDraft({ ...draft, revenues: v })} projectIdx={idx} customers={customers} />
             {revenueTotal > 0 && (
               <div className="text-right text-[12px] text-enba-dim">Brüt gelir: <span className="font-semibold text-enba-orange">{fmtTL(revenueTotal)}/ay</span></div>
             )}
@@ -1076,9 +1096,105 @@ function SupplierList({ suppliers, setSuppliers }: { suppliers: Supplier[]; setS
   );
 }
 
+/* ── Müşteri Havuzu (plan içi) ── */
+function CustomerFormRow({ draft, setDraft, onSave, onCancel }: {
+  draft: Customer; setDraft: (c: Customer) => void; onSave: () => void; onCancel: () => void;
+}) {
+  const PAYMENT_OPTS = ['peşin', '7 gün', '15 gün', '30 gün', '45 gün', '60 gün', '90 gün'];
+  return (
+    <div className="bg-enba-panel border border-enba-orange/30 rounded-xl p-4 space-y-3">
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Müşteri / Şirket Adı">
+          <input autoFocus value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })}
+            placeholder="örn. EcoGreen Ltd." className={inputCls} />
+        </Field>
+        <Field label="Sektör (isteğe bağlı)">
+          <input value={draft.sector ?? ''} onChange={e => setDraft({ ...draft, sector: e.target.value || undefined })}
+            placeholder="örn. Plastik, Tekstil" className={inputCls} />
+        </Field>
+      </div>
+      <Field label="Ödeme Vadesi">
+        <select value={draft.paymentTerms ?? ''} onChange={e => setDraft({ ...draft, paymentTerms: e.target.value || undefined })} className={selectCls}>
+          <option value="">— belirtilmemiş —</option>
+          {PAYMENT_OPTS.map(o => <option key={o}>{o}</option>)}
+        </select>
+      </Field>
+      <FormFooter onCancel={onCancel} onSave={onSave} editId={null} disabled={!draft.name.trim()} />
+    </div>
+  );
+}
+
+function CustomerList({ customers, setCustomers }: { customers: Customer[]; setCustomers: (v: Customer[]) => void }) {
+  const emptyDraft = (): Customer => ({ id: crypto.randomUUID(), name: '' });
+  const [adding, setAdding]  = useState(false);
+  const [editId, setEditId]  = useState<string | null>(null);
+  const [draft,  setDraft]   = useState<Customer>(emptyDraft());
+
+  const startAdd  = () => { setDraft(emptyDraft()); setEditId(null); setAdding(true); };
+  const startEdit = (c: Customer) => { setDraft({ ...c }); setEditId(c.id); setAdding(true); };
+  const cancel    = () => { setAdding(false); setEditId(null); };
+  const save      = () => {
+    if (!draft.name.trim()) return;
+    if (editId) setCustomers(customers.map(c => c.id === editId ? draft : c));
+    else        setCustomers([...customers, { ...draft, id: crypto.randomUUID() }]);
+    setAdding(false); setEditId(null);
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-[15px] font-semibold text-enba-text">Müşteri Havuzu</h2>
+          <p className="text-[11.5px] text-enba-dim mt-0.5">Bu plana ait müşteriler — gelir kalemlerine müşteri atayabilirsiniz.</p>
+        </div>
+        {!adding && (
+          <Btn variant="outline" size="sm" icon={<I.Plus size={13} />} onClick={startAdd}>Ekle</Btn>
+        )}
+      </div>
+
+      {customers.map(c => (
+        editId === c.id && adding ? (
+          <CustomerFormRow key={c.id} draft={draft} setDraft={setDraft} onSave={save} onCancel={cancel} />
+        ) : (
+          <div key={c.id} className="bg-enba-panel border border-enba-line rounded-xl px-4 py-3 flex items-center gap-3 group">
+            <div className="flex-1 min-w-0">
+              <div className="text-[13px] font-semibold text-enba-text truncate">{c.name}</div>
+              <div className="text-[11px] text-enba-muted">
+                {[c.sector, c.paymentTerms].filter(Boolean).join(' · ') || 'Detay girilmemiş'}
+              </div>
+            </div>
+            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button onClick={() => startEdit(c)} className="w-7 h-7 rounded text-enba-dim hover:text-enba-orange inline-flex items-center justify-center">
+                <I.Edit size={13} />
+              </button>
+              <button onClick={() => setCustomers(customers.filter(x => x.id !== c.id))} className="w-7 h-7 rounded text-enba-dim hover:text-enba-red inline-flex items-center justify-center">
+                <I.Trash size={13} />
+              </button>
+            </div>
+          </div>
+        )
+      ))}
+
+      {adding && !editId && (
+        <CustomerFormRow draft={draft} setDraft={setDraft} onSave={save} onCancel={cancel} />
+      )}
+
+      {customers.length === 0 && !adding && (
+        <div
+          onClick={startAdd}
+          className="border-2 border-dashed border-enba-line rounded-xl p-5 flex items-center gap-3 cursor-pointer hover:border-enba-orange/40 hover:bg-enba-orange/5 transition-colors"
+        >
+          <I.Plus size={16} className="text-enba-dim flex-none" />
+          <span className="text-[12.5px] text-enba-dim">Müşteri ekle (isteğe bağlı)</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── Step 2 — Projeler ── */
-function ProjectsStep({ projects, setProjects, horizon, costCenters, suppliers = [] }:
-  { projects: ActiveProject[]; setProjects: (v: ActiveProject[]) => void; horizon: number; costCenters: CostCenter[]; suppliers?: Supplier[] }) {
+function ProjectsStep({ projects, setProjects, horizon, costCenters, suppliers = [], customers = [] }:
+  { projects: ActiveProject[]; setProjects: (v: ActiveProject[]) => void; horizon: number; costCenters: CostCenter[]; suppliers?: Supplier[]; customers?: Customer[] }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const defaultCcId = costCenters[0]?.id ?? '';
 
@@ -1134,7 +1250,7 @@ function ProjectsStep({ projects, setProjects, horizon, costCenters, suppliers =
 
       {/* Proje kartları */}
       {projects.map((p, idx) => editingId === p.id ? (
-        <ProjectEditor key={p.id} project={p} idx={idx} horizon={horizon} costCenters={costCenters} suppliers={suppliers}
+        <ProjectEditor key={p.id} project={p} idx={idx} horizon={horizon} costCenters={costCenters} suppliers={suppliers} customers={customers}
           onSave={saveProject} onCancel={() => setEditingId(null)} />
       ) : (
         <div key={p.id}
@@ -1222,8 +1338,9 @@ export function DPlanWizard({ onDone, onCancel, onSave, initialPlan, costCenters
   const [horizon,     setHorizon]     = useState(initialPlan?.horizon ?? 24);
   const [openingCash, setOpeningCash] = useState(initialPlan?.openingCash ?? 0);
 
-  /* Tedarikçiler (plana ait) */
+  /* Tedarikçiler & Müşteriler (plana ait) */
   const [suppliers, setSuppliers] = useState<Supplier[]>(() => initialPlan?.suppliers ?? []);
+  const [customers, setCustomers] = useState<Customer[]>(() => initialPlan?.customers ?? []);
 
   /* Adım 2 */
   const defaultCcId = costCenters[0]?.id ?? '';
@@ -1269,6 +1386,7 @@ export function DPlanWizard({ onDone, onCancel, onSave, initialPlan, costCenters
     openingCash,
     actualsThrough: initialPlan?.actualsThrough ?? 0,
     suppliers,
+    customers,
     projects,
     cashEvents:     initialPlan?.cashEvents ?? [],
   });
@@ -1355,10 +1473,14 @@ export function DPlanWizard({ onDone, onCancel, onSave, initialPlan, costCenters
             {step === 2 && (
               <>
                 <SupplierList suppliers={suppliers} setSuppliers={setSuppliers} />
-                <div className="mt-8 pt-6 border-t border-enba-line">
+                <div className="mt-6 pt-6 border-t border-enba-line">
+                  <CustomerList customers={customers} setCustomers={setCustomers} />
+                </div>
+                <div className="mt-6 pt-6 border-t border-enba-line">
                   <ProjectsStep
                     projects={projects} setProjects={setProjects}
-                    horizon={horizon} costCenters={costCenters} suppliers={suppliers}
+                    horizon={horizon} costCenters={costCenters}
+                    suppliers={suppliers} customers={customers}
                   />
                 </div>
               </>

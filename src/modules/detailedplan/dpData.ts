@@ -14,6 +14,7 @@ export interface Product {
   volumeGrowth: number;
   varCostRatio: number;
   color: string;
+  customerId?: string;
 }
 
 export interface FixedExpense {
@@ -28,6 +29,15 @@ export interface FixedExpense {
   unit?: string;
   unitPrice?: number;
   monthlyQty?: number;
+}
+
+// ─── Müşteri Havuzu — plan içinde yaşar ──────────────────────────────────────
+export interface Customer {
+  id: string;
+  name: string;           // müşteri / şirket adı
+  sector?: string;        // sektör
+  paymentTerms?: string;  // ödeme vadesi (örn. "peşin", "30 gün")
+  notes?: string;
 }
 
 // ─── Tedarikçi Havuzu — plan içinde yaşar ────────────────────────────────────
@@ -114,6 +124,7 @@ export interface DPlan {
   openingCash: number;
   actualsThrough: number;
   suppliers: Supplier[];
+  customers: Customer[];
   projects: ActiveProject[];
   cashEvents: CashEvent[];
 }
@@ -308,6 +319,7 @@ export const createNewPlan = (title: string, year: number): DPlan => ({
   year, startYear: year, startMonth: 0,
   horizon: 24, openingCash: 0, actualsThrough: 0,
   suppliers: [],
+  customers: [],
   projects: [],
   cashEvents: [],
 });
@@ -332,6 +344,7 @@ export const migratePlanFormat = (raw: any): DPlan => {
       isActive:     p.isActive ?? true,
     })),
     suppliers: raw.suppliers ?? [],
+    customers: raw.customers ?? [],
   } as DPlan;
 };
 
