@@ -965,7 +965,7 @@ function ProjectsStep({ projects, setProjects, horizon, facilities }:
 type WStep = 1 | 2 | 3;
 const STEPS = [
   { n: 1 as WStep, label: 'Temel Bilgiler' },
-  { n: 2 as WStep, label: 'Tesis Giderleri' },
+  { n: 2 as WStep, label: 'Gider Merkezleri' },
   { n: 3 as WStep, label: 'Projeler' },
 ];
 
