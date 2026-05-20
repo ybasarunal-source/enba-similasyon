@@ -1,43 +1,17 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { cx, I, Btn } from './DPPrimitives';
 import {
-  DPlan, Product, FixedExpense,
+  DPlan, Product, FixedExpense, ActiveProject,
   buildMonths, buildSeries, fmtTL, SCENARIOS,
 } from './dpData';
 
-/* ════════════════════════════════════════════════════
-   M-KOD VERİSİ  (geri dönüşüm + üretim bağlamı)
-════════════════════════════════════════════════════ */
-export interface MCodeEntry {
-  code: string;
-  tr: string; // "770.10 - M610 Ofis ve Depo Kira Giderleri"
-}
+/* ══════════════════════════════════════════════════════
+   M-KOD VERİSİ
+══════════════════════════════════════════════════════ */
+export interface MCodeEntry { code: string; tr: string; }
 
-const MCODES_SALES: MCodeEntry[] = [
-  { code: 'M105', tr: '600.01 - M105 Yurt İçi Satışlar (Üçüncü Şahıslar)' },
-  { code: 'M149', tr: '600.02 - M149 Ticari Mal Satışları (Net)' },
-];
-
-const MCODES_PURCHASE: MCodeEntry[] = [
-  { code: 'M369', tr: '150/710 - M369 İlk Madde ve Malzeme Giderleri Toplamı' },
-];
-
-const MCODES_PRODUCTION: MCodeEntry[] = [
-  { code: 'M405', tr: '770.40 - M405 Elektrik Enerjisi Giderleri' },
-  { code: 'M410', tr: '770.41 - M410 Isınma, Yakıt ve Buhar Giderleri' },
-  { code: 'M415', tr: '770.42 - M415 Su Tüketim Giderleri' },
+const MCODES_FACILITY: MCodeEntry[] = [
   { code: 'M489', tr: '770.01 - M489 Brüt Personel Maaş ve Ücret Giderleri' },
-  { code: 'M489.01', tr: '770.02 - M489.01 SGK İşveren Payı Giderleri' },
-  { code: 'M489.03', tr: '770.04 - M489.03 Personel Yemek ve Mutfak Giderleri' },
-  { code: 'M489.04', tr: '770.05 - M489.04 Personel Ulaşım ve Yol Giderleri' },
-  { code: 'M509', tr: '770.20 - M509 Makine, Cihaz ve Ofis Bakım Onarım Giderleri' },
-  { code: 'M529', tr: '770.25 - M529 Çevre, Atık Yönetimi ve İSG Giderleri' },
-  { code: 'M604', tr: '730.05 - M604 Dışarıdan Sağlanan Fayda ve Hizmetler (Üretim)' },
-];
-
-const MCODES_OVERHEAD: MCodeEntry[] = [
-  { code: 'M489', tr: '770.01 - M489 Brüt Personel Maaş ve Ücret Giderleri' },
-  { code: 'M605', tr: '770.06 - M605 Dışarıdan Sağlanan Personel Hizmetleri (Yönetim)' },
   { code: 'M509', tr: '770.20 - M509 Makine, Cihaz ve Güvenlik Sistemi Bakım Onarım Giderleri' },
   { code: 'M610', tr: '770.10 - M610 Ofis ve Depo Kira Giderleri' },
   { code: 'M615', tr: '770.30 - M615 Yurt İçi ve Yurt Dışı Seyahat Giderleri' },
@@ -53,27 +27,42 @@ const MCODES_OVERHEAD: MCodeEntry[] = [
   { code: 'M759', tr: '770.11 - M759 Finansal Kiralama (Leasing) Giderleri' },
 ];
 
-/* ════════════════════════════════════════════════════
-   YARDIMCI BİLEŞENLER
-════════════════════════════════════════════════════ */
+const MCODES_PROJECT_EXPENSE: MCodeEntry[] = [
+  { code: 'M369', tr: '150/710 - M369 İlk Madde ve Malzeme Giderleri Toplamı' },
+  { code: 'M405', tr: '770.40 - M405 Elektrik Enerjisi Giderleri' },
+  { code: 'M410', tr: '770.41 - M410 Isınma, Yakıt ve Buhar Giderleri' },
+  { code: 'M415', tr: '770.42 - M415 Su Tüketim Giderleri' },
+  { code: 'M489', tr: '770.01 - M489 Brüt Personel Maaş ve Ücret Giderleri' },
+  { code: 'M489.01', tr: '770.02 - M489.01 SGK İşveren Payı Giderleri' },
+  { code: 'M489.03', tr: '770.04 - M489.03 Personel Yemek ve Mutfak Giderleri' },
+  { code: 'M489.04', tr: '770.05 - M489.04 Personel Ulaşım ve Yol Giderleri' },
+  { code: 'M509', tr: '770.20 - M509 Makine, Cihaz ve Ofis Bakım Onarım Giderleri' },
+  { code: 'M529', tr: '770.25 - M529 Çevre, Atık Yönetimi ve İSG Giderleri' },
+  { code: 'M604', tr: '730.05 - M604 Dışarıdan Sağlanan Fayda ve Hizmetler (Üretim)' },
+  { code: 'M605', tr: '770.06 - M605 Dışarıdan Sağlanan Personel Hizmetleri (Yönetim)' },
+];
 
-/** M-kod üzerine gelindiğinde TR hesap kodu + açıklama gösterir */
+const MCODES_SALES: MCodeEntry[] = [
+  { code: 'M105', tr: '600.01 - M105 Yurt İçi Satışlar (Üçüncü Şahıslar)' },
+  { code: 'M149', tr: '600.02 - M149 Ticari Mal Satışları (Net)' },
+];
+
+/* ══════════════════════════════════════════════════════
+   YARDIMCI BİLEŞENLER
+══════════════════════════════════════════════════════ */
+
 function MCodeTag({ code, mcodes }: { code: string; mcodes: MCodeEntry[] }) {
   const [open, setOpen] = useState(false);
   const entry = mcodes.find(m => m.code === code);
   const parts  = entry ? entry.tr.split(' - ') : [];
   const acctNo = parts[0] ?? '';
   const desc   = parts.slice(1).join(' - ');
-
   return (
     <span className="relative inline-block">
       <span
         className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-enba-panel-2 border border-enba-line text-[11px] font-mono text-enba-orange cursor-default select-none"
-        onMouseEnter={() => setOpen(true)}
-        onMouseLeave={() => setOpen(false)}
-      >
-        {code}
-      </span>
+        onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}
+      >{code}</span>
       {open && entry && (
         <div className="absolute left-0 top-full mt-1 z-50 w-[280px] bg-enba-panel border border-enba-line rounded-lg shadow-xl p-3 pointer-events-none">
           <div className="text-[10px] text-enba-dim font-mono mb-0.5">{acctNo}</div>
@@ -84,18 +73,15 @@ function MCodeTag({ code, mcodes }: { code: string; mcodes: MCodeEntry[] }) {
   );
 }
 
-/** Mcode seçici — arama destekli combobox */
-function MCodeSelect({
-  value, onChange, mcodes, label,
-}: { value: string; onChange: (v: string) => void; mcodes: MCodeEntry[]; label: string }) {
-  const [open,   setOpen]   = useState(false);
-  const [query,  setQuery]  = useState('');
+function MCodeSelect({ value, onChange, mcodes, label }:
+  { value: string; onChange: (v: string) => void; mcodes: MCodeEntry[]; label: string }) {
+  const [open,  setOpen]  = useState(false);
+  const [query, setQuery] = useState('');
   const inputRef = React.useRef<HTMLInputElement>(null);
 
-  const entry   = mcodes.find(m => m.code === value);
-  const acctNo  = entry ? entry.tr.split(' - ')[0] : '';
+  const entry    = mcodes.find(m => m.code === value);
+  const acctNo   = entry ? entry.tr.split(' - ')[0] : '';
   const desc     = entry ? entry.tr.split(' - ').slice(1).join(' - ') : '';
-
   const filtered = useMemo(() => {
     const q = query.toLowerCase();
     return q ? mcodes.filter(m => m.tr.toLowerCase().includes(q) || m.code.toLowerCase().includes(q)) : mcodes;
@@ -106,50 +92,32 @@ function MCodeSelect({
   return (
     <div className="relative">
       <label className="block text-[11px] uppercase tracking-wider text-enba-dim mb-1.5">{label}</label>
-
-      {/* Trigger */}
-      <button
-        type="button"
+      <button type="button"
         onClick={() => { setOpen(o => !o); setTimeout(() => inputRef.current?.focus(), 50); }}
-        className="w-full bg-enba-panel-2 border border-enba-line rounded-lg px-3 py-2 text-[13px] text-left flex items-center gap-2 focus:border-enba-orange/60 focus:ring-1 focus:ring-enba-orange/30 outline-none transition-colors"
+        className="w-full bg-enba-panel-2 border border-enba-line rounded-lg px-3 py-2 text-[13px] text-left flex items-center gap-2 focus:border-enba-orange/60 outline-none transition-colors"
       >
         <span className="font-mono text-enba-orange flex-none">{value}</span>
         <span className="text-enba-muted truncate text-[12px] flex-1">{desc}</span>
         <I.Chevron size={12} className={cx('flex-none text-enba-dim transition-transform', open ? 'rotate-180' : '')} />
       </button>
-
-      {/* Dropdown */}
       {open && (
         <div className="absolute left-0 right-0 top-full mt-1 z-50 bg-enba-panel border border-enba-line rounded-xl shadow-xl overflow-hidden">
           <div className="p-2 border-b border-enba-line">
-            <input
-              ref={inputRef}
-              value={query}
-              onChange={e => setQuery(e.target.value)}
+            <input ref={inputRef} value={query} onChange={e => setQuery(e.target.value)}
               placeholder="Ara…"
-              className="w-full bg-enba-panel-2 border border-enba-line rounded-lg px-3 py-1.5 text-[12.5px] text-enba-text outline-none focus:border-enba-orange/60"
-            />
+              className="w-full bg-enba-panel-2 border border-enba-line rounded-lg px-3 py-1.5 text-[12.5px] text-enba-text outline-none focus:border-enba-orange/60" />
           </div>
           <ul className="max-h-[420px] overflow-y-auto py-1">
-            {filtered.length === 0 && (
-              <li className="px-4 py-3 text-[12px] text-enba-dim text-center">Sonuç yok</li>
-            )}
+            {filtered.length === 0 && <li className="px-4 py-3 text-[12px] text-enba-dim text-center">Sonuç yok</li>}
             {filtered.map(m => {
               const mDesc = m.tr.split(' - ').slice(1).join(' - ');
-              const active = m.code === value;
               return (
                 <li key={m.code}>
-                  <button
-                    type="button"
-                    onClick={() => select(m.code)}
-                    className={cx(
-                      'w-full text-left px-4 py-2.5 flex items-center gap-3 hover:bg-enba-panel-2 transition-colors',
-                      active ? 'bg-enba-orange/10' : '',
-                    )}
-                  >
+                  <button type="button" onClick={() => select(m.code)}
+                    className={cx('w-full text-left px-4 py-2.5 flex items-center gap-3 hover:bg-enba-panel-2 transition-colors', m.code === value ? 'bg-enba-orange/10' : '')}>
                     <span className="font-mono text-[12px] text-enba-orange flex-none w-[72px]">{m.code}</span>
                     <span className="text-[12px] text-enba-text leading-snug">{mDesc}</span>
-                    {active && <I.Check size={12} className="text-enba-orange flex-none ml-auto" />}
+                    {m.code === value && <I.Check size={12} className="text-enba-orange flex-none ml-auto" />}
                   </button>
                 </li>
               );
@@ -157,7 +125,6 @@ function MCodeSelect({
           </ul>
         </div>
       )}
-
       {entry && (
         <div className="mt-1 flex items-baseline gap-1.5 text-[10.5px]">
           <span className="font-mono text-enba-dim">{acctNo}</span>
@@ -171,29 +138,17 @@ function MCodeSelect({
 const inputCls  = 'w-full bg-enba-panel-2 border border-enba-line rounded-lg px-3 py-2 text-[13px] text-enba-text focus:border-enba-orange/60 focus:ring-1 focus:ring-enba-orange/30 outline-none transition-colors';
 const selectCls = inputCls + ' appearance-none';
 
-/** Para girişi — odakta ham sayı, blur'da binlik ayraçlı */
-function MoneyInput({ value, onChange, className, min = 0, placeholder }:
-  { value: number; onChange: (v: number) => void; className?: string; min?: number; placeholder?: string }) {
+function MoneyInput({ value, onChange, className, min = 0 }:
+  { value: number; onChange: (v: number) => void; className?: string; min?: number }) {
   const [focused, setFocused] = useState(false);
   const [raw, setRaw] = useState('');
-
   const display = focused ? raw : (value === 0 ? '' : value.toLocaleString('tr-TR'));
-
   return (
-    <input
-      type="text"
-      inputMode="numeric"
-      value={display}
-      placeholder={placeholder ?? '0'}
+    <input type="text" inputMode="numeric" value={display} placeholder="0"
       onFocus={() => { setFocused(true); setRaw(value === 0 ? '' : String(value)); }}
-      onBlur={() => {
-        setFocused(false);
-        const parsed = Number(raw.replace(/[^\d]/g, ''));
-        onChange(isNaN(parsed) ? min : Math.max(min, parsed));
-      }}
+      onBlur={() => { setFocused(false); const p = Number(raw.replace(/[^\d]/g, '')); onChange(isNaN(p) ? min : Math.max(min, p)); }}
       onChange={e => setRaw(e.target.value.replace(/[^\d]/g, ''))}
-      className={className ?? inputCls}
-    />
+      className={className ?? inputCls} />
   );
 }
 
@@ -211,258 +166,24 @@ function FieldCard({ children }: { children: React.ReactNode }) {
   return <div className="bg-enba-panel border border-enba-line rounded-xl p-5 space-y-4">{children}</div>;
 }
 
-function StepHeader({ step, title, sub }: { step: number; title: string; sub: string }) {
+function StepHeader({ step, total, title, sub }: { step: number; total: number; title: string; sub: string }) {
   return (
     <div className="mb-4">
-      <div className="text-[10.5px] uppercase tracking-[0.14em] text-enba-dim mb-1">Adım {step}</div>
+      <div className="text-[10.5px] uppercase tracking-[0.14em] text-enba-dim mb-1">Adım {step} / {total}</div>
       <h2 className="text-[20px] font-semibold text-enba-text">{title}</h2>
       <p className="text-[12.5px] text-enba-muted mt-1">{sub}</p>
     </div>
   );
 }
 
-const MONTHS_TR = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
-const PRODUCT_COLORS = ['#E35205','#FF8A3D','#F2A93B','#3DBE7C','#5B9DFF','#9B8EF0','#E5484D','#9A9A9A'];
+const MONTHS_TR_FULL = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
 const UNITS_WEIGHT   = ['ton','kg','m³'];
 const UNITS_PRODUCT  = ['ton','kg','adet','sefer','m²','paket'];
+const PROJECT_COLORS = ['#E35205','#3DBE7C','#5B9DFF','#F2A93B','#9B8EF0','#E5484D','#FF8A3D','#9A9A9A'];
 
-/* ════════════════════════════════════════════════════
-   ANA SIHIRBAZ
-════════════════════════════════════════════════════ */
-type Step = 1 | 2 | 3 | 4 | 5;
-
-const STEPS: { n: Step; label: string }[] = [
-  { n: 1, label: 'Temel Bilgiler' },
-  { n: 2, label: 'Sabit Giderler' },
-  { n: 3, label: 'Alış Maliyetleri' },
-  { n: 4, label: 'Üretim Maliyetleri' },
-  { n: 5, label: 'Satış Gelirleri' },
-];
-
-interface Props {
-  onDone:       (plan: DPlan) => void;
-  onCancel:     () => void;
-  onSave?:      (plan: DPlan) => void;
-  initialPlan?: DPlan;
-}
-
-export function DPlanWizard({ onDone, onCancel, onSave, initialPlan }: Props) {
-  const planId = useRef<string>(initialPlan?.id ?? crypto.randomUUID());
-  const [step, setStep] = useState<Step>(1);
-  const [saved, setSaved] = useState(false);
-
-  /* Adım 1 — Temel */
-  const [title,       setTitle]       = useState(initialPlan?.title ?? '');
-  const [startYear,   setStartYear]   = useState(initialPlan?.startYear ?? new Date().getFullYear());
-  const [startMonth,  setStartMonth]  = useState(initialPlan?.startMonth ?? 0);
-  const [horizon,     setHorizon]     = useState(initialPlan?.horizon ?? 24);
-  const [openingCash, setOpeningCash] = useState(initialPlan?.openingCash ?? 0);
-
-  /* Adım 2-4 — Giderler (kategoriye göre ayır) */
-  const [overhead,   setOverhead]   = useState<FixedExpense[]>(
-    initialPlan?.fixedExpenses.filter(e => e.costCategory === 'overhead') ?? []
-  );
-  const [purchase,   setPurchase]   = useState<FixedExpense[]>(
-    initialPlan?.fixedExpenses.filter(e => e.costCategory === 'purchase') ?? []
-  );
-  const [production, setProduction] = useState<FixedExpense[]>(
-    initialPlan?.fixedExpenses.filter(e => e.costCategory === 'production') ?? []
-  );
-
-  /* Adım 5 — Satış Gelirleri */
-  const [sales, setSales] = useState<Product[]>(initialPlan?.products ?? []);
-
-  /* Projeksiyon önizlemesi (adım 5) */
-  const preview = useMemo(() => {
-    const allExp = [...overhead, ...purchase, ...production];
-    if (!sales.length && !allExp.length) return null;
-    const periods = buildMonths(12, startYear, startMonth);
-    const s       = buildSeries(sales, allExp, periods, SCENARIOS.baz);
-    return {
-      rev:    s.reduce((a, x) => a + x.revenue, 0),
-      opex:   s.reduce((a, x) => a + x.opex, 0),
-      ebitda: s.reduce((a, x) => a + x.ebitda, 0),
-    };
-  }, [sales, overhead, purchase, production, startYear, startMonth]);
-
-  const next = () => { setSaved(false); setStep(s => Math.min(5, s + 1) as Step); };
-  const prev = () => { setSaved(false); setStep(s => Math.max(1, s - 1) as Step); };
-
-  const buildPlan = (status: DPlan['status'] = 'draft'): DPlan => ({
-    id:             planId.current,
-    title:          title.trim() || 'İsimsiz Plan',
-    baslik:         title.trim() || 'İsimsiz Plan',
-    status,
-    year:           startYear,
-    startYear,
-    startMonth,
-    horizon,
-    openingCash,
-    actualsThrough: initialPlan?.actualsThrough ?? 0,
-    products:       sales,
-    fixedExpenses:  [...overhead, ...purchase, ...production],
-    cashEvents:     initialPlan?.cashEvents ?? [],
-  });
-
-  const handleSave = () => {
-    onSave?.(buildPlan('draft'));
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  };
-
-  const finish = () => onDone(buildPlan(initialPlan?.status ?? 'draft'));
-
-  return (
-    <div className="h-full flex bg-enba-bg overflow-hidden">
-
-      {/* ── Sol adım çubuğu ── */}
-      <aside className="w-[200px] flex-none bg-enba-panel border-r border-enba-line flex flex-col">
-        <div className="h-[60px] flex items-center px-4 border-b border-enba-line gap-2 flex-none">
-          <button onClick={onCancel} className="w-7 h-7 rounded-md text-enba-muted hover:text-enba-text hover:bg-enba-panel-2 inline-flex items-center justify-center">
-            <I.Chevron size={13} className="rotate-90" />
-          </button>
-          <span className="text-[13px] font-semibold text-enba-text">{initialPlan ? 'Planı Düzenle' : 'Yeni Plan'}</span>
-        </div>
-
-        <nav className="flex-1 pt-3 px-2">
-          {STEPS.map(({ n, label }) => {
-            const done   = step > n;
-            const active = step === n;
-            return (
-              <button
-                key={n}
-                onClick={() => done && setStep(n)}
-                disabled={!done && !active}
-                className={cx(
-                  'w-full flex items-center gap-2.5 px-3 h-9 rounded-lg mb-0.5 text-[12.5px] transition-colors',
-                  active  ? 'bg-enba-orange/12 text-enba-orange' : '',
-                  done    ? 'text-enba-text hover:bg-enba-panel-2 cursor-pointer' : '',
-                  !active && !done ? 'text-enba-dim cursor-not-allowed' : '',
-                )}
-              >
-                <span className={cx(
-                  'w-4.5 h-4.5 rounded-full inline-flex items-center justify-center text-[10px] font-semibold flex-none w-5 h-5',
-                  done   ? 'bg-enba-green/20 text-enba-green' : '',
-                  active ? 'bg-enba-orange text-white' : '',
-                  !active && !done ? 'bg-enba-panel-2 text-enba-dim' : '',
-                )}>
-                  {done ? '✓' : n}
-                </span>
-                <span className="text-left flex-1 truncate">{label}</span>
-              </button>
-            );
-          })}
-        </nav>
-
-        <div className="p-4 border-t border-enba-line">
-          <div className="w-full h-1 bg-enba-panel-2 rounded-full overflow-hidden">
-            <div className="h-full bg-enba-orange rounded-full transition-all" style={{ width: `${((step - 1) / 4) * 100}%` }} />
-          </div>
-          <div className="text-[10px] text-enba-dim mt-1.5">Adım {step} / 5</div>
-        </div>
-      </aside>
-
-      {/* ── İçerik ── */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <div className="flex-1 overflow-y-auto p-8 grid-bg">
-          <div className="max-w-[700px] mx-auto">
-
-            {step === 1 && (
-              <Step1
-                title={title} setTitle={setTitle}
-                startYear={startYear} setStartYear={setStartYear}
-                startMonth={startMonth} setStartMonth={setStartMonth}
-                horizon={horizon} setHorizon={setHorizon}
-                openingCash={openingCash} setOpeningCash={setOpeningCash}
-              />
-            )}
-
-            {step === 2 && (
-              <ExpenseStep
-                stepNum={2}
-                title="Sabit Giderler"
-                sub="Kira, idari personel, sigorta, iletişim gibi dönemsel sabit maliyetler. (M610, M489, M620, M635 vb.)"
-                category="overhead"
-                mcodes={MCODES_OVERHEAD}
-                defaultMcode="M610"
-                items={overhead}
-                setItems={setOverhead}
-                showUnitPrice={false}
-              />
-            )}
-
-            {step === 3 && (
-              <ExpenseStep
-                stepNum={3}
-                title="Alış Maliyetleri"
-                sub="Hammadde alışları: PET şişe, HDPE, LDPE, karton, metal vb. (M369)"
-                category="purchase"
-                mcodes={MCODES_PURCHASE}
-                defaultMcode="M369"
-                items={purchase}
-                setItems={setPurchase}
-                showUnitPrice={true}
-                units={UNITS_WEIGHT}
-              />
-            )}
-
-            {step === 4 && (
-              <ExpenseStep
-                stepNum={4}
-                title="Üretim Maliyetleri"
-                sub="Elektrik, üretim personeli, bakım, çevre/İSG, taşeron hizmet. (M405, M489, M509, M529, M604 vb.)"
-                category="production"
-                mcodes={MCODES_PRODUCTION}
-                defaultMcode="M405"
-                items={production}
-                setItems={setProduction}
-                showUnitPrice={false}
-              />
-            )}
-
-            {step === 5 && (
-              <SalesStep
-                sales={sales}
-                setSales={setSales}
-                preview={preview}
-              />
-            )}
-
-          </div>
-        </div>
-
-        {/* ── Footer ── */}
-        <div className="flex-none border-t border-enba-line bg-enba-panel px-8 h-[60px] flex items-center justify-between">
-          <Btn variant="outline" size="md"
-            icon={step > 1 ? <I.Chevron size={12} className="rotate-90" /> : undefined}
-            onClick={step > 1 ? prev : onCancel}>
-            {step > 1 ? 'Geri' : 'İptal'}
-          </Btn>
-
-          <div className="flex items-center gap-2">
-            {onSave && title.trim() && (
-              <Btn variant="outline" size="md" icon={saved ? <I.Check size={13} /> : undefined} onClick={handleSave}>
-                {saved ? 'Kaydedildi' : 'Kaydet'}
-              </Btn>
-            )}
-            {step < 5
-              ? <Btn variant="primary" size="md" disabled={step === 1 && !title.trim()} onClick={next}>
-                  İleri <I.Chevron size={12} className="-rotate-90 ml-1" />
-                </Btn>
-              : <Btn variant="primary" size="md" icon={<I.Check size={14} />} onClick={finish}>
-                  Tamamla
-                </Btn>
-            }
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ════════════════════════════════════════════════════
+/* ══════════════════════════════════════════════════════
    ADIM 1 — Temel Bilgiler
-════════════════════════════════════════════════════ */
+══════════════════════════════════════════════════════ */
 interface Step1Props {
   title: string; setTitle: (v: string) => void;
   startYear: number; setStartYear: (v: number) => void;
@@ -472,12 +193,12 @@ interface Step1Props {
 }
 function Step1({ title, setTitle, startYear, setStartYear, startMonth, setStartMonth, horizon, setHorizon, openingCash, setOpeningCash }: Step1Props) {
   return (
-    <div className="space-y-5">
-      <StepHeader step={1} title="Temel Bilgiler" sub="Plan adı, dönem aralığı ve açılış nakit bakiyesi." />
+    <div className="space-y-6">
+      <StepHeader step={1} total={3} title="Temel Bilgiler" sub="Plan adı, zaman aralığı ve başlangıç nakit bakiyesi." />
       <FieldCard>
-        <Field label="Plan Adı *">
-          <input autoFocus value={title} onChange={e => setTitle(e.target.value)}
-            placeholder="2025 Geri Dönüşüm Bütçesi" className={inputCls} />
+        <Field label="Plan Adı">
+          <input value={title} onChange={e => setTitle(e.target.value)} placeholder="örn. 2025 Merkez Tesis Bütçesi"
+            className={inputCls} />
         </Field>
         <div className="grid grid-cols-2 gap-4">
           <Field label="Başlangıç Yılı">
@@ -486,7 +207,7 @@ function Step1({ title, setTitle, startYear, setStartYear, startMonth, setStartM
           </Field>
           <Field label="Başlangıç Ayı">
             <select value={startMonth} onChange={e => setStartMonth(Number(e.target.value))} className={selectCls}>
-              {MONTHS_TR.map((m, i) => <option key={i} value={i}>{m}</option>)}
+              {MONTHS_TR_FULL.map((m, i) => <option key={i} value={i}>{m}</option>)}
             </select>
           </Field>
         </div>
@@ -495,8 +216,7 @@ function Step1({ title, setTitle, startYear, setStartYear, startMonth, setStartM
             {[12, 18, 24, 36].map(h => (
               <button key={h} onClick={() => setHorizon(h)}
                 className={cx('flex-1 h-9 rounded-lg border text-[13px] font-medium transition-colors',
-                  horizon === h ? 'border-enba-orange bg-enba-orange/10 text-enba-orange' : 'border-enba-line bg-enba-panel-2 text-enba-muted hover:border-enba-orange/40'
-                )}>
+                  horizon === h ? 'border-enba-orange bg-enba-orange/10 text-enba-orange' : 'border-enba-line bg-enba-panel-2 text-enba-muted hover:border-enba-orange/40')}>
                 {h} ay
               </button>
             ))}
@@ -513,172 +233,76 @@ function Step1({ title, setTitle, startYear, setStartYear, startMonth, setStartM
   );
 }
 
-/* ════════════════════════════════════════════════════
-   ADIM 2/3/4 — Gider Adımları (Sabit / Alış / Üretim)
-════════════════════════════════════════════════════ */
-interface ExpenseStepProps {
-  stepNum: number;
-  title: string;
-  sub: string;
-  category: FixedExpense['costCategory'];
-  mcodes: MCodeEntry[];
-  defaultMcode: string;
-  items: FixedExpense[];
-  setItems: (v: FixedExpense[]) => void;
-  showUnitPrice: boolean;
-  units?: string[];
+/* ══════════════════════════════════════════════════════
+   ADIM 2 — Tesis Sabit Giderleri
+══════════════════════════════════════════════════════ */
+function emptyFacility(): FixedExpense {
+  return { id: crypto.randomUUID(), mcode: 'M610', costCategory: 'facility', name: '', group: 'Sabit', monthly: 0, growth: 0.10, startOffset: 0 };
 }
 
-function emptyExpense(cat: FixedExpense['costCategory'], mcode: string): FixedExpense {
-  return {
-    id: crypto.randomUUID(),
-    mcode,
-    costCategory: cat,
-    name: '',
-    group: cat === 'purchase' ? 'Yarı Değişken' : 'Sabit',
-    monthly: 0,
-    growth: 0.10,
-    startOffset: 0,
-    unit: 'ton',
-    unitPrice: 0,
-    monthlyQty: 0,
-  };
-}
-
-function ExpenseStep({ stepNum, title, sub, category, mcodes, defaultMcode, items, setItems, showUnitPrice, units = ['ton','kg'] }: ExpenseStepProps) {
+function FacilityStep({ items, setItems }: { items: FixedExpense[]; setItems: (v: FixedExpense[]) => void }) {
   const [adding, setAdding] = useState(false);
-  const [draft,  setDraft]  = useState<FixedExpense>(emptyExpense(category, defaultMcode));
+  const [draft,  setDraft]  = useState<FixedExpense>(emptyFacility());
   const [editId, setEditId] = useState<string | null>(null);
 
-  const startAdd = () => {
-    setDraft(emptyExpense(category, defaultMcode));
-    setEditId(null);
-    setAdding(true);
-  };
+  const startAdd  = () => { setDraft(emptyFacility()); setEditId(null); setAdding(true); };
+  const startEdit = (item: FixedExpense) => { setDraft({ ...item }); setEditId(item.id); setAdding(true); };
+  const cancel    = () => { setAdding(false); setEditId(null); };
 
-  const startEdit = (item: FixedExpense) => {
-    setDraft({ ...item });
-    setEditId(item.id);
-    setAdding(true);
-  };
-
-  const handleSave = () => {
+  const save = () => {
     if (!draft.name.trim()) return;
-    const monthly = showUnitPrice
-      ? (draft.unitPrice ?? 0) * (draft.monthlyQty ?? 0)
-      : draft.monthly;
-    const item: FixedExpense = { ...draft, monthly };
-    if (editId) {
-      setItems(items.map(i => i.id === editId ? item : i));
-    } else {
-      setItems([...items, item]);
-    }
-    setAdding(false);
-    setEditId(null);
+    if (editId) setItems(items.map(i => i.id === editId ? draft : i));
+    else        setItems([...items, { ...draft, id: crypto.randomUUID() }]);
+    setAdding(false); setEditId(null);
   };
-
-  const handleCancel = () => { setAdding(false); setEditId(null); };
 
   const totalMonthly = items.reduce((s, e) => s + e.monthly, 0);
 
   return (
     <div className="space-y-4">
-      <StepHeader step={stepNum} title={title} sub={sub} />
+      <StepHeader step={2} total={3} title="Tesis Sabit Giderleri"
+        sub="Tesis hiç çalışmasa da akan giderler: kira, aidat, muhasebe, sigorta, çevre mühendisliği vb." />
 
-      {/* Toplam */}
       {items.length > 0 && (
         <div className="bg-enba-panel border border-enba-line rounded-xl px-4 py-3 flex items-center justify-between">
-          <span className="text-[11px] text-enba-dim">{items.length} kalem</span>
-          <span className="text-[14px] font-semibold tabular">
-            {fmtTL(totalMonthly)}<span className="text-[11px] text-enba-dim font-normal ml-1">/ ay</span>
-          </span>
+          <span className="text-[11px] text-enba-dim">{items.length} kalem · her ay sabit</span>
+          <span className="text-[14px] font-semibold tabular">{fmtTL(totalMonthly)}<span className="text-[11px] text-enba-dim font-normal ml-1">/ ay</span></span>
         </div>
       )}
 
-      {/* Liste */}
       {items.map(item => (
         <div key={item.id} className="bg-enba-panel border border-enba-line rounded-xl px-4 py-3 flex items-center gap-3">
-          <MCodeTag code={item.mcode} mcodes={mcodes} />
+          <MCodeTag code={item.mcode} mcodes={MCODES_FACILITY} />
           <div className="flex-1 min-w-0">
             <div className="text-[13px] font-semibold text-enba-text">{item.name}</div>
-            {showUnitPrice
-              ? <div className="text-[11px] text-enba-dim mt-0.5">
-                  {(item.monthlyQty ?? 0).toLocaleString('tr-TR')} {item.unit} · {fmtTL(item.unitPrice ?? 0)}/{item.unit} · yıllık +{Math.round(item.growth * 100)}%
-                  {(item.startOffset ?? 0) > 0 && <span className="ml-2 text-enba-amber">{item.startOffset! + 1}. aydan itibaren</span>}
-                </div>
-              : <div className="text-[11px] text-enba-dim mt-0.5">
-                  yıllık +{Math.round(item.growth * 100)}%
-                  {(item.startOffset ?? 0) > 0 && <span className="ml-2 text-enba-amber">{item.startOffset! + 1}. aydan itibaren</span>}
-                </div>
-            }
+            <div className="text-[11px] text-enba-dim mt-0.5">
+              yıllık +{Math.round(item.growth * 100)}%
+              {(item.startOffset ?? 0) > 0 && <span className="ml-2 text-enba-amber">{item.startOffset! + 1}. aydan itibaren</span>}
+            </div>
           </div>
           <span className="text-[13px] font-semibold tabular">{fmtTL(item.monthly)}<span className="text-[11px] text-enba-dim font-normal">/ay</span></span>
           <button onClick={() => startEdit(item)} className="w-7 h-7 rounded-md text-enba-dim hover:text-enba-text hover:bg-enba-panel-2 inline-flex items-center justify-center">
-            <I.Edit size={12} />
+            <I.Edit size={13} />
           </button>
-          <button onClick={() => setItems(items.filter(i => i.id !== item.id))}
-            className="w-7 h-7 rounded-md text-enba-dim hover:text-enba-red hover:bg-enba-red/10 inline-flex items-center justify-center">
-            <I.Trash size={12} />
+          <button onClick={() => setItems(items.filter(i => i.id !== item.id))} className="w-7 h-7 rounded-md text-enba-dim hover:text-enba-red hover:bg-enba-red/10 inline-flex items-center justify-center">
+            <I.Trash size={13} />
           </button>
         </div>
       ))}
 
-      {/* Form */}
       {adding ? (
         <FieldCard>
-          <div className="grid grid-cols-2 gap-4">
-            <MCodeSelect
-              label="M-Kodu *"
-              value={draft.mcode}
-              onChange={v => setDraft({ ...draft, mcode: v })}
-              mcodes={mcodes}
-            />
-            <Field label="Kalem Adı *">
-              <input autoFocus value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })}
-                placeholder={category === 'purchase' ? 'PET Şişe Atık...' : category === 'production' ? 'Elektrik, Personel...' : 'Kira, İletişim...'}
-                className={inputCls} />
-            </Field>
-          </div>
-
-          {showUnitPrice ? (
-            <div className="grid grid-cols-3 gap-4">
-              <Field label="Birim">
-                <select value={draft.unit ?? 'ton'} onChange={e => setDraft({ ...draft, unit: e.target.value })} className={selectCls}>
-                  {units.map(u => <option key={u}>{u}</option>)}
-                </select>
-              </Field>
-              <Field label={`Alış Fiyatı (₺/${draft.unit ?? 'ton'})`}>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-enba-dim text-[13px]">₺</span>
-                  <MoneyInput value={draft.unitPrice ?? 0}
-                    onChange={v => setDraft({ ...draft, unitPrice: v })}
-                    className={cx(inputCls, 'pl-7')} />
-                </div>
-              </Field>
-              <Field label={`Aylık Alış (${draft.unit ?? 'ton'})`}>
-                <input type="number" value={draft.monthlyQty ?? 0} min={0}
-                  onChange={e => setDraft({ ...draft, monthlyQty: Number(e.target.value) })}
-                  className={inputCls} />
-              </Field>
+          <MCodeSelect value={draft.mcode} onChange={v => setDraft({ ...draft, mcode: v })} mcodes={MCODES_FACILITY} label="Hesap Kodu" />
+          <Field label="Gider Adı">
+            <input value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })}
+              placeholder="örn. Tesis Kirası" className={inputCls} />
+          </Field>
+          <Field label="Aylık Tutar (₺)">
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-enba-dim text-[13px]">₺</span>
+              <MoneyInput value={draft.monthly} onChange={v => setDraft({ ...draft, monthly: v })} className={cx(inputCls, 'pl-7')} />
             </div>
-          ) : (
-            <Field label="Aylık Tutar (₺)">
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-enba-dim text-[13px]">₺</span>
-                <MoneyInput value={draft.monthly}
-                  onChange={v => setDraft({ ...draft, monthly: v })}
-                  className={cx(inputCls, 'pl-7')} />
-              </div>
-            </Field>
-          )}
-
-          {/* Önizleme tutarı (alış için) */}
-          {showUnitPrice && (draft.unitPrice ?? 0) > 0 && (draft.monthlyQty ?? 0) > 0 && (
-            <div className="text-[12px] text-enba-muted bg-enba-panel-2 rounded-lg px-3 py-2">
-              Aylık maliyet: <span className="font-semibold text-enba-text">{fmtTL((draft.unitPrice ?? 0) * (draft.monthlyQty ?? 0))}</span>
-            </div>
-          )}
-
+          </Field>
           <div className="grid grid-cols-3 gap-4">
             <Field label="Yıllık Büyüme (%)">
               <div className="flex items-center gap-1.5">
@@ -688,12 +312,8 @@ function ExpenseStep({ stepNum, title, sub, category, mcodes, defaultMcode, item
                 <span className="text-enba-dim text-[13px]">%</span>
               </div>
             </Field>
-            <Field label="Başlangıç Ayı" hint="Kaçıncı ayda başlayacak?">
-              <select
-                value={draft.startOffset ?? 0}
-                onChange={e => setDraft({ ...draft, startOffset: Number(e.target.value) })}
-                className={selectCls}
-              >
+            <Field label="Başlangıç Ayı" hint="Kaçıncı ayda başlar?">
+              <select value={draft.startOffset ?? 0} onChange={e => setDraft({ ...draft, startOffset: Number(e.target.value) })} className={selectCls}>
                 {Array.from({ length: 24 }, (_, i) => (
                   <option key={i} value={i}>{i === 0 ? '1. ay (hemen)' : `${i + 1}. ay`}</option>
                 ))}
@@ -706,111 +326,212 @@ function ExpenseStep({ stepNum, title, sub, category, mcodes, defaultMcode, item
               </select>
             </Field>
           </div>
-
           <div className="flex gap-2 pt-1 border-t border-enba-line">
-            <button onClick={handleCancel} className="h-8 px-4 rounded-lg border border-enba-line text-[12px] text-enba-muted hover:bg-enba-panel-2">İptal</button>
-            <Btn variant="primary" size="sm" onClick={handleSave} disabled={!draft.name.trim()}>
-              {editId ? 'Güncelle' : 'Ekle'}
-            </Btn>
+            <button onClick={cancel} className="h-8 px-4 rounded-lg border border-enba-line text-[12px] text-enba-muted hover:bg-enba-panel-2">İptal</button>
+            <Btn variant="primary" size="sm" onClick={save} disabled={!draft.name.trim()}>{editId ? 'Güncelle' : 'Ekle'}</Btn>
           </div>
         </FieldCard>
       ) : (
         <button onClick={startAdd}
           className="w-full border-2 border-dashed border-enba-line rounded-xl h-11 flex items-center justify-center gap-2 text-[13px] text-enba-dim hover:border-enba-orange/40 hover:text-enba-muted transition-colors">
-          <I.Plus size={14} /> Kalem Ekle
+          <I.Plus size={14} /> Tesis Gideri Ekle
         </button>
       )}
 
       {items.length === 0 && !adding && (
         <p className="text-[11.5px] text-enba-dim text-center">
-          Boş bırakabilirsiniz — plan oluşturulduktan sonra da eklenebilir.
+          Tesis gideri olmayan planlar da oluşturulabilir — sonradan eklenebilir.
         </p>
       )}
     </div>
   );
 }
 
-/* ════════════════════════════════════════════════════
-   ADIM 5 — Satış Gelirleri
-════════════════════════════════════════════════════ */
-function emptySale(idx: number): Product {
+/* ══════════════════════════════════════════════════════
+   ADIM 3 — Projeler
+══════════════════════════════════════════════════════ */
+function emptyProject(idx: number): ActiveProject {
   return {
     id: crypto.randomUUID(),
-    mcode: 'M105',
     name: '',
-    category: 'Granül Üretim',
-    unit: 'ton',
-    price: 0,
-    priceGrowth: 0.08,
-    seasonality: Array(12).fill(1),
-    volume: 0,
-    volumeGrowth: 0.05,
-    varCostRatio: 0,
-    color: PRODUCT_COLORS[idx % PRODUCT_COLORS.length],
+    color: PROJECT_COLORS[idx % PROJECT_COLORS.length],
+    allocationWeight: 1,
+    startOffset: 0,
+    endOffset: undefined,
+    expenses: [],
+    revenues: [],
   };
 }
 
-interface SalesStepProps {
-  sales: Product[];
-  setSales: (v: Product[]) => void;
-  preview: { rev: number; opex: number; ebitda: number } | null;
+function emptyProjectExpense(): FixedExpense {
+  return { id: crypto.randomUUID(), mcode: 'M489', costCategory: 'production', name: '', group: 'Sabit', monthly: 0, growth: 0.10, startOffset: 0 };
 }
 
-function SalesStep({ sales, setSales, preview }: SalesStepProps) {
+function emptyProjectExpensePurchase(): FixedExpense {
+  return { id: crypto.randomUUID(), mcode: 'M369', costCategory: 'purchase', name: '', group: 'Yarı Değişken', monthly: 0, growth: 0.10, startOffset: 0, unit: 'ton', unitPrice: 0, monthlyQty: 0 };
+}
+
+function emptyRevenue(idx: number): Product {
+  return {
+    id: crypto.randomUUID(), mcode: 'M105', name: '', category: 'Üretim', unit: 'ton',
+    price: 0, priceGrowth: 0.08, seasonality: Array(12).fill(1),
+    volume: 0, volumeGrowth: 0.05, varCostRatio: 0,
+    color: PROJECT_COLORS[idx % PROJECT_COLORS.length],
+  };
+}
+
+/* ── Proje Gider Listesi ── */
+function ProjectExpenseList({ items, setItems }: { items: FixedExpense[]; setItems: (v: FixedExpense[]) => void }) {
   const [adding, setAdding] = useState(false);
-  const [draft,  setDraft]  = useState<Product>(emptySale(0));
+  const [draft,  setDraft]  = useState<FixedExpense>(emptyProjectExpense());
   const [editId, setEditId] = useState<string | null>(null);
+  const isPurchase = draft.mcode === 'M369';
 
-  const startAdd = () => { setDraft(emptySale(sales.length)); setEditId(null); setAdding(true); };
-  const startEdit = (p: Product) => { setDraft({ ...p }); setEditId(p.id); setAdding(true); };
+  const startAdd  = () => { setDraft(emptyProjectExpense()); setEditId(null); setAdding(true); };
+  const startEdit = (item: FixedExpense) => { setDraft({ ...item }); setEditId(item.id); setAdding(true); };
+  const cancel    = () => { setAdding(false); setEditId(null); };
 
-  const handleSave = () => {
+  const save = () => {
     if (!draft.name.trim()) return;
-    if (editId) setSales(sales.map(p => p.id === editId ? draft : p));
-    else        setSales([...sales, draft]);
-    setAdding(false);
-    setEditId(null);
+    const monthly = isPurchase ? (draft.unitPrice ?? 0) * (draft.monthlyQty ?? 0) : draft.monthly;
+    const item: FixedExpense = { ...draft, monthly, costCategory: isPurchase ? 'purchase' : 'production' };
+    if (editId) setItems(items.map(i => i.id === editId ? item : i));
+    else        setItems([...items, { ...item, id: crypto.randomUUID() }]);
+    setAdding(false); setEditId(null);
   };
 
   return (
-    <div className="space-y-4">
-      <StepHeader step={5} title="Satış Gelirleri"
-        sub="Granül, pelet ve hizmet gelirleri. Her ürün için birim fiyat ve aylık satış hacmi girin. (M105, M149)" />
-
-      {/* Ürün listesi */}
-      {sales.map(p => (
-        <div key={p.id} className="bg-enba-panel border border-enba-line rounded-xl px-4 py-3 flex items-center gap-3">
-          <span className="w-2.5 h-8 rounded-sm flex-none" style={{ background: p.color }} />
-          <MCodeTag code={p.mcode} mcodes={MCODES_SALES} />
+    <div className="space-y-3">
+      {items.map(item => (
+        <div key={item.id} className="bg-enba-panel-2 border border-enba-line rounded-lg px-3 py-2.5 flex items-center gap-3">
+          <MCodeTag code={item.mcode} mcodes={MCODES_PROJECT_EXPENSE} />
           <div className="flex-1 min-w-0">
-            <div className="text-[13px] font-semibold text-enba-text">{p.name}</div>
-            <div className="text-[11px] text-enba-dim mt-0.5">
-              {fmtTL(p.price)}/{p.unit} · {p.volume.toLocaleString('tr-TR')} {p.unit}/ay
-            </div>
+            <div className="text-[12.5px] font-semibold text-enba-text">{item.name}</div>
+            {item.costCategory === 'purchase'
+              ? <div className="text-[10.5px] text-enba-dim">{item.monthlyQty} {item.unit} · {fmtTL(item.unitPrice)}/{item.unit}</div>
+              : <div className="text-[10.5px] text-enba-dim">+{Math.round(item.growth * 100)}%/yıl{(item.startOffset ?? 0) > 0 ? ` · ${item.startOffset! + 1}. aydan` : ''}</div>
+            }
           </div>
-          <button onClick={() => startEdit(p)} className="w-7 h-7 rounded-md text-enba-dim hover:text-enba-text hover:bg-enba-panel-2 inline-flex items-center justify-center">
-            <I.Edit size={12} />
-          </button>
-          <button onClick={() => setSales(sales.filter(x => x.id !== p.id))}
-            className="w-7 h-7 rounded-md text-enba-dim hover:text-enba-red hover:bg-enba-red/10 inline-flex items-center justify-center">
-            <I.Trash size={12} />
-          </button>
+          <span className="text-[12.5px] font-semibold tabular text-enba-text">{fmtTL(item.monthly)}/ay</span>
+          <button onClick={() => startEdit(item)} className="w-6 h-6 rounded text-enba-dim hover:text-enba-text hover:bg-enba-panel inline-flex items-center justify-center"><I.Edit size={12} /></button>
+          <button onClick={() => setItems(items.filter(i => i.id !== item.id))} className="w-6 h-6 rounded text-enba-dim hover:text-enba-red inline-flex items-center justify-center"><I.Trash size={12} /></button>
         </div>
       ))}
 
-      {/* Form */}
       {adding ? (
-        <FieldCard>
-          <div className="grid grid-cols-2 gap-4">
-            <MCodeSelect label="M-Kodu *" value={draft.mcode}
-              onChange={v => setDraft({ ...draft, mcode: v })} mcodes={MCODES_SALES} />
-            <Field label="Ürün / Hizmet Adı *">
-              <input autoFocus value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })}
-                placeholder="PET Granül Şeffaf, HDPE Granül..." className={inputCls} />
+        <div className="bg-enba-panel border border-enba-line rounded-xl p-4 space-y-3">
+          <MCodeSelect value={draft.mcode} onChange={v => setDraft({ ...draft, mcode: v, costCategory: v === 'M369' ? 'purchase' : 'production' })} mcodes={MCODES_PROJECT_EXPENSE} label="Hesap Kodu" />
+          <Field label="Gider Adı">
+            <input value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })}
+              placeholder={isPurchase ? 'örn. PET Şişe Atık Alışı' : 'örn. Üretim Personeli'} className={inputCls} />
+          </Field>
+          {isPurchase ? (
+            <div className="grid grid-cols-3 gap-3">
+              <Field label="Birim">
+                <select value={draft.unit ?? 'ton'} onChange={e => setDraft({ ...draft, unit: e.target.value })} className={selectCls}>
+                  {UNITS_WEIGHT.map(u => <option key={u}>{u}</option>)}
+                </select>
+              </Field>
+              <Field label={`Fiyat (₺/${draft.unit ?? 'ton'})`}>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-enba-dim text-[13px]">₺</span>
+                  <MoneyInput value={draft.unitPrice ?? 0} onChange={v => setDraft({ ...draft, unitPrice: v })} className={cx(inputCls, 'pl-7')} />
+                </div>
+              </Field>
+              <Field label={`Aylık Miktar (${draft.unit ?? 'ton'})`}>
+                <input type="number" value={draft.monthlyQty ?? 0} min={0}
+                  onChange={e => setDraft({ ...draft, monthlyQty: Number(e.target.value) })} className={inputCls} />
+              </Field>
+            </div>
+          ) : (
+            <Field label="Aylık Tutar (₺)">
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-enba-dim text-[13px]">₺</span>
+                <MoneyInput value={draft.monthly} onChange={v => setDraft({ ...draft, monthly: v })} className={cx(inputCls, 'pl-7')} />
+              </div>
+            </Field>
+          )}
+          <div className="grid grid-cols-3 gap-3">
+            <Field label="Büyüme %/yıl">
+              <div className="flex items-center gap-1">
+                <input type="number" value={Math.round(draft.growth * 100)} min={-20} max={200} step={1}
+                  onChange={e => setDraft({ ...draft, growth: Number(e.target.value) / 100 })} className={cx(inputCls, 'flex-1')} />
+                <span className="text-enba-dim text-[13px]">%</span>
+              </div>
+            </Field>
+            <Field label="Başlangıç Ayı">
+              <select value={draft.startOffset ?? 0} onChange={e => setDraft({ ...draft, startOffset: Number(e.target.value) })} className={selectCls}>
+                {Array.from({ length: 24 }, (_, i) => <option key={i} value={i}>{i === 0 ? '1. ay' : `${i + 1}. ay`}</option>)}
+              </select>
+            </Field>
+            <Field label="Grup">
+              <select value={draft.group} onChange={e => setDraft({ ...draft, group: e.target.value })} className={selectCls}>
+                <option>Sabit</option>
+                <option>Yarı Değişken</option>
+              </select>
             </Field>
           </div>
+          {isPurchase && (draft.unitPrice ?? 0) > 0 && (draft.monthlyQty ?? 0) > 0 && (
+            <div className="text-[12px] text-enba-muted bg-enba-panel-2 rounded-lg px-3 py-2">
+              Aylık maliyet: <span className="font-semibold text-enba-text">{fmtTL((draft.unitPrice ?? 0) * (draft.monthlyQty ?? 0))}</span>
+            </div>
+          )}
+          <div className="flex gap-2 pt-1 border-t border-enba-line">
+            <button onClick={cancel} className="h-8 px-4 rounded-lg border border-enba-line text-[12px] text-enba-muted hover:bg-enba-panel-2">İptal</button>
+            <Btn variant="primary" size="sm" onClick={save} disabled={!draft.name.trim()}>{editId ? 'Güncelle' : 'Ekle'}</Btn>
+          </div>
+        </div>
+      ) : (
+        <button onClick={startAdd}
+          className="w-full border-2 border-dashed border-enba-line rounded-lg h-9 flex items-center justify-center gap-2 text-[12px] text-enba-dim hover:border-enba-orange/40 hover:text-enba-muted transition-colors">
+          <I.Plus size={13} /> Gider Ekle
+        </button>
+      )}
+    </div>
+  );
+}
 
-          <div className="grid grid-cols-3 gap-4">
+/* ── Proje Gelir Listesi ── */
+function ProjectRevenueList({ items, setItems, projectIdx }: { items: Product[]; setItems: (v: Product[]) => void; projectIdx: number }) {
+  const [adding, setAdding] = useState(false);
+  const [draft,  setDraft]  = useState<Product>(emptyRevenue(projectIdx));
+  const [editId, setEditId] = useState<string | null>(null);
+
+  const startAdd  = () => { setDraft(emptyRevenue(projectIdx)); setEditId(null); setAdding(true); };
+  const startEdit = (item: Product) => { setDraft({ ...item }); setEditId(item.id); setAdding(true); };
+  const cancel    = () => { setAdding(false); setEditId(null); };
+
+  const save = () => {
+    if (!draft.name.trim()) return;
+    if (editId) setItems(items.map(i => i.id === editId ? draft : i));
+    else        setItems([...items, { ...draft, id: crypto.randomUUID() }]);
+    setAdding(false); setEditId(null);
+  };
+
+  return (
+    <div className="space-y-3">
+      {items.map(item => (
+        <div key={item.id} className="bg-enba-panel-2 border border-enba-line rounded-lg px-3 py-2.5 flex items-center gap-3">
+          <span className="w-2.5 h-2.5 rounded-full flex-none" style={{ background: item.color }} />
+          <MCodeTag code={item.mcode} mcodes={MCODES_SALES} />
+          <div className="flex-1 min-w-0">
+            <div className="text-[12.5px] font-semibold text-enba-text">{item.name}</div>
+            <div className="text-[10.5px] text-enba-dim">{fmtTL(item.price)}/{item.unit} · {item.volume.toLocaleString('tr-TR')} {item.unit}/ay</div>
+          </div>
+          <span className="text-[12.5px] font-semibold tabular text-enba-orange">{fmtTL(item.price * item.volume)}/ay</span>
+          <button onClick={() => startEdit(item)} className="w-6 h-6 rounded text-enba-dim hover:text-enba-text hover:bg-enba-panel inline-flex items-center justify-center"><I.Edit size={12} /></button>
+          <button onClick={() => setItems(items.filter(i => i.id !== item.id))} className="w-6 h-6 rounded text-enba-dim hover:text-enba-red inline-flex items-center justify-center"><I.Trash size={12} /></button>
+        </div>
+      ))}
+
+      {adding ? (
+        <div className="bg-enba-panel border border-enba-line rounded-xl p-4 space-y-3">
+          <MCodeSelect value={draft.mcode} onChange={v => setDraft({ ...draft, mcode: v })} mcodes={MCODES_SALES} label="Hesap Kodu" />
+          <Field label="Ürün / Hizmet Adı">
+            <input value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })}
+              placeholder="örn. PET Granül" className={inputCls} />
+          </Field>
+          <div className="grid grid-cols-3 gap-3">
             <Field label="Birim">
               <select value={draft.unit} onChange={e => setDraft({ ...draft, unit: e.target.value })} className={selectCls}>
                 {UNITS_PRODUCT.map(u => <option key={u}>{u}</option>)}
@@ -819,90 +540,430 @@ function SalesStep({ sales, setSales, preview }: SalesStepProps) {
             <Field label={`Satış Fiyatı (₺/${draft.unit})`}>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-enba-dim text-[13px]">₺</span>
-                <MoneyInput value={draft.price}
-                  onChange={v => setDraft({ ...draft, price: v })}
-                  className={cx(inputCls, 'pl-7')} />
+                <MoneyInput value={draft.price} onChange={v => setDraft({ ...draft, price: v })} className={cx(inputCls, 'pl-7')} />
               </div>
             </Field>
             <Field label={`Aylık Hacim (${draft.unit})`}>
               <input type="number" value={draft.volume} min={0}
-                onChange={e => setDraft({ ...draft, volume: Number(e.target.value) })}
-                className={inputCls} />
+                onChange={e => setDraft({ ...draft, volume: Number(e.target.value) })} className={inputCls} />
             </Field>
           </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="Fiyat Büyümesi (% yıllık)">
-              <div className="flex items-center gap-1.5">
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Fiyat Büyümesi %/yıl">
+              <div className="flex items-center gap-1">
                 <input type="number" value={Math.round(draft.priceGrowth * 100)} min={-50} max={200} step={1}
-                  onChange={e => setDraft({ ...draft, priceGrowth: Number(e.target.value) / 100 })}
-                  className={cx(inputCls, 'flex-1')} />
-                <span className="text-enba-dim">%</span>
+                  onChange={e => setDraft({ ...draft, priceGrowth: Number(e.target.value) / 100 })} className={cx(inputCls, 'flex-1')} />
+                <span className="text-enba-dim text-[13px]">%</span>
               </div>
             </Field>
-            <Field label="Hacim Büyümesi (% yıllık)">
-              <div className="flex items-center gap-1.5">
+            <Field label="Hacim Büyümesi %/yıl">
+              <div className="flex items-center gap-1">
                 <input type="number" value={Math.round(draft.volumeGrowth * 100)} min={-50} max={200} step={1}
-                  onChange={e => setDraft({ ...draft, volumeGrowth: Number(e.target.value) / 100 })}
-                  className={cx(inputCls, 'flex-1')} />
-                <span className="text-enba-dim">%</span>
+                  onChange={e => setDraft({ ...draft, volumeGrowth: Number(e.target.value) / 100 })} className={cx(inputCls, 'flex-1')} />
+                <span className="text-enba-dim text-[13px]">%</span>
               </div>
             </Field>
           </div>
-
-          <Field label="Renk">
-            <div className="flex gap-2 flex-wrap">
-              {PRODUCT_COLORS.map(c => (
-                <button key={c} onClick={() => setDraft({ ...draft, color: c })}
-                  className={cx('w-7 h-7 rounded-md transition-all', draft.color === c ? 'ring-2 ring-offset-2 ring-enba-orange ring-offset-enba-panel scale-110' : 'hover:scale-105')}
-                  style={{ background: c }} />
-              ))}
-            </div>
-          </Field>
-
           <div className="flex gap-2 pt-1 border-t border-enba-line">
-            <button onClick={() => { setAdding(false); setEditId(null); }}
-              className="h-8 px-4 rounded-lg border border-enba-line text-[12px] text-enba-muted hover:bg-enba-panel-2">İptal</button>
-            <Btn variant="primary" size="sm" onClick={handleSave} disabled={!draft.name.trim()}>
-              {editId ? 'Güncelle' : 'Ekle'}
-            </Btn>
+            <button onClick={cancel} className="h-8 px-4 rounded-lg border border-enba-line text-[12px] text-enba-muted hover:bg-enba-panel-2">İptal</button>
+            <Btn variant="primary" size="sm" onClick={save} disabled={!draft.name.trim()}>{editId ? 'Güncelle' : 'Ekle'}</Btn>
           </div>
-        </FieldCard>
+        </div>
       ) : (
         <button onClick={startAdd}
-          className="w-full border-2 border-dashed border-enba-line rounded-xl h-11 flex items-center justify-center gap-2 text-[13px] text-enba-dim hover:border-enba-orange/40 hover:text-enba-muted transition-colors">
-          <I.Plus size={14} /> Satış Kalemi Ekle
+          className="w-full border-2 border-dashed border-enba-line rounded-lg h-9 flex items-center justify-center gap-2 text-[12px] text-enba-dim hover:border-enba-orange/40 hover:text-enba-muted transition-colors">
+          <I.Plus size={13} /> Gelir Kalemi Ekle
         </button>
       )}
+    </div>
+  );
+}
 
-      {/* Projeksiyon önizlemesi */}
-      {preview && (
-        <div className="bg-enba-panel border border-enba-line rounded-xl p-4 mt-2">
-          <div className="text-[10.5px] uppercase tracking-[0.14em] text-enba-dim mb-3">İlk 12 Ay Projeksiyonu (Baz Senaryo)</div>
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div>
-              <div className="text-[10.5px] text-enba-dim mb-1">M299 Net Satış</div>
-              <div className="text-[15px] font-semibold tabular text-enba-orange">{fmtTL(preview.rev)}</div>
-            </div>
-            <div>
-              <div className="text-[10.5px] text-enba-dim mb-1">Toplam Maliyet</div>
-              <div className="text-[15px] font-semibold tabular text-enba-red">{fmtTL(preview.opex)}</div>
-            </div>
-            <div>
-              <div className="text-[10.5px] text-enba-dim mb-1">M769 EBITDA</div>
-              <div className={cx('text-[15px] font-semibold tabular', preview.ebitda >= 0 ? 'text-enba-green' : 'text-enba-red')}>
-                {fmtTL(preview.ebitda)}
+/* ── Proje Düzenleyici ── */
+type ProjectTab = 'temel' | 'giderler' | 'gelirler';
+
+function ProjectEditor({ project, idx, horizon, onSave, onCancel }:
+  { project: ActiveProject; idx: number; horizon: number; onSave: (p: ActiveProject) => void; onCancel: () => void }) {
+  const [tab,     setTab]     = useState<ProjectTab>('temel');
+  const [draft,   setDraft]   = useState<ActiveProject>({ ...project });
+
+  const expenseTotal = draft.expenses.reduce((s, e) => s + e.monthly, 0);
+  const revenueTotal = draft.revenues.reduce((s, r) => s + r.price * r.volume, 0);
+
+  return (
+    <div className="bg-enba-panel border border-enba-line rounded-xl overflow-hidden">
+      {/* Proje başlık */}
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-enba-line" style={{ borderLeftColor: draft.color, borderLeftWidth: 4 }}>
+        <span className="w-3 h-3 rounded-full flex-none" style={{ background: draft.color }} />
+        <span className="text-[13px] font-semibold flex-1">{draft.name || 'Yeni Proje'}</span>
+        <button onClick={onCancel} className="w-7 h-7 rounded-md text-enba-dim hover:bg-enba-panel-2 inline-flex items-center justify-center"><I.Chevron size={13} className="rotate-180" /></button>
+      </div>
+
+      {/* Sekmeler */}
+      <div className="flex border-b border-enba-line bg-enba-panel-2/40">
+        {(['temel','giderler','gelirler'] as ProjectTab[]).map(t => (
+          <button key={t} onClick={() => setTab(t)}
+            className={cx('flex-1 h-9 text-[12px] font-medium capitalize transition-colors',
+              tab === t ? 'text-enba-orange border-b-2 border-enba-orange bg-enba-orange/5' : 'text-enba-muted hover:text-enba-text')}>
+            {t === 'temel' ? 'Temel' : t === 'giderler' ? `Giderler${draft.expenses.length > 0 ? ` (${draft.expenses.length})` : ''}` : `Gelirler${draft.revenues.length > 0 ? ` (${draft.revenues.length})` : ''}`}
+          </button>
+        ))}
+      </div>
+
+      <div className="p-4 space-y-4">
+        {tab === 'temel' && (
+          <>
+            <Field label="Proje Adı">
+              <input value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })}
+                placeholder="örn. PET Geri Dönüşüm Hattı" className={inputCls} />
+            </Field>
+            <Field label="Renk">
+              <div className="flex gap-2 flex-wrap">
+                {PROJECT_COLORS.map(c => (
+                  <button key={c} onClick={() => setDraft({ ...draft, color: c })}
+                    className={cx('w-7 h-7 rounded-full border-2 transition-all', draft.color === c ? 'border-enba-text scale-110' : 'border-transparent')}
+                    style={{ background: c }} />
+                ))}
               </div>
+            </Field>
+            <Field label="Tesis Gideri Dağılım Ağırlığı" hint="Göreceli sayı — tüm aktif projelerle karşılaştırılır. (örn: 2 ve 1 → %67 / %33)">
+              <input type="number" value={draft.allocationWeight} min={0.1} step={0.1}
+                onChange={e => setDraft({ ...draft, allocationWeight: Number(e.target.value) })}
+                className={inputCls} />
+            </Field>
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Başlangıç Ayı">
+                <select value={draft.startOffset} onChange={e => setDraft({ ...draft, startOffset: Number(e.target.value) })} className={selectCls}>
+                  {Array.from({ length: horizon }, (_, i) => <option key={i} value={i}>{i === 0 ? '1. ay (hemen)' : `${i + 1}. ay`}</option>)}
+                </select>
+              </Field>
+              <Field label="Bitiş Ayı">
+                <select value={draft.endOffset ?? ''} onChange={e => setDraft({ ...draft, endOffset: e.target.value === '' ? undefined : Number(e.target.value) })} className={selectCls}>
+                  <option value="">Plana kadar (süresiz)</option>
+                  {Array.from({ length: horizon }, (_, i) => <option key={i+1} value={i+1}>{i + 1}. ay sonu</option>)}
+                </select>
+              </Field>
             </div>
+          </>
+        )}
+
+        {tab === 'giderler' && (
+          <>
+            <div className="text-[11.5px] text-enba-dim">Projeye özgü giderler: personel, elektrik, su, hammadde alışı vb.</div>
+            <ProjectExpenseList items={draft.expenses} setItems={v => setDraft({ ...draft, expenses: v })} />
+            {expenseTotal > 0 && (
+              <div className="text-right text-[12px] text-enba-dim">Toplam: <span className="font-semibold text-enba-text">{fmtTL(expenseTotal)}/ay</span></div>
+            )}
+          </>
+        )}
+
+        {tab === 'gelirler' && (
+          <>
+            <div className="text-[11.5px] text-enba-dim">Bu projenin üretip sattığı ürün ve hizmetler.</div>
+            <ProjectRevenueList items={draft.revenues} setItems={v => setDraft({ ...draft, revenues: v })} projectIdx={idx} />
+            {revenueTotal > 0 && (
+              <div className="text-right text-[12px] text-enba-dim">Brüt gelir: <span className="font-semibold text-enba-orange">{fmtTL(revenueTotal)}/ay</span></div>
+            )}
+          </>
+        )}
+      </div>
+
+      <div className="px-4 pb-4">
+        <Btn variant="primary" size="sm" className="w-full" onClick={() => onSave(draft)} disabled={!draft.name.trim()}>
+          <I.Check size={13} className="mr-1" /> Projeyi Kaydet
+        </Btn>
+      </div>
+    </div>
+  );
+}
+
+/* ── Step 3 — Projeler ana görünüm ── */
+function ProjectsStep({ projects, setProjects, horizon, facilityExpenses }:
+  { projects: ActiveProject[]; setProjects: (v: ActiveProject[]) => void; horizon: number; facilityExpenses: FixedExpense[] }) {
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  const totalWeight  = projects.reduce((s, p) => s + p.allocationWeight, 0);
+  const facilityTotal = facilityExpenses.reduce((s, e) => s + e.monthly, 0);
+
+  const saveProject  = (updated: ActiveProject) => {
+    setProjects(projects.map(p => p.id === updated.id ? updated : p));
+    setEditingId(null);
+  };
+  const addProject   = () => {
+    const np = emptyProject(projects.length);
+    setProjects([...projects, np]);
+    setEditingId(np.id);
+  };
+  const deleteProject = (id: string) => setProjects(projects.filter(p => p.id !== id));
+
+  return (
+    <div className="space-y-4">
+      <StepHeader step={3} total={3} title="Projeler"
+        sub="Her proje kendi giderleri ve gelirlerini taşır. Tesis yükü aktif projelere ağırlığa göre dağıtılır." />
+
+      {/* Dağılım özeti */}
+      {projects.length > 0 && facilityTotal > 0 && (
+        <div className="bg-enba-panel border border-enba-line rounded-xl px-4 py-3 space-y-2">
+          <div className="text-[11px] text-enba-dim uppercase tracking-wider">Tesis Gideri Dağılımı · {fmtTL(facilityTotal)}/ay</div>
+          <div className="flex gap-1 h-2 rounded-full overflow-hidden">
+            {projects.map(p => (
+              <div key={p.id} className="h-full rounded-full transition-all"
+                style={{ background: p.color, width: `${(p.allocationWeight / (totalWeight || 1)) * 100}%` }} />
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-3">
+            {projects.map(p => (
+              <div key={p.id} className="flex items-center gap-1.5 text-[11px]">
+                <span className="w-2 h-2 rounded-full" style={{ background: p.color }} />
+                <span className="text-enba-text font-medium">{p.name || 'İsimsiz'}</span>
+                <span className="text-enba-dim">%{Math.round((p.allocationWeight / (totalWeight || 1)) * 100)}</span>
+                <span className="text-enba-dim">·</span>
+                <span className="text-enba-dim">{fmtTL((p.allocationWeight / (totalWeight || 1)) * facilityTotal)}/ay</span>
+              </div>
+            ))}
           </div>
         </div>
       )}
 
-      {sales.length === 0 && !adding && (
+      {/* Proje kartları */}
+      {projects.map((p, idx) => editingId === p.id ? (
+        <ProjectEditor key={p.id} project={p} idx={idx} horizon={horizon}
+          onSave={saveProject} onCancel={() => setEditingId(null)} />
+      ) : (
+        <div key={p.id} className="bg-enba-panel border border-enba-line rounded-xl px-4 py-3 flex items-center gap-3" style={{ borderLeftColor: p.color, borderLeftWidth: 4 }}>
+          <span className="w-3 h-3 rounded-full flex-none" style={{ background: p.color }} />
+          <div className="flex-1 min-w-0">
+            <div className="text-[13px] font-semibold text-enba-text">{p.name || 'İsimsiz Proje'}</div>
+            <div className="text-[11px] text-enba-dim mt-0.5 flex items-center gap-2">
+              <span>Ağırlık: {p.allocationWeight}</span>
+              <span>·</span>
+              <span>{p.startOffset + 1}. ay{p.endOffset ? ` – ${p.endOffset}. ay` : ' → son'}</span>
+              <span>·</span>
+              <span>{p.expenses.length} gider, {p.revenues.length} ürün</span>
+            </div>
+          </div>
+          <button onClick={() => setEditingId(p.id)}
+            className="w-8 h-8 rounded-lg text-enba-dim hover:text-enba-orange hover:bg-enba-orange/10 inline-flex items-center justify-center">
+            <I.Edit size={14} />
+          </button>
+          <button onClick={() => deleteProject(p.id)}
+            className="w-8 h-8 rounded-lg text-enba-dim hover:text-enba-red hover:bg-enba-red/10 inline-flex items-center justify-center">
+            <I.Trash size={14} />
+          </button>
+        </div>
+      ))}
+
+      {editingId === null && (
+        <button onClick={addProject}
+          className="w-full border-2 border-dashed border-enba-line rounded-xl h-11 flex items-center justify-center gap-2 text-[13px] text-enba-dim hover:border-enba-orange/40 hover:text-enba-muted transition-colors">
+          <I.Plus size={14} /> Proje Ekle
+        </button>
+      )}
+
+      {projects.length === 0 && (
         <p className="text-[11.5px] text-enba-dim text-center">
-          Satış kalemi olmadan da plan oluşturulabilir — sonradan eklenir.
+          En az bir proje tanımlamanız önerilir — sonradan da eklenebilir.
         </p>
       )}
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════
+   ANA SIHIRBAZ
+══════════════════════════════════════════════════════ */
+type WStep = 1 | 2 | 3;
+const STEPS = [
+  { n: 1 as WStep, label: 'Temel Bilgiler' },
+  { n: 2 as WStep, label: 'Tesis Giderleri' },
+  { n: 3 as WStep, label: 'Projeler' },
+];
+
+interface Props {
+  onDone:       (plan: DPlan) => void;
+  onCancel:     () => void;
+  onSave?:      (plan: DPlan) => void;
+  initialPlan?: DPlan;
+}
+
+export function DPlanWizard({ onDone, onCancel, onSave, initialPlan }: Props) {
+  const planId = useRef<string>(initialPlan?.id ?? crypto.randomUUID());
+  const [step,  setStep]  = useState<WStep>(1);
+  const [saved, setSaved] = useState(false);
+
+  /* Adım 1 */
+  const [title,       setTitle]       = useState(initialPlan?.title ?? '');
+  const [startYear,   setStartYear]   = useState(initialPlan?.startYear ?? new Date().getFullYear());
+  const [startMonth,  setStartMonth]  = useState(initialPlan?.startMonth ?? 0);
+  const [horizon,     setHorizon]     = useState(initialPlan?.horizon ?? 24);
+  const [openingCash, setOpeningCash] = useState(initialPlan?.openingCash ?? 0);
+
+  /* Adım 2 */
+  const [facilityExpenses, setFacilityExpenses] = useState<FixedExpense[]>(
+    initialPlan?.facilityExpenses ?? []
+  );
+
+  /* Adım 3 */
+  const [projects, setProjects] = useState<ActiveProject[]>(
+    initialPlan?.projects ?? []
+  );
+
+  /* Önizleme (adım 3) */
+  const preview = useMemo(() => {
+    const allProducts  = projects.flatMap(p => p.revenues);
+    const allExpenses  = [
+      ...facilityExpenses,
+      ...projects.flatMap(p => p.expenses),
+    ];
+    if (!allProducts.length && !allExpenses.length) return null;
+    const periods = buildMonths(12, startYear, startMonth);
+    const s = buildSeries(allProducts, allExpenses, periods, SCENARIOS.baz);
+    return {
+      rev:    s.reduce((a, x) => a + x.revenue, 0),
+      opex:   s.reduce((a, x) => a + x.opex,    0),
+      ebitda: s.reduce((a, x) => a + x.ebitda,  0),
+    };
+  }, [projects, facilityExpenses, startYear, startMonth]);
+
+  const next = () => { setSaved(false); setStep(s => Math.min(3, s + 1) as WStep); };
+  const prev = () => { setSaved(false); setStep(s => Math.max(1, s - 1) as WStep); };
+
+  const buildPlan = (status: DPlan['status'] = 'draft'): DPlan => ({
+    id:               planId.current,
+    title:            title.trim() || 'İsimsiz Plan',
+    baslik:           title.trim() || 'İsimsiz Plan',
+    status,
+    year:             startYear,
+    startYear,
+    startMonth,
+    horizon,
+    openingCash,
+    actualsThrough:   initialPlan?.actualsThrough ?? 0,
+    facilityExpenses,
+    projects,
+    cashEvents:       initialPlan?.cashEvents ?? [],
+  });
+
+  const handleSave = () => {
+    onSave?.(buildPlan('draft'));
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const finish = () => onDone(buildPlan(initialPlan?.status ?? 'draft'));
+
+  return (
+    <div className="h-full flex bg-enba-bg overflow-hidden">
+
+      {/* Sol adım çubuğu */}
+      <aside className="w-[200px] flex-none bg-enba-panel border-r border-enba-line flex flex-col">
+        <div className="h-[60px] flex items-center px-4 border-b border-enba-line gap-2 flex-none">
+          <button onClick={onCancel} className="w-7 h-7 rounded-md text-enba-muted hover:text-enba-text hover:bg-enba-panel-2 inline-flex items-center justify-center">
+            <I.Chevron size={13} className="rotate-90" />
+          </button>
+          <span className="text-[13px] font-semibold text-enba-text">{initialPlan ? 'Planı Düzenle' : 'Yeni Plan'}</span>
+        </div>
+
+        <nav className="flex-1 pt-3 px-2">
+          {STEPS.map(({ n, label }) => {
+            const done   = step > n;
+            const active = step === n;
+            return (
+              <button key={n} onClick={() => done && setStep(n)} disabled={!done && !active}
+                className={cx('w-full flex items-center gap-2.5 px-3 h-9 rounded-lg mb-0.5 text-[12.5px] transition-colors',
+                  active  ? 'bg-enba-orange/12 text-enba-orange' : '',
+                  done    ? 'text-enba-text hover:bg-enba-panel-2 cursor-pointer' : '',
+                  !active && !done ? 'text-enba-dim cursor-not-allowed' : '')}>
+                <span className={cx('w-5 h-5 rounded-full inline-flex items-center justify-center text-[10px] font-semibold flex-none',
+                  done   ? 'bg-enba-green/20 text-enba-green' : '',
+                  active ? 'bg-enba-orange text-white' : '',
+                  !active && !done ? 'bg-enba-panel-2 text-enba-dim' : '')}>
+                  {done ? '✓' : n}
+                </span>
+                <span className="text-left flex-1 truncate">{label}</span>
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Önizleme özeti */}
+        {preview && (
+          <div className="m-3 p-3 rounded-lg bg-enba-panel-2 border border-enba-line space-y-1.5">
+            <div className="text-[10px] uppercase tracking-wider text-enba-dim">12 ay önizleme</div>
+            <div className="flex justify-between text-[11.5px]">
+              <span className="text-enba-dim">Gelir</span>
+              <span className="font-semibold text-enba-orange">{fmtTL(preview.rev, { compact: true })}</span>
+            </div>
+            <div className="flex justify-between text-[11.5px]">
+              <span className="text-enba-dim">Gider</span>
+              <span className="font-semibold text-enba-red">{fmtTL(preview.opex, { compact: true })}</span>
+            </div>
+            <div className="pt-1 border-t border-enba-line flex justify-between text-[11.5px]">
+              <span className="text-enba-dim">EBITDA</span>
+              <span className={cx('font-semibold', preview.ebitda >= 0 ? 'text-enba-green' : 'text-enba-red')}>
+                {fmtTL(preview.ebitda, { compact: true })}
+              </span>
+            </div>
+          </div>
+        )}
+
+        <div className="p-4 border-t border-enba-line">
+          <div className="w-full h-1 bg-enba-panel-2 rounded-full overflow-hidden">
+            <div className="h-full bg-enba-orange rounded-full transition-all" style={{ width: `${((step - 1) / 2) * 100}%` }} />
+          </div>
+          <div className="text-[10px] text-enba-dim mt-1.5">Adım {step} / 3</div>
+        </div>
+      </aside>
+
+      {/* İçerik */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <div className="flex-1 overflow-y-auto p-8 grid-bg">
+          <div className="max-w-[720px] mx-auto">
+            {step === 1 && (
+              <Step1
+                title={title} setTitle={setTitle}
+                startYear={startYear} setStartYear={setStartYear}
+                startMonth={startMonth} setStartMonth={setStartMonth}
+                horizon={horizon} setHorizon={setHorizon}
+                openingCash={openingCash} setOpeningCash={setOpeningCash}
+              />
+            )}
+            {step === 2 && (
+              <FacilityStep items={facilityExpenses} setItems={setFacilityExpenses} />
+            )}
+            {step === 3 && (
+              <ProjectsStep
+                projects={projects} setProjects={setProjects}
+                horizon={horizon} facilityExpenses={facilityExpenses}
+              />
+            )}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex-none border-t border-enba-line bg-enba-panel px-8 h-[60px] flex items-center justify-between">
+          <Btn variant="outline" size="md"
+            icon={step > 1 ? <I.Chevron size={12} className="rotate-90" /> : undefined}
+            onClick={step > 1 ? prev : onCancel}>
+            {step > 1 ? 'Geri' : 'İptal'}
+          </Btn>
+          <div className="flex items-center gap-2">
+            {onSave && title.trim() && (
+              <Btn variant="outline" size="md" icon={saved ? <I.Check size={13} /> : undefined} onClick={handleSave}>
+                {saved ? 'Kaydedildi' : 'Kaydet'}
+              </Btn>
+            )}
+            {step < 3
+              ? <Btn variant="primary" size="md" disabled={step === 1 && !title.trim()} onClick={next}>
+                  İleri <I.Chevron size={12} className="-rotate-90 ml-1" />
+                </Btn>
+              : <Btn variant="primary" size="md" icon={<I.Check size={14} />} onClick={finish}>
+                  Tamamla
+                </Btn>
+            }
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

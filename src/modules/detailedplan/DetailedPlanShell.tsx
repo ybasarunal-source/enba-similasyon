@@ -42,13 +42,21 @@ export function DetailedPlanShell({ plan, onSave, onBack, onEdit, navigate }: De
 
   const ctxValue = useMemo(() => {
     if (!plan) return undefined;
+    // Paneller geriye dönük uyumluluk için products/fixedExpenses bekler
+    const products      = plan.projects.flatMap(p => p.revenues);
+    const fixedExpenses = [
+      ...plan.facilityExpenses,
+      ...plan.projects.flatMap(p => p.expenses),
+    ];
     return {
-      products:      plan.products,
-      fixedExpenses: plan.fixedExpenses,
-      periods:       buildMonths(plan.horizon, plan.startYear, plan.startMonth),
-      cashEvents:    plan.cashEvents,
-      openingCash:   plan.openingCash,
-      actualsThrough: plan.actualsThrough,
+      facilityExpenses: plan.facilityExpenses,
+      projects:         plan.projects,
+      products,
+      fixedExpenses,
+      periods:          buildMonths(plan.horizon, plan.startYear, plan.startMonth),
+      cashEvents:       plan.cashEvents,
+      openingCash:      plan.openingCash,
+      actualsThrough:   plan.actualsThrough,
     };
   }, [plan]);
 

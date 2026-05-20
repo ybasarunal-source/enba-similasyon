@@ -131,8 +131,8 @@ function PlanCard({ plan, onOpen, onEdit, onDelete }: { plan: DPlan; onOpen: () 
       </div>
 
       <div className="grid grid-cols-3 gap-3 text-center">
-        <MiniStat label="Ürün" value={String(plan.products.length)} />
-        <MiniStat label="Gider" value={String(plan.fixedExpenses.length)} />
+        <MiniStat label="Proje" value={String(plan.projects.length)} />
+        <MiniStat label="Tesis Gider" value={String(plan.facilityExpenses.length)} />
         <MiniStat label="Gerçek." value={`${plan.actualsThrough} ay`} accent={plan.actualsThrough > 0} />
       </div>
 
