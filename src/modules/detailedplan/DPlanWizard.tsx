@@ -38,6 +38,7 @@ const MCODES_PRODUCTION: MCodeEntry[] = [
 const MCODES_OVERHEAD: MCodeEntry[] = [
   { code: 'M489', tr: '770.01 - M489 Brüt Personel Maaş ve Ücret Giderleri' },
   { code: 'M605', tr: '770.06 - M605 Dışarıdan Sağlanan Personel Hizmetleri (Yönetim)' },
+  { code: 'M509', tr: '770.20 - M509 Makine, Cihaz ve Güvenlik Sistemi Bakım Onarım Giderleri' },
   { code: 'M610', tr: '770.10 - M610 Ofis ve Depo Kira Giderleri' },
   { code: 'M615', tr: '770.30 - M615 Yurt İçi ve Yurt Dışı Seyahat Giderleri' },
   { code: 'M620', tr: '770.50 - M620 Telefon, İnternet ve İletişim Giderleri' },
