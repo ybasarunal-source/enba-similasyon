@@ -30,20 +30,37 @@ export interface FixedExpense {
   monthlyQty?: number;
 }
 
-// ─── Sabit Gider Merkezi (Tesis) ─────────────────────────────────────────────
-export interface Facility {
+// ─── Gider Merkezi — plan dışında yaşar ─────────────────────────────────────
+// Tesis, ofis, atölye vb. — bir kere tanımlanır, planlardan referanslanır.
+export interface CostCenter {
   id: string;
-  name: string;               // "Merkez Tesis", "Ofis", "Atölye" …
+  name: string;
   fixedExpenses: FixedExpense[];
+}
+
+// Backward compat alias (eski kod Facility kullanıyorsa)
+export type Facility = CostCenter;
+
+export const COST_CENTERS_KEY = 'enba_dp2_cost_centers';
+
+export function loadCostCenters(): CostCenter[] {
+  try {
+    const raw = localStorage.getItem(COST_CENTERS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+export function saveCostCenters(list: CostCenter[]): void {
+  try { localStorage.setItem(COST_CENTERS_KEY, JSON.stringify(list)); } catch { /* ignore */ }
 }
 
 export interface ActiveProject {
   id: string;
-  facilityId: string;         // hangi tesisin altında
+  costCenterId: string;       // hangi Gider Merkezi'ne bağlı
   isActive: boolean;          // aktif projeler tesis maliyeti alır
   name: string;
   color: string;
-  allocationWeight: number;   // göreceli ağırlık
+  allocationWeight: number;
   startOffset: number;
   endOffset?: number;
   expenses: FixedExpense[];   // projeye özgü değişken/direkt giderler
@@ -73,7 +90,7 @@ export interface CashEvent {
   months: { idx: number; amount: number }[];
 }
 
-// ─── Plan veri modeli ────────────────────────────────────────────────────────
+// ─── Plan veri modeli — tesis giderlerini içermez ────────────────────────────
 export interface DPlan {
   id: string;
   supabaseId?: string;
@@ -86,7 +103,6 @@ export interface DPlan {
   horizon: number;
   openingCash: number;
   actualsThrough: number;
-  facilities: Facility[];     // sabit gider merkezleri
   projects: ActiveProject[];
   cashEvents: CashEvent[];
 }
@@ -116,24 +132,21 @@ export const buildMonths = (count: number, startYear = 2025, startMonth = 0): Pe
 
 export const PERIODS: Period[] = buildMonths(24, 2025, 0);
 
-// Proje aktif mi? isActive flag'i + zaman aralığı birlikte kontrol edilir
+// Proje aktif mi? isActive + zaman aralığı kontrolü
 export const isProjectActive = (p: ActiveProject, i: number): boolean =>
   p.isActive && i >= p.startOffset && (p.endOffset === undefined || i < p.endOffset);
 
-// Projenin tesis giderlerinden aldığı pay (0–1)
-// Yalnızca aynı tesiste isActive olan projeler paylaşır
-export const facilityShareFor = (project: ActiveProject, i: number, allProjects: ActiveProject[]): number => {
+// Projenin gider merkezindeki payı — sadece aynı gider merkezinin aktif projeleri paylaşır
+export const facilityShareFor = (
+  project: ActiveProject, i: number, allProjects: ActiveProject[]
+): number => {
   if (!isProjectActive(project, i)) return 0;
   const active = allProjects.filter(p =>
-    p.facilityId === project.facilityId && isProjectActive(p, i)
+    p.costCenterId === project.costCenterId && isProjectActive(p, i)
   );
   const total = active.reduce((s, p) => s + p.allocationWeight, 0);
   return total === 0 ? 0 : project.allocationWeight / total;
 };
-
-// Bir plan için tüm tesis giderlerini düz listeye çöz
-export const flatFacilityExpenses = (plan: DPlan): FixedExpense[] =>
-  plan.facilities.flatMap(f => f.fixedExpenses);
 
 export const SCENARIOS: Record<string, Scenario> = {
   baz:      { id: 'baz',      label: 'Baz',      color: '#E35205', rev: 1.00, cost: 1.00, hint: 'Mevcut trendin devamı.' },
@@ -144,9 +157,9 @@ export const SCENARIOS: Record<string, Scenario> = {
 export const OPENING_CASH    = 0;
 export const ACTUALS_THROUGH = 0;
 
-export const PRODUCTS: Product[]       = [];
+export const PRODUCTS: Product[]            = [];
 export const FIXED_EXPENSES: FixedExpense[] = [];
-export const CASH_EVENTS: CashEvent[]  = [];
+export const CASH_EVENTS: CashEvent[]       = [];
 
 // ─── Hesaplama yardımcıları ───────────────────────────────────────────────────
 
@@ -189,11 +202,11 @@ export const cashFlowFor = (
   i: number, scen: Scenario,
   products: Product[], fixedExpenses: FixedExpense[], cashEvents: CashEvent[],
 ) => {
-  const rev     = products.reduce((s, p) => s + revenueFor(p, i, scen), 0);
-  const varc    = products.reduce((s, p) => s + varCostFor(p, i, scen), 0);
-  const fixc    = fixedExpenses.reduce((s, e) => s + fixedCostFor(e, i, scen), 0);
-  const ebitda  = rev - varc - fixc;
-  const tax     = Math.max(0, ebitda) * 0.22;
+  const rev    = products.reduce((s, p) => s + revenueFor(p, i, scen), 0);
+  const varc   = products.reduce((s, p) => s + varCostFor(p, i, scen), 0);
+  const fixc   = fixedExpenses.reduce((s, e) => s + fixedCostFor(e, i, scen), 0);
+  const ebitda = rev - varc - fixc;
+  const tax    = Math.max(0, ebitda) * 0.22;
   const operating = ebitda - tax;
   let investing = 0, financing = 0;
   cashEvents.forEach(ev => {
@@ -277,72 +290,53 @@ export const fmtNum = (n: number | null | undefined, digits = 0): string =>
   (n == null || isNaN(n)) ? '—' : n.toLocaleString('tr-TR', {minimumFractionDigits: digits, maximumFractionDigits: digits});
 
 // ─── Plan fabrika ─────────────────────────────────────────────────────────────
-export const createNewPlan = (title: string, year: number): DPlan => {
-  const facilityId = crypto.randomUUID();
-  return {
-    id: crypto.randomUUID(),
-    title,
-    baslik: title,
-    status: 'draft',
-    year,
-    startYear: year,
-    startMonth: 0,
-    horizon: 24,
-    openingCash: 0,
-    actualsThrough: 0,
-    facilities: [{ id: facilityId, name: 'Tesis', fixedExpenses: [] }],
-    projects: [],
-    cashEvents: [],
-  };
-};
+export const createNewPlan = (title: string, year: number): DPlan => ({
+  id: crypto.randomUUID(),
+  title, baslik: title,
+  status: 'draft',
+  year, startYear: year, startMonth: 0,
+  horizon: 24, openingCash: 0, actualsThrough: 0,
+  projects: [],
+  cashEvents: [],
+});
 
-// ─── Format migrasyonu (eski facilityExpenses → facilities) ──────────────────
+// ─── Format migrasyonu ────────────────────────────────────────────────────────
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const migratePlanFormat = (raw: any): DPlan => {
   if (!raw) return raw;
-  if (raw.facilities) {
-    // Yeni format — projelerde eksik alan varsa tamamla
-    return {
-      ...raw,
-      projects: (raw.projects ?? []).map((p: ActiveProject & { facilityId?: string; isActive?: boolean }) => ({
-        ...p,
-        facilityId: p.facilityId ?? raw.facilities[0]?.id ?? '',
-        isActive: p.isActive ?? true,
-      })),
-    } as DPlan;
-  }
-  // Eski format — facilityExpenses düz listesi → tek Facility nesnesine dönüştür
-  const facilityId = crypto.randomUUID();
   return {
     ...raw,
-    facilities: [{
-      id: facilityId,
-      name: 'Tesis',
-      fixedExpenses: raw.facilityExpenses ?? [],
-    }],
-    projects: (raw.projects ?? []).map((p: ActiveProject & { facilityId?: string; isActive?: boolean }) => ({
+    // facilityExpenses / facilities artık planda yaşamıyor
+    facilities: undefined,
+    facilityExpenses: undefined,
+    projects: (raw.projects ?? []).map((p: ActiveProject & {
+      facilityId?: string;
+      isActive?: boolean;
+      costCenterId?: string;
+    }) => ({
       ...p,
-      facilityId: p.facilityId ?? facilityId,
-      isActive: p.isActive ?? true,
+      // facilityId → costCenterId migrasyonu
+      costCenterId: p.costCenterId ?? p.facilityId ?? '',
+      isActive:     p.isActive ?? true,
     })),
   } as DPlan;
 };
 
 // ─── React context ────────────────────────────────────────────────────────────
 export interface PlanDataCtxValue {
-  facilities: Facility[];
-  facilityExpenses: FixedExpense[]; // düzleştirilmiş, panel geriye dönük uyumluluk
-  projects: ActiveProject[];
-  products: Product[];
-  fixedExpenses: FixedExpense[];
-  periods: Period[];
-  cashEvents: CashEvent[];
-  openingCash: number;
-  actualsThrough: number;
+  costCenters:      CostCenter[];
+  facilityExpenses: FixedExpense[]; // düzleştirilmiş, panel uyumluluğu için
+  projects:         ActiveProject[];
+  products:         Product[];
+  fixedExpenses:    FixedExpense[];
+  periods:          Period[];
+  cashEvents:       CashEvent[];
+  openingCash:      number;
+  actualsThrough:   number;
 }
 
 export const PlanCtx = React.createContext<PlanDataCtxValue>({
-  facilities:       [],
+  costCenters:      [],
   facilityExpenses: FIXED_EXPENSES,
   projects:         [],
   products:         PRODUCTS,

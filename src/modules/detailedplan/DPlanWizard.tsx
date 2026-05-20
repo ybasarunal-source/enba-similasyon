@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { cx, I, Btn } from './DPPrimitives';
 import {
-  DPlan, Product, FixedExpense, ActiveProject, Facility,
+  DPlan, Product, FixedExpense, ActiveProject, CostCenter,
   buildMonths, buildSeries, fmtTL, SCENARIOS,
 } from './dpData';
 
@@ -9,23 +9,6 @@ import {
    M-KOD VERİSİ
 ══════════════════════════════════════════════════════ */
 export interface MCodeEntry { code: string; tr: string; }
-
-const MCODES_FACILITY: MCodeEntry[] = [
-  { code: 'M489', tr: '770.01 - M489 Brüt Personel Maaş ve Ücret Giderleri' },
-  { code: 'M509', tr: '770.20 - M509 Makine, Cihaz ve Güvenlik Sistemi Bakım Onarım Giderleri' },
-  { code: 'M610', tr: '770.10 - M610 Ofis ve Depo Kira Giderleri' },
-  { code: 'M615', tr: '770.30 - M615 Yurt İçi ve Yurt Dışı Seyahat Giderleri' },
-  { code: 'M620', tr: '770.50 - M620 Telefon, İnternet ve İletişim Giderleri' },
-  { code: 'M625', tr: '770.60 - M625 Hukuk, Müşavirlik ve Denetim Giderleri' },
-  { code: 'M630', tr: '760.20 - M630 Reklam, Pazarlama ve Tanıtım Giderleri' },
-  { code: 'M635', tr: '770.70 - M635 Ofis, Demirbaş ve Araç Sigorta Giderleri' },
-  { code: 'M640', tr: '770.80 - M640 Dışarıdan Alınan BT ve Yazılım Lisans Giderleri' },
-  { code: 'M650', tr: '653.01 - M650 Banka Hesap İşletim ve Komisyon Giderleri' },
-  { code: 'M659', tr: '659 - M659 Diğer Finansal Gider ve Zararlar' },
-  { code: 'M660', tr: '770.99 - M660 Diğer Çeşitli Genel Yönetim Giderleri' },
-  { code: 'M665', tr: '770.15 - M665 Vergi, Resim, Harç ve Damga Vergileri' },
-  { code: 'M759', tr: '770.11 - M759 Finansal Kiralama (Leasing) Giderleri' },
-];
 
 const MCODES_PROJECT_EXPENSE: MCodeEntry[] = [
   { code: 'M369', tr: '150/710 - M369 İlk Madde ve Malzeme Giderleri Toplamı' },
@@ -194,10 +177,10 @@ interface Step1Props {
 function Step1({ title, setTitle, startYear, setStartYear, startMonth, setStartMonth, horizon, setHorizon, openingCash, setOpeningCash }: Step1Props) {
   return (
     <div className="space-y-6">
-      <StepHeader step={1} total={3} title="Temel Bilgiler" sub="Plan adı, zaman aralığı ve başlangıç nakit bakiyesi." />
+      <StepHeader step={1} total={2} title="Temel Bilgiler" sub="Plan adı, zaman aralığı ve başlangıç nakit bakiyesi." />
       <FieldCard>
         <Field label="Plan Adı">
-          <input value={title} onChange={e => setTitle(e.target.value)} placeholder="örn. 2025 Merkez Tesis Bütçesi"
+          <input value={title} onChange={e => setTitle(e.target.value)} placeholder="örn. 2025 PET Geri Dönüşüm Planı"
             className={inputCls} />
         </Field>
         <div className="grid grid-cols-2 gap-4">
@@ -234,210 +217,12 @@ function Step1({ title, setTitle, startYear, setStartYear, startMonth, setStartM
 }
 
 /* ══════════════════════════════════════════════════════
-   ADIM 2 — Sabit Gider Merkezleri
+   ADIM 2 — Projeler
 ══════════════════════════════════════════════════════ */
-function emptyFacilityExpense(): FixedExpense {
-  return { id: crypto.randomUUID(), mcode: 'M610', costCategory: 'facility', name: '', group: 'Sabit', monthly: 0, growth: 0.10, startOffset: 0 };
-}
-
-function FacilityExpenseList({ items, setItems }: { items: FixedExpense[]; setItems: (v: FixedExpense[]) => void }) {
-  const [adding, setAdding] = useState(false);
-  const [draft,  setDraft]  = useState<FixedExpense>(emptyFacilityExpense());
-  const [editId, setEditId] = useState<string | null>(null);
-
-  const startAdd  = () => { setDraft(emptyFacilityExpense()); setEditId(null); setAdding(true); };
-  const startEdit = (item: FixedExpense) => { setDraft({ ...item }); setEditId(item.id); setAdding(true); };
-  const cancel    = () => { setAdding(false); setEditId(null); };
-
-  const save = () => {
-    if (!draft.name.trim()) return;
-    if (editId) setItems(items.map(i => i.id === editId ? draft : i));
-    else        setItems([...items, { ...draft, id: crypto.randomUUID() }]);
-    setAdding(false); setEditId(null);
-  };
-
-  return (
-    <div className="space-y-2">
-      {items.map(item => (
-        <div key={item.id} className="bg-enba-panel-2 border border-enba-line rounded-lg px-3 py-2.5 flex items-center gap-3">
-          <MCodeTag code={item.mcode} mcodes={MCODES_FACILITY} />
-          <div className="flex-1 min-w-0">
-            <div className="text-[13px] font-semibold text-enba-text">{item.name}</div>
-            <div className="text-[11px] text-enba-dim mt-0.5">
-              yıllık +{Math.round(item.growth * 100)}%
-              {(item.startOffset ?? 0) > 0 && <span className="ml-2 text-enba-amber">{item.startOffset! + 1}. aydan itibaren</span>}
-            </div>
-          </div>
-          <span className="text-[13px] font-semibold tabular">{fmtTL(item.monthly)}<span className="text-[11px] text-enba-dim font-normal">/ay</span></span>
-          <button onClick={() => startEdit(item)} className="w-7 h-7 rounded-md text-enba-dim hover:text-enba-text hover:bg-enba-panel inline-flex items-center justify-center">
-            <I.Edit size={13} />
-          </button>
-          <button onClick={() => setItems(items.filter(i => i.id !== item.id))} className="w-7 h-7 rounded-md text-enba-dim hover:text-enba-red hover:bg-enba-red/10 inline-flex items-center justify-center">
-            <I.Trash size={13} />
-          </button>
-        </div>
-      ))}
-
-      {adding ? (
-        <div className="bg-enba-panel border border-enba-line rounded-xl p-4 space-y-4">
-          <MCodeSelect value={draft.mcode} onChange={v => setDraft({ ...draft, mcode: v })} mcodes={MCODES_FACILITY} label="Hesap Kodu" />
-          <Field label="Gider Adı">
-            <input value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })}
-              placeholder="örn. Tesis Kirası" className={inputCls} />
-          </Field>
-          <Field label="Aylık Tutar (₺)">
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-enba-dim text-[13px]">₺</span>
-              <MoneyInput value={draft.monthly} onChange={v => setDraft({ ...draft, monthly: v })} className={cx(inputCls, 'pl-7')} />
-            </div>
-          </Field>
-          <div className="grid grid-cols-3 gap-4">
-            <Field label="Yıllık Büyüme (%)">
-              <div className="flex items-center gap-1.5">
-                <input type="number" value={Math.round(draft.growth * 100)} min={-20} max={200} step={1}
-                  onChange={e => setDraft({ ...draft, growth: Number(e.target.value) / 100 })}
-                  className={cx(inputCls, 'flex-1')} />
-                <span className="text-enba-dim text-[13px]">%</span>
-              </div>
-            </Field>
-            <Field label="Başlangıç Ayı" hint="Kaçıncı ayda başlar?">
-              <select value={draft.startOffset ?? 0} onChange={e => setDraft({ ...draft, startOffset: Number(e.target.value) })} className={selectCls}>
-                {Array.from({ length: 24 }, (_, i) => (
-                  <option key={i} value={i}>{i === 0 ? '1. ay (hemen)' : `${i + 1}. ay`}</option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Grup">
-              <select value={draft.group} onChange={e => setDraft({ ...draft, group: e.target.value })} className={selectCls}>
-                <option>Sabit</option>
-                <option>Yarı Değişken</option>
-              </select>
-            </Field>
-          </div>
-          <div className="flex gap-2 pt-1 border-t border-enba-line">
-            <button onClick={cancel} className="h-8 px-4 rounded-lg border border-enba-line text-[12px] text-enba-muted hover:bg-enba-panel-2">İptal</button>
-            <Btn variant="primary" size="sm" onClick={save} disabled={!draft.name.trim()}>{editId ? 'Güncelle' : 'Ekle'}</Btn>
-          </div>
-        </div>
-      ) : (
-        <button onClick={startAdd}
-          className="w-full border-2 border-dashed border-enba-line rounded-lg h-9 flex items-center justify-center gap-2 text-[12px] text-enba-dim hover:border-enba-orange/40 hover:text-enba-muted transition-colors">
-          <I.Plus size={13} /> Gider Ekle
-        </button>
-      )}
-    </div>
-  );
-}
-
-function FacilitiesStep({ facilities, setFacilities }:
-  { facilities: Facility[]; setFacilities: (v: Facility[]) => void }) {
-
-  const [editingNameId, setEditingNameId] = useState<string | null>(null);
-  const [nameDraft, setNameDraft] = useState('');
-
-  const totalMonthly = facilities.reduce((s, f) =>
-    s + f.fixedExpenses.reduce((ss, e) => ss + e.monthly, 0), 0);
-
-  const startRename = (f: Facility) => { setEditingNameId(f.id); setNameDraft(f.name); };
-  const commitRename = (id: string) => {
-    if (nameDraft.trim()) setFacilities(facilities.map(f => f.id === id ? { ...f, name: nameDraft.trim() } : f));
-    setEditingNameId(null);
-  };
-
-  const updateExpenses = (id: string, expenses: FixedExpense[]) =>
-    setFacilities(facilities.map(f => f.id === id ? { ...f, fixedExpenses: expenses } : f));
-
-  const deleteFacility = (id: string) => {
-    if (!window.confirm('Bu maliyet merkezi ve tüm giderleri silinecek. Emin misiniz?')) return;
-    setFacilities(facilities.filter(f => f.id !== id));
-  };
-
-  const addFacility = () => {
-    const newF: Facility = { id: crypto.randomUUID(), name: `Maliyet Merkezi ${facilities.length + 1}`, fixedExpenses: [] };
-    setFacilities([...facilities, newF]);
-    setEditingNameId(newF.id);
-    setNameDraft(newF.name);
-  };
-
-  return (
-    <div className="space-y-4">
-      <StepHeader step={2} total={3} title="Sabit Gider Merkezleri"
-        sub="Projelerden bağımsız akan giderler: kira, aidat, muhasebe, sigorta vb. Aktif projeler bu maliyeti paylaşır." />
-
-      {totalMonthly > 0 && (
-        <div className="bg-enba-panel border border-enba-line rounded-xl px-4 py-3 flex items-center justify-between">
-          <span className="text-[11px] text-enba-dim">
-            {facilities.length} merkez · {facilities.reduce((s, f) => s + f.fixedExpenses.length, 0)} kalem
-          </span>
-          <span className="text-[14px] font-semibold tabular">
-            {fmtTL(totalMonthly)}<span className="text-[11px] text-enba-dim font-normal ml-1">/ ay toplam</span>
-          </span>
-        </div>
-      )}
-
-      {facilities.map(f => {
-        const fTotal = f.fixedExpenses.reduce((s, e) => s + e.monthly, 0);
-        return (
-          <div key={f.id} className="bg-enba-panel border border-enba-line rounded-xl overflow-hidden">
-            {/* Tesis başlık */}
-            <div className="flex items-center gap-3 px-4 py-3 border-b border-enba-line bg-enba-panel-2/40">
-              <span className="w-2 h-2 rounded-full bg-enba-orange flex-none" />
-              {editingNameId === f.id ? (
-                <input
-                  autoFocus
-                  value={nameDraft}
-                  onChange={e => setNameDraft(e.target.value)}
-                  onBlur={() => commitRename(f.id)}
-                  onKeyDown={e => { if (e.key === 'Enter') commitRename(f.id); if (e.key === 'Escape') setEditingNameId(null); }}
-                  className="flex-1 bg-transparent border-b border-enba-orange text-[13px] font-semibold text-enba-text outline-none py-0.5"
-                />
-              ) : (
-                <span className="flex-1 text-[13px] font-semibold text-enba-text">{f.name}</span>
-              )}
-              <span className="text-[12px] text-enba-muted tabular">{fmtTL(fTotal)}/ay</span>
-              <button onClick={() => startRename(f)}
-                className="w-7 h-7 rounded-md text-enba-dim hover:text-enba-text hover:bg-enba-panel inline-flex items-center justify-center">
-                <I.Edit size={12} />
-              </button>
-              {facilities.length > 1 && (
-                <button onClick={() => deleteFacility(f.id)}
-                  className="w-7 h-7 rounded-md text-enba-dim hover:text-enba-red hover:bg-enba-red/10 inline-flex items-center justify-center">
-                  <I.Trash size={12} />
-                </button>
-              )}
-            </div>
-            {/* Gider listesi */}
-            <div className="p-4">
-              <FacilityExpenseList
-                items={f.fixedExpenses}
-                setItems={items => updateExpenses(f.id, items)}
-              />
-            </div>
-          </div>
-        );
-      })}
-
-      <button onClick={addFacility}
-        className="w-full border-2 border-dashed border-enba-line rounded-xl h-11 flex items-center justify-center gap-2 text-[13px] text-enba-dim hover:border-enba-orange/40 hover:text-enba-muted transition-colors">
-        <I.Plus size={14} /> Yeni Maliyet Merkezi Ekle
-      </button>
-
-      {facilities.every(f => f.fixedExpenses.length === 0) && (
-        <p className="text-[11.5px] text-enba-dim text-center">
-          Sabit gideri olmayan planlar da oluşturulabilir — sonradan eklenebilir.
-        </p>
-      )}
-    </div>
-  );
-}
-
-/* ══════════════════════════════════════════════════════
-   ADIM 3 — Projeler
-══════════════════════════════════════════════════════ */
-function emptyProject(idx: number, facilityId: string): ActiveProject {
+function emptyProject(idx: number, defaultCostCenterId: string): ActiveProject {
   return {
     id: crypto.randomUUID(),
-    facilityId,
+    costCenterId: defaultCostCenterId,
     isActive: true,
     name: '',
     color: PROJECT_COLORS[idx % PROJECT_COLORS.length],
@@ -451,10 +236,6 @@ function emptyProject(idx: number, facilityId: string): ActiveProject {
 
 function emptyProjectExpense(): FixedExpense {
   return { id: crypto.randomUUID(), mcode: 'M489', costCategory: 'production', name: '', group: 'Sabit', monthly: 0, growth: 0.10, startOffset: 0 };
-}
-
-function emptyProjectExpensePurchase(): FixedExpense {
-  return { id: crypto.randomUUID(), mcode: 'M369', costCategory: 'purchase', name: '', group: 'Yarı Değişken', monthly: 0, growth: 0.10, startOffset: 0, unit: 'ton', unitPrice: 0, monthlyQty: 0 };
 }
 
 function emptyRevenue(idx: number): Product {
@@ -587,7 +368,7 @@ function ProjectRevenueList({ items, setItems, projectIdx }: { items: Product[];
   const startEdit = (item: Product) => { setDraft({ ...item }); setEditId(item.id); setAdding(true); };
   const cancel    = () => { setAdding(false); setEditId(null); };
 
-  const save = () => {
+  const saveFixed = () => {
     if (!draft.name.trim()) return;
     if (editId) setItems(items.map(i => i.id === editId ? draft : i));
     else        setItems([...items, { ...draft, id: crypto.randomUUID() }]);
@@ -599,7 +380,6 @@ function ProjectRevenueList({ items, setItems, projectIdx }: { items: Product[];
       {items.map(item => (
         <div key={item.id} className="bg-enba-panel-2 border border-enba-line rounded-lg px-3 py-2.5 flex items-center gap-3">
           <span className="w-2.5 h-2.5 rounded-full flex-none" style={{ background: item.color }} />
-          <MCodeTag code={item.mcode} mcodes={MCODES_SALES} />
           <div className="flex-1 min-w-0">
             <div className="text-[12.5px] font-semibold text-enba-text">{item.name}</div>
             <div className="text-[10.5px] text-enba-dim">{fmtTL(item.price)}/{item.unit} · {item.volume.toLocaleString('tr-TR')} {item.unit}/ay</div>
@@ -612,7 +392,6 @@ function ProjectRevenueList({ items, setItems, projectIdx }: { items: Product[];
 
       {adding ? (
         <div className="bg-enba-panel border border-enba-line rounded-xl p-4 space-y-3">
-          <MCodeSelect value={draft.mcode} onChange={v => setDraft({ ...draft, mcode: v })} mcodes={MCODES_SALES} label="Hesap Kodu" />
           <Field label="Ürün / Hizmet Adı">
             <input value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })}
               placeholder="örn. PET Granül" className={inputCls} />
@@ -652,7 +431,7 @@ function ProjectRevenueList({ items, setItems, projectIdx }: { items: Product[];
           </div>
           <div className="flex gap-2 pt-1 border-t border-enba-line">
             <button onClick={cancel} className="h-8 px-4 rounded-lg border border-enba-line text-[12px] text-enba-muted hover:bg-enba-panel-2">İptal</button>
-            <Btn variant="primary" size="sm" onClick={save} disabled={!draft.name.trim()}>{editId ? 'Güncelle' : 'Ekle'}</Btn>
+            <Btn variant="primary" size="sm" onClick={saveFixed} disabled={!draft.name.trim()}>{editId ? 'Güncelle' : 'Ekle'}</Btn>
           </div>
         </div>
       ) : (
@@ -668,24 +447,24 @@ function ProjectRevenueList({ items, setItems, projectIdx }: { items: Product[];
 /* ── Proje Düzenleyici ── */
 type ProjectTab = 'temel' | 'giderler' | 'gelirler';
 
-function ProjectEditor({ project, idx, horizon, facilities, onSave, onCancel }:
-  { project: ActiveProject; idx: number; horizon: number; facilities: Facility[]; onSave: (p: ActiveProject) => void; onCancel: () => void }) {
-  const [tab,     setTab]     = useState<ProjectTab>('temel');
-  const [draft,   setDraft]   = useState<ActiveProject>({ ...project });
+function ProjectEditor({ project, idx, horizon, costCenters, onSave, onCancel }:
+  { project: ActiveProject; idx: number; horizon: number; costCenters: CostCenter[]; onSave: (p: ActiveProject) => void; onCancel: () => void }) {
+  const [tab,   setTab]   = useState<ProjectTab>('temel');
+  const [draft, setDraft] = useState<ActiveProject>({ ...project });
 
   const expenseTotal = draft.expenses.reduce((s, e) => s + e.monthly, 0);
   const revenueTotal = draft.revenues.reduce((s, r) => s + r.price * r.volume, 0);
+  const selectedCC   = costCenters.find(cc => cc.id === draft.costCenterId);
+  const ccTotal      = selectedCC?.fixedExpenses.reduce((s, e) => s + e.monthly, 0) ?? 0;
 
   return (
     <div className="bg-enba-panel border border-enba-line rounded-xl overflow-hidden">
-      {/* Proje başlık */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-enba-line" style={{ borderLeftColor: draft.color, borderLeftWidth: 4 }}>
         <span className="w-3 h-3 rounded-full flex-none" style={{ background: draft.color }} />
         <span className="text-[13px] font-semibold flex-1">{draft.name || 'Yeni Proje'}</span>
         <button onClick={onCancel} className="w-7 h-7 rounded-md text-enba-dim hover:bg-enba-panel-2 inline-flex items-center justify-center"><I.Chevron size={13} className="rotate-180" /></button>
       </div>
 
-      {/* Sekmeler */}
       <div className="flex border-b border-enba-line bg-enba-panel-2/40">
         {(['temel','giderler','gelirler'] as ProjectTab[]).map(t => (
           <button key={t} onClick={() => setTab(t)}
@@ -699,32 +478,22 @@ function ProjectEditor({ project, idx, horizon, facilities, onSave, onCancel }:
       <div className="p-4 space-y-4">
         {tab === 'temel' && (
           <>
-            {/* Aktif / Pasif toggle */}
+            {/* Aktif toggle */}
             <div
               className={cx(
                 'flex items-center gap-3 px-4 py-3 rounded-xl border transition-colors cursor-pointer select-none',
-                draft.isActive
-                  ? 'bg-enba-green/8 border-enba-green/30'
-                  : 'bg-enba-panel-2 border-enba-line',
+                draft.isActive ? 'bg-enba-green/8 border-enba-green/30' : 'bg-enba-panel-2 border-enba-line',
               )}
               onClick={() => setDraft({ ...draft, isActive: !draft.isActive })}
             >
-              <div className={cx(
-                'w-9 h-5 rounded-full flex items-center transition-all relative flex-none',
-                draft.isActive ? 'bg-enba-green' : 'bg-enba-dim/40',
-              )}>
-                <div className={cx(
-                  'w-4 h-4 rounded-full bg-white shadow absolute transition-all',
-                  draft.isActive ? 'left-[18px]' : 'left-[2px]',
-                )} />
+              <div className={cx('w-9 h-5 rounded-full flex items-center transition-all relative flex-none', draft.isActive ? 'bg-enba-green' : 'bg-enba-dim/40')}>
+                <div className={cx('w-4 h-4 rounded-full bg-white shadow absolute transition-all', draft.isActive ? 'left-[18px]' : 'left-[2px]')} />
               </div>
               <div>
                 <div className={cx('text-[13px] font-semibold', draft.isActive ? 'text-enba-green' : 'text-enba-dim')}>
-                  {draft.isActive ? 'Aktif — Tesis maliyeti alıyor' : 'Pasif — Maliyet almıyor'}
+                  {draft.isActive ? 'Aktif — Gider merkezi maliyeti alıyor' : 'Pasif — Maliyet almıyor'}
                 </div>
-                <div className="text-[11px] text-enba-dim mt-0.5">
-                  Pasif projeler tesis gideri payına girmez
-                </div>
+                <div className="text-[11px] text-enba-dim mt-0.5">Pasif projeler sabit gider payına girmez</div>
               </div>
             </div>
 
@@ -741,21 +510,51 @@ function ProjectEditor({ project, idx, horizon, facilities, onSave, onCancel }:
                 ))}
               </div>
             </Field>
-            {/* Tesis seçici — birden fazla tesis varsa göster */}
-            {facilities.length > 1 && (
-              <Field label="Bağlı Tesis">
-                <select value={draft.facilityId}
-                  onChange={e => setDraft({ ...draft, facilityId: e.target.value })}
-                  className={selectCls}>
-                  {facilities.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
-                </select>
+
+            {/* Gider Merkezi seçici */}
+            <Field label="Gider Merkezi" hint="Bu projenin sabit maliyetlerini hangi tesis karşılıyor?">
+              {costCenters.length === 0 ? (
+                <div className="bg-enba-amber/8 border border-enba-amber/30 rounded-lg px-3 py-2.5 text-[12px] text-enba-amber">
+                  Henüz gider merkezi yok — ana ekrandan önce bir tesis oluşturun.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {costCenters.map(cc => {
+                    const ccMon = cc.fixedExpenses.reduce((s, e) => s + e.monthly, 0);
+                    return (
+                      <div
+                        key={cc.id}
+                        onClick={() => setDraft({ ...draft, costCenterId: cc.id })}
+                        className={cx(
+                          'flex items-center gap-3 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors',
+                          draft.costCenterId === cc.id
+                            ? 'border-enba-orange bg-enba-orange/8'
+                            : 'border-enba-line hover:border-enba-orange/40',
+                        )}
+                      >
+                        <div className={cx('w-4 h-4 rounded-full border-2 flex-none flex items-center justify-center',
+                          draft.costCenterId === cc.id ? 'border-enba-orange' : 'border-enba-dim')}>
+                          {draft.costCenterId === cc.id && <div className="w-2 h-2 rounded-full bg-enba-orange" />}
+                        </div>
+                        <div className="flex-1">
+                          <div className="text-[13px] font-semibold text-enba-text">{cc.name}</div>
+                          <div className="text-[11px] text-enba-dim">{cc.fixedExpenses.length} gider · {fmtTL(ccMon)}/ay</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </Field>
+
+            {selectedCC && ccTotal > 0 && (
+              <Field label="Dağılım Ağırlığı" hint="Göreceli sayı — aynı gider merkezinin aktif projeleriyle paylaşılır. (2 ve 1 → %67/%33)">
+                <input type="number" value={draft.allocationWeight} min={0.1} step={0.1}
+                  onChange={e => setDraft({ ...draft, allocationWeight: Number(e.target.value) })}
+                  className={inputCls} />
               </Field>
             )}
-            <Field label="Tesis Gideri Dağılım Ağırlığı" hint="Göreceli sayı — aynı tesisin aktif projeleriyle karşılaştırılır. (örn: 2 ve 1 → %67 / %33)">
-              <input type="number" value={draft.allocationWeight} min={0.1} step={0.1}
-                onChange={e => setDraft({ ...draft, allocationWeight: Number(e.target.value) })}
-                className={inputCls} />
-            </Field>
+
             <div className="grid grid-cols-2 gap-4">
               <Field label="Başlangıç Ayı">
                 <select value={draft.startOffset} onChange={e => setDraft({ ...draft, startOffset: Number(e.target.value) })} className={selectCls}>
@@ -771,17 +570,15 @@ function ProjectEditor({ project, idx, horizon, facilities, onSave, onCancel }:
             </div>
           </>
         )}
-
         {tab === 'giderler' && (
           <>
-            <div className="text-[11.5px] text-enba-dim">Projeye özgü giderler: personel, elektrik, su, hammadde alışı vb.</div>
+            <div className="text-[11.5px] text-enba-dim">Projeye özgü direkt giderler: personel, hammadde, enerji vb.</div>
             <ProjectExpenseList items={draft.expenses} setItems={v => setDraft({ ...draft, expenses: v })} />
             {expenseTotal > 0 && (
               <div className="text-right text-[12px] text-enba-dim">Toplam: <span className="font-semibold text-enba-text">{fmtTL(expenseTotal)}/ay</span></div>
             )}
           </>
         )}
-
         {tab === 'gelirler' && (
           <>
             <div className="text-[11.5px] text-enba-dim">Bu projenin üretip sattığı ürün ve hizmetler.</div>
@@ -802,52 +599,42 @@ function ProjectEditor({ project, idx, horizon, facilities, onSave, onCancel }:
   );
 }
 
-/* ── Step 3 — Projeler ana görünüm ── */
-function ProjectsStep({ projects, setProjects, horizon, facilities }:
-  { projects: ActiveProject[]; setProjects: (v: ActiveProject[]) => void; horizon: number; facilities: Facility[] }) {
+/* ── Step 2 — Projeler ── */
+function ProjectsStep({ projects, setProjects, horizon, costCenters }:
+  { projects: ActiveProject[]; setProjects: (v: ActiveProject[]) => void; horizon: number; costCenters: CostCenter[] }) {
   const [editingId, setEditingId] = useState<string | null>(null);
+  const defaultCcId = costCenters[0]?.id ?? '';
 
-  const defaultFacilityId = facilities[0]?.id ?? '';
-  const activeProjects    = projects.filter(p => p.isActive);
-  const totalWeight       = activeProjects.reduce((s, p) => s + p.allocationWeight, 0);
-
-  const facilityTotals = facilities.reduce<Record<string, number>>((acc, f) => {
-    acc[f.id] = f.fixedExpenses.reduce((s, e) => s + e.monthly, 0);
-    return acc;
-  }, {});
-
-  const saveProject   = (updated: ActiveProject) => {
-    setProjects(projects.map(p => p.id === updated.id ? updated : p));
-    setEditingId(null);
-  };
-  const toggleActive  = (id: string) =>
-    setProjects(projects.map(p => p.id === id ? { ...p, isActive: !p.isActive } : p));
-  const addProject    = () => {
-    const np = emptyProject(projects.length, defaultFacilityId);
-    setProjects([...projects, np]);
-    setEditingId(np.id);
-  };
+  const toggleActive  = (id: string) => setProjects(projects.map(p => p.id === id ? { ...p, isActive: !p.isActive } : p));
+  const saveProject   = (updated: ActiveProject) => { setProjects(projects.map(p => p.id === updated.id ? updated : p)); setEditingId(null); };
+  const addProject    = () => { const np = emptyProject(projects.length, defaultCcId); setProjects([...projects, np]); setEditingId(np.id); };
   const deleteProject = (id: string) => setProjects(projects.filter(p => p.id !== id));
 
-  // Tesis bazlı dağılım özeti — her tesis için ayrı bar
-  const facilityBars = facilities.map(f => {
-    const fps    = activeProjects.filter(p => p.facilityId === f.id);
-    const fTotal = facilityTotals[f.id] ?? 0;
+  // Gider merkezi bazlı dağılım özeti
+  const ccBars = costCenters.map(cc => {
+    const fps    = projects.filter(p => p.costCenterId === cc.id && p.isActive);
+    const ccMon  = cc.fixedExpenses.reduce((s, e) => s + e.monthly, 0);
     const wTotal = fps.reduce((s, p) => s + p.allocationWeight, 0);
-    return { facility: f, fTotal, fps, wTotal };
-  }).filter(fb => fb.fps.length > 0 || fb.fTotal > 0);
+    return { cc, fps, ccMon, wTotal };
+  }).filter(b => b.fps.length > 0 && b.ccMon > 0);
 
   return (
     <div className="space-y-4">
-      <StepHeader step={3} total={3} title="Projeler"
-        sub="Her proje kendi giderlerini ve gelirlerini taşır. Aktif projeler tesis sabit giderini ağırlığa göre paylaşır." />
+      <StepHeader step={2} total={2} title="Projeler"
+        sub="Her proje kendi gelir ve giderlerini taşır. Aktif projeler bağlı olduğu gider merkezinin sabit maliyetini paylaşır." />
 
-      {/* Tesis dağılım özeti */}
-      {facilityBars.map(({ facility, fTotal, fps, wTotal }) => fps.length > 0 && fTotal > 0 && (
-        <div key={facility.id} className="bg-enba-panel border border-enba-line rounded-xl px-4 py-3 space-y-2">
+      {costCenters.length === 0 && (
+        <div className="bg-enba-amber/8 border border-enba-amber/30 rounded-xl px-4 py-3 text-[12.5px] text-enba-amber">
+          Henüz gider merkezi tanımlanmamış. Ana ekrandan önce bir tesis oluşturun, sonra buraya proje ekleyin.
+        </div>
+      )}
+
+      {/* Dağılım barları */}
+      {ccBars.map(({ cc, fps, ccMon, wTotal }) => (
+        <div key={cc.id} className="bg-enba-panel border border-enba-line rounded-xl px-4 py-3 space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] text-enba-dim uppercase tracking-wider">{facility.name} · Tesis Gideri</span>
-            <span className="text-[12px] font-semibold tabular">{fmtTL(fTotal)}/ay</span>
+            <span className="text-[11px] text-enba-dim uppercase tracking-wider">{cc.name} · Sabit Gider</span>
+            <span className="text-[12px] font-semibold tabular">{fmtTL(ccMon)}/ay</span>
           </div>
           <div className="flex gap-1 h-2 rounded-full overflow-hidden bg-enba-panel-2">
             {fps.map(p => (
@@ -859,10 +646,9 @@ function ProjectsStep({ projects, setProjects, horizon, facilities }:
             {fps.map(p => (
               <div key={p.id} className="flex items-center gap-1.5 text-[11px]">
                 <span className="w-2 h-2 rounded-full" style={{ background: p.color }} />
-                <span className="text-enba-text font-medium">{p.name || 'İsimsiz'}</span>
+                <span className="font-medium text-enba-text">{p.name || 'İsimsiz'}</span>
                 <span className="text-enba-dim">%{Math.round((p.allocationWeight / (wTotal || 1)) * 100)}</span>
-                <span className="text-enba-dim">·</span>
-                <span className="text-enba-dim">{fmtTL((p.allocationWeight / (wTotal || 1)) * fTotal)}/ay</span>
+                <span className="text-enba-dim">· {fmtTL((p.allocationWeight / (wTotal || 1)) * ccMon)}/ay</span>
               </div>
             ))}
           </div>
@@ -871,63 +657,39 @@ function ProjectsStep({ projects, setProjects, horizon, facilities }:
 
       {/* Proje kartları */}
       {projects.map((p, idx) => editingId === p.id ? (
-        <ProjectEditor key={p.id} project={p} idx={idx} horizon={horizon} facilities={facilities}
+        <ProjectEditor key={p.id} project={p} idx={idx} horizon={horizon} costCenters={costCenters}
           onSave={saveProject} onCancel={() => setEditingId(null)} />
       ) : (
         <div key={p.id}
-          className={cx(
-            'bg-enba-panel border rounded-xl px-4 py-3 flex items-center gap-3 transition-opacity',
-            p.isActive ? 'border-enba-line' : 'border-enba-line opacity-60',
-          )}
+          className={cx('bg-enba-panel border rounded-xl px-4 py-3 flex items-center gap-3 transition-opacity', !p.isActive && 'opacity-60')}
           style={{ borderLeftColor: p.color, borderLeftWidth: 4 }}>
           <span className="w-3 h-3 rounded-full flex-none" style={{ background: p.color }} />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <span className="text-[13px] font-semibold text-enba-text">{p.name || 'İsimsiz Proje'}</span>
-              <span className={cx(
-                'px-1.5 py-0.5 rounded text-[10px] font-medium',
-                p.isActive ? 'bg-enba-green/15 text-enba-green' : 'bg-enba-dim/15 text-enba-dim',
-              )}>
+              <span className={cx('px-1.5 py-0.5 rounded text-[10px] font-medium',
+                p.isActive ? 'bg-enba-green/15 text-enba-green' : 'bg-enba-dim/15 text-enba-dim')}>
                 {p.isActive ? 'Aktif' : 'Pasif'}
               </span>
             </div>
             <div className="text-[11px] text-enba-dim mt-0.5 flex items-center gap-2">
-              {facilities.length > 1 && (
-                <>
-                  <span>{facilities.find(f => f.id === p.facilityId)?.name ?? '—'}</span>
-                  <span>·</span>
-                </>
-              )}
-              <span>Ağırlık: {p.allocationWeight}</span>
+              <span>{costCenters.find(cc => cc.id === p.costCenterId)?.name ?? '—'}</span>
               <span>·</span>
               <span>{p.startOffset + 1}. ay{p.endOffset ? ` – ${p.endOffset}. ay` : ' → son'}</span>
               <span>·</span>
               <span>{p.expenses.length} gider, {p.revenues.length} ürün</span>
             </div>
           </div>
-          {/* Aktif toggle */}
-          <button
-            onClick={() => toggleActive(p.id)}
-            title={p.isActive ? 'Pasife al' : 'Aktife al'}
-            className={cx(
-              'w-8 h-8 rounded-lg inline-flex items-center justify-center transition-colors',
-              p.isActive
-                ? 'text-enba-green bg-enba-green/10 hover:bg-enba-green/20'
-                : 'text-enba-dim bg-enba-panel-2 hover:text-enba-green hover:bg-enba-green/10',
-            )}>
+          <button onClick={() => toggleActive(p.id)} title={p.isActive ? 'Pasife al' : 'Aktife al'}
+            className={cx('w-8 h-8 rounded-lg inline-flex items-center justify-center transition-colors',
+              p.isActive ? 'text-enba-green bg-enba-green/10' : 'text-enba-dim bg-enba-panel-2 hover:text-enba-green hover:bg-enba-green/10')}>
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
               <rect x="1" y="4" width="14" height="8" rx="4" fill="currentColor" opacity={p.isActive ? '1' : '0.3'} />
-              <circle cx={p.isActive ? '11' : '5'} cy="8" r="3" fill="white" className="transition-all" />
+              <circle cx={p.isActive ? 11 : 5} cy="8" r="3" fill="white" />
             </svg>
           </button>
-          <button onClick={() => setEditingId(p.id)}
-            className="w-8 h-8 rounded-lg text-enba-dim hover:text-enba-orange hover:bg-enba-orange/10 inline-flex items-center justify-center">
-            <I.Edit size={14} />
-          </button>
-          <button onClick={() => deleteProject(p.id)}
-            className="w-8 h-8 rounded-lg text-enba-dim hover:text-enba-red hover:bg-enba-red/10 inline-flex items-center justify-center">
-            <I.Trash size={14} />
-          </button>
+          <button onClick={() => setEditingId(p.id)} className="w-8 h-8 rounded-lg text-enba-dim hover:text-enba-orange hover:bg-enba-orange/10 inline-flex items-center justify-center"><I.Edit size={14} /></button>
+          <button onClick={() => deleteProject(p.id)} className="w-8 h-8 rounded-lg text-enba-dim hover:text-enba-red hover:bg-enba-red/10 inline-flex items-center justify-center"><I.Trash size={14} /></button>
         </div>
       ))}
 
@@ -937,36 +699,20 @@ function ProjectsStep({ projects, setProjects, horizon, facilities }:
           <I.Plus size={14} /> Proje Ekle
         </button>
       )}
-
       {projects.length === 0 && (
-        <p className="text-[11.5px] text-enba-dim text-center">
-          En az bir proje tanımlamanız önerilir — sonradan da eklenebilir.
-        </p>
-      )}
-
-      {projects.length > 0 && activeProjects.length === 0 && (
-        <div className="text-[11.5px] text-enba-amber text-center bg-enba-amber/8 border border-enba-amber/20 rounded-lg py-2 px-3">
-          Tüm projeler pasif — tesis maliyeti hiçbir projeye dağıtılmıyor.
-        </div>
-      )}
-
-      {activeProjects.length > 0 && (
-        <div className="text-[11px] text-enba-dim text-center">
-          {activeProjects.length} aktif proje · toplam ağırlık {totalWeight}
-        </div>
+        <p className="text-[11.5px] text-enba-dim text-center">En az bir proje ekleyerek planı tamamlayın.</p>
       )}
     </div>
   );
 }
 
 /* ══════════════════════════════════════════════════════
-   ANA SIHIRBAZ
+   ANA SIHIRBAZ — 2 adım
 ══════════════════════════════════════════════════════ */
-type WStep = 1 | 2 | 3;
+type WStep = 1 | 2;
 const STEPS = [
   { n: 1 as WStep, label: 'Temel Bilgiler' },
-  { n: 2 as WStep, label: 'Gider Merkezleri' },
-  { n: 3 as WStep, label: 'Projeler' },
+  { n: 2 as WStep, label: 'Projeler' },
 ];
 
 interface Props {
@@ -974,9 +720,10 @@ interface Props {
   onCancel:     () => void;
   onSave?:      (plan: DPlan) => void;
   initialPlan?: DPlan;
+  costCenters:  CostCenter[];
 }
 
-export function DPlanWizard({ onDone, onCancel, onSave, initialPlan }: Props) {
+export function DPlanWizard({ onDone, onCancel, onSave, initialPlan, costCenters }: Props) {
   const planId = useRef<string>(initialPlan?.id ?? crypto.randomUUID());
   const [step,  setStep]  = useState<WStep>(1);
   const [saved, setSaved] = useState(false);
@@ -989,30 +736,22 @@ export function DPlanWizard({ onDone, onCancel, onSave, initialPlan }: Props) {
   const [openingCash, setOpeningCash] = useState(initialPlan?.openingCash ?? 0);
 
   /* Adım 2 */
-  const [facilities, setFacilities] = useState<Facility[]>(() => {
-    if (initialPlan?.facilities?.length) return initialPlan.facilities;
-    // Eski format fallback
-    const raw = initialPlan as (typeof initialPlan & { facilityExpenses?: FixedExpense[] });
-    const facilityId = crypto.randomUUID();
-    return [{ id: facilityId, name: 'Tesis', fixedExpenses: raw?.facilityExpenses ?? [] }];
-  });
-
-  /* Adım 3 */
-  const [projects, setProjects] = useState<ActiveProject[]>(() => {
-    const fid = initialPlan?.facilities?.[0]?.id ?? facilities[0]?.id ?? '';
-    return (initialPlan?.projects ?? []).map(p => ({
+  const defaultCcId = costCenters[0]?.id ?? '';
+  const [projects, setProjects] = useState<ActiveProject[]>(() =>
+    (initialPlan?.projects ?? []).map(p => ({
       ...p,
-      facilityId: (p as ActiveProject & { facilityId?: string }).facilityId ?? fid,
-      isActive:   (p as ActiveProject & { isActive?: boolean }).isActive ?? true,
-    }));
-  });
+      costCenterId: (p as ActiveProject & { costCenterId?: string; facilityId?: string }).costCenterId
+        ?? (p as ActiveProject & { facilityId?: string }).facilityId
+        ?? defaultCcId,
+      isActive: (p as ActiveProject & { isActive?: boolean }).isActive ?? true,
+    }))
+  );
 
-  /* Önizleme (adım 3) */
+  /* Önizleme */
   const preview = useMemo(() => {
-    const allProducts  = projects.flatMap(p => p.revenues);
-    const allFacilityExp = facilities.flatMap(f => f.fixedExpenses);
-    const allExpenses  = [
-      ...allFacilityExp,
+    const allProducts = projects.flatMap(p => p.revenues);
+    const allExpenses = [
+      ...costCenters.flatMap(cc => cc.fixedExpenses),
       ...projects.flatMap(p => p.expenses),
     ];
     if (!allProducts.length && !allExpenses.length) return null;
@@ -1023,9 +762,9 @@ export function DPlanWizard({ onDone, onCancel, onSave, initialPlan }: Props) {
       opex:   s.reduce((a, x) => a + x.opex,    0),
       ebitda: s.reduce((a, x) => a + x.ebitda,  0),
     };
-  }, [projects, facilities, startYear, startMonth]);
+  }, [projects, costCenters, startYear, startMonth]);
 
-  const next = () => { setSaved(false); setStep(s => Math.min(3, s + 1) as WStep); };
+  const next = () => { setSaved(false); setStep(s => Math.min(2, s + 1) as WStep); };
   const prev = () => { setSaved(false); setStep(s => Math.max(1, s - 1) as WStep); };
 
   const buildPlan = (status: DPlan['status'] = 'draft'): DPlan => ({
@@ -1039,18 +778,12 @@ export function DPlanWizard({ onDone, onCancel, onSave, initialPlan }: Props) {
     horizon,
     openingCash,
     actualsThrough: initialPlan?.actualsThrough ?? 0,
-    facilities,
     projects,
     cashEvents:     initialPlan?.cashEvents ?? [],
   });
 
-  const handleSave = () => {
-    onSave?.(buildPlan('draft'));
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  };
-
-  const finish = () => onDone(buildPlan(initialPlan?.status ?? 'draft'));
+  const handleSave = () => { onSave?.(buildPlan('draft')); setSaved(true); setTimeout(() => setSaved(false), 2000); };
+  const finish     = () => onDone(buildPlan(initialPlan?.status ?? 'draft'));
 
   return (
     <div className="h-full flex bg-enba-bg overflow-hidden">
@@ -1086,7 +819,7 @@ export function DPlanWizard({ onDone, onCancel, onSave, initialPlan }: Props) {
           })}
         </nav>
 
-        {/* Önizleme özeti */}
+        {/* Önizleme */}
         {preview && (
           <div className="m-3 p-3 rounded-lg bg-enba-panel-2 border border-enba-line space-y-1.5">
             <div className="text-[10px] uppercase tracking-wider text-enba-dim">12 ay önizleme</div>
@@ -1109,9 +842,9 @@ export function DPlanWizard({ onDone, onCancel, onSave, initialPlan }: Props) {
 
         <div className="p-4 border-t border-enba-line">
           <div className="w-full h-1 bg-enba-panel-2 rounded-full overflow-hidden">
-            <div className="h-full bg-enba-orange rounded-full transition-all" style={{ width: `${((step - 1) / 2) * 100}%` }} />
+            <div className="h-full bg-enba-orange rounded-full transition-all" style={{ width: `${((step - 1) / 1) * 100}%` }} />
           </div>
-          <div className="text-[10px] text-enba-dim mt-1.5">Adım {step} / 3</div>
+          <div className="text-[10px] text-enba-dim mt-1.5">Adım {step} / 2</div>
         </div>
       </aside>
 
@@ -1129,18 +862,14 @@ export function DPlanWizard({ onDone, onCancel, onSave, initialPlan }: Props) {
               />
             )}
             {step === 2 && (
-              <FacilitiesStep facilities={facilities} setFacilities={setFacilities} />
-            )}
-            {step === 3 && (
               <ProjectsStep
                 projects={projects} setProjects={setProjects}
-                horizon={horizon} facilities={facilities}
+                horizon={horizon} costCenters={costCenters}
               />
             )}
           </div>
         </div>
 
-        {/* Footer */}
         <div className="flex-none border-t border-enba-line bg-enba-panel px-8 h-[60px] flex items-center justify-between">
           <Btn variant="outline" size="md"
             icon={step > 1 ? <I.Chevron size={12} className="rotate-90" /> : undefined}
@@ -1153,8 +882,8 @@ export function DPlanWizard({ onDone, onCancel, onSave, initialPlan }: Props) {
                 {saved ? 'Kaydedildi' : 'Kaydet'}
               </Btn>
             )}
-            {step < 3
-              ? <Btn variant="primary" size="md" disabled={step === 1 && !title.trim()} onClick={next}>
+            {step < 2
+              ? <Btn variant="primary" size="md" disabled={!title.trim()} onClick={next}>
                   İleri <I.Chevron size={12} className="-rotate-90 ml-1" />
                 </Btn>
               : <Btn variant="primary" size="md" icon={<I.Check size={14} />} onClick={finish}>

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { cx, I, Badge, Btn, Select, ScenarioChip } from './DPPrimitives';
-import { SCENARIOS, DPlan, PlanCtx, buildMonths } from './dpData';
+import { SCENARIOS, DPlan, CostCenter, PlanCtx, buildMonths } from './dpData';
 import { OverviewPanel }    from './OverviewPanel';
 import { RevenuePanel }     from './RevenuePanel';
 import { ExpensePanel }     from './ExpensePanel';
@@ -27,13 +27,14 @@ const NAV: NavItem[] = [
 
 interface DetailedPlanShellProps {
   plan?: DPlan;
+  costCenters?: CostCenter[];
   onSave?: (p: DPlan) => void;
   onBack?: () => void;
   onEdit?: () => void;
   navigate?: (module: string) => void;
 }
 
-export function DetailedPlanShell({ plan, onSave, onBack, onEdit, navigate }: DetailedPlanShellProps) {
+export function DetailedPlanShell({ plan, costCenters = [], onSave, onBack, onEdit, navigate }: DetailedPlanShellProps) {
   const [active, setActive]           = useState<SectionId>('overview');
   const [scenarioId, setScenarioId]   = useState('baz');
   const [periodGran, setPeriodGran]   = useState('month');
@@ -42,15 +43,18 @@ export function DetailedPlanShell({ plan, onSave, onBack, onEdit, navigate }: De
 
   const ctxValue = useMemo(() => {
     if (!plan) return undefined;
-    const allFacilityExpenses = plan.facilities.flatMap(f => f.fixedExpenses);
-    const products            = plan.projects.flatMap(p => p.revenues);
-    const fixedExpenses       = [
-      ...allFacilityExpenses,
+    // Bu planın projelerinin bağlı olduğu gider merkezlerini bul
+    const usedCcIds = new Set(plan.projects.map(p => p.costCenterId));
+    const usedCostCenters = costCenters.filter(cc => usedCcIds.has(cc.id));
+    const facilityExpenses = usedCostCenters.flatMap(cc => cc.fixedExpenses);
+    const products         = plan.projects.flatMap(p => p.revenues);
+    const fixedExpenses    = [
+      ...facilityExpenses,
       ...plan.projects.flatMap(p => p.expenses),
     ];
     return {
-      facilities:       plan.facilities,
-      facilityExpenses: allFacilityExpenses,
+      costCenters:      usedCostCenters,
+      facilityExpenses,
       projects:         plan.projects,
       products,
       fixedExpenses,
@@ -59,7 +63,7 @@ export function DetailedPlanShell({ plan, onSave, onBack, onEdit, navigate }: De
       openingCash:      plan.openingCash,
       actualsThrough:   plan.actualsThrough,
     };
-  }, [plan]);
+  }, [plan, costCenters]);
 
   const shell = (
     <div className="h-full flex bg-enba-bg overflow-hidden">
