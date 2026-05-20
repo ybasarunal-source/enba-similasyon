@@ -306,6 +306,7 @@ export function DPlanWizard({ onDone, onCancel, onSave, initialPlan }: Props) {
   const handleSave = () => {
     onSave?.(buildPlan('draft'));
     setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
   };
 
   const finish = () => onDone(buildPlan(initialPlan?.status ?? 'draft'));
