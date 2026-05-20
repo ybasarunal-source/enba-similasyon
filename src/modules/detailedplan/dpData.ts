@@ -19,7 +19,7 @@ export interface Product {
 export interface FixedExpense {
   id: string;
   mcode: string;
-  costCategory: 'purchase' | 'production' | 'overhead' | 'facility';
+  costCategory: 'purchase' | 'production' | 'personnel' | 'sales' | 'overhead' | 'facility';
   name: string;
   group: string;
   monthly: number;
