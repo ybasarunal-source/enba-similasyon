@@ -308,7 +308,7 @@ export function DPlanWizard({ onDone, onCancel, onSave, initialPlan }: Props) {
     setSaved(true);
   };
 
-  const finish = () => onDone(buildPlan('draft'));
+  const finish = () => onDone(buildPlan(initialPlan?.status ?? 'draft'));
 
   return (
     <div className="h-full flex bg-enba-bg overflow-hidden">

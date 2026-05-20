@@ -66,6 +66,8 @@ export function DetailedPlanModule({ navigate }: Props) {
     );
   }
 
+  const openWizardForEdit = (plan: DPlan) => { setActivePlanId(plan.id); setView('wizard'); };
+
   /* ── Shell görünümü ── */
   if (view === 'shell' && activePlan) {
     return (
@@ -73,6 +75,7 @@ export function DetailedPlanModule({ navigate }: Props) {
         plan={activePlan}
         onSave={handleShellSave}
         onBack={() => { setView('list'); setActivePlanId(null); }}
+        onEdit={() => openWizardForEdit(activePlan)}
         navigate={navigate}
       />
     );
@@ -101,6 +104,7 @@ export function DetailedPlanModule({ navigate }: Props) {
                 key={plan.id}
                 plan={plan}
                 onOpen={() => openPlan(plan)}
+                onEdit={() => openWizardForEdit(plan)}
                 onDelete={() => handleDelete(plan.id)}
               />
             ))}
@@ -112,7 +116,7 @@ export function DetailedPlanModule({ navigate }: Props) {
 }
 
 /* ─── PlanCard ─── */
-function PlanCard({ plan, onOpen, onDelete }: { plan: DPlan; onOpen: () => void; onDelete: () => void }) {
+function PlanCard({ plan, onOpen, onEdit, onDelete }: { plan: DPlan; onOpen: () => void; onEdit: () => void; onDelete: () => void }) {
   const isDraft = plan.status === 'draft';
   const tone    = plan.status === 'active' ? 'green' : plan.status === 'archived' ? 'neutral' : 'amber';
   const label   = plan.status === 'active' ? 'Aktif' : plan.status === 'archived' ? 'Arşiv' : 'Taslak';
@@ -142,6 +146,11 @@ function PlanCard({ plan, onOpen, onDelete }: { plan: DPlan; onOpen: () => void;
         >
           {isDraft ? 'Devam Et' : 'Aç'}
         </Btn>
+        <button onClick={onEdit}
+          className="w-8 h-8 rounded-lg text-enba-dim hover:text-enba-orange hover:bg-enba-orange/10 inline-flex items-center justify-center transition-colors"
+          title="Düzenle">
+          <I.Edit size={13} />
+        </button>
         <button onClick={onDelete}
           className="w-8 h-8 rounded-lg text-enba-dim hover:text-enba-red hover:bg-enba-red/10 inline-flex items-center justify-center transition-colors"
           title="Sil">

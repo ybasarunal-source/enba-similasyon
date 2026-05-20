@@ -29,10 +29,11 @@ interface DetailedPlanShellProps {
   plan?: DPlan;
   onSave?: (p: DPlan) => void;
   onBack?: () => void;
+  onEdit?: () => void;
   navigate?: (module: string) => void;
 }
 
-export function DetailedPlanShell({ plan, onSave, onBack, navigate }: DetailedPlanShellProps) {
+export function DetailedPlanShell({ plan, onSave, onBack, onEdit, navigate }: DetailedPlanShellProps) {
   const [active, setActive]           = useState<SectionId>('overview');
   const [scenarioId, setScenarioId]   = useState('baz');
   const [periodGran, setPeriodGran]   = useState('month');
@@ -168,6 +169,9 @@ export function DetailedPlanShell({ plan, onSave, onBack, navigate }: DetailedPl
             </div>
 
             <div className="flex items-center gap-2 flex-none">
+              {onEdit && (
+                <Btn variant="ghost" size="md" icon={<I.Edit size={14} />} onClick={onEdit}>Düzenle</Btn>
+              )}
               {onSave && plan && (
                 <Btn variant="ghost" size="md" icon={<I.Save size={14} />} onClick={() => onSave(plan)}>Kaydet</Btn>
               )}
