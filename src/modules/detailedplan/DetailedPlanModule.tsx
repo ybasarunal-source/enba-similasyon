@@ -25,8 +25,22 @@ export function DetailedPlanModule({ navigate }: Props) {
 
   const activePlan = activePlanId ? planlar.find(p => p.id === activePlanId) ?? null : null;
 
-  const handleSave = (updated: DPlan) => {
-    kaydet(planlar.map(p => p.id === updated.id ? updated : p));
+  const upsert = (updated: DPlan) => {
+    const exists = planlar.some(p => p.id === updated.id);
+    kaydet(exists ? planlar.map(p => p.id === updated.id ? updated : p) : [...planlar, updated]);
+  };
+
+  const handleShellSave = (updated: DPlan) => upsert(updated);
+
+  const handleWizardSave = (plan: DPlan) => {
+    upsert(plan);
+    setActivePlanId(plan.id);
+  };
+
+  const handleWizardDone = (plan: DPlan) => {
+    upsert(plan);
+    setActivePlanId(plan.id);
+    setView('shell');
   };
 
   const handleDelete = (id: string) => {
@@ -35,20 +49,19 @@ export function DetailedPlanModule({ navigate }: Props) {
     if (activePlanId === id) { setActivePlanId(null); setView('list'); }
   };
 
-  const openPlan = (id: string) => { setActivePlanId(id); setView('shell'); };
-
-  const handleWizardDone = (plan: DPlan) => {
-    kaydet([...planlar, plan]);
+  const openPlan = (plan: DPlan) => {
     setActivePlanId(plan.id);
-    setView('shell');
+    setView(plan.status === 'draft' ? 'wizard' : 'shell');
   };
 
   /* ── Sihirbaz görünümü ── */
   if (view === 'wizard') {
     return (
       <DPlanWizard
+        initialPlan={activePlan ?? undefined}
         onDone={handleWizardDone}
-        onCancel={() => setView('list')}
+        onSave={handleWizardSave}
+        onCancel={() => { setView('list'); setActivePlanId(null); }}
       />
     );
   }
@@ -58,7 +71,7 @@ export function DetailedPlanModule({ navigate }: Props) {
     return (
       <DetailedPlanShell
         plan={activePlan}
-        onSave={handleSave}
+        onSave={handleShellSave}
         onBack={() => { setView('list'); setActivePlanId(null); }}
         navigate={navigate}
       />
@@ -73,21 +86,21 @@ export function DetailedPlanModule({ navigate }: Props) {
       <div className="flex-none border-b border-enba-line bg-enba-panel px-6 h-[60px] flex items-center gap-3">
         <span className="w-2 h-2 rounded-full bg-enba-orange shadow-[0_0_8px] shadow-enba-orange/60" />
         <h1 className="text-[15px] font-semibold flex-1">Detaylı İş Planı</h1>
-        <Btn variant="primary" size="md" icon={<I.Plus size={14} />} onClick={() => setView('wizard')}>
+        <Btn variant="primary" size="md" icon={<I.Plus size={14} />} onClick={() => { setActivePlanId(null); setView('wizard'); }}>
           Yeni Plan
         </Btn>
       </div>
 
       <main className="flex-1 p-6">
         {planlar.length === 0 ? (
-          <EmptyState onNew={() => setView('wizard')} />
+          <EmptyState onNew={() => { setActivePlanId(null); setView('wizard'); }} />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 max-w-[1380px] mx-auto">
             {planlar.map(plan => (
               <PlanCard
                 key={plan.id}
                 plan={plan}
-                onOpen={() => openPlan(plan.id)}
+                onOpen={() => openPlan(plan)}
                 onDelete={() => handleDelete(plan.id)}
               />
             ))}
@@ -100,8 +113,9 @@ export function DetailedPlanModule({ navigate }: Props) {
 
 /* ─── PlanCard ─── */
 function PlanCard({ plan, onOpen, onDelete }: { plan: DPlan; onOpen: () => void; onDelete: () => void }) {
-  const tone  = plan.status === 'active' ? 'green' : plan.status === 'archived' ? 'neutral' : 'amber';
-  const label = plan.status === 'active' ? 'Aktif' : plan.status === 'archived' ? 'Arşiv' : 'Taslak';
+  const isDraft = plan.status === 'draft';
+  const tone    = plan.status === 'active' ? 'green' : plan.status === 'archived' ? 'neutral' : 'amber';
+  const label   = plan.status === 'active' ? 'Aktif' : plan.status === 'archived' ? 'Arşiv' : 'Taslak';
   return (
     <div className="bg-enba-panel border border-enba-line rounded-xl p-5 hover:border-enba-orange/40 transition-colors flex flex-col gap-4">
       <div className="flex items-start justify-between gap-3">
@@ -119,7 +133,15 @@ function PlanCard({ plan, onOpen, onDelete }: { plan: DPlan; onOpen: () => void;
       </div>
 
       <div className="flex items-center gap-2 pt-1 border-t border-enba-line">
-        <Btn variant="primary" size="sm" className="flex-1" onClick={onOpen}>Aç</Btn>
+        <Btn
+          variant={isDraft ? 'outline' : 'primary'}
+          size="sm"
+          className="flex-1"
+          icon={isDraft ? <I.Chevron size={12} className="-rotate-90" /> : undefined}
+          onClick={onOpen}
+        >
+          {isDraft ? 'Devam Et' : 'Aç'}
+        </Btn>
         <button onClick={onDelete}
           className="w-8 h-8 rounded-lg text-enba-dim hover:text-enba-red hover:bg-enba-red/10 inline-flex items-center justify-center transition-colors"
           title="Sil">

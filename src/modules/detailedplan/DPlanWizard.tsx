@@ -240,31 +240,36 @@ const STEPS: { n: Step; label: string }[] = [
 ];
 
 interface Props {
-  onDone: (plan: DPlan) => void;
-  onCancel: () => void;
+  onDone:       (plan: DPlan) => void;
+  onCancel:     () => void;
+  onSave?:      (plan: DPlan) => void;
+  initialPlan?: DPlan;
 }
 
-export function DPlanWizard({ onDone, onCancel }: Props) {
+export function DPlanWizard({ onDone, onCancel, onSave, initialPlan }: Props) {
   const [step, setStep] = useState<Step>(1);
+  const [saved, setSaved] = useState(false);
 
   /* Adım 1 — Temel */
-  const [title,       setTitle]       = useState('');
-  const [startYear,   setStartYear]   = useState(new Date().getFullYear());
-  const [startMonth,  setStartMonth]  = useState(0);
-  const [horizon,     setHorizon]     = useState(24);
-  const [openingCash, setOpeningCash] = useState(0);
+  const [title,       setTitle]       = useState(initialPlan?.title ?? '');
+  const [startYear,   setStartYear]   = useState(initialPlan?.startYear ?? new Date().getFullYear());
+  const [startMonth,  setStartMonth]  = useState(initialPlan?.startMonth ?? 0);
+  const [horizon,     setHorizon]     = useState(initialPlan?.horizon ?? 24);
+  const [openingCash, setOpeningCash] = useState(initialPlan?.openingCash ?? 0);
 
-  /* Adım 2 — Sabit Giderler */
-  const [overhead, setOverhead] = useState<FixedExpense[]>([]);
-
-  /* Adım 3 — Alış Maliyetleri */
-  const [purchase, setPurchase] = useState<FixedExpense[]>([]);
-
-  /* Adım 4 — Üretim Maliyetleri */
-  const [production, setProduction] = useState<FixedExpense[]>([]);
+  /* Adım 2-4 — Giderler (kategoriye göre ayır) */
+  const [overhead,   setOverhead]   = useState<FixedExpense[]>(
+    initialPlan?.fixedExpenses.filter(e => e.costCategory === 'overhead') ?? []
+  );
+  const [purchase,   setPurchase]   = useState<FixedExpense[]>(
+    initialPlan?.fixedExpenses.filter(e => e.costCategory === 'purchase') ?? []
+  );
+  const [production, setProduction] = useState<FixedExpense[]>(
+    initialPlan?.fixedExpenses.filter(e => e.costCategory === 'production') ?? []
+  );
 
   /* Adım 5 — Satış Gelirleri */
-  const [sales, setSales] = useState<Product[]>([]);
+  const [sales, setSales] = useState<Product[]>(initialPlan?.products ?? []);
 
   /* Projeksiyon önizlemesi (adım 5) */
   const preview = useMemo(() => {
@@ -279,27 +284,31 @@ export function DPlanWizard({ onDone, onCancel }: Props) {
     };
   }, [sales, overhead, purchase, production, startYear, startMonth]);
 
-  const next = () => setStep(s => Math.min(5, s + 1) as Step);
-  const prev = () => setStep(s => Math.max(1, s - 1) as Step);
+  const next = () => { setSaved(false); setStep(s => Math.min(5, s + 1) as Step); };
+  const prev = () => { setSaved(false); setStep(s => Math.max(1, s - 1) as Step); };
 
-  const finish = () => {
-    const plan: DPlan = {
-      id: crypto.randomUUID(),
-      title: title.trim(),
-      baslik: title.trim(),
-      status: 'draft',
-      year: startYear,
-      startYear,
-      startMonth,
-      horizon,
-      openingCash,
-      actualsThrough: 0,
-      products:      sales,
-      fixedExpenses: [...overhead, ...purchase, ...production],
-      cashEvents:    [],
-    };
-    onDone(plan);
+  const buildPlan = (status: DPlan['status'] = 'draft'): DPlan => ({
+    id:             initialPlan?.id ?? crypto.randomUUID(),
+    title:          title.trim() || 'İsimsiz Plan',
+    baslik:         title.trim() || 'İsimsiz Plan',
+    status,
+    year:           startYear,
+    startYear,
+    startMonth,
+    horizon,
+    openingCash,
+    actualsThrough: initialPlan?.actualsThrough ?? 0,
+    products:       sales,
+    fixedExpenses:  [...overhead, ...purchase, ...production],
+    cashEvents:     initialPlan?.cashEvents ?? [],
+  });
+
+  const handleSave = () => {
+    onSave?.(buildPlan('draft'));
+    setSaved(true);
   };
+
+  const finish = () => onDone(buildPlan('draft'));
 
   return (
     <div className="h-full flex bg-enba-bg overflow-hidden">
@@ -310,7 +319,7 @@ export function DPlanWizard({ onDone, onCancel }: Props) {
           <button onClick={onCancel} className="w-7 h-7 rounded-md text-enba-muted hover:text-enba-text hover:bg-enba-panel-2 inline-flex items-center justify-center">
             <I.Chevron size={13} className="rotate-90" />
           </button>
-          <span className="text-[13px] font-semibold text-enba-text">Yeni Plan</span>
+          <span className="text-[13px] font-semibold text-enba-text">{initialPlan ? 'Planı Düzenle' : 'Yeni Plan'}</span>
         </div>
 
         <nav className="flex-1 pt-3 px-2">
@@ -428,14 +437,21 @@ export function DPlanWizard({ onDone, onCancel }: Props) {
             {step > 1 ? 'Geri' : 'İptal'}
           </Btn>
 
-          {step < 5
-            ? <Btn variant="primary" size="md" disabled={step === 1 && !title.trim()} onClick={next}>
-                İleri <I.Chevron size={12} className="-rotate-90 ml-1" />
+          <div className="flex items-center gap-2">
+            {onSave && title.trim() && (
+              <Btn variant="outline" size="md" icon={saved ? <I.Check size={13} /> : undefined} onClick={handleSave}>
+                {saved ? 'Kaydedildi' : 'Kaydet'}
               </Btn>
-            : <Btn variant="primary" size="md" icon={<I.Plus size={14} />} onClick={finish}>
-                Planı Oluştur
-              </Btn>
-          }
+            )}
+            {step < 5
+              ? <Btn variant="primary" size="md" disabled={step === 1 && !title.trim()} onClick={next}>
+                  İleri <I.Chevron size={12} className="-rotate-90 ml-1" />
+                </Btn>
+              : <Btn variant="primary" size="md" icon={<I.Check size={14} />} onClick={finish}>
+                  Tamamla
+                </Btn>
+            }
+          </div>
         </div>
       </div>
     </div>
