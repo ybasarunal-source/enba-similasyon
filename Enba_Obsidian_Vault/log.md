@@ -641,6 +641,16 @@ grep "^## \[" log.md | tail -5
 - **Etkilenen dosyalar:** dpData.ts, DetailedPlanModule.tsx, DPlanWizard.tsx
 - **Bir sonraki:** Commit at, ardından plan oluşturma akışını uçtan uca test et
 
+## [2026-05-20] geliştirme | DetailedPlan — Müşteri Havuzu + oturum kapanışı
+
+- **Yapılan:**
+  - `dpData.ts`: `Customer` arayüzü (name, sector, paymentTerms); `DPlan.customers: Customer[]`; `Product.customerId?: string`
+  - `DPlanWizard.tsx`: `CustomerList` + `CustomerFormRow` bileşenleri; Step 2 sırası: Tedarikçi → Müşteri → Projeler; `ProjectRevenueList` formuna müşteri dropdown + display row'da müşteri adı
+  - Tedarikçi Havuzu da planın içine taşındı (global → DPlan.suppliers) — önceki commit 4dc8c50
+- **Commit:** 0a04a6e
+- **Wiki:** `Moduller/DetailedPlan.md` oluşturuldu — tam mimari, açık konular listesi
+- **Durum:** Temel veri girişi tamamlandı. Yarın bilgi girişi + test yapılacak.
+
 ## [2026-05-19] karar | Piyasaya çıkmadan önce tenant izolasyon güvenliği
 
 - **Konu:** super_admin Paraşüt şirket seçici dropdown'ı tüm şirket adlarını listeliyor — tenantlar birbirini görmemeli.

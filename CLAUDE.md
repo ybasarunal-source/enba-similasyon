@@ -345,18 +345,27 @@ Veri kaybı riski olan her adımı kullanıcıya açıkça belirt ve onay al.
 ### Bekleyen Teknik Görevler
 - [x] **Admin test hesabı** — doğrulandı (2026-05-18)
 - [x] **Kök dizin .jsx temizliği** — 26 dosya silindi (commit 9571b0d)
-- [ ] **DetailedPlan veri girişi** — plan listesi + Supabase JSON blob → bkz. `Kararlar/2026-05-DetailedPlan-Veri-Girisi.md`
+- [x] **DetailedPlan veri girişi** — wizard tamamlandı (Gider Merkezleri, Tedarikçi/Müşteri Havuzu, Projeler × 6 sekme). Test: 2026-05-21.
 - [x] **Paraşüt token migrasyonu** — migration_v25 + v25b tamamlandı; token Supabase'e yazılıyor, super_admin şirket seçici mevcut (commit cd82733)
 - [ ] **Paraşüt → financial_categories** — eşleştirme modalı Supabase tablosundan çeksin
 - [ ] **E-fatura** — ertelendi
 - [ ] **Bordro/muhasebe** — ertelendi
+
+### DetailedPlan — Test Sonrası Açık Konular (2026-05-20)
+- [ ] **Panel hesapları doğrulanacak** — wizard verisi PlanCtx'e akıyor mu, 6 panel doğru hesaplıyor mu?
+- [ ] **CostCenter allocationWeight** — aynı tesise bağlı çoklu proje paylaşımı doğru mu?
+- [ ] **startOffset/endOffset** — gider/gelir kalemleri doğru ay'dan başlıyor mu?
+- [ ] **BudgetTrack + aktüel veri girişi** — panel şu an boş; aktüel giriş formu eklenecek
+- [ ] **CashFlow cashEvents girişi** — yatırım/finansman nakit olayları wizard'da düzenlenemiyor
+- [ ] **PDF export** — shell'de buton var, işlevsiz
+- Detay: `Moduller/DetailedPlan.md` → Açık Konular bölümü
 
 ### ⚠️ Piyasaya Çıkmadan Önce — Güvenlik (Tenant İzolasyonu)
 - [ ] **Şirket listesi gizliliği** — Paraşüt super_admin dropdown'ı şu an tüm şirket adlarını gösteriyor; kullanıcı sayısı artınca tenantlar birbirini görmemeli. Çözüm: şirket adı yerine şirket kodu (slug) göster, veya dropdown'ı kaldır (super_admin için farklı erişim mekanizması).
 - [ ] **Login'de otomatik şirket eşleşmesi** — Kullanıcı email'i Supabase'deki profile kaydıyla eşleşince şirket otomatik belirlenmeli; girişte şirket seçim adımı kalkmalı. (Şu an zaten böyle çalışıyor ama super_admin seçici UX'i karışıklık yaratıyor.)
 
 ### Bir Sonraki Oturumda İlk Yapılacak
-**DetailedPlan gerçek veri bağlantısı**
+**DetailedPlan test bulguları — wizard'ı gerçek veriyle doldur, panel hesaplarını doğrula, hataları düzelt**
 
 ### Bekleyen Kullanıcı Aksiyonu
 - [x] **Supabase SQL:** `migration_v25b_parasut_superadmin_rls.sql` çalıştırıldı (super_admin RLS güncelleme — 2026-05-19)
