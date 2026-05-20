@@ -30,6 +30,29 @@ export interface FixedExpense {
   monthlyQty?: number;
 }
 
+// ─── Tedarikçi Havuzu — plan dışında yaşar ───────────────────────────────────
+export interface Supplier {
+  id: string;
+  name: string;       // şirket / tedarikçi adı
+  material: string;   // tedarik ettiği malzeme
+  unit: string;       // ton / kg / m³ / adet
+  unitPrice: number;  // ₺ / birim
+  notes?: string;
+}
+
+export const SUPPLIERS_KEY = 'enba_dp2_suppliers';
+
+export function loadSuppliers(): Supplier[] {
+  try {
+    const raw = localStorage.getItem(SUPPLIERS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+export function saveSuppliers(list: Supplier[]): void {
+  try { localStorage.setItem(SUPPLIERS_KEY, JSON.stringify(list)); } catch { /* ignore */ }
+}
+
 // ─── Gider Merkezi — plan dışında yaşar ─────────────────────────────────────
 // Tesis, ofis, atölye vb. — bir kere tanımlanır, planlardan referanslanır.
 export interface CostCenter {

@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { cx, I, Btn } from './DPPrimitives';
 import {
-  DPlan, Product, FixedExpense, ActiveProject, CostCenter,
+  DPlan, Product, FixedExpense, ActiveProject, CostCenter, Supplier,
   buildMonths, buildSeries, fmtTL, SCENARIOS,
 } from './dpData';
 
@@ -312,7 +312,7 @@ function ExpenseRow({ item, onEdit, onDelete }: {
 }
 
 /* ── 1. Alım Maliyetleri (M369) ── */
-function AlimList({ all, setAll }: { all: FixedExpense[]; setAll: (v: FixedExpense[]) => void }) {
+function AlimList({ all, setAll, suppliers = [] }: { all: FixedExpense[]; setAll: (v: FixedExpense[]) => void; suppliers?: Supplier[] }) {
   const items    = all.filter(e => e.costCategory === 'purchase');
   const setItems = (updated: FixedExpense[]) => setAll([...all.filter(e => e.costCategory !== 'purchase'), ...updated]);
 
@@ -347,6 +347,23 @@ function AlimList({ all, setAll }: { all: FixedExpense[]; setAll: (v: FixedExpen
       ))}
       {adding ? (
         <div className="bg-enba-panel border border-enba-line rounded-xl p-4 space-y-3">
+          {suppliers.length > 0 && (
+            <Field label="Tedarikçiden Seç">
+              <select
+                value=""
+                onChange={e => {
+                  const s = suppliers.find(x => x.id === e.target.value);
+                  if (s) setDraft({ ...draft, name: s.material || draft.name, unit: s.unit, unitPrice: s.unitPrice });
+                }}
+                className={selectCls}
+              >
+                <option value="">— tedarikçiden doldur (isteğe bağlı) —</option>
+                {suppliers.map(s => (
+                  <option key={s.id} value={s.id}>{s.name} · {s.material} ({fmtTL(s.unitPrice)}/{s.unit})</option>
+                ))}
+              </select>
+            </Field>
+          )}
           <Field label="Malzeme / Hammadde Adı">
             <input autoFocus value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })}
               placeholder="örn. PET Şişe Atık" className={inputCls} />
@@ -785,8 +802,8 @@ function ProjectRevenueList({ items, setItems, projectIdx }: { items: Product[];
 /* ── Proje Düzenleyici ── */
 type ProjectTab = 'temel' | 'alim' | 'uretim' | 'personel' | 'satis' | 'gelirler';
 
-function ProjectEditor({ project, idx, horizon, costCenters, onSave, onCancel }:
-  { project: ActiveProject; idx: number; horizon: number; costCenters: CostCenter[]; onSave: (p: ActiveProject) => void; onCancel: () => void }) {
+function ProjectEditor({ project, idx, horizon, costCenters, suppliers = [], onSave, onCancel }:
+  { project: ActiveProject; idx: number; horizon: number; costCenters: CostCenter[]; suppliers?: Supplier[]; onSave: (p: ActiveProject) => void; onCancel: () => void }) {
   const [tab,   setTab]   = useState<ProjectTab>('temel');
   const [draft, setDraft] = useState<ActiveProject>({ ...project });
 
@@ -926,7 +943,7 @@ function ProjectEditor({ project, idx, horizon, costCenters, onSave, onCancel }:
           </>
         )}
         {tab === 'alim' && (
-          <AlimList all={draft.expenses} setAll={v => setDraft({ ...draft, expenses: v })} />
+          <AlimList all={draft.expenses} setAll={v => setDraft({ ...draft, expenses: v })} suppliers={suppliers} />
         )}
         {tab === 'uretim' && (
           <UretimList all={draft.expenses} setAll={v => setDraft({ ...draft, expenses: v })} />
@@ -958,8 +975,8 @@ function ProjectEditor({ project, idx, horizon, costCenters, onSave, onCancel }:
 }
 
 /* ── Step 2 — Projeler ── */
-function ProjectsStep({ projects, setProjects, horizon, costCenters }:
-  { projects: ActiveProject[]; setProjects: (v: ActiveProject[]) => void; horizon: number; costCenters: CostCenter[] }) {
+function ProjectsStep({ projects, setProjects, horizon, costCenters, suppliers = [] }:
+  { projects: ActiveProject[]; setProjects: (v: ActiveProject[]) => void; horizon: number; costCenters: CostCenter[]; suppliers?: Supplier[] }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const defaultCcId = costCenters[0]?.id ?? '';
 
@@ -1015,7 +1032,7 @@ function ProjectsStep({ projects, setProjects, horizon, costCenters }:
 
       {/* Proje kartları */}
       {projects.map((p, idx) => editingId === p.id ? (
-        <ProjectEditor key={p.id} project={p} idx={idx} horizon={horizon} costCenters={costCenters}
+        <ProjectEditor key={p.id} project={p} idx={idx} horizon={horizon} costCenters={costCenters} suppliers={suppliers}
           onSave={saveProject} onCancel={() => setEditingId(null)} />
       ) : (
         <div key={p.id}
@@ -1089,9 +1106,10 @@ interface Props {
   onSave?:      (plan: DPlan) => void;
   initialPlan?: DPlan;
   costCenters:  CostCenter[];
+  suppliers?:   Supplier[];
 }
 
-export function DPlanWizard({ onDone, onCancel, onSave, initialPlan, costCenters }: Props) {
+export function DPlanWizard({ onDone, onCancel, onSave, initialPlan, costCenters, suppliers = [] }: Props) {
   const planId = useRef<string>(initialPlan?.id ?? crypto.randomUUID());
   const [step,  setStep]  = useState<WStep>(1);
   const [saved, setSaved] = useState(false);
@@ -1232,7 +1250,7 @@ export function DPlanWizard({ onDone, onCancel, onSave, initialPlan, costCenters
             {step === 2 && (
               <ProjectsStep
                 projects={projects} setProjects={setProjects}
-                horizon={horizon} costCenters={costCenters}
+                horizon={horizon} costCenters={costCenters} suppliers={suppliers}
               />
             )}
           </div>

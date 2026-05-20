@@ -580,3 +580,71 @@ grep "^## \[" log.md | tail -5
 **CLAUDE.md Aktif Görevler güncellendi.**
 
 **Sonraki oturumda:** DetailedPlan gerçek veri bağlantısı veya Paraşüt token migrasyonu — kullanıcı öncelik belirler.
+
+---
+
+## [2026-05-19] geliştirme | Paraşüt super_admin multi-tenant context fix
+
+- **Yapılan:** parasut_tokens RLS politikası super_admin'e tüm şirket satırlarını okuma/yazma izni verecek şekilde güncellendi. parasut.ts'e `_targetCompanyId` override mekanizması + `setTargetCompanyId()` metodu eklendi. Parasut.tsx'e super_admin şirket seçici dropdown eklendi (login ekranında ve bağlı durumdayken).
+- **Etkilenen dosyalar:** `src/api/parasut.ts`, `src/modules/Parasut.tsx`, `scratch/migration_v25b_parasut_superadmin_rls.sql`
+- **Commit:** cd82733
+- **⚠️ Manuel Adım:** Supabase SQL Editor'da `migration_v25b_parasut_superadmin_rls.sql` içeriğini çalıştır (RLS politika güncellemesi)
+- **Bir sonraki:** DetailedPlan gerçek veri bağlantısı
+
+---
+
+## [2026-05-19] geliştirme | DetailedPlan gerçek veri bağlantısı — PlanCtx + plan listesi
+
+- Yapılan:
+  - `dpData.ts`: `DPlan` arayüzü, `PlanCtx`, `usePlanData`, `createNewPlan`, `buildMonths` export
+  - 6 panel (Overview, Revenue, Expense, CashFlow, Scenario, BudgetTrack) mock sabit referanslarından `usePlanData()` hook'una geçirildi
+  - `DetailedPlanShell`: `plan/onSave/onBack` prop'ları eklendi; `PlanCtx.Provider` sarmalayıcı; başlık, badge ve geri butonu plan verisinden çekiliyor
+  - `DetailedPlanModule` (yeni): `usePlanSync<DPlan>` ile plan listesi + yeni plan modal + plan kartı grid + boş durum ekranı
+  - `App.tsx`: `DetailedPlanShell` → `DetailedPlanModule` olarak güncellendi
+- Etkilenen dosyalar: dpData.ts, 6 panel, DetailedPlanShell, DetailedPlanModule (yeni), App.tsx
+- Commit: 551d054
+- Bir sonraki: Panel veri girişi (ürün/gider düzenleme) veya Paraşüt → financial_categories
+
+## [2026-05-20] geliştirme | DetailedPlan Tesis+Proje mimarisi — tam yeniden yazım
+
+- Yapılan:
+  - `dpData.ts`: `ActiveProject` arayüzü (kendi gider+geliri + allocationWeight + startOffset/endOffset); `DPlan` artık `facilityExpenses[]` + `projects[]` tutuyor (eski products/fixedExpenses kaldırıldı); `isProjectActive` + `facilityShareFor` yardımcıları eklendi; `PlanDataCtxValue` genişletildi
+  - `DPlanWizard.tsx`: 3 adımlı sihirbaz (Temel / Tesis Sabit Giderleri / Projeler); FacilityStep, ProjectsStep, ProjectEditor (3 sekme), dağılım bar'ı, kenar çubuğu 12 aylık özet
+  - `DetailedPlanShell.tsx`: `ctxValue` plan verilerini panel geriye uyumluluk için düzleştiriyor (projects.flatMap revenues/expenses)
+  - `DetailedPlanModule.tsx`: PlanCard MiniStat projects/facilityExpenses kullanıyor
+- Etkilenen dosyalar: dpData.ts, DPlanWizard.tsx, DetailedPlanShell.tsx, DetailedPlanModule.tsx
+- Commit: 2fde639
+- Bir sonraki: Sihirbazda proje/gider/gelir veri girişini test et; panel verilerinin doğru aktığını doğrula
+
+## [2026-05-20] refactor | DetailedPlan Facility maliyet merkezi mimarisi
+
+- **Yapılan:** Kullanıcı talebi doğrultusunda mimari tamamen düzeltildi.
+  - `Facility { id, name, fixedExpenses[] }` arayüzü eklendi — adlandırılmış sabit gider merkezi
+  - `DPlan.facilities[]` — eski `facilityExpenses[]` flat listesi kaldırıldı
+  - `ActiveProject.isActive` boolean + `facilityId` bağlantısı eklendi
+  - Hesap mantığı: sadece aynı tesisin **aktif** projeleri maliyeti paylaşır (`facilityShareFor` güncellendi)
+  - `migratePlanFormat`: eski format planlar otomatik dönüştürülür (veri kaybı yok)
+  - **Sihirbaz Adım 2:** `FacilitiesStep` — her tesis isimlendirilmiş kart, inline isim düzenleme, "+ Yeni Maliyet Merkezi" butonu
+  - **Sihirbaz Adım 3:** Her proje kartında aktif/pasif toggle (yeşil switch), dağılım barı yalnızca aktif projeleri gösterir, çoklu tesis için facilityId seçici
+  - `DetailedPlanModule`: lazy migration + plan kartı "N aktif" özeti
+- **Etkilenen dosyalar:** dpData.ts, DPlanWizard.tsx, DetailedPlanShell.tsx, DetailedPlanModule.tsx
+- **Commit:** 46f710f
+- **Bir sonraki:** Sihirbazı test et — tesis oluştur, gider ekle, proje ekle, aktif/pasif toggle dene
+
+## [2026-05-20] geliştirme | DetailedPlan — Tedarikçi Havuzu + 4 gider kategorisi
+
+- **Yapılan:**
+  - `dpData.ts`: `Supplier` arayüzü + `loadSuppliers`/`saveSuppliers` (localStorage key: `enba_dp2_suppliers`)
+  - `DetailedPlanModule.tsx`: `supplierEditor` view branch, `SupplierCard`, `SupplierEmptyState`, `SupplierEditor` tam sayfa bileşenleri; liste görünümüne "Tedarikçi Havuzu" bölümü eklendi
+  - `DPlanWizard.tsx`: `Supplier` import + `suppliers` prop zinciri (Wizard → ProjectsStep → ProjectEditor → AlimList); AlimList formuna "Tedarikçiden Seç" dropdown → seçince malzeme adı, birim, alış fiyatı otomatik doldurulur
+  - `DPlanWizard.tsx`: AlimList/UretimList/PersonelList/SatisList — 4 ayrı maliyet kategorisi, birim bazlı hesaplamalar (elektrik kWh, personel kişi×ücret)
+- **Etkilenen dosyalar:** dpData.ts, DetailedPlanModule.tsx, DPlanWizard.tsx
+- **Bir sonraki:** Commit at, ardından plan oluşturma akışını uçtan uca test et
+
+## [2026-05-19] karar | Piyasaya çıkmadan önce tenant izolasyon güvenliği
+
+- **Konu:** super_admin Paraşüt şirket seçici dropdown'ı tüm şirket adlarını listeliyor — tenantlar birbirini görmemeli.
+- **Yapılacak (piyasa öncesi):**
+  1. Şirket adı yerine slug/kod göster veya dropdown'ı tamamen kaldır
+  2. Login akışında şirket seçimi kalkmalı — email → profile → company_id eşleşmesi otomatik (zaten böyle, ama UX netleştirilmeli)
+- **Öncelik:** Düşük (şu an tek tenant), yüksek (ikinci tenant eklenmeden önce)

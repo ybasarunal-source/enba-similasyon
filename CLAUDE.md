@@ -346,15 +346,20 @@ Veri kaybı riski olan her adımı kullanıcıya açıkça belirt ve onay al.
 - [x] **Admin test hesabı** — doğrulandı (2026-05-18)
 - [x] **Kök dizin .jsx temizliği** — 26 dosya silindi (commit 9571b0d)
 - [ ] **DetailedPlan veri girişi** — plan listesi + Supabase JSON blob → bkz. `Kararlar/2026-05-DetailedPlan-Veri-Girisi.md`
-- [x] **Paraşüt token migrasyonu** — `migration_v25_parasut_tokens.sql` + parasut.ts + App.tsx tamamlandı; **Supabase'de SQL çalıştırılmalı**
+- [x] **Paraşüt token migrasyonu** — migration_v25 + v25b tamamlandı; token Supabase'e yazılıyor, super_admin şirket seçici mevcut (commit cd82733)
 - [ ] **Paraşüt → financial_categories** — eşleştirme modalı Supabase tablosundan çeksin
 - [ ] **E-fatura** — ertelendi
 - [ ] **Bordro/muhasebe** — ertelendi
 
+### ⚠️ Piyasaya Çıkmadan Önce — Güvenlik (Tenant İzolasyonu)
+- [ ] **Şirket listesi gizliliği** — Paraşüt super_admin dropdown'ı şu an tüm şirket adlarını gösteriyor; kullanıcı sayısı artınca tenantlar birbirini görmemeli. Çözüm: şirket adı yerine şirket kodu (slug) göster, veya dropdown'ı kaldır (super_admin için farklı erişim mekanizması).
+- [ ] **Login'de otomatik şirket eşleşmesi** — Kullanıcı email'i Supabase'deki profile kaydıyla eşleşince şirket otomatik belirlenmeli; girişte şirket seçim adımı kalkmalı. (Şu an zaten böyle çalışıyor ama super_admin seçici UX'i karışıklık yaratıyor.)
+
 ### Bir Sonraki Oturumda İlk Yapılacak
-**DetailedPlan gerçek veri bağlantısı** veya **Paraşüt token Supabase migrasyonu** — hangisi önce olduğunu kullanıcı belirler
+**DetailedPlan gerçek veri bağlantısı**
 
 ### Bekleyen Kullanıcı Aksiyonu
+- [x] **Supabase SQL:** `migration_v25b_parasut_superadmin_rls.sql` çalıştırıldı (super_admin RLS güncelleme — 2026-05-19)
 - Test kullanıcısı oluşturma: Supabase Dashboard → Auth → Add user → profil SQL'ini çalıştır (company_id seçimi gerekiyor)
 
 ---
