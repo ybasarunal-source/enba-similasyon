@@ -170,6 +170,32 @@ function MCodeSelect({
 const inputCls  = 'w-full bg-enba-panel-2 border border-enba-line rounded-lg px-3 py-2 text-[13px] text-enba-text focus:border-enba-orange/60 focus:ring-1 focus:ring-enba-orange/30 outline-none transition-colors';
 const selectCls = inputCls + ' appearance-none';
 
+/** Para girişi — odakta ham sayı, blur'da binlik ayraçlı */
+function MoneyInput({ value, onChange, className, min = 0, placeholder }:
+  { value: number; onChange: (v: number) => void; className?: string; min?: number; placeholder?: string }) {
+  const [focused, setFocused] = useState(false);
+  const [raw, setRaw] = useState('');
+
+  const display = focused ? raw : (value === 0 ? '' : value.toLocaleString('tr-TR'));
+
+  return (
+    <input
+      type="text"
+      inputMode="numeric"
+      value={display}
+      placeholder={placeholder ?? '0'}
+      onFocus={() => { setFocused(true); setRaw(value === 0 ? '' : String(value)); }}
+      onBlur={() => {
+        setFocused(false);
+        const parsed = Number(raw.replace(/[^\d]/g, ''));
+        onChange(isNaN(parsed) ? min : Math.max(min, parsed));
+      }}
+      onChange={e => setRaw(e.target.value.replace(/[^\d]/g, ''))}
+      className={className ?? inputCls}
+    />
+  );
+}
+
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
     <div>
@@ -460,9 +486,7 @@ function Step1({ title, setTitle, startYear, setStartYear, startMonth, setStartM
         <Field label="Açılış Nakit Bakiyesi (₺)">
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-enba-dim text-[13px]">₺</span>
-            <input type="number" value={openingCash} min={0}
-              onChange={e => setOpeningCash(Number(e.target.value))}
-              className={cx(inputCls, 'pl-7')} />
+            <MoneyInput value={openingCash} onChange={setOpeningCash} className={cx(inputCls, 'pl-7')} />
           </div>
         </Field>
       </FieldCard>
@@ -602,8 +626,8 @@ function ExpenseStep({ stepNum, title, sub, category, mcodes, defaultMcode, item
               <Field label={`Alış Fiyatı (₺/${draft.unit ?? 'ton'})`}>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-enba-dim text-[13px]">₺</span>
-                  <input type="number" value={draft.unitPrice ?? 0} min={0}
-                    onChange={e => setDraft({ ...draft, unitPrice: Number(e.target.value) })}
+                  <MoneyInput value={draft.unitPrice ?? 0}
+                    onChange={v => setDraft({ ...draft, unitPrice: v })}
                     className={cx(inputCls, 'pl-7')} />
                 </div>
               </Field>
@@ -617,8 +641,8 @@ function ExpenseStep({ stepNum, title, sub, category, mcodes, defaultMcode, item
             <Field label="Aylık Tutar (₺)">
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-enba-dim text-[13px]">₺</span>
-                <input type="number" value={draft.monthly} min={0}
-                  onChange={e => setDraft({ ...draft, monthly: Number(e.target.value) })}
+                <MoneyInput value={draft.monthly}
+                  onChange={v => setDraft({ ...draft, monthly: v })}
                   className={cx(inputCls, 'pl-7')} />
               </div>
             </Field>
@@ -760,8 +784,8 @@ function SalesStep({ sales, setSales, preview }: SalesStepProps) {
             <Field label={`Satış Fiyatı (₺/${draft.unit})`}>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-enba-dim text-[13px]">₺</span>
-                <input type="number" value={draft.price} min={0}
-                  onChange={e => setDraft({ ...draft, price: Number(e.target.value) })}
+                <MoneyInput value={draft.price}
+                  onChange={v => setDraft({ ...draft, price: v })}
                   className={cx(inputCls, 'pl-7')} />
               </div>
             </Field>
