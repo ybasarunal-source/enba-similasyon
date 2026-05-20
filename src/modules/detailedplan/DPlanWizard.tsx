@@ -974,6 +974,108 @@ function ProjectEditor({ project, idx, horizon, costCenters, suppliers = [], onS
   );
 }
 
+/* ── Tedarikçi Havuzu (plan içi) ── */
+const SUPPLIER_UNITS_WIZ = ['ton', 'kg', 'lt', 'm³', 'adet', 'kWh', 'm²', 'm'];
+
+function SupplierFormRow({ draft, setDraft, onSave, onCancel }: {
+  draft: Supplier; setDraft: (s: Supplier) => void; onSave: () => void; onCancel: () => void;
+}) {
+  return (
+    <div className="bg-enba-panel border border-enba-orange/30 rounded-xl p-4 space-y-3">
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Tedarikçi / Şirket Adı">
+          <input autoFocus value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })}
+            placeholder="örn. Polimer Atık A.Ş." className={inputCls} />
+        </Field>
+        <Field label="Tedarik Edilen Malzeme">
+          <input value={draft.material} onChange={e => setDraft({ ...draft, material: e.target.value })}
+            placeholder="örn. PET Şişe Atık" className={inputCls} />
+        </Field>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Birim">
+          <select value={draft.unit} onChange={e => setDraft({ ...draft, unit: e.target.value })} className={selectCls}>
+            {SUPPLIER_UNITS_WIZ.map(u => <option key={u}>{u}</option>)}
+          </select>
+        </Field>
+        <Field label={`Alış Fiyatı (₺/${draft.unit})`}>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-enba-dim text-[13px]">₺</span>
+            <MoneyInput value={draft.unitPrice} onChange={v => setDraft({ ...draft, unitPrice: v })} className={cx(inputCls, 'pl-7')} />
+          </div>
+        </Field>
+      </div>
+      <FormFooter onCancel={onCancel} onSave={onSave} editId={null} disabled={!draft.name.trim()} />
+    </div>
+  );
+}
+
+function SupplierList({ suppliers, setSuppliers }: { suppliers: Supplier[]; setSuppliers: (v: Supplier[]) => void }) {
+  const emptyDraft = (): Supplier => ({ id: crypto.randomUUID(), name: '', material: '', unit: 'ton', unitPrice: 0 });
+  const [adding,  setAdding]  = useState(false);
+  const [editId,  setEditId]  = useState<string | null>(null);
+  const [draft,   setDraft]   = useState<Supplier>(emptyDraft());
+
+  const startAdd  = () => { setDraft(emptyDraft()); setEditId(null); setAdding(true); };
+  const startEdit = (s: Supplier) => { setDraft({ ...s }); setEditId(s.id); setAdding(true); };
+  const cancel    = () => { setAdding(false); setEditId(null); };
+  const save      = () => {
+    if (!draft.name.trim()) return;
+    if (editId) setSuppliers(suppliers.map(s => s.id === editId ? draft : s));
+    else        setSuppliers([...suppliers, { ...draft, id: crypto.randomUUID() }]);
+    setAdding(false); setEditId(null);
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-[15px] font-semibold text-enba-text">Tedarikçi Havuzu</h2>
+          <p className="text-[11.5px] text-enba-dim mt-0.5">Bu plana ait hammadde tedarikçileri — alım kalemi girerken hızlı seçim sağlar.</p>
+        </div>
+        {!adding && (
+          <Btn variant="outline" size="sm" icon={<I.Plus size={13} />} onClick={startAdd}>Ekle</Btn>
+        )}
+      </div>
+
+      {suppliers.map(s => (
+        editId === s.id && adding ? (
+          <SupplierFormRow key={s.id} draft={draft} setDraft={setDraft} onSave={save} onCancel={cancel} />
+        ) : (
+          <div key={s.id} className="bg-enba-panel border border-enba-line rounded-xl px-4 py-3 flex items-center gap-3 group">
+            <div className="flex-1 min-w-0">
+              <div className="text-[13px] font-semibold text-enba-text truncate">{s.name}</div>
+              <div className="text-[11px] text-enba-muted">{s.material} · {fmtTL(s.unitPrice)}/{s.unit}</div>
+            </div>
+            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button onClick={() => startEdit(s)} className="w-7 h-7 rounded text-enba-dim hover:text-enba-orange inline-flex items-center justify-center">
+                <I.Edit size={13} />
+              </button>
+              <button onClick={() => setSuppliers(suppliers.filter(x => x.id !== s.id))} className="w-7 h-7 rounded text-enba-dim hover:text-enba-red inline-flex items-center justify-center">
+                <I.Trash size={13} />
+              </button>
+            </div>
+          </div>
+        )
+      ))}
+
+      {adding && !editId && (
+        <SupplierFormRow draft={draft} setDraft={setDraft} onSave={save} onCancel={cancel} />
+      )}
+
+      {suppliers.length === 0 && !adding && (
+        <div
+          onClick={startAdd}
+          className="border-2 border-dashed border-enba-line rounded-xl p-5 flex items-center gap-3 cursor-pointer hover:border-enba-orange/40 hover:bg-enba-orange/5 transition-colors"
+        >
+          <I.Plus size={16} className="text-enba-dim flex-none" />
+          <span className="text-[12.5px] text-enba-dim">Tedarikçi ekle (isteğe bağlı)</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── Step 2 — Projeler ── */
 function ProjectsStep({ projects, setProjects, horizon, costCenters, suppliers = [] }:
   { projects: ActiveProject[]; setProjects: (v: ActiveProject[]) => void; horizon: number; costCenters: CostCenter[]; suppliers?: Supplier[] }) {
@@ -1106,10 +1208,9 @@ interface Props {
   onSave?:      (plan: DPlan) => void;
   initialPlan?: DPlan;
   costCenters:  CostCenter[];
-  suppliers?:   Supplier[];
 }
 
-export function DPlanWizard({ onDone, onCancel, onSave, initialPlan, costCenters, suppliers = [] }: Props) {
+export function DPlanWizard({ onDone, onCancel, onSave, initialPlan, costCenters }: Props) {
   const planId = useRef<string>(initialPlan?.id ?? crypto.randomUUID());
   const [step,  setStep]  = useState<WStep>(1);
   const [saved, setSaved] = useState(false);
@@ -1120,6 +1221,9 @@ export function DPlanWizard({ onDone, onCancel, onSave, initialPlan, costCenters
   const [startMonth,  setStartMonth]  = useState(initialPlan?.startMonth ?? 0);
   const [horizon,     setHorizon]     = useState(initialPlan?.horizon ?? 24);
   const [openingCash, setOpeningCash] = useState(initialPlan?.openingCash ?? 0);
+
+  /* Tedarikçiler (plana ait) */
+  const [suppliers, setSuppliers] = useState<Supplier[]>(() => initialPlan?.suppliers ?? []);
 
   /* Adım 2 */
   const defaultCcId = costCenters[0]?.id ?? '';
@@ -1164,6 +1268,7 @@ export function DPlanWizard({ onDone, onCancel, onSave, initialPlan, costCenters
     horizon,
     openingCash,
     actualsThrough: initialPlan?.actualsThrough ?? 0,
+    suppliers,
     projects,
     cashEvents:     initialPlan?.cashEvents ?? [],
   });
@@ -1248,10 +1353,15 @@ export function DPlanWizard({ onDone, onCancel, onSave, initialPlan, costCenters
               />
             )}
             {step === 2 && (
-              <ProjectsStep
-                projects={projects} setProjects={setProjects}
-                horizon={horizon} costCenters={costCenters} suppliers={suppliers}
-              />
+              <>
+                <SupplierList suppliers={suppliers} setSuppliers={setSuppliers} />
+                <div className="mt-8 pt-6 border-t border-enba-line">
+                  <ProjectsStep
+                    projects={projects} setProjects={setProjects}
+                    horizon={horizon} costCenters={costCenters} suppliers={suppliers}
+                  />
+                </div>
+              </>
             )}
           </div>
         </div>

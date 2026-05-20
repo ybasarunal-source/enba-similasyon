@@ -30,7 +30,7 @@ export interface FixedExpense {
   monthlyQty?: number;
 }
 
-// ─── Tedarikçi Havuzu — plan dışında yaşar ───────────────────────────────────
+// ─── Tedarikçi Havuzu — plan içinde yaşar ────────────────────────────────────
 export interface Supplier {
   id: string;
   name: string;       // şirket / tedarikçi adı
@@ -38,19 +38,6 @@ export interface Supplier {
   unit: string;       // ton / kg / m³ / adet
   unitPrice: number;  // ₺ / birim
   notes?: string;
-}
-
-export const SUPPLIERS_KEY = 'enba_dp2_suppliers';
-
-export function loadSuppliers(): Supplier[] {
-  try {
-    const raw = localStorage.getItem(SUPPLIERS_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch { return []; }
-}
-
-export function saveSuppliers(list: Supplier[]): void {
-  try { localStorage.setItem(SUPPLIERS_KEY, JSON.stringify(list)); } catch { /* ignore */ }
 }
 
 // ─── Gider Merkezi — plan dışında yaşar ─────────────────────────────────────
@@ -126,6 +113,7 @@ export interface DPlan {
   horizon: number;
   openingCash: number;
   actualsThrough: number;
+  suppliers: Supplier[];
   projects: ActiveProject[];
   cashEvents: CashEvent[];
 }
@@ -319,6 +307,7 @@ export const createNewPlan = (title: string, year: number): DPlan => ({
   status: 'draft',
   year, startYear: year, startMonth: 0,
   horizon: 24, openingCash: 0, actualsThrough: 0,
+  suppliers: [],
   projects: [],
   cashEvents: [],
 });
@@ -342,6 +331,7 @@ export const migratePlanFormat = (raw: any): DPlan => {
       costCenterId: p.costCenterId ?? p.facilityId ?? '',
       isActive:     p.isActive ?? true,
     })),
+    suppliers: raw.suppliers ?? [],
   } as DPlan;
 };
 

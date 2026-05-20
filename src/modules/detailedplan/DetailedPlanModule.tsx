@@ -4,9 +4,8 @@ import { SyncBanner } from '../../components/SyncBanner';
 import { DetailedPlanShell } from './DetailedPlanShell';
 import { DPlanWizard } from './DPlanWizard';
 import {
-  DPlan, CostCenter, FixedExpense, Supplier,
-  migratePlanFormat, loadCostCenters, saveCostCenters,
-  loadSuppliers, saveSuppliers, fmtTL,
+  DPlan, CostCenter, FixedExpense,
+  migratePlanFormat, loadCostCenters, saveCostCenters, fmtTL,
 } from './dpData';
 import { I, cx, Badge, Btn } from './DPPrimitives';
 
@@ -16,7 +15,7 @@ interface Props {
   navigate?: (module: string) => void;
 }
 
-type View = 'list' | 'wizard' | 'shell' | 'ccEditor' | 'supplierEditor';
+type View = 'list' | 'wizard' | 'shell' | 'ccEditor';
 
 export function DetailedPlanModule({ navigate }: Props) {
   const { planlar, kaydet, sil, syncStatus, syncError } = usePlanSync<DPlan>({
@@ -25,15 +24,12 @@ export function DetailedPlanModule({ navigate }: Props) {
   });
 
   const [costCenters, setCostCenters] = useState<CostCenter[]>(() => loadCostCenters());
-  const [suppliers, setSuppliers]     = useState<Supplier[]>(() => loadSuppliers());
   const [view, setView]               = useState<View>('list');
-  const [activePlanId, setActivePlanId]   = useState<string | null>(null);
-  const [activeCcId, setActiveCcId]       = useState<string | null>(null);
-  const [activeSupplierId, setActiveSupplierId] = useState<string | null>(null);
+  const [activePlanId, setActivePlanId] = useState<string | null>(null);
+  const [activeCcId, setActiveCcId]     = useState<string | null>(null);
   const migratedOnce = useRef(false);
 
   useEffect(() => { saveCostCenters(costCenters); }, [costCenters]);
-  useEffect(() => { saveSuppliers(suppliers); }, [suppliers]);
 
   useEffect(() => {
     if (migratedOnce.current || planlar.length === 0) return;
@@ -74,29 +70,6 @@ export function DetailedPlanModule({ navigate }: Props) {
     setView('ccEditor');
   };
 
-  const upsertSupplier = (s: Supplier) => {
-    setSuppliers(prev => {
-      const exists = prev.some(x => x.id === s.id);
-      return exists ? prev.map(x => x.id === s.id ? s : x) : [...prev, s];
-    });
-  };
-
-  const deleteSupplier = (id: string) => {
-    if (!window.confirm('Bu tedarikçi silinecek. Emin misiniz?')) return;
-    setSuppliers(prev => prev.filter(s => s.id !== id));
-  };
-
-  const openSupplierEditor = (supplierId: string | null) => {
-    if (supplierId === null) {
-      const s: Supplier = { id: crypto.randomUUID(), name: 'Yeni Tedarikçi', material: '', unit: 'ton', unitPrice: 0 };
-      setSuppliers(prev => [...prev, s]);
-      setActiveSupplierId(s.id);
-    } else {
-      setActiveSupplierId(supplierId);
-    }
-    setView('supplierEditor');
-  };
-
   const openPlan = (plan: DPlan) => {
     setActivePlanId(plan.id);
     setView(plan.status === 'draft' ? 'wizard' : 'shell');
@@ -121,27 +94,12 @@ export function DetailedPlanModule({ navigate }: Props) {
     );
   }
 
-  /* ── Tedarikçi Editörü ── */
-  if (view === 'supplierEditor' && activeSupplierId) {
-    const activeSupplier = suppliers.find(s => s.id === activeSupplierId);
-    if (activeSupplier) {
-      return (
-        <SupplierEditor
-          supplier={activeSupplier}
-          onChange={upsertSupplier}
-          onBack={() => { setView('list'); setActiveSupplierId(null); }}
-        />
-      );
-    }
-  }
-
   /* ── Sihirbaz görünümü ── */
   if (view === 'wizard') {
     return (
       <DPlanWizard
         initialPlan={activePlan ?? undefined}
         costCenters={costCenters}
-        suppliers={suppliers}
         onDone={(plan) => { upsertPlan(plan); setActivePlanId(plan.id); setView('shell'); }}
         onSave={(plan) => { upsertPlan(plan); setActivePlanId(plan.id); }}
         onCancel={() => { setView('list'); setActivePlanId(null); }}
@@ -200,33 +158,6 @@ export function DetailedPlanModule({ navigate }: Props) {
                     cc={cc}
                     onEdit={() => openCcEditor(cc.id)}
                     onDelete={() => deleteCc(cc.id)}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
-
-          {/* Tedarikçi Havuzu */}
-          <section>
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <div className="text-[11px] uppercase tracking-[0.14em] text-enba-muted mb-0.5">Alım Kaynakları</div>
-                <h2 className="text-[14px] font-semibold text-enba-text">Tedarikçi Havuzu</h2>
-              </div>
-              <Btn variant="outline" size="sm" icon={<I.Plus size={13} />} onClick={() => openSupplierEditor(null)}>
-                Yeni Tedarikçi
-              </Btn>
-            </div>
-            {suppliers.length === 0 ? (
-              <SupplierEmptyState onNew={() => openSupplierEditor(null)} />
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-                {suppliers.map(s => (
-                  <SupplierCard
-                    key={s.id}
-                    supplier={s}
-                    onEdit={() => openSupplierEditor(s.id)}
-                    onDelete={() => deleteSupplier(s.id)}
                   />
                 ))}
               </div>
@@ -321,156 +252,6 @@ function CostCenterEmptyState({ onNew }: { onNew: () => void }) {
       <div>
         <div className="text-[13px] font-medium text-enba-text">Gider merkezi oluştur</div>
         <div className="text-[11.5px] text-enba-dim mt-0.5">Tesis, ofis, atölye vb. — bir kere tanımlanır, projelerden referanslanır.</div>
-      </div>
-    </div>
-  );
-}
-
-/* ─── SupplierCard ─── */
-function SupplierCard({ supplier: s, onEdit, onDelete }: { supplier: Supplier; onEdit: () => void; onDelete: () => void }) {
-  return (
-    <div className="bg-enba-panel border border-enba-line rounded-xl p-4 hover:border-enba-orange/40 transition-colors flex flex-col gap-3">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-0.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-enba-blue flex-none" />
-            <h3 className="text-[13px] font-semibold text-enba-text truncate">{s.name}</h3>
-          </div>
-          <div className="text-[11px] text-enba-dim ml-3.5 truncate">{s.material || 'Malzeme belirtilmemiş'}</div>
-        </div>
-        <div className="flex items-center gap-1 flex-none">
-          <button onClick={onEdit} className="w-7 h-7 rounded-lg text-enba-dim hover:text-enba-orange hover:bg-enba-orange/10 inline-flex items-center justify-center transition-colors" title="Düzenle">
-            <I.Edit size={13} />
-          </button>
-          <button onClick={onDelete} className="w-7 h-7 rounded-lg text-enba-dim hover:text-enba-red hover:bg-enba-red/10 inline-flex items-center justify-center transition-colors" title="Sil">
-            <I.Trash size={13} />
-          </button>
-        </div>
-      </div>
-      <div className="flex items-center justify-between pt-2 border-t border-enba-line">
-        <span className="text-[11px] text-enba-muted">{s.unit}</span>
-        <span className="text-[13px] font-semibold text-enba-text">{fmtTL(s.unitPrice)}<span className="text-[10.5px] font-normal text-enba-dim">/{s.unit}</span></span>
-      </div>
-      {s.notes && <div className="text-[11px] text-enba-dim italic truncate">{s.notes}</div>}
-    </div>
-  );
-}
-
-/* ─── SupplierEmptyState ─── */
-function SupplierEmptyState({ onNew }: { onNew: () => void }) {
-  return (
-    <div
-      onClick={onNew}
-      className="border border-dashed border-enba-line rounded-xl p-6 flex items-center gap-4 cursor-pointer hover:border-enba-orange/50 hover:bg-enba-orange/5 transition-colors"
-    >
-      <div className="w-10 h-10 rounded-xl bg-enba-panel-2 border border-enba-line flex items-center justify-center flex-none">
-        <I.Plus size={18} className="text-enba-dim" />
-      </div>
-      <div>
-        <div className="text-[13px] font-medium text-enba-text">Tedarikçi ekle</div>
-        <div className="text-[11.5px] text-enba-dim mt-0.5">Hammadde tedarikçilerini tanımlayın — alım planında hızlı seçim yapın.</div>
-      </div>
-    </div>
-  );
-}
-
-/* ─── SupplierEditor ─── */
-const SUPPLIER_UNITS = ['ton', 'kg', 'lt', 'm³', 'adet', 'kWh', 'm²', 'm'];
-
-function SupplierEditor({ supplier, onChange, onBack }: {
-  supplier: Supplier;
-  onChange: (s: Supplier) => void;
-  onBack: () => void;
-}) {
-  const [draft, setDraft] = useState<Supplier>({ ...supplier });
-
-  const set = <K extends keyof Supplier>(k: K) => (v: Supplier[K]) => {
-    const next = { ...draft, [k]: v };
-    setDraft(next);
-    onChange(next);
-  };
-
-  const inputCls = 'w-full bg-enba-panel-2 border border-enba-line rounded-lg px-3 py-2 text-[13px] text-enba-text outline-none focus:border-enba-orange/60 transition-colors';
-  const selectCls = 'w-full bg-enba-panel-2 border border-enba-line rounded-lg px-3 py-2 text-[13px] text-enba-text outline-none focus:border-enba-orange/60 transition-colors';
-
-  return (
-    <div className="h-full flex flex-col bg-enba-bg overflow-hidden">
-      <div className="bg-enba-panel border-b border-enba-line flex-none h-[60px] flex items-center px-5 gap-3">
-        <button onClick={onBack} className="w-8 h-8 rounded-lg text-enba-muted hover:text-enba-text hover:bg-enba-panel-2 inline-flex items-center justify-center flex-none">
-          <I.Chevron size={14} className="rotate-90" />
-        </button>
-        <div className="flex-1 min-w-0">
-          <input
-            value={draft.name}
-            onChange={e => set('name')(e.target.value)}
-            className="bg-transparent text-[15px] font-semibold text-enba-text outline-none border-b border-transparent focus:border-enba-orange/60 transition-colors w-full min-w-0"
-            placeholder="Tedarikçi adı"
-          />
-          <div className="text-[10.5px] text-enba-dim mt-0.5">Tedarikçi · {draft.material || 'malzeme belirtilmemiş'}</div>
-        </div>
-        <Btn variant="ghost" size="md" onClick={onBack}>Tamam</Btn>
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-6">
-        <div className="max-w-[560px] mx-auto space-y-4">
-
-          <div className="bg-enba-panel border border-enba-line rounded-xl p-5 space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-[11px] uppercase tracking-wider text-enba-dim">Şirket / Tedarikçi Adı</label>
-              <input value={draft.name} onChange={e => set('name')(e.target.value)}
-                placeholder="örn. Polimer Atık A.Ş." className={inputCls} />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-[11px] uppercase tracking-wider text-enba-dim">Tedarik Edilen Malzeme</label>
-              <input value={draft.material} onChange={e => set('material')(e.target.value)}
-                placeholder="örn. PET Şişe Atık" className={inputCls} />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-[11px] uppercase tracking-wider text-enba-dim">Birim</label>
-                <select value={draft.unit} onChange={e => set('unit')(e.target.value)} className={selectCls}>
-                  {SUPPLIER_UNITS.map(u => <option key={u}>{u}</option>)}
-                </select>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[11px] uppercase tracking-wider text-enba-dim">Alış Fiyatı (₺/{draft.unit})</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-enba-dim text-[13px]">₺</span>
-                  <input
-                    type="number" min={0} step={0.01}
-                    value={draft.unitPrice || ''}
-                    onChange={e => set('unitPrice')(parseFloat(e.target.value) || 0)}
-                    placeholder="0"
-                    className={cx(inputCls, 'pl-7')}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-[11px] uppercase tracking-wider text-enba-dim">Notlar <span className="normal-case text-enba-dim/60">(isteğe bağlı)</span></label>
-              <textarea
-                value={draft.notes ?? ''}
-                onChange={e => set('notes')(e.target.value)}
-                placeholder="Ödeme koşulları, teslim süresi, vb."
-                rows={3}
-                className={cx(inputCls, 'resize-none')}
-              />
-            </div>
-          </div>
-
-          {draft.unitPrice > 0 && draft.material && (
-            <div className="bg-enba-panel border border-enba-line rounded-xl p-4 flex items-center gap-3">
-              <div className="flex-1">
-                <div className="text-[12px] text-enba-dim mb-0.5">Özet</div>
-                <div className="text-[13px] font-semibold text-enba-text">{draft.name}</div>
-                <div className="text-[11.5px] text-enba-muted">{draft.material} · {fmtTL(draft.unitPrice)}/{draft.unit}</div>
-              </div>
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );
