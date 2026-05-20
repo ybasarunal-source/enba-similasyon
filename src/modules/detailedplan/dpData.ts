@@ -293,7 +293,7 @@ export const bvaForPeriod = (
 
 export const fmtTL = (n: number | null | undefined, opts: { compact?: boolean; sign?: boolean } = {}): string => {
   if (n == null || isNaN(n)) return '—';
-  const { compact = true, sign = false } = opts;
+  const { compact = false, sign = false } = opts;
   const abs = Math.abs(n);
   let str: string;
   if (compact && abs >= 1_000_000) str = (n/1_000_000).toLocaleString('tr-TR', {maximumFractionDigits: 2}) + ' Mn';
