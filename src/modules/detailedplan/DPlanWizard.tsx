@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { cx, I, Btn } from './DPPrimitives';
 import {
   DPlan, Product, FixedExpense,
@@ -247,6 +247,7 @@ interface Props {
 }
 
 export function DPlanWizard({ onDone, onCancel, onSave, initialPlan }: Props) {
+  const planId = useRef<string>(initialPlan?.id ?? crypto.randomUUID());
   const [step, setStep] = useState<Step>(1);
   const [saved, setSaved] = useState(false);
 
@@ -288,7 +289,7 @@ export function DPlanWizard({ onDone, onCancel, onSave, initialPlan }: Props) {
   const prev = () => { setSaved(false); setStep(s => Math.max(1, s - 1) as Step); };
 
   const buildPlan = (status: DPlan['status'] = 'draft'): DPlan => ({
-    id:             initialPlan?.id ?? crypto.randomUUID(),
+    id:             planId.current,
     title:          title.trim() || 'İsimsiz Plan',
     baslik:         title.trim() || 'İsimsiz Plan',
     status,
