@@ -100,9 +100,12 @@ function MCodeSelect({
         onChange={e => onChange(e.target.value)}
         className="w-full bg-enba-panel-2 border border-enba-line rounded-lg px-3 py-2 text-[13px] text-enba-text font-mono focus:border-enba-orange/60 focus:ring-1 focus:ring-enba-orange/30 outline-none appearance-none"
       >
-        {mcodes.map(m => (
-          <option key={m.code} value={m.code}>{m.code}</option>
-        ))}
+        {mcodes.map(m => {
+          const desc = m.tr.split(' - ').slice(1).join(' - ');
+          return (
+            <option key={m.code} value={m.code}>{m.code} — {desc}</option>
+          );
+        })}
       </select>
       {entry && (
         <div className="mt-1 flex items-baseline gap-1.5 text-[10.5px]">
