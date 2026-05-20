@@ -536,6 +536,7 @@ function emptyExpense(cat: FixedExpense['costCategory'], mcode: string): FixedEx
     group: cat === 'purchase' ? 'Yarı Değişken' : 'Sabit',
     monthly: 0,
     growth: 0.10,
+    startOffset: 0,
     unit: 'ton',
     unitPrice: 0,
     monthlyQty: 0,
@@ -601,8 +602,12 @@ function ExpenseStep({ stepNum, title, sub, category, mcodes, defaultMcode, item
             {showUnitPrice
               ? <div className="text-[11px] text-enba-dim mt-0.5">
                   {(item.monthlyQty ?? 0).toLocaleString('tr-TR')} {item.unit} · {fmtTL(item.unitPrice ?? 0)}/{item.unit} · yıllık +{Math.round(item.growth * 100)}%
+                  {(item.startOffset ?? 0) > 0 && <span className="ml-2 text-enba-amber">{item.startOffset! + 1}. aydan itibaren</span>}
                 </div>
-              : <div className="text-[11px] text-enba-dim mt-0.5">yıllık +{Math.round(item.growth * 100)}%</div>
+              : <div className="text-[11px] text-enba-dim mt-0.5">
+                  yıllık +{Math.round(item.growth * 100)}%
+                  {(item.startOffset ?? 0) > 0 && <span className="ml-2 text-enba-amber">{item.startOffset! + 1}. aydan itibaren</span>}
+                </div>
             }
           </div>
           <span className="text-[13px] font-semibold tabular">{fmtTL(item.monthly)}<span className="text-[11px] text-enba-dim font-normal">/ay</span></span>
@@ -672,7 +677,7 @@ function ExpenseStep({ stepNum, title, sub, category, mcodes, defaultMcode, item
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <Field label="Yıllık Büyüme (%)">
               <div className="flex items-center gap-1.5">
                 <input type="number" value={Math.round(draft.growth * 100)} min={-20} max={200} step={1}
@@ -680,6 +685,17 @@ function ExpenseStep({ stepNum, title, sub, category, mcodes, defaultMcode, item
                   className={cx(inputCls, 'flex-1')} />
                 <span className="text-enba-dim text-[13px]">%</span>
               </div>
+            </Field>
+            <Field label="Başlangıç Ayı" hint="Kaçıncı ayda başlayacak?">
+              <select
+                value={draft.startOffset ?? 0}
+                onChange={e => setDraft({ ...draft, startOffset: Number(e.target.value) })}
+                className={selectCls}
+              >
+                {Array.from({ length: 24 }, (_, i) => (
+                  <option key={i} value={i}>{i === 0 ? '1. ay (hemen)' : `${i + 1}. ay`}</option>
+                ))}
+              </select>
             </Field>
             <Field label="Grup">
               <select value={draft.group} onChange={e => setDraft({ ...draft, group: e.target.value })} className={selectCls}>

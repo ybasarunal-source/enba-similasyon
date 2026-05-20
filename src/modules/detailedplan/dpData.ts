@@ -24,6 +24,7 @@ export interface FixedExpense {
   group: string;
   monthly: number;
   growth: number;
+  startOffset?: number; // 0 = plan başından, 2 = 3. aydan itibaren (0-indexed)
   // Alış kalemleri için ek alanlar (costCategory === 'purchase')
   unit?: string;
   unitPrice?: number;
@@ -190,8 +191,11 @@ export const revenueFor = (p: Product, i: number, scen: Scenario = SCENARIOS.baz
 export const varCostFor = (p: Product, i: number, scen: Scenario = SCENARIOS.baz) =>
   revenueFor(p, i, scen) * p.varCostRatio * scen.cost;
 
-export const fixedCostFor = (e: FixedExpense, i: number, scen: Scenario = SCENARIOS.baz) =>
-  e.monthly * Math.pow(1 + e.growth, i / 12) * scen.cost;
+export const fixedCostFor = (e: FixedExpense, i: number, scen: Scenario = SCENARIOS.baz) => {
+  if (i < (e.startOffset ?? 0)) return 0;
+  const j = i - (e.startOffset ?? 0);
+  return e.monthly * Math.pow(1 + e.growth, j / 12) * scen.cost;
+};
 
 export const buildSeries = (
   products: Product[], fixedExpenses: FixedExpense[], periods: Period[],
@@ -256,6 +260,7 @@ export const actualVarCostFor = (p: Product, i: number, scen: Scenario = SCENARI
 
 export const actualFixedCostFor = (e: FixedExpense, i: number, scen: Scenario = SCENARIOS.baz, actualsThrough = ACTUALS_THROUGH): number | null => {
   if (i >= actualsThrough) return null;
+  if (i < (e.startOffset ?? 0)) return 0;
   const budget = fixedCostFor(e, i, scen);
   const n = (hash(e.id + '|f|' + i) - 0.45) * 0.16;
   return budget * (1 + n);
