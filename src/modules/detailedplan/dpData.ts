@@ -34,19 +34,26 @@ export interface FixedExpense {
 // ─── Müşteri Havuzu — plan içinde yaşar ──────────────────────────────────────
 export interface Customer {
   id: string;
-  name: string;           // müşteri / şirket adı
-  sector?: string;        // sektör
-  paymentTerms?: string;  // ödeme vadesi (örn. "peşin", "30 gün")
+  name: string;
+  sector?: string;
+  shippingCost?: number;   // satış nakliyesi ₺/ay
+  paymentTerms?: string;   // "peşin" | "7 gün" | … | "kısmi"
+  prepayRatio?: number;    // kısmi: peşin oran 0-100
+  deferredDays?: number;   // kısmi: vadeli kısım gün
   notes?: string;
 }
 
 // ─── Tedarikçi Havuzu — plan içinde yaşar ────────────────────────────────────
 export interface Supplier {
   id: string;
-  name: string;       // şirket / tedarikçi adı
-  material: string;   // tedarik ettiği malzeme
-  unit: string;       // ton / kg / m³ / adet
-  unitPrice: number;  // ₺ / birim
+  name: string;
+  material: string;
+  unit: string;
+  unitPrice: number;       // ₺ / birim
+  shippingCost?: number;   // alış nakliyesi ₺/ay
+  paymentTerms?: string;   // "peşin" | "7 gün" | … | "kısmi"
+  prepayRatio?: number;    // kısmi: peşin oran 0-100
+  deferredDays?: number;   // kısmi: vadeli kısım gün
   notes?: string;
 }
 

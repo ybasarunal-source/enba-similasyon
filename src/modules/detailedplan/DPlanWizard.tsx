@@ -997,9 +997,13 @@ function ProjectEditor({ project, idx, horizon, costCenters, suppliers = [], cus
 /* ── Tedarikçi Havuzu (plan içi) ── */
 const SUPPLIER_UNITS_WIZ = ['ton', 'kg', 'lt', 'm³', 'adet', 'kWh', 'm²', 'm'];
 
+const PAYMENT_OPTS_WIZ = ['peşin', '7 gün', '15 gün', '30 gün', '45 gün', '60 gün', '90 gün', 'kısmi'];
+const DEFERRED_DAYS    = [7, 15, 30, 45, 60, 90];
+
 function SupplierFormRow({ draft, setDraft, onSave, onCancel }: {
   draft: Supplier; setDraft: (s: Supplier) => void; onSave: () => void; onCancel: () => void;
 }) {
+  const isPartial = draft.paymentTerms === 'kısmi';
   return (
     <div className="bg-enba-panel border border-enba-orange/30 rounded-xl p-4 space-y-3">
       <div className="grid grid-cols-2 gap-3">
@@ -1025,6 +1029,38 @@ function SupplierFormRow({ draft, setDraft, onSave, onCancel }: {
           </div>
         </Field>
       </div>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Alış Nakliyesi (₺/ay)">
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-enba-dim text-[13px]">₺</span>
+            <MoneyInput value={draft.shippingCost ?? 0} onChange={v => setDraft({ ...draft, shippingCost: v || undefined })} className={cx(inputCls, 'pl-7')} />
+          </div>
+        </Field>
+        <Field label="Ödeme Vadesi">
+          <select value={draft.paymentTerms ?? ''} onChange={e => setDraft({ ...draft, paymentTerms: e.target.value || undefined, prepayRatio: undefined, deferredDays: undefined })} className={selectCls}>
+            <option value="">— belirtilmemiş —</option>
+            {PAYMENT_OPTS_WIZ.map(o => <option key={o}>{o}</option>)}
+          </select>
+        </Field>
+      </div>
+      {isPartial && (
+        <div className="grid grid-cols-2 gap-3 pl-0">
+          <Field label="Peşin Oran (%)">
+            <div className="relative">
+              <input type="number" min={0} max={100} step={5}
+                value={draft.prepayRatio ?? 50}
+                onChange={e => setDraft({ ...draft, prepayRatio: Math.min(100, Math.max(0, Number(e.target.value))) })}
+                className={cx(inputCls, 'pr-7')} />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-enba-dim text-[13px]">%</span>
+            </div>
+          </Field>
+          <Field label="Vadeli Kısım">
+            <select value={draft.deferredDays ?? 30} onChange={e => setDraft({ ...draft, deferredDays: Number(e.target.value) })} className={selectCls}>
+              {DEFERRED_DAYS.map(d => <option key={d} value={d}>{d} gün</option>)}
+            </select>
+          </Field>
+        </div>
+      )}
       <FormFooter onCancel={onCancel} onSave={onSave} editId={null} disabled={!draft.name.trim()} />
     </div>
   );
@@ -1065,7 +1101,11 @@ function SupplierList({ suppliers, setSuppliers }: { suppliers: Supplier[]; setS
           <div key={s.id} className="bg-enba-panel border border-enba-line rounded-xl px-4 py-3 flex items-center gap-3 group">
             <div className="flex-1 min-w-0">
               <div className="text-[13px] font-semibold text-enba-text truncate">{s.name}</div>
-              <div className="text-[11px] text-enba-muted">{s.material} · {fmtTL(s.unitPrice)}/{s.unit}</div>
+              <div className="text-[11px] text-enba-muted">
+                {s.material} · {fmtTL(s.unitPrice)}/{s.unit}
+                {s.shippingCost ? ` · nakliye ${fmtTL(s.shippingCost, { compact: true })}/ay` : ''}
+                {s.paymentTerms ? ` · ${s.paymentTerms === 'kısmi' && s.prepayRatio != null ? `%${s.prepayRatio} peşin + ${s.deferredDays ?? 30} gün` : s.paymentTerms}` : ''}
+              </div>
             </div>
             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
               <button onClick={() => startEdit(s)} className="w-7 h-7 rounded text-enba-dim hover:text-enba-orange inline-flex items-center justify-center">
@@ -1100,7 +1140,7 @@ function SupplierList({ suppliers, setSuppliers }: { suppliers: Supplier[]; setS
 function CustomerFormRow({ draft, setDraft, onSave, onCancel }: {
   draft: Customer; setDraft: (c: Customer) => void; onSave: () => void; onCancel: () => void;
 }) {
-  const PAYMENT_OPTS = ['peşin', '7 gün', '15 gün', '30 gün', '45 gün', '60 gün', '90 gün'];
+  const isPartial = draft.paymentTerms === 'kısmi';
   return (
     <div className="bg-enba-panel border border-enba-orange/30 rounded-xl p-4 space-y-3">
       <div className="grid grid-cols-2 gap-3">
@@ -1113,12 +1153,38 @@ function CustomerFormRow({ draft, setDraft, onSave, onCancel }: {
             placeholder="örn. Plastik, Tekstil" className={inputCls} />
         </Field>
       </div>
-      <Field label="Ödeme Vadesi">
-        <select value={draft.paymentTerms ?? ''} onChange={e => setDraft({ ...draft, paymentTerms: e.target.value || undefined })} className={selectCls}>
-          <option value="">— belirtilmemiş —</option>
-          {PAYMENT_OPTS.map(o => <option key={o}>{o}</option>)}
-        </select>
-      </Field>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Satış Nakliyesi (₺/ay)">
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-enba-dim text-[13px]">₺</span>
+            <MoneyInput value={draft.shippingCost ?? 0} onChange={v => setDraft({ ...draft, shippingCost: v || undefined })} className={cx(inputCls, 'pl-7')} />
+          </div>
+        </Field>
+        <Field label="Ödeme Vadesi">
+          <select value={draft.paymentTerms ?? ''} onChange={e => setDraft({ ...draft, paymentTerms: e.target.value || undefined, prepayRatio: undefined, deferredDays: undefined })} className={selectCls}>
+            <option value="">— belirtilmemiş —</option>
+            {PAYMENT_OPTS_WIZ.map(o => <option key={o}>{o}</option>)}
+          </select>
+        </Field>
+      </div>
+      {isPartial && (
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Peşin Oran (%)">
+            <div className="relative">
+              <input type="number" min={0} max={100} step={5}
+                value={draft.prepayRatio ?? 50}
+                onChange={e => setDraft({ ...draft, prepayRatio: Math.min(100, Math.max(0, Number(e.target.value))) })}
+                className={cx(inputCls, 'pr-7')} />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-enba-dim text-[13px]">%</span>
+            </div>
+          </Field>
+          <Field label="Vadeli Kısım">
+            <select value={draft.deferredDays ?? 30} onChange={e => setDraft({ ...draft, deferredDays: Number(e.target.value) })} className={selectCls}>
+              {DEFERRED_DAYS.map(d => <option key={d} value={d}>{d} gün</option>)}
+            </select>
+          </Field>
+        </div>
+      )}
       <FormFooter onCancel={onCancel} onSave={onSave} editId={null} disabled={!draft.name.trim()} />
     </div>
   );
@@ -1160,7 +1226,13 @@ function CustomerList({ customers, setCustomers }: { customers: Customer[]; setC
             <div className="flex-1 min-w-0">
               <div className="text-[13px] font-semibold text-enba-text truncate">{c.name}</div>
               <div className="text-[11px] text-enba-muted">
-                {[c.sector, c.paymentTerms].filter(Boolean).join(' · ') || 'Detay girilmemiş'}
+                {[
+                  c.sector,
+                  c.shippingCost ? `nakliye ${fmtTL(c.shippingCost, { compact: true })}/ay` : null,
+                  c.paymentTerms === 'kısmi' && c.prepayRatio != null
+                    ? `%${c.prepayRatio} peşin + ${c.deferredDays ?? 30} gün`
+                    : c.paymentTerms,
+                ].filter(Boolean).join(' · ') || 'Detay girilmemiş'}
               </div>
             </div>
             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
