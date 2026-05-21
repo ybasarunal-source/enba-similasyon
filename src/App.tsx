@@ -8,6 +8,7 @@ import type { Session } from '@supabase/supabase-js';
 import { profileAPI, companiesAPI, type UserProfile, type UserRole } from './api/supabase';
 import { parasutService } from './api/parasut';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { DerenEasterEgg } from './components/DerenEasterEgg';
 
 // Modül yükleme hatalarını (chunk load error) yakalayıp sayfayı yenileyen yardımcı fonksiyon
 const lazyRetry = (componentImport: () => Promise<any>) => 
@@ -934,6 +935,7 @@ export const App: React.FC = () => {
           )}
         </div>
       )}
+      <DerenEasterEgg />
     </div>
   );
 };
