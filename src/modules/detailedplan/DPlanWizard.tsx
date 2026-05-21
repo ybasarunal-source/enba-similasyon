@@ -1154,6 +1154,19 @@ function CustomerFormRow({ draft, setDraft, onSave, onCancel }: {
         </Field>
       </div>
       <div className="grid grid-cols-2 gap-3">
+        <Field label="Birim">
+          <select value={draft.unit ?? 'kg'} onChange={e => setDraft({ ...draft, unit: e.target.value })} className={selectCls}>
+            {SUPPLIER_UNITS_WIZ.map(u => <option key={u}>{u}</option>)}
+          </select>
+        </Field>
+        <Field label={`Satış Fiyatı (₺/${draft.unit ?? 'kg'})`}>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-enba-dim text-[13px]">₺</span>
+            <MoneyInput value={draft.salesPrice ?? 0} onChange={v => setDraft({ ...draft, salesPrice: v || undefined })} className={cx(inputCls, 'pl-7')} />
+          </div>
+        </Field>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
         <Field label="Satış Nakliyesi (₺/kg)">
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-enba-dim text-[13px]">₺</span>
@@ -1228,6 +1241,7 @@ function CustomerList({ customers, setCustomers }: { customers: Customer[]; setC
               <div className="text-[11px] text-enba-muted">
                 {[
                   c.sector,
+                  c.salesPrice ? `${fmtTL(c.salesPrice, { compact: true })}/${c.unit ?? 'kg'}` : null,
                   c.shippingCost ? `nakliye ${fmtTL(c.shippingCost, { compact: true })}/kg` : null,
                   c.paymentTerms === 'kısmi' && c.prepayRatio != null
                     ? `%${c.prepayRatio} peşin + ${c.deferredDays ?? 30} gün`

@@ -36,7 +36,9 @@ export interface Customer {
   id: string;
   name: string;
   sector?: string;
-  shippingCost?: number;   // satış nakliyesi ₺/ay
+  unit?: string;           // ton / kg / adet …
+  salesPrice?: number;     // satış fiyatı ₺/birim
+  shippingCost?: number;   // satış nakliyesi ₺/kg
   paymentTerms?: string;   // "peşin" | "7 gün" | … | "kısmi"
   prepayRatio?: number;    // kısmi: peşin oran 0-100
   deferredDays?: number;   // kısmi: vadeli kısım gün
