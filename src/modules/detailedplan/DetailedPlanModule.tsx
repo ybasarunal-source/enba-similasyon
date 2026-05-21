@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { usePlanSync } from '../../hooks/usePlanSync';
 import { SyncBanner } from '../../components/SyncBanner';
 import { DetailedPlanShell } from './DetailedPlanShell';
@@ -458,15 +459,33 @@ function CostCenterEditor({ cc, onChange, onBack }: {
 function McodeCombobox({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
-  const ref = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ top: number; right: number } | null>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const dropRef = useRef<HTMLDivElement>(null);
+
+  const openDrop = () => {
+    if (!btnRef.current) return;
+    const r = btnRef.current.getBoundingClientRect();
+    setPos({ top: r.bottom + 4, right: window.innerWidth - r.right });
+    setQuery('');
+    setOpen(true);
+  };
 
   useEffect(() => {
     if (!open) return;
-    const h = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    const close = (e: MouseEvent) => {
+      if (
+        !dropRef.current?.contains(e.target as Node) &&
+        !btnRef.current?.contains(e.target as Node)
+      ) setOpen(false);
     };
-    document.addEventListener('mousedown', h);
-    return () => document.removeEventListener('mousedown', h);
+    const onScroll = () => setOpen(false);
+    document.addEventListener('mousedown', close);
+    document.addEventListener('scroll', onScroll, true);
+    return () => {
+      document.removeEventListener('mousedown', close);
+      document.removeEventListener('scroll', onScroll, true);
+    };
   }, [open]);
 
   const q = query.toLowerCase();
@@ -477,59 +496,67 @@ function McodeCombobox({ value, onChange }: { value: string; onChange: (v: strin
     (MCODE_NOTES[m.code] ?? '').toLowerCase().includes(q)
   );
 
+  const dropdown = open && pos ? createPortal(
+    <div
+      ref={dropRef}
+      style={{ position: 'fixed', top: pos.top, right: pos.right, width: 360, zIndex: 9999 }}
+      className="bg-enba-panel border border-enba-line rounded-xl shadow-2xl overflow-hidden"
+    >
+      <div className="p-2 border-b border-enba-line">
+        <input
+          autoFocus
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          placeholder="Kod veya açıklama ara..."
+          className="w-full bg-enba-panel-2 border border-enba-line rounded-lg px-2.5 py-1.5 text-[12px] text-enba-text outline-none focus:border-enba-orange/60"
+          onKeyDown={e => {
+            if (e.key === 'Escape') setOpen(false);
+            if (e.key === 'Enter' && filtered.length > 0) { onChange(filtered[0].code); setOpen(false); }
+          }}
+        />
+      </div>
+      <div className="max-h-[280px] overflow-y-auto">
+        {filtered.map(m => (
+          <button
+            key={m.code}
+            type="button"
+            onMouseDown={e => { e.preventDefault(); onChange(m.code); setOpen(false); }}
+            className={cx(
+              'w-full text-left px-3 py-2.5 hover:bg-enba-orange/10 transition-colors border-b border-enba-line last:border-0',
+              value === m.code ? 'bg-enba-orange/5' : ''
+            )}
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-mono text-enba-orange font-semibold w-[64px] flex-none">{m.code}</span>
+              <span className="text-[12.5px] text-enba-text font-medium leading-tight">{m.tr}</span>
+            </div>
+            {MCODE_NOTES[m.code] && (
+              <p className="text-[10.5px] text-enba-dim mt-0.5 pl-[72px] leading-snug line-clamp-2">
+                {MCODE_NOTES[m.code]}
+              </p>
+            )}
+          </button>
+        ))}
+        {filtered.length === 0 && (
+          <div className="px-3 py-5 text-[12px] text-enba-dim text-center">Sonuç bulunamadı</div>
+        )}
+      </div>
+    </div>,
+    document.body
+  ) : null;
+
   return (
-    <div ref={ref} className="relative">
+    <>
       <button
+        ref={btnRef}
         type="button"
-        onClick={() => { setOpen(o => !o); setQuery(''); }}
+        onClick={openDrop}
         className="w-full bg-enba-panel-2 border border-enba-line rounded-lg px-1.5 py-1.5 text-[11px] font-mono text-enba-orange outline-none focus:border-enba-orange/60 text-left truncate"
       >
         {value}
       </button>
-      {open && (
-        <div className="absolute right-0 top-full mt-1 w-[340px] bg-enba-panel border border-enba-line rounded-xl shadow-xl z-50 overflow-hidden">
-          <div className="p-2 border-b border-enba-line">
-            <input
-              autoFocus
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-              placeholder="Ara... (kod veya açıklama)"
-              className="w-full bg-enba-panel-2 border border-enba-line rounded-lg px-2.5 py-1.5 text-[12px] text-enba-text outline-none focus:border-enba-orange/60"
-              onKeyDown={e => {
-                if (e.key === 'Escape') setOpen(false);
-                if (e.key === 'Enter' && filtered.length > 0) { onChange(filtered[0].code); setOpen(false); }
-              }}
-            />
-          </div>
-          <div className="max-h-[260px] overflow-y-auto">
-            {filtered.map(m => (
-              <button
-                key={m.code}
-                type="button"
-                onClick={() => { onChange(m.code); setOpen(false); }}
-                className={cx(
-                  'w-full text-left px-3 py-2.5 hover:bg-enba-orange/10 transition-colors border-b border-enba-line last:border-0',
-                  value === m.code ? 'bg-enba-orange/5' : ''
-                )}
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-mono text-enba-orange font-semibold w-[64px] flex-none">{m.code}</span>
-                  <span className="text-[12.5px] text-enba-text font-medium">{m.tr}</span>
-                </div>
-                {MCODE_NOTES[m.code] && (
-                  <p className="text-[10.5px] text-enba-dim mt-0.5 pl-[72px] overflow-hidden" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-                    {MCODE_NOTES[m.code]}
-                  </p>
-                )}
-              </button>
-            ))}
-            {filtered.length === 0 && (
-              <div className="px-3 py-5 text-[12px] text-enba-dim text-center">Sonuç bulunamadı</div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
+      {dropdown}
+    </>
   );
 }
 
