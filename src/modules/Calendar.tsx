@@ -1,22 +1,23 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  Calendar as CalendarIcon, 
-  ChevronLeft, 
-  ChevronRight, 
-  Plus, 
-  Clock, 
-  MapPin, 
-  Trash2, 
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import {
+  Calendar as CalendarIcon,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  Clock,
+  MapPin,
+  Trash2,
   RefreshCw,
   X,
   Share2,
-  Mail,
   Zap,
-  ClipboardList
+  ClipboardList,
+  Flag
 } from 'lucide-react';
 import { microsoftService } from '../api/microsoft';
 import { googleService } from '../api/google';
-import { tasksAPI } from '../api/supabase';
+import { tasksAPI, supabase } from '../api/supabase';
+import { getHolidays, addCustomHoliday, removeCustomHoliday, type Holiday } from '../api/holidays';
 
 interface CalendarEvent {
   id: string;
@@ -52,6 +53,62 @@ export const Calendar: React.FC = () => {
     location: '',
     source: 'outlook' as 'google' | 'outlook'
   });
+
+  // ── Tatiller ────────────────────────────────────────────
+  const [holidays, setHolidays] = useState<Holiday[]>([]);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [showHolidayModal, setShowHolidayModal] = useState(false);
+  const [holidayForm, setHolidayForm] = useState({ name: '', isBridge: false });
+  const [holidayLoading, setHolidayLoading] = useState(false);
+
+  const holidayMap = useMemo(() => {
+    const m = new Map<string, Holiday>();
+    holidays.forEach(h => m.set(h.date, h));
+    return m;
+  }, [holidays]);
+
+  const toDateStr = (d: Date) => d.toISOString().split('T')[0];
+
+  const loadHolidays = useCallback(async (year: number) => {
+    try {
+      const data = await getHolidays(year);
+      setHolidays(data);
+    } catch { /* sessiz hata */ }
+  }, []);
+
+  useEffect(() => {
+    loadHolidays(currentDate.getFullYear());
+  }, [currentDate, loadHolidays]);
+
+  // Rol kontrolü (admin UI için)
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (!data.user) return;
+      supabase.from('profiles').select('role').eq('id', data.user.id).single()
+        .then(({ data: p }) => setUserRole((p as { role?: string } | null)?.role ?? null));
+    });
+  }, []);
+
+  const isAdmin = userRole === 'admin' || userRole === 'super_admin';
+
+  const handleAddHoliday = async () => {
+    if (!holidayForm.name.trim()) return;
+    setHolidayLoading(true);
+    try {
+      await addCustomHoliday(toDateStr(selectedDate), holidayForm.name.trim(), holidayForm.isBridge);
+      await loadHolidays(currentDate.getFullYear());
+      setShowHolidayModal(false);
+      setHolidayForm({ name: '', isBridge: false });
+    } finally {
+      setHolidayLoading(false);
+    }
+  };
+
+  const handleRemoveHoliday = async (date: string) => {
+    if (!confirm('Bu tatili kaldırmak istiyor musunuz?')) return;
+    await removeCustomHoliday(date);
+    await loadHolidays(currentDate.getFullYear());
+  };
 
   // Handle Google Auth Return
   useEffect(() => {
@@ -333,26 +390,36 @@ export const Calendar: React.FC = () => {
               const dayEvents = getEventsForDay(item.date);
               const isToday = new Date().toDateString() === item.date.toDateString();
               const isSelected = selectedDate.toDateString() === item.date.toDateString();
-              
+              const holiday = holidayMap.get(toDateStr(item.date));
+
               return (
-                <div 
-                  key={i} 
+                <div
+                  key={i}
                   onClick={() => setSelectedDate(item.date)}
                   className={`
                     min-h-[100px] p-3 rounded-2xl transition-all cursor-pointer relative group
-                    ${item.current ? 'bg-white border-2 border-gray-50' : 'bg-gray-50/30 border-2 border-transparent opacity-40'}
+                    ${item.current ? (holiday ? 'bg-red-50/60 border-2 border-red-100' : 'bg-white border-2 border-gray-50') : 'bg-gray-50/30 border-2 border-transparent opacity-40'}
                     ${isSelected ? 'border-enba-orange shadow-lg shadow-orange-500/5 z-10' : 'hover:border-gray-200'}
                   `}
                 >
-                  <div className="flex justify-between items-start mb-2">
-                    <span className={`text-xs font-black ${isToday ? 'text-enba-orange' : 'text-gray-400'}`}>
+                  <div className="flex justify-between items-start mb-1">
+                    <span className={`text-xs font-black ${holiday && item.current ? 'text-red-500' : isToday ? 'text-enba-orange' : 'text-gray-400'}`}>
                       {item.day}
                     </span>
                     {dayEvents.length > 0 && item.current && (
                       <span className="w-1.5 h-1.5 rounded-full bg-enba-orange animate-pulse" />
                     )}
                   </div>
-                  
+
+                  {holiday && item.current && (
+                    <div className="flex items-center gap-1 mb-1.5">
+                      <Flag size={8} className={holiday.isBridge ? 'text-orange-400' : 'text-red-400'} />
+                      <span className={`text-[8px] font-bold truncate leading-tight ${holiday.isBridge ? 'text-orange-500' : 'text-red-500'}`}>
+                        {holiday.localName || holiday.name}
+                      </span>
+                    </div>
+                  )}
+
                   <div className="space-y-1 overflow-hidden">
                     {dayEvents.slice(0, 3).map((ev: CalendarEvent, idx: number) => (
                       <div key={idx} className={`text-[9px] font-bold text-enba-dark px-2 py-0.5 rounded border-l-2 flex items-center gap-1.5 truncate ${ev.source === 'google' ? 'bg-blue-50/50 border-blue-400' : ev.source === 'task' ? 'bg-orange-50/50 border-enba-orange' : 'bg-gray-50/50 border-orange-400'}`}>
@@ -408,6 +475,28 @@ export const Calendar: React.FC = () => {
           ))}
         </div>
 
+        {/* Tatil kartı */}
+        {(() => {
+          const h = holidayMap.get(toDateStr(selectedDate));
+          if (!h) return null;
+          return (
+            <div className={`flex items-start gap-3 px-4 py-3 rounded-2xl border ${h.isBridge ? 'bg-orange-50 border-orange-200' : 'bg-red-50 border-red-200'}`}>
+              <Flag size={16} className={h.isBridge ? 'text-orange-400 mt-0.5 flex-none' : 'text-red-400 mt-0.5 flex-none'} />
+              <div className="flex-1 min-w-0">
+                <div className={`text-[11px] font-black uppercase tracking-wider ${h.isBridge ? 'text-orange-600' : 'text-red-600'}`}>
+                  {h.isBridge ? 'Köprü Günü' : 'Resmi Tatil'}
+                </div>
+                <div className="text-[13px] font-bold text-enba-dark mt-0.5">{h.localName || h.name}</div>
+                {h.isCustom && isAdmin && (
+                  <button onClick={() => handleRemoveHoliday(h.date)} className="mt-1 text-[10px] text-red-400 hover:text-red-600 font-bold">
+                    Kaldır
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })()}
+
         <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-4">
           {selectedDayEvents.length > 0 ? selectedDayEvents.map((ev: CalendarEvent) => (
             <div key={ev.id} className="group bg-gray-50/50 p-5 rounded-3xl border border-transparent hover:border-gray-100 hover:bg-white transition-all relative overflow-hidden">
@@ -450,21 +539,86 @@ export const Calendar: React.FC = () => {
           )}
         </div>
 
-        <button 
-          onClick={() => {
-            setFormData({
-              ...formData,
-              start: selectedDate.toISOString().split('T')[0],
-              end: selectedDate.toISOString().split('T')[0],
-              source: isMSAuth ? 'outlook' : 'google'
-            });
-            setShowAddModal(true);
-          }}
-          className="w-full py-5 bg-enba-dark text-white rounded-[1.8rem] font-black text-xs uppercase tracking-[4px] shadow-2xl shadow-black/20 hover:bg-black hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-3 pr-8"
-        >
-          <Plus size={20} className="text-enba-orange" /> Yeni Randevu
-        </button>
+        <div className="flex flex-col gap-2">
+          <button
+            onClick={() => {
+              setFormData({
+                ...formData,
+                start: toDateStr(selectedDate),
+                end: toDateStr(selectedDate),
+                source: isMSAuth ? 'outlook' : 'google'
+              });
+              setShowAddModal(true);
+            }}
+            className="w-full py-5 bg-enba-dark text-white rounded-[1.8rem] font-black text-xs uppercase tracking-[4px] shadow-2xl shadow-black/20 hover:bg-black hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-3 pr-8"
+          >
+            <Plus size={20} className="text-enba-orange" /> Yeni Randevu
+          </button>
+          {isAdmin && !holidayMap.has(toDateStr(selectedDate)) && (
+            <button
+              onClick={() => { setHolidayForm({ name: '', isBridge: false }); setShowHolidayModal(true); }}
+              className="w-full py-3 border-2 border-dashed border-red-200 text-red-400 rounded-[1.8rem] font-black text-[10px] uppercase tracking-[3px] hover:border-red-400 hover:text-red-500 hover:bg-red-50 transition-all flex items-center justify-center gap-2"
+            >
+              <Flag size={14} /> Tatil / Köprü Ekle
+            </button>
+          )}
+        </div>
       </aside>
+
+      {/* ─── HOLIDAY MODAL ───────────────────────────────── */}
+      {showHolidayModal && (
+        <div className="fixed inset-0 bg-enba-dark/80 backdrop-blur-md z-[100] flex items-center justify-center p-6 animate-in fade-in zoom-in duration-300">
+          <div className="bg-white rounded-[3rem] w-full max-w-sm shadow-2xl overflow-hidden relative border border-white/10">
+            <div className="h-2 bg-red-400" />
+            <div className="p-8 border-b border-gray-50 flex justify-between items-center bg-gray-50/30">
+              <div>
+                <h3 className="text-lg font-black text-enba-dark tracking-tight uppercase italic">Tatil / Köprü Ekle</h3>
+                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">
+                  {selectedDate.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                </p>
+              </div>
+              <button onClick={() => setShowHolidayModal(false)} className="w-10 h-10 flex items-center justify-center rounded-2xl hover:bg-gray-100 text-gray-400 transition-all">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-8 space-y-5">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Tatil Adı</label>
+                <input
+                  autoFocus
+                  value={holidayForm.name}
+                  onChange={e => setHolidayForm(f => ({ ...f, name: e.target.value }))}
+                  className="w-full bg-gray-50 border-none rounded-2xl p-4 text-sm font-bold text-enba-dark focus:ring-2 focus:ring-red-200 transition-all"
+                  placeholder="örn. Cumhuriyet Bayramı Köprüsü"
+                />
+              </div>
+              <label className="flex items-center gap-3 cursor-pointer select-none">
+                <div
+                  onClick={() => setHolidayForm(f => ({ ...f, isBridge: !f.isBridge }))}
+                  className={`w-10 h-5 rounded-full flex items-center transition-all relative ${holidayForm.isBridge ? 'bg-orange-400' : 'bg-gray-200'}`}
+                >
+                  <div className={`w-4 h-4 rounded-full bg-white shadow absolute transition-all ${holidayForm.isBridge ? 'left-[22px]' : 'left-[2px]'}`} />
+                </div>
+                <span className="text-sm font-bold text-enba-dark">
+                  {holidayForm.isBridge ? 'Köprü Günü (idari karar)' : 'Resmi Tatil'}
+                </span>
+              </label>
+              <div className="flex gap-3 pt-2">
+                <button onClick={() => setShowHolidayModal(false)} className="flex-1 py-3 border border-gray-200 rounded-2xl text-[11px] font-black text-gray-400 uppercase tracking-widest hover:bg-gray-50">
+                  İptal
+                </button>
+                <button
+                  disabled={!holidayForm.name.trim() || holidayLoading}
+                  onClick={handleAddHoliday}
+                  className="flex-1 py-3 bg-red-500 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                >
+                  {holidayLoading ? 'Kaydediliyor...' : 'Kaydet'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ─── ADD EVENT MODAL ─────────────────────────────── */}
       {showAddModal && (
