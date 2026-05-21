@@ -8,6 +8,7 @@ import {
   migratePlanFormat, loadCostCenters, saveCostCenters, fmtTL,
 } from './dpData';
 import { I, cx, Badge, Btn } from './DPPrimitives';
+import { MCODE_NOTES } from '@/api/mcodeNotes';
 
 const LOCAL_KEY = 'enba_dp2_plans';
 
@@ -454,6 +455,84 @@ function CostCenterEditor({ cc, onChange, onBack }: {
   );
 }
 
+function McodeCombobox({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const h = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, [open]);
+
+  const q = query.toLowerCase();
+  const filtered = EXPENSE_MCODES.filter(m =>
+    !q ||
+    m.code.toLowerCase().includes(q) ||
+    m.tr.toLowerCase().includes(q) ||
+    (MCODE_NOTES[m.code] ?? '').toLowerCase().includes(q)
+  );
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => { setOpen(o => !o); setQuery(''); }}
+        className="w-full bg-enba-panel-2 border border-enba-line rounded-lg px-1.5 py-1.5 text-[11px] font-mono text-enba-orange outline-none focus:border-enba-orange/60 text-left truncate"
+      >
+        {value}
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1 w-[340px] bg-enba-panel border border-enba-line rounded-xl shadow-xl z-50 overflow-hidden">
+          <div className="p-2 border-b border-enba-line">
+            <input
+              autoFocus
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="Ara... (kod veya açıklama)"
+              className="w-full bg-enba-panel-2 border border-enba-line rounded-lg px-2.5 py-1.5 text-[12px] text-enba-text outline-none focus:border-enba-orange/60"
+              onKeyDown={e => {
+                if (e.key === 'Escape') setOpen(false);
+                if (e.key === 'Enter' && filtered.length > 0) { onChange(filtered[0].code); setOpen(false); }
+              }}
+            />
+          </div>
+          <div className="max-h-[260px] overflow-y-auto">
+            {filtered.map(m => (
+              <button
+                key={m.code}
+                type="button"
+                onClick={() => { onChange(m.code); setOpen(false); }}
+                className={cx(
+                  'w-full text-left px-3 py-2.5 hover:bg-enba-orange/10 transition-colors border-b border-enba-line last:border-0',
+                  value === m.code ? 'bg-enba-orange/5' : ''
+                )}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-mono text-enba-orange font-semibold w-[64px] flex-none">{m.code}</span>
+                  <span className="text-[12.5px] text-enba-text font-medium">{m.tr}</span>
+                </div>
+                {MCODE_NOTES[m.code] && (
+                  <p className="text-[10.5px] text-enba-dim mt-0.5 pl-[72px] overflow-hidden" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                    {MCODE_NOTES[m.code]}
+                  </p>
+                )}
+              </button>
+            ))}
+            {filtered.length === 0 && (
+              <div className="px-3 py-5 text-[12px] text-enba-dim text-center">Sonuç bulunamadı</div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ExpenseEditRow({ form, onChange, onCommit, onCancel }: {
   form: ExpenseFormState;
   onChange: (f: ExpenseFormState) => void;
@@ -487,15 +566,7 @@ function ExpenseEditRow({ form, onChange, onCommit, onCancel }: {
         placeholder="0"
         className="w-full bg-enba-panel-2 border border-enba-line rounded-lg px-2.5 py-1.5 text-[12.5px] text-enba-text text-right outline-none focus:border-enba-orange/60"
       />
-      <select
-        value={form.mcode}
-        onChange={e => set('mcode')(e.target.value)}
-        className="w-full bg-enba-panel-2 border border-enba-line rounded-lg px-1.5 py-1.5 text-[11px] font-mono text-enba-orange outline-none focus:border-enba-orange/60"
-      >
-        {EXPENSE_MCODES.map(m => (
-          <option key={m.code} value={m.code}>{m.code}</option>
-        ))}
-      </select>
+      <McodeCombobox value={form.mcode} onChange={set('mcode')} />
       <div className="flex items-center gap-0.5">
         <button onClick={onCommit} className="w-7 h-7 rounded text-enba-green hover:bg-enba-green/10 inline-flex items-center justify-center"><I.Check size={13} /></button>
         <button onClick={onCancel} className="w-7 h-7 rounded text-enba-dim hover:text-enba-text inline-flex items-center justify-center text-[16px] leading-none">×</button>

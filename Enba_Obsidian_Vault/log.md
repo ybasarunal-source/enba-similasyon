@@ -658,3 +658,10 @@ grep "^## \[" log.md | tail -5
   1. Şirket adı yerine slug/kod göster veya dropdown'ı tamamen kaldır
   2. Login akışında şirket seçimi kalkmalı — email → profile → company_id eşleşmesi otomatik (zaten böyle, ama UX netleştirilmeli)
 - **Öncelik:** Düşük (şu an tek tenant), yüksek (ikinci tenant eklenmeden önce)
+
+---
+
+## [2026-05-21 geliştirme | Gider Merkezi M-kodu — arama özellikli combobox
+- Yapılan: `DetailedPlanModule.tsx` — `<select>` kaldırıldı, `McodeCombobox` bileşeni eklendi. Açılır listede her M-kodu için kısa ad (`EXPENSE_MCODES.tr`) ve tam muhasebe açıklaması (`MCODE_NOTES`) 2 satır truncate ile gösteriliyor. Arama kutusu: kod, Türkçe ad ve açıklama içinde eşleşme yapıyor.
+- Etkilenen dosyalar: `src/modules/detailedplan/DetailedPlanModule.tsx`
+- Bir sonraki: DetailedPlan panel hesapları test (wizard verisi → OverviewPanel/RevenuePanel/ExpensePanel)
