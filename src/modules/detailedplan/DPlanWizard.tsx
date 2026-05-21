@@ -962,7 +962,12 @@ function ProjectEditor({ project, idx, horizon, costCenters, suppliers = [], cus
     <div className="bg-enba-panel border border-enba-line rounded-xl overflow-hidden">
       <div className="flex items-center gap-3 px-4 py-3 border-b border-enba-line" style={{ borderLeftColor: draft.color, borderLeftWidth: 4 }}>
         <span className="w-3 h-3 rounded-full flex-none" style={{ background: draft.color }} />
-        <span className="text-[13px] font-semibold flex-1">{draft.name || 'Yeni Proje'}</span>
+        <input
+          value={draft.name}
+          onChange={e => setDraft({ ...draft, name: e.target.value })}
+          placeholder="Proje Adı (zorunlu)"
+          className="flex-1 bg-transparent text-[13px] font-semibold text-enba-text placeholder-enba-dim focus:outline-none min-w-0"
+        />
         <button onClick={onCancel} className="w-7 h-7 rounded-md text-enba-dim hover:bg-enba-panel-2 inline-flex items-center justify-center"><I.Chevron size={13} className="rotate-180" /></button>
       </div>
 
@@ -1005,10 +1010,6 @@ function ProjectEditor({ project, idx, horizon, costCenters, suppliers = [], cus
               </div>
             </div>
 
-            <Field label="Proje Adı">
-              <input value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })}
-                placeholder="örn. PET Geri Dönüşüm Hattı" className={inputCls} />
-            </Field>
             <Field label="Renk">
               <div className="flex gap-2 flex-wrap">
                 {PROJECT_COLORS.map(c => (
