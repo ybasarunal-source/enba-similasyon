@@ -15,6 +15,7 @@ export interface Product {
   varCostRatio: number;
   color: string;
   customerId?: string;
+  weeklyRamp?: WeeklyRamp;
 }
 
 export interface FixedExpense {
@@ -29,7 +30,22 @@ export interface FixedExpense {
   unit?: string;
   unitPrice?: number;
   monthlyQty?: number;
+  weeklyRamp?: WeeklyRamp;
 }
+
+// ─── Haftalık Ramp ───────────────────────────────────────────────────────────
+export interface WeeklyRamp {
+  startValue: number;      // 1. hafta değeri
+  weeklyDelta: number;     // sabit artış / hafta  (0 → % kullan)
+  weeklyGrowthPct: number; // % artış / hafta      (0 → sabit kullan)
+}
+
+export const weeklyRampAt = (r: WeeklyRamp, w: number): number =>
+  r.weeklyGrowthPct !== 0
+    ? r.startValue * Math.pow(1 + r.weeklyGrowthPct / 100, w)
+    : Math.max(0, r.startValue + r.weeklyDelta * w);
+
+export type Granularity = 'weekly' | 'monthly' | 'quarterly' | 'annual';
 
 // ─── Müşteri Havuzu — plan içinde yaşar ──────────────────────────────────────
 export interface Customer {
@@ -110,6 +126,9 @@ export interface Period {
   label: string;
   m: number;
   y: number;
+  spanMonths?: number;   // 0=hafta, 1=ay(def), 3=çeyrek, 12=yıllık
+  monthOffset?: number;  // plan başından ay indeksi (aggregasyon için)
+  weekIdx?: number;      // haftalık dönemler için hafta indeksi
 }
 
 export interface CashEvent {
@@ -130,6 +149,7 @@ export interface DPlan {
   startYear: number;
   startMonth: number;
   horizon: number;
+  weeklyHorizon: number;  // ilk N hafta haftalık girilir, sonrası aylık
   openingCash: number;
   actualsThrough: number;
   suppliers: Supplier[];
@@ -156,9 +176,51 @@ export const buildMonths = (count: number, startYear = 2025, startMonth = 0): Pe
   for (let i = 0; i < count; i++) {
     const m = (startMonth + i) % 12;
     const y = startYear + Math.floor((startMonth + i) / 12);
-    out.push({ key: `${y}-${String(m+1).padStart(2,'0')}`, label: `${MONTHS_TR[m]} ${String(y).slice(2)}`, m, y });
+    out.push({ key: `${y}-${String(m+1).padStart(2,'0')}`, label: `${MONTHS_TR[m]} ${String(y).slice(2)}`, m, y, spanMonths: 1, monthOffset: i });
   }
   return out;
+};
+
+const WEEKS_PER_MONTH = 4.333;
+
+export const buildDisplayPeriods = (
+  horizon: number,
+  startYear: number,
+  startMonth: number,
+  granularity: Granularity,
+  weeklyHorizon = 0,
+): Period[] => {
+  if (granularity === 'weekly') {
+    const out: Period[] = [];
+    for (let w = 0; w < weeklyHorizon; w++) {
+      const absMonth = startMonth + Math.floor(w / WEEKS_PER_MONTH);
+      const m = absMonth % 12;
+      const y = startYear + Math.floor(absMonth / 12);
+      out.push({ key: `w${w}`, label: `H${w + 1}`, m, y, spanMonths: 0, monthOffset: Math.floor(w / WEEKS_PER_MONTH), weekIdx: w });
+    }
+    return out;
+  }
+  if (granularity === 'quarterly') {
+    const months = buildMonths(horizon, startYear, startMonth);
+    const out: Period[] = [];
+    for (let q = 0; q * 3 < horizon; q++) {
+      const base = months[q * 3];
+      const qNum = (Math.floor(base.m / 3) + 1);
+      out.push({ key: `q${q}`, label: `Q${qNum} ${base.y}`, m: base.m, y: base.y, spanMonths: Math.min(3, horizon - q * 3), monthOffset: q * 3 });
+    }
+    return out;
+  }
+  if (granularity === 'annual') {
+    const months = buildMonths(horizon, startYear, startMonth);
+    const out: Period[] = [];
+    for (let yr = 0; yr * 12 < horizon; yr++) {
+      const base = months[yr * 12];
+      out.push({ key: `y${base.y}`, label: String(base.y), m: base.m, y: base.y, spanMonths: Math.min(12, horizon - yr * 12), monthOffset: yr * 12 });
+    }
+    return out;
+  }
+  // monthly (default)
+  return buildMonths(horizon, startYear, startMonth);
 };
 
 export const PERIODS: Period[] = buildMonths(24, 2025, 0);
@@ -217,16 +279,49 @@ export const fixedCostFor = (e: FixedExpense, i: number, scen: Scenario = SCENAR
 export const buildSeries = (
   products: Product[], fixedExpenses: FixedExpense[], periods: Period[],
   scen: Scenario = SCENARIOS.baz,
+  weeklyHorizon = 0,
 ): SeriesPoint[] =>
   periods.map((p, i) => {
-    const revenue = products.reduce((s, prod) => s + revenueFor(prod, i, scen), 0);
-    const varCost = products.reduce((s, prod) => s + varCostFor(prod, i, scen), 0);
-    const fixCost = fixedExpenses.reduce((s, e) => s + fixedCostFor(e, i, scen), 0);
-    const opex    = varCost + fixCost;
-    const ebitda  = revenue - opex;
-    const tax     = Math.max(0, ebitda) * 0.22;
-    const net     = ebitda - tax;
-    return { ...p, idx: i, revenue, varCost, fixCost, opex, ebitda, net };
+    const span   = p.spanMonths ?? 1;
+    const offset = p.monthOffset ?? i;
+
+    if (span === 0 && p.weekIdx !== undefined) {
+      // ── Haftalık dönem ──
+      const w = p.weekIdx;
+      const revenue = products.reduce((s, prod) => {
+        if (prod.weeklyRamp && w < weeklyHorizon)
+          return s + weeklyRampAt(prod.weeklyRamp, w) * prod.price * scen.rev;
+        return s + revenueFor(prod, Math.floor(w / WEEKS_PER_MONTH), scen) / WEEKS_PER_MONTH;
+      }, 0);
+      const varCost = products.reduce((s, prod) => {
+        const rev = prod.weeklyRamp && w < weeklyHorizon
+          ? weeklyRampAt(prod.weeklyRamp, w) * prod.price * scen.rev
+          : revenueFor(prod, Math.floor(w / WEEKS_PER_MONTH), scen) / WEEKS_PER_MONTH;
+        return s + rev * prod.varCostRatio * scen.cost;
+      }, 0);
+      const fixCost = fixedExpenses.reduce((s, e) => {
+        if (e.weeklyRamp && w < weeklyHorizon)
+          return s + weeklyRampAt(e.weeklyRamp, w) * scen.cost;
+        return s + fixedCostFor(e, Math.floor(w / WEEKS_PER_MONTH), scen) / WEEKS_PER_MONTH;
+      }, 0);
+      const opex   = varCost + fixCost;
+      const ebitda = revenue - opex;
+      const net    = ebitda - Math.max(0, ebitda) * 0.22;
+      return { ...p, idx: w, revenue, varCost, fixCost, opex, ebitda, net };
+    }
+
+    // ── Aylık / Çeyreklik / Yıllık: span ay topla ──
+    let revenue = 0, varCost = 0, fixCost = 0;
+    for (let s = 0; s < span; s++) {
+      const mi = offset + s;
+      revenue  += products.reduce((acc, prod) => acc + revenueFor(prod, mi, scen), 0);
+      varCost  += products.reduce((acc, prod) => acc + varCostFor(prod, mi, scen), 0);
+      fixCost  += fixedExpenses.reduce((acc, e) => acc + fixedCostFor(e, mi, scen), 0);
+    }
+    const opex   = varCost + fixCost;
+    const ebitda = revenue - opex;
+    const net    = ebitda - Math.max(0, ebitda) * 0.22;
+    return { ...p, idx: offset, revenue, varCost, fixCost, opex, ebitda, net };
   });
 
 export const cashFlowFor = (
@@ -326,7 +421,8 @@ export const createNewPlan = (title: string, year: number): DPlan => ({
   title, baslik: title,
   status: 'draft',
   year, startYear: year, startMonth: 0,
-  horizon: 24, openingCash: 0, actualsThrough: 0,
+  horizon: 24, weeklyHorizon: 12,
+  openingCash: 0, actualsThrough: 0,
   suppliers: [],
   customers: [],
   projects: [],
@@ -352,15 +448,16 @@ export const migratePlanFormat = (raw: any): DPlan => {
       costCenterId: p.costCenterId ?? p.facilityId ?? '',
       isActive:     p.isActive ?? true,
     })),
-    suppliers: raw.suppliers ?? [],
-    customers: raw.customers ?? [],
+    suppliers:     raw.suppliers ?? [],
+    customers:     raw.customers ?? [],
+    weeklyHorizon: raw.weeklyHorizon ?? 12,
   } as DPlan;
 };
 
 // ─── React context ────────────────────────────────────────────────────────────
 export interface PlanDataCtxValue {
   costCenters:      CostCenter[];
-  facilityExpenses: FixedExpense[]; // düzleştirilmiş, panel uyumluluğu için
+  facilityExpenses: FixedExpense[];
   projects:         ActiveProject[];
   products:         Product[];
   fixedExpenses:    FixedExpense[];
@@ -368,6 +465,8 @@ export interface PlanDataCtxValue {
   cashEvents:       CashEvent[];
   openingCash:      number;
   actualsThrough:   number;
+  weeklyHorizon:    number;
+  granularity:      Granularity;
 }
 
 export const PlanCtx = React.createContext<PlanDataCtxValue>({
@@ -380,6 +479,8 @@ export const PlanCtx = React.createContext<PlanDataCtxValue>({
   cashEvents:       CASH_EVENTS,
   openingCash:      OPENING_CASH,
   actualsThrough:   ACTUALS_THROUGH,
+  weeklyHorizon:    12,
+  granularity:      'monthly',
 });
 
 export const usePlanData = (): PlanDataCtxValue => React.useContext(PlanCtx);

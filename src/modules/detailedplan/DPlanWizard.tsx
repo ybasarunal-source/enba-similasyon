@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef } from 'react';
 import { cx, I, Btn } from './DPPrimitives';
 import {
   DPlan, Product, FixedExpense, ActiveProject, CostCenter, Supplier, Customer,
-  buildMonths, buildSeries, fmtTL, SCENARIOS,
+  WeeklyRamp, buildMonths, buildSeries, fmtTL, SCENARIOS, weeklyRampAt,
 } from './dpData';
 
 /* ══════════════════════════════════════════════════════
@@ -165,7 +165,10 @@ function MoneyInput({ value, onChange, className, min = 0 }:
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-[11px] uppercase tracking-wider text-enba-dim mb-1.5">{label}</label>
+      <div className="flex items-baseline gap-2 mb-1.5">
+        <label className="block text-[11px] uppercase tracking-wider text-enba-dim">{label}</label>
+        {hint && <span className="text-[10.5px] text-enba-muted normal-case tracking-normal">{hint}</span>}
+      </div>
       {children}
       {hint && <p className="text-[10.5px] text-enba-dim mt-1">{hint}</p>}
     </div>
@@ -199,9 +202,10 @@ interface Step1Props {
   startYear: number; setStartYear: (v: number) => void;
   startMonth: number; setStartMonth: (v: number) => void;
   horizon: number; setHorizon: (v: number) => void;
+  weeklyHorizon: number; setWeeklyHorizon: (v: number) => void;
   openingCash: number; setOpeningCash: (v: number) => void;
 }
-function Step1({ title, setTitle, startYear, setStartYear, startMonth, setStartMonth, horizon, setHorizon, openingCash, setOpeningCash }: Step1Props) {
+function Step1({ title, setTitle, startYear, setStartYear, startMonth, setStartMonth, horizon, setHorizon, weeklyHorizon, setWeeklyHorizon, openingCash, setOpeningCash }: Step1Props) {
   return (
     <div className="space-y-6">
       <StepHeader step={1} total={2} title="Temel Bilgiler" sub="Plan adı, zaman aralığı ve başlangıç nakit bakiyesi." />
@@ -228,6 +232,17 @@ function Step1({ title, setTitle, startYear, setStartYear, startMonth, setStartM
                 className={cx('flex-1 h-9 rounded-lg border text-[13px] font-medium transition-colors',
                   horizon === h ? 'border-enba-orange bg-enba-orange/10 text-enba-orange' : 'border-enba-line bg-enba-panel-2 text-enba-muted hover:border-enba-orange/40')}>
                 {h} ay
+              </button>
+            ))}
+          </div>
+        </Field>
+        <Field label="Haftalık Planlama Süresi" hint="İlk N hafta haftalık girilir, sonrası aylık modele geçer.">
+          <div className="flex gap-2">
+            {[4, 8, 12, 16, 24].map(w => (
+              <button key={w} onClick={() => setWeeklyHorizon(w)}
+                className={cx('flex-1 h-9 rounded-lg border text-[13px] font-medium transition-colors',
+                  weeklyHorizon === w ? 'border-enba-orange bg-enba-orange/10 text-enba-orange' : 'border-enba-line bg-enba-panel-2 text-enba-muted hover:border-enba-orange/40')}>
+                {w} hafta
               </button>
             ))}
           </div>
@@ -312,7 +327,7 @@ function ExpenseRow({ item, onEdit, onDelete }: {
 }
 
 /* ── 1. Alım Maliyetleri (M369) ── */
-function AlimList({ all, setAll, suppliers = [] }: { all: FixedExpense[]; setAll: (v: FixedExpense[]) => void; suppliers?: Supplier[] }) {
+function AlimList({ all, setAll, suppliers = [], weeklyHorizon = 12 }: { all: FixedExpense[]; setAll: (v: FixedExpense[]) => void; suppliers?: Supplier[]; weeklyHorizon?: number }) {
   const items    = all.filter(e => e.costCategory === 'purchase');
   const setItems = (updated: FixedExpense[]) => setAll([...all.filter(e => e.costCategory !== 'purchase'), ...updated]);
 
@@ -404,6 +419,7 @@ function AlimList({ all, setAll, suppliers = [] }: { all: FixedExpense[]; setAll
               </select>
             </Field>
           </div>
+          <WeeklyRampField value={draft.weeklyRamp} onChange={r => setDraft({ ...draft, weeklyRamp: r })} unit={draft.unit ?? 'ton'} weeklyHorizon={weeklyHorizon} />
           <FormFooter onCancel={cancel} onSave={save} editId={editId} disabled={!draft.name.trim()} />
         </div>
       ) : (
@@ -415,7 +431,7 @@ function AlimList({ all, setAll, suppliers = [] }: { all: FixedExpense[]; setAll
 }
 
 /* ── 2. Üretim Maliyetleri (elektrik, yakıt, su, bakım...) ── */
-function UretimList({ all, setAll }: { all: FixedExpense[]; setAll: (v: FixedExpense[]) => void }) {
+function UretimList({ all, setAll, weeklyHorizon = 12 }: { all: FixedExpense[]; setAll: (v: FixedExpense[]) => void; weeklyHorizon?: number }) {
   const items    = all.filter(e => e.costCategory === 'production');
   const setItems = (updated: FixedExpense[]) => setAll([...all.filter(e => e.costCategory !== 'production'), ...updated]);
 
@@ -514,6 +530,7 @@ function UretimList({ all, setAll }: { all: FixedExpense[]; setAll: (v: FixedExp
               {Array.from({ length: 24 }, (_, i) => <option key={i} value={i}>{i === 0 ? '1. ay' : `${i + 1}. ay`}</option>)}
             </select>
           </Field>
+          <WeeklyRampField value={draft.weeklyRamp} onChange={r => setDraft({ ...draft, weeklyRamp: r })} unit={draft.unit ?? 'kWh'} weeklyHorizon={weeklyHorizon} />
           <FormFooter onCancel={cancel} onSave={save} editId={editId} disabled={!draft.name.trim()} />
         </div>
       ) : (
@@ -525,7 +542,7 @@ function UretimList({ all, setAll }: { all: FixedExpense[]; setAll: (v: FixedExp
 }
 
 /* ── 3. Personel Maliyetleri ── */
-function PersonelList({ all, setAll }: { all: FixedExpense[]; setAll: (v: FixedExpense[]) => void }) {
+function PersonelList({ all, setAll, weeklyHorizon = 12 }: { all: FixedExpense[]; setAll: (v: FixedExpense[]) => void; weeklyHorizon?: number }) {
   const items    = all.filter(e => e.costCategory === 'personnel');
   const setItems = (updated: FixedExpense[]) => setAll([...all.filter(e => e.costCategory !== 'personnel'), ...updated]);
 
@@ -615,6 +632,7 @@ function PersonelList({ all, setAll }: { all: FixedExpense[]; setAll: (v: FixedE
               </select>
             </Field>
           </div>
+          <WeeklyRampField value={draft.weeklyRamp} onChange={r => setDraft({ ...draft, weeklyRamp: r })} unit="kişi" weeklyHorizon={weeklyHorizon} />
           <FormFooter onCancel={cancel} onSave={save} editId={editId} disabled={!draft.name.trim()} />
         </div>
       ) : (
@@ -626,7 +644,7 @@ function PersonelList({ all, setAll }: { all: FixedExpense[]; setAll: (v: FixedE
 }
 
 /* ── 4. Satış / Pazarlama Maliyetleri ── */
-function SatisList({ all, setAll }: { all: FixedExpense[]; setAll: (v: FixedExpense[]) => void }) {
+function SatisList({ all, setAll, weeklyHorizon = 12 }: { all: FixedExpense[]; setAll: (v: FixedExpense[]) => void; weeklyHorizon?: number }) {
   const items    = all.filter(e => e.costCategory === 'sales');
   const setItems = (updated: FixedExpense[]) => setAll([...all.filter(e => e.costCategory !== 'sales'), ...updated]);
 
@@ -678,12 +696,109 @@ function SatisList({ all, setAll }: { all: FixedExpense[]; setAll: (v: FixedExpe
               </div>
             </Field>
           </div>
+          <WeeklyRampField value={draft.weeklyRamp} onChange={r => setDraft({ ...draft, weeklyRamp: r })} unit="₺" weeklyHorizon={weeklyHorizon} />
           <FormFooter onCancel={cancel} onSave={save} editId={editId} disabled={!draft.name.trim()} />
         </div>
       ) : (
         <AddRow onClick={startAdd} label="Satış gideri ekle" />
       )}
       {items.length > 0 && <TotalRow total={totalMonthly} />}
+    </div>
+  );
+}
+
+/* ── Haftalık Ramp Girişi ── */
+function WeeklyRampField({ value, onChange, unit = 'ton', weeklyHorizon }: {
+  value?: WeeklyRamp;
+  onChange: (r: WeeklyRamp | undefined) => void;
+  unit?: string;
+  weeklyHorizon: number;
+}) {
+  const enabled = !!value;
+  const r = value ?? { startValue: 0, weeklyDelta: 0, weeklyGrowthPct: 0 };
+  const isGrowth = r.weeklyGrowthPct !== 0;
+
+  const preview = useMemo(() => {
+    if (!value) return [];
+    return Array.from({ length: Math.min(weeklyHorizon, 6) }, (_, w) => ({
+      week: w + 1,
+      val: weeklyRampAt(value, w),
+    }));
+  }, [value, weeklyHorizon]);
+
+  return (
+    <div className="border border-enba-line rounded-lg overflow-hidden">
+      <button
+        type="button"
+        onClick={() => onChange(enabled ? undefined : { startValue: 0, weeklyDelta: 0.5, weeklyGrowthPct: 0 })}
+        className="w-full flex items-center gap-2.5 px-3 py-2 bg-enba-panel-2/60 hover:bg-enba-panel-2 transition-colors"
+      >
+        <div className={cx('w-4 h-4 rounded border flex items-center justify-center flex-none transition-colors',
+          enabled ? 'bg-enba-orange border-enba-orange' : 'border-enba-line'
+        )}>
+          {enabled && <I.Check size={10} className="text-white" />}
+        </div>
+        <span className="text-[12.5px] font-medium text-enba-text">Haftalık ramp gir</span>
+        <span className="text-[11px] text-enba-dim ml-auto">İlk {weeklyHorizon} hafta</span>
+      </button>
+
+      {enabled && (
+        <div className="px-3 py-3 space-y-3 border-t border-enba-line">
+          <div className="grid grid-cols-2 gap-3">
+            <Field label={`Başlangıç (${unit}/hafta)`}>
+              <div className="relative">
+                <input type="number" min={0} step={0.1}
+                  value={r.startValue}
+                  onChange={e => onChange({ ...r, startValue: Math.max(0, Number(e.target.value)) })}
+                  className={inputCls} />
+              </div>
+            </Field>
+            <Field label="Artış Tipi">
+              <div className="flex rounded-lg border border-enba-line overflow-hidden h-[38px]">
+                <button type="button" onClick={() => onChange({ ...r, weeklyGrowthPct: 0 })}
+                  className={cx('flex-1 text-[12px] font-medium transition-colors',
+                    !isGrowth ? 'bg-enba-orange/10 text-enba-orange' : 'text-enba-muted hover:text-enba-text')}>
+                  Sabit
+                </button>
+                <div className="w-px bg-enba-line" />
+                <button type="button" onClick={() => onChange({ ...r, weeklyDelta: 0, weeklyGrowthPct: r.weeklyGrowthPct || 5 })}
+                  className={cx('flex-1 text-[12px] font-medium transition-colors',
+                    isGrowth ? 'bg-enba-orange/10 text-enba-orange' : 'text-enba-muted hover:text-enba-text')}>
+                  % Artış
+                </button>
+              </div>
+            </Field>
+          </div>
+
+          <Field label={isGrowth ? 'Haftalık Artış (%)' : `Haftalık Artış (${unit}/hafta)`}>
+            <div className="relative">
+              <input type="number" min={0} step={isGrowth ? 1 : 0.1}
+                value={isGrowth ? r.weeklyGrowthPct : r.weeklyDelta}
+                onChange={e => {
+                  const v = Math.max(0, Number(e.target.value));
+                  onChange(isGrowth ? { ...r, weeklyGrowthPct: v } : { ...r, weeklyDelta: v });
+                }}
+                className={cx(inputCls, isGrowth ? 'pr-7' : '')} />
+              {isGrowth && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-enba-dim text-[13px]">%</span>}
+            </div>
+          </Field>
+
+          {preview.length > 0 && (
+            <div className="bg-enba-panel-2/40 rounded-lg px-3 py-2">
+              <div className="text-[10px] uppercase tracking-wider text-enba-dim mb-2">Ön İzleme (ilk {preview.length} hafta)</div>
+              <div className="flex gap-2">
+                {preview.map(({ week, val }) => (
+                  <div key={week} className="flex-1 text-center">
+                    <div className="text-[10px] text-enba-dim mb-0.5">H{week}</div>
+                    <div className="text-[12px] font-semibold text-enba-orange tabular-nums">{val.toLocaleString('tr-TR', { maximumFractionDigits: 1 })}</div>
+                    <div className="text-[9px] text-enba-dim">{unit}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -714,7 +829,7 @@ function TotalRow({ total }: { total: number }) {
 }
 
 /* ── Proje Gelir Listesi ── */
-function ProjectRevenueList({ items, setItems, projectIdx, customers = [] }: { items: Product[]; setItems: (v: Product[]) => void; projectIdx: number; customers?: Customer[] }) {
+function ProjectRevenueList({ items, setItems, projectIdx, customers = [], weeklyHorizon = 12 }: { items: Product[]; setItems: (v: Product[]) => void; projectIdx: number; customers?: Customer[]; weeklyHorizon?: number }) {
   const [adding, setAdding] = useState(false);
   const [draft,  setDraft]  = useState<Product>(emptyRevenue(projectIdx));
   const [editId, setEditId] = useState<string | null>(null);
@@ -804,6 +919,7 @@ function ProjectRevenueList({ items, setItems, projectIdx, customers = [] }: { i
               </div>
             </Field>
           </div>
+          <WeeklyRampField value={draft.weeklyRamp} onChange={r => setDraft({ ...draft, weeklyRamp: r })} unit={draft.unit} weeklyHorizon={weeklyHorizon} />
           <div className="flex gap-2 pt-1 border-t border-enba-line">
             <button onClick={cancel} className="h-8 px-4 rounded-lg border border-enba-line text-[12px] text-enba-muted hover:bg-enba-panel-2">İptal</button>
             <Btn variant="primary" size="sm" onClick={saveFixed} disabled={!draft.name.trim()}>{editId ? 'Güncelle' : 'Ekle'}</Btn>
@@ -822,8 +938,8 @@ function ProjectRevenueList({ items, setItems, projectIdx, customers = [] }: { i
 /* ── Proje Düzenleyici ── */
 type ProjectTab = 'temel' | 'alim' | 'uretim' | 'personel' | 'satis' | 'gelirler';
 
-function ProjectEditor({ project, idx, horizon, costCenters, suppliers = [], customers = [], onSave, onCancel }:
-  { project: ActiveProject; idx: number; horizon: number; costCenters: CostCenter[]; suppliers?: Supplier[]; customers?: Customer[]; onSave: (p: ActiveProject) => void; onCancel: () => void }) {
+function ProjectEditor({ project, idx, horizon, costCenters, suppliers = [], customers = [], weeklyHorizon = 12, onSave, onCancel }:
+  { project: ActiveProject; idx: number; horizon: number; costCenters: CostCenter[]; suppliers?: Supplier[]; customers?: Customer[]; weeklyHorizon?: number; onSave: (p: ActiveProject) => void; onCancel: () => void }) {
   const [tab,   setTab]   = useState<ProjectTab>('temel');
   const [draft, setDraft] = useState<ActiveProject>({ ...project });
 
@@ -963,21 +1079,21 @@ function ProjectEditor({ project, idx, horizon, costCenters, suppliers = [], cus
           </>
         )}
         {tab === 'alim' && (
-          <AlimList all={draft.expenses} setAll={v => setDraft({ ...draft, expenses: v })} suppliers={suppliers} />
+          <AlimList all={draft.expenses} setAll={v => setDraft({ ...draft, expenses: v })} suppliers={suppliers} weeklyHorizon={weeklyHorizon} />
         )}
         {tab === 'uretim' && (
-          <UretimList all={draft.expenses} setAll={v => setDraft({ ...draft, expenses: v })} />
+          <UretimList all={draft.expenses} setAll={v => setDraft({ ...draft, expenses: v })} weeklyHorizon={weeklyHorizon} />
         )}
         {tab === 'personel' && (
-          <PersonelList all={draft.expenses} setAll={v => setDraft({ ...draft, expenses: v })} />
+          <PersonelList all={draft.expenses} setAll={v => setDraft({ ...draft, expenses: v })} weeklyHorizon={weeklyHorizon} />
         )}
         {tab === 'satis' && (
-          <SatisList all={draft.expenses} setAll={v => setDraft({ ...draft, expenses: v })} />
+          <SatisList all={draft.expenses} setAll={v => setDraft({ ...draft, expenses: v })} weeklyHorizon={weeklyHorizon} />
         )}
         {tab === 'gelirler' && (
           <>
             <p className="text-[11.5px] text-enba-dim">Bu projenin üretip sattığı ürün ve hizmetler.</p>
-            <ProjectRevenueList items={draft.revenues} setItems={v => setDraft({ ...draft, revenues: v })} projectIdx={idx} customers={customers} />
+            <ProjectRevenueList items={draft.revenues} setItems={v => setDraft({ ...draft, revenues: v })} projectIdx={idx} customers={customers} weeklyHorizon={weeklyHorizon} />
             {revenueTotal > 0 && (
               <div className="text-right text-[12px] text-enba-dim">Brüt gelir: <span className="font-semibold text-enba-orange">{fmtTL(revenueTotal)}/ay</span></div>
             )}
@@ -1279,8 +1395,8 @@ function CustomerList({ customers, setCustomers }: { customers: Customer[]; setC
 }
 
 /* ── Step 2 — Projeler ── */
-function ProjectsStep({ projects, setProjects, horizon, costCenters, suppliers = [], customers = [] }:
-  { projects: ActiveProject[]; setProjects: (v: ActiveProject[]) => void; horizon: number; costCenters: CostCenter[]; suppliers?: Supplier[]; customers?: Customer[] }) {
+function ProjectsStep({ projects, setProjects, horizon, costCenters, suppliers = [], customers = [], weeklyHorizon = 12 }:
+  { projects: ActiveProject[]; setProjects: (v: ActiveProject[]) => void; horizon: number; costCenters: CostCenter[]; suppliers?: Supplier[]; customers?: Customer[]; weeklyHorizon?: number }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const defaultCcId = costCenters[0]?.id ?? '';
 
@@ -1336,7 +1452,7 @@ function ProjectsStep({ projects, setProjects, horizon, costCenters, suppliers =
 
       {/* Proje kartları */}
       {projects.map((p, idx) => editingId === p.id ? (
-        <ProjectEditor key={p.id} project={p} idx={idx} horizon={horizon} costCenters={costCenters} suppliers={suppliers} customers={customers}
+        <ProjectEditor key={p.id} project={p} idx={idx} horizon={horizon} costCenters={costCenters} suppliers={suppliers} customers={customers} weeklyHorizon={weeklyHorizon}
           onSave={saveProject} onCancel={() => setEditingId(null)} />
       ) : (
         <div key={p.id}
@@ -1418,11 +1534,12 @@ export function DPlanWizard({ onDone, onCancel, onSave, initialPlan, costCenters
   const [saved, setSaved] = useState(false);
 
   /* Adım 1 */
-  const [title,       setTitle]       = useState(initialPlan?.title ?? '');
-  const [startYear,   setStartYear]   = useState(initialPlan?.startYear ?? new Date().getFullYear());
-  const [startMonth,  setStartMonth]  = useState(initialPlan?.startMonth ?? 0);
-  const [horizon,     setHorizon]     = useState(initialPlan?.horizon ?? 24);
-  const [openingCash, setOpeningCash] = useState(initialPlan?.openingCash ?? 0);
+  const [title,         setTitle]         = useState(initialPlan?.title ?? '');
+  const [startYear,     setStartYear]     = useState(initialPlan?.startYear ?? new Date().getFullYear());
+  const [startMonth,    setStartMonth]    = useState(initialPlan?.startMonth ?? 0);
+  const [horizon,       setHorizon]       = useState(initialPlan?.horizon ?? 24);
+  const [weeklyHorizon, setWeeklyHorizon] = useState(initialPlan?.weeklyHorizon ?? 12);
+  const [openingCash,   setOpeningCash]   = useState(initialPlan?.openingCash ?? 0);
 
   /* Tedarikçiler & Müşteriler (plana ait) */
   const [suppliers, setSuppliers] = useState<Supplier[]>(() => initialPlan?.suppliers ?? []);
@@ -1469,6 +1586,7 @@ export function DPlanWizard({ onDone, onCancel, onSave, initialPlan, costCenters
     startYear,
     startMonth,
     horizon,
+    weeklyHorizon,
     openingCash,
     actualsThrough: initialPlan?.actualsThrough ?? 0,
     suppliers,
@@ -1553,6 +1671,7 @@ export function DPlanWizard({ onDone, onCancel, onSave, initialPlan, costCenters
                 startYear={startYear} setStartYear={setStartYear}
                 startMonth={startMonth} setStartMonth={setStartMonth}
                 horizon={horizon} setHorizon={setHorizon}
+                weeklyHorizon={weeklyHorizon} setWeeklyHorizon={setWeeklyHorizon}
                 openingCash={openingCash} setOpeningCash={setOpeningCash}
               />
             )}
@@ -1567,6 +1686,7 @@ export function DPlanWizard({ onDone, onCancel, onSave, initialPlan, costCenters
                     projects={projects} setProjects={setProjects}
                     horizon={horizon} costCenters={costCenters}
                     suppliers={suppliers} customers={customers}
+                    weeklyHorizon={weeklyHorizon}
                   />
                 </div>
               </>

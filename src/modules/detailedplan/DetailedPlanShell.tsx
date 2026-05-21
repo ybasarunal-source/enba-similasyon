@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { cx, I, Badge, Btn, Select, ScenarioChip } from './DPPrimitives';
-import { SCENARIOS, DPlan, CostCenter, PlanCtx, buildMonths } from './dpData';
+import { cx, I, Badge, Btn, ScenarioChip } from './DPPrimitives';
+import { SCENARIOS, DPlan, CostCenter, PlanCtx, Granularity, buildDisplayPeriods } from './dpData';
 import { OverviewPanel }    from './OverviewPanel';
 import { RevenuePanel }     from './RevenuePanel';
 import { ExpensePanel }     from './ExpensePanel';
@@ -37,13 +37,14 @@ interface DetailedPlanShellProps {
 export function DetailedPlanShell({ plan, costCenters = [], onSave, onBack, onEdit, navigate }: DetailedPlanShellProps) {
   const [active, setActive]           = useState<SectionId>('overview');
   const [scenarioId, setScenarioId]   = useState('baz');
-  const [periodGran, setPeriodGran]   = useState('month');
+  const [granularity, setGranularity] = useState<Granularity>('monthly');
   const [horizon, setHorizon]         = useState(plan?.horizon ?? 24);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
+  const weeklyHorizon = plan?.weeklyHorizon ?? 12;
+
   const ctxValue = useMemo(() => {
     if (!plan) return undefined;
-    // Bu planın projelerinin bağlı olduğu gider merkezlerini bul
     const usedCcIds = new Set(plan.projects.map(p => p.costCenterId));
     const usedCostCenters = costCenters.filter(cc => usedCcIds.has(cc.id));
     const facilityExpenses = usedCostCenters.flatMap(cc => cc.fixedExpenses);
@@ -58,12 +59,14 @@ export function DetailedPlanShell({ plan, costCenters = [], onSave, onBack, onEd
       projects:         plan.projects,
       products,
       fixedExpenses,
-      periods:          buildMonths(plan.horizon, plan.startYear, plan.startMonth),
+      periods:          buildDisplayPeriods(horizon, plan.startYear, plan.startMonth, granularity, weeklyHorizon),
       cashEvents:       plan.cashEvents,
       openingCash:      plan.openingCash,
       actualsThrough:   plan.actualsThrough,
+      weeklyHorizon,
+      granularity,
     };
-  }, [plan, costCenters]);
+  }, [plan, costCenters, horizon, granularity, weeklyHorizon]);
 
   const shell = (
     <div className="h-full flex bg-enba-bg overflow-hidden">
@@ -195,27 +198,40 @@ export function DetailedPlanShell({ plan, costCenters = [], onSave, onBack, onEd
           {/* Header row 2: planning controls */}
           <div className="h-[52px] flex items-center px-5 gap-3 border-t border-enba-line bg-enba-panel-2/40">
             <div className="flex items-center gap-2">
-              <Select
-                icon={<I.Calendar size={13} />}
-                label="Dönem"
-                value={periodGran}
-                onChange={setPeriodGran}
-                options={[
-                  { value: 'month',   label: 'Aylık' },
-                  { value: 'quarter', label: 'Çeyreklik' },
-                  { value: 'year',    label: 'Yıllık' },
-                ]}
-              />
-              <Select
-                value={String(horizon)}
-                onChange={(v) => setHorizon(Number(v))}
-                options={[
-                  { value: '12', label: '12 ay' },
-                  { value: '18', label: '18 ay' },
-                  { value: '24', label: '24 ay' },
-                  { value: '36', label: '36 ay' },
-                ]}
-              />
+              {/* Granularity toggle */}
+              <div className="flex rounded-lg border border-enba-line overflow-hidden h-8 text-[12px] font-medium">
+                {([
+                  { id: 'weekly',    label: 'Haftalık' },
+                  { id: 'monthly',   label: 'Aylık'    },
+                  { id: 'quarterly', label: 'Çeyreklik'},
+                  { id: 'annual',    label: 'Yıllık'   },
+                ] as { id: Granularity; label: string }[]).map((g, idx, arr) => (
+                  <button
+                    key={g.id}
+                    onClick={() => setGranularity(g.id)}
+                    className={cx(
+                      'px-3 h-full transition-colors',
+                      idx < arr.length - 1 ? 'border-r border-enba-line' : '',
+                      granularity === g.id
+                        ? 'bg-enba-orange/12 text-enba-orange'
+                        : 'text-enba-muted hover:text-enba-text hover:bg-enba-panel-2',
+                    )}
+                  >
+                    {g.label}
+                  </button>
+                ))}
+              </div>
+              {/* Horizon selector */}
+              <select
+                value={horizon}
+                onChange={e => setHorizon(Number(e.target.value))}
+                className="h-8 px-2 rounded-lg border border-enba-line bg-enba-panel text-[12px] text-enba-text focus:outline-none focus:border-enba-orange"
+              >
+                <option value={12}>12 ay</option>
+                <option value={18}>18 ay</option>
+                <option value={24}>24 ay</option>
+                <option value={36}>36 ay</option>
+              </select>
             </div>
 
             <div className="flex-1" />
@@ -239,12 +255,12 @@ export function DetailedPlanShell({ plan, costCenters = [], onSave, onBack, onEd
         {/* Scrollable content */}
         <main className="flex-1 overflow-y-auto p-5 grid-bg">
           <div className="max-w-[1380px] mx-auto">
-            {active === 'overview'  && <OverviewPanel    scenarioId={scenarioId} periodGranularity={periodGran} />}
-            {active === 'revenue'   && <RevenuePanel     scenarioId={scenarioId} periodGranularity={periodGran} />}
-            {active === 'expense'   && <ExpensePanel     scenarioId={scenarioId} periodGranularity={periodGran} />}
-            {active === 'cashflow'  && <CashFlowPanel    scenarioId={scenarioId} periodGranularity={periodGran} />}
-            {active === 'scenario'  && <ScenarioPanel    scenarioId={scenarioId} periodGranularity={periodGran} />}
-            {active === 'budget'    && <BudgetTrackPanel scenarioId={scenarioId} periodGranularity={periodGran} />}
+            {active === 'overview'  && <OverviewPanel    scenarioId={scenarioId} periodGranularity={granularity} />}
+            {active === 'revenue'   && <RevenuePanel     scenarioId={scenarioId} periodGranularity={granularity} />}
+            {active === 'expense'   && <ExpensePanel     scenarioId={scenarioId} periodGranularity={granularity} />}
+            {active === 'cashflow'  && <CashFlowPanel    scenarioId={scenarioId} periodGranularity={granularity} />}
+            {active === 'scenario'  && <ScenarioPanel    scenarioId={scenarioId} periodGranularity={granularity} />}
+            {active === 'budget'    && <BudgetTrackPanel scenarioId={scenarioId} periodGranularity={granularity} />}
           </div>
         </main>
       </div>
