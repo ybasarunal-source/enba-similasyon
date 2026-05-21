@@ -68,10 +68,19 @@ export async function getHolidays(year: number): Promise<Holiday[]> {
   ].sort((a, b) => a.date.localeCompare(b.date));
 }
 
+async function getMyCompanyId(): Promise<string | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data } = await supabase.from('profiles').select('company_id').eq('id', user.id).single();
+  return (data as { company_id?: string } | null)?.company_id ?? null;
+}
+
 export async function addCustomHoliday(date: string, name: string, isBridge: boolean): Promise<void> {
+  const company_id = await getMyCompanyId();
+  if (!company_id) throw new Error('Şirket bilgisi bulunamadı');
   await supabase
     .from('custom_holidays')
-    .upsert({ date, name, is_bridge: isBridge }, { onConflict: 'date' });
+    .upsert({ date, name, is_bridge: isBridge, company_id }, { onConflict: 'date' });
 }
 
 export async function removeCustomHoliday(date: string): Promise<void> {
