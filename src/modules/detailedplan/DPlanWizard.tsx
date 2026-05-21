@@ -1030,7 +1030,7 @@ function SupplierFormRow({ draft, setDraft, onSave, onCancel }: {
         </Field>
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Alış Nakliyesi (₺/ay)">
+        <Field label="Alış Nakliyesi (₺/kg)">
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-enba-dim text-[13px]">₺</span>
             <MoneyInput value={draft.shippingCost ?? 0} onChange={v => setDraft({ ...draft, shippingCost: v || undefined })} className={cx(inputCls, 'pl-7')} />
@@ -1103,7 +1103,7 @@ function SupplierList({ suppliers, setSuppliers }: { suppliers: Supplier[]; setS
               <div className="text-[13px] font-semibold text-enba-text truncate">{s.name}</div>
               <div className="text-[11px] text-enba-muted">
                 {s.material} · {fmtTL(s.unitPrice)}/{s.unit}
-                {s.shippingCost ? ` · nakliye ${fmtTL(s.shippingCost, { compact: true })}/ay` : ''}
+                {s.shippingCost ? ` · nakliye ${fmtTL(s.shippingCost, { compact: true })}/kg` : ''}
                 {s.paymentTerms ? ` · ${s.paymentTerms === 'kısmi' && s.prepayRatio != null ? `%${s.prepayRatio} peşin + ${s.deferredDays ?? 30} gün` : s.paymentTerms}` : ''}
               </div>
             </div>
@@ -1154,7 +1154,7 @@ function CustomerFormRow({ draft, setDraft, onSave, onCancel }: {
         </Field>
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Satış Nakliyesi (₺/ay)">
+        <Field label="Satış Nakliyesi (₺/kg)">
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-enba-dim text-[13px]">₺</span>
             <MoneyInput value={draft.shippingCost ?? 0} onChange={v => setDraft({ ...draft, shippingCost: v || undefined })} className={cx(inputCls, 'pl-7')} />
@@ -1228,7 +1228,7 @@ function CustomerList({ customers, setCustomers }: { customers: Customer[]; setC
               <div className="text-[11px] text-enba-muted">
                 {[
                   c.sector,
-                  c.shippingCost ? `nakliye ${fmtTL(c.shippingCost, { compact: true })}/ay` : null,
+                  c.shippingCost ? `nakliye ${fmtTL(c.shippingCost, { compact: true })}/kg` : null,
                   c.paymentTerms === 'kısmi' && c.prepayRatio != null
                     ? `%${c.prepayRatio} peşin + ${c.deferredDays ?? 30} gün`
                     : c.paymentTerms,
