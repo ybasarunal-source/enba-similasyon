@@ -208,11 +208,11 @@ function AlisFormFields({ form, onChange, onSave, onCancel, loading, tedarikcile
           <input type="date" className={inputCls} value={form.tarih} onChange={e => set('tarih')(e.target.value)}/>
         </Field>
         <Field label="Tedarikçi *">
-          <input type="text" list="ted-dl" className={inputCls} placeholder="Tedarikçi adı..."
+          <input type="text" autoComplete="off" list="ted-dl" className={inputCls} placeholder="Tedarikçi adı..."
             value={form.tedarikciAdi} onChange={e => set('tedarikciAdi')(e.target.value)}/>
         </Field>
         <Field label="Hammadde Türü">
-          <input type="text" list="ham-dl" className={inputCls} placeholder="Tür seçin..."
+          <input type="text" autoComplete="off" list="ham-dl" className={inputCls} placeholder="Tür seçin..."
             value={form.hammaddeTuru} onChange={e => set('hammaddeTuru')(e.target.value)}/>
         </Field>
         <Field label="Brüt Miktar (kg) *">
@@ -300,7 +300,7 @@ function SatisFormFields({ form, onChange, onSave, onCancel, loading, musteriler
           <input type="date" className={inputCls} value={form.tarih} onChange={e => set('tarih')(e.target.value)}/>
         </Field>
         <Field label="Müşteri *">
-          <input type="text" list="mus-dl" className={inputCls} placeholder="Müşteri adı..."
+          <input type="text" autoComplete="off" list="mus-dl" className={inputCls} placeholder="Müşteri adı..."
             value={form.musteriAdi} onChange={e => set('musteriAdi')(e.target.value)}/>
         </Field>
         <Field label="Ürün Tipi">
@@ -1047,19 +1047,19 @@ function ContactPanel({ contacts, type, onAdd, onUpdate, onDelete }: ContactPane
       <Drawer open={drawerOpen} onClose={closeDrawer}
         title={editingId ? `${label} Düzenle` : `Yeni ${label}`}>
         <Field label="Ad / Ünvan *">
-          <input autoFocus type="text" className={inputCls} placeholder={`örn. Polimer Atık A.Ş.`}
+          <input autoFocus type="text" autoComplete="off" className={inputCls} placeholder={`örn. Polimer Atık A.Ş.`}
             value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}/>
         </Field>
         <Field label="Telefon">
-          <input type="tel" className={inputCls} placeholder="+90 555 000 00 00"
+          <input type="tel" autoComplete="off" className={inputCls} placeholder="+90 555 000 00 00"
             value={form.phone ?? ''} onChange={e => setForm(f => ({ ...f, phone: e.target.value || undefined }))}/>
         </Field>
         <Field label="E-posta">
-          <input type="email" className={inputCls} placeholder="ornek@firma.com"
+          <input type="email" autoComplete="off" className={inputCls} placeholder="ornek@firma.com"
             value={form.email ?? ''} onChange={e => setForm(f => ({ ...f, email: e.target.value || undefined }))}/>
         </Field>
         <Field label="Notlar">
-          <input type="text" className={inputCls} placeholder="..."
+          <input type="text" autoComplete="off" className={inputCls} placeholder="..."
             value={form.notes ?? ''} onChange={e => setForm(f => ({ ...f, notes: e.target.value || undefined }))}/>
         </Field>
         <div className="flex gap-2 pt-1">
@@ -1212,11 +1212,11 @@ function StokKalemleriPanel({ items, onAdd, onUpdate, onDelete }: StokKalemleriP
         title={editingId ? 'Kalemi Düzenle' : 'Yeni Stok Kalemi'}>
         <div className="grid grid-cols-2 gap-3">
           <Field label="Stok Kodu">
-            <input autoFocus type="text" className={inputCls} placeholder="örn. PET-001"
+            <input autoFocus type="text" autoComplete="off" className={inputCls} placeholder="örn. PET-001"
               value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value }))}/>
           </Field>
           <Field label="Kalem Adı *">
-            <input type="text" className={inputCls} placeholder="PET Şişe Atık"
+            <input type="text" autoComplete="off" className={inputCls} placeholder="PET Şişe Atık"
               value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}/>
           </Field>
           <Field label="Birim">
