@@ -324,6 +324,21 @@ export const buildSeries = (
     return { ...p, idx: offset, revenue, varCost, fixCost, opex, ebitda, net };
   });
 
+// Bir Period için hesaplama fonksiyonunu span boyunca toplar.
+// monthly: span=1, quarterly: span=3, annual: span=12, weekly: span=0 (weekIdx kullan)
+export const sumForPeriod = (
+  period: Period,
+  fallbackIdx: number,
+  fn: (mi: number) => number,
+): number => {
+  const span   = period.spanMonths ?? 1;
+  const offset = period.monthOffset ?? fallbackIdx;
+  if (span === 0) return fn(period.weekIdx ?? fallbackIdx);
+  let sum = 0;
+  for (let s = 0; s < span; s++) sum += fn(offset + s);
+  return sum;
+};
+
 export const cashFlowFor = (
   i: number, scen: Scenario,
   products: Product[], fixedExpenses: FixedExpense[], cashEvents: CashEvent[],

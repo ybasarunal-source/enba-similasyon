@@ -5,7 +5,7 @@ import {
 } from 'recharts';
 import {
   SCENARIOS, fmtTL, fmtPct,
-  revenueFor, varCostFor, fixedCostFor, facilityShareFor,
+  revenueFor, varCostFor, fixedCostFor, facilityShareFor, sumForPeriod,
   Scenario, usePlanData, ActiveProject, FixedExpense, Period,
 } from './dpData';
 import { cx, Card, SectionTitle, Segmented, Badge, useChartColors } from './DPPrimitives';
@@ -27,25 +27,26 @@ export const ExpensePanel = ({ scenarioId, periodGranularity }:
   const totals = useMemo(() => {
     let facility = 0, projFixed = 0, variable = 0;
     for (let i = 0; i < visiblePeriods.length; i++) {
-      facility  += facilityExpenses.reduce((s, e) => s + fixedCostFor(e, i, scen), 0);
-      projFixed += allProjExpenses.reduce((s, e) => s + fixedCostFor(e, i, scen), 0);
-      variable  += allProducts.reduce((s, p) => s + varCostFor(p, i, scen), 0);
+      const p = visiblePeriods[i];
+      facility  += sumForPeriod(p, i, mi => facilityExpenses.reduce((s, e) => s + fixedCostFor(e, mi, scen), 0));
+      projFixed += sumForPeriod(p, i, mi => allProjExpenses.reduce((s, e) => s + fixedCostFor(e, mi, scen), 0));
+      variable  += sumForPeriod(p, i, mi => allProducts.reduce((s, prod) => s + varCostFor(prod, mi, scen), 0));
     }
     return { facility, projFixed, variable, total: facility + projFixed + variable };
-  }, [scenarioId, horizon, facilityExpenses, projects]);
+  }, [scenarioId, horizon, facilityExpenses, projects, visiblePeriods]);
 
   const monthlySeries = useMemo(() => visiblePeriods.map((p, i) => ({
     label:    p.label,
-    tesis:    facilityExpenses.reduce((s, e) => s + fixedCostFor(e, i, scen), 0),
-    proje:    allProjExpenses.reduce((s, e) => s + fixedCostFor(e, i, scen), 0),
-    degisken: allProducts.reduce((s, prod) => s + varCostFor(prod, i, scen), 0),
-  })), [scenarioId, horizon, facilityExpenses, projects]);
+    tesis:    sumForPeriod(p, i, mi => facilityExpenses.reduce((s, e) => s + fixedCostFor(e, mi, scen), 0)),
+    proje:    sumForPeriod(p, i, mi => allProjExpenses.reduce((s, e) => s + fixedCostFor(e, mi, scen), 0)),
+    degisken: sumForPeriod(p, i, mi => allProducts.reduce((s, prod) => s + varCostFor(prod, mi, scen), 0)),
+  })), [scenarioId, horizon, facilityExpenses, projects, visiblePeriods]);
 
   const facilityTotals = useMemo(() => facilityExpenses.map(e => {
     let sum = 0;
-    for (let i = 0; i < visiblePeriods.length; i++) sum += fixedCostFor(e, i, scen);
+    for (let i = 0; i < visiblePeriods.length; i++) sum += sumForPeriod(visiblePeriods[i], i, mi => fixedCostFor(e, mi, scen));
     return { ...e, sum };
-  }), [scenarioId, horizon, facilityExpenses]);
+  }), [scenarioId, horizon, facilityExpenses, visiblePeriods]);
 
   const fShare = totals.facility   / (totals.total || 1);
   const pShare = totals.projFixed  / (totals.total || 1);
@@ -241,8 +242,8 @@ function FacilitySection({ facilityTotals, totalFacility, visiblePeriods, scen }
                     +{fmtPct(e.growth, 0)}
                   </span>
                 </td>
-                {visiblePeriods.map((_, i) => {
-                  const v = fixedCostFor(e, i, scen);
+                {visiblePeriods.map((p, i) => {
+                  const v = sumForPeriod(p, i, mi => fixedCostFor(e, mi, scen));
                   return (
                     <td key={i} className={cx('border-b border-enba-line px-2 py-2.5 text-right text-enba-text',
                       i % 3 === 2 && 'border-r border-enba-line/60')}>
@@ -258,8 +259,8 @@ function FacilitySection({ facilityTotals, totalFacility, visiblePeriods, scen }
               <td className="sticky left-0 z-10 bg-enba-orange/[0.07] border-t-2 border-enba-orange/40 border-r border-enba-line px-3 py-3 font-semibold">Alt Toplam</td>
               <td className="border-t-2 border-enba-orange/40 px-2 py-3"/>
               <td className="border-t-2 border-enba-orange/40 px-2 py-3"/>
-              {visiblePeriods.map((_, i) => {
-                const sum = facilityTotals.reduce((s, e) => s + fixedCostFor(e, i, scen), 0);
+              {visiblePeriods.map((p, i) => {
+                const sum = facilityTotals.reduce((s, e) => s + sumForPeriod(p, i, mi => fixedCostFor(e, mi, scen)), 0);
                 return (
                   <td key={i} className={cx('border-t-2 border-enba-orange/40 px-2 py-3 text-right font-semibold text-enba-text',
                     i % 3 === 2 && 'border-r border-enba-line/60')}>
@@ -326,14 +327,21 @@ function ProjectExpenseCard({ project, facilityExpenses, allProjects, visiblePer
 }) {
   const expenseTotals = useMemo(() => project.expenses.map(e => {
     let sum = 0;
-    for (let i = 0; i < visiblePeriods.length; i++) sum += fixedCostFor(e, i, scen);
+    for (let i = 0; i < visiblePeriods.length; i++) sum += sumForPeriod(visiblePeriods[i], i, mi => fixedCostFor(e, mi, scen));
     return { ...e, sum };
-  }), [project.expenses, visiblePeriods.length, scen]);
+  }), [project.expenses, visiblePeriods, scen]);
 
-  const facilityAllocPerPeriod = useMemo(() => visiblePeriods.map((_, i) => {
-    const facilityTotal = facilityExpenses.reduce((s, e) => s + fixedCostFor(e, i, scen), 0);
-    return facilityTotal * facilityShareFor(project, i, allProjects);
-  }), [project, facilityExpenses, allProjects, visiblePeriods.length, scen]);
+  const facilityAllocPerPeriod = useMemo(() => visiblePeriods.map((p, i) => {
+    const span   = p.spanMonths ?? 1;
+    const offset = p.monthOffset ?? i;
+    let total = 0;
+    for (let s = 0; s < span; s++) {
+      const mi = offset + s;
+      const facTotal = facilityExpenses.reduce((acc, e) => acc + fixedCostFor(e, mi, scen), 0);
+      total += facTotal * facilityShareFor(project, mi, allProjects);
+    }
+    return total;
+  }), [project, facilityExpenses, allProjects, visiblePeriods, scen]);
 
   const totalExpense   = expenseTotals.reduce((s, e) => s + e.sum, 0);
   const totalAllocated = facilityAllocPerPeriod.reduce((s, v) => s + v, 0);
@@ -406,8 +414,8 @@ function ProjectExpenseCard({ project, facilityExpenses, allProjects, visiblePer
                       +{fmtPct(e.growth, 0)}
                     </span>
                   </td>
-                  {visiblePeriods.map((_, i) => {
-                    const v = fixedCostFor(e, i, scen);
+                  {visiblePeriods.map((p, i) => {
+                    const v = sumForPeriod(p, i, mi => fixedCostFor(e, mi, scen));
                     return (
                       <td key={i} className={cx('border-b border-enba-line px-2 py-2.5 text-right text-enba-text',
                         i % 3 === 2 && 'border-r border-enba-line/60')}>
@@ -445,8 +453,8 @@ function ProjectExpenseCard({ project, facilityExpenses, allProjects, visiblePer
                 <td className="sticky left-0 z-10 bg-enba-panel-2 border-t-2 border-enba-line border-r border-enba-line px-3 py-3 font-semibold">Proje Toplam</td>
                 <td className="border-t-2 border-enba-line px-2 py-3"/>
                 <td className="border-t-2 border-enba-line px-2 py-3"/>
-                {visiblePeriods.map((_, i) => {
-                  const exp   = expenseTotals.reduce((s, e) => s + fixedCostFor(e, i, scen), 0);
+                {visiblePeriods.map((p, i) => {
+                  const exp   = expenseTotals.reduce((s, e) => s + sumForPeriod(p, i, mi => fixedCostFor(e, mi, scen)), 0);
                   const total = exp + facilityAllocPerPeriod[i];
                   return (
                     <td key={i} className={cx('border-t-2 border-enba-line px-2 py-3 text-right font-semibold text-enba-text',
@@ -508,9 +516,9 @@ function VariableProjectCard({ project, visiblePeriods, scen }: {
 }) {
   const varTotals = useMemo(() => project.revenues.map(p => {
     let sum = 0;
-    for (let i = 0; i < visiblePeriods.length; i++) sum += varCostFor(p, i, scen);
+    for (let i = 0; i < visiblePeriods.length; i++) sum += sumForPeriod(visiblePeriods[i], i, mi => varCostFor(p, mi, scen));
     return { ...p, sum };
-  }), [project.revenues, visiblePeriods.length, scen]);
+  }), [project.revenues, visiblePeriods, scen]);
 
   const totalVar     = varTotals.reduce((s, p) => s + p.sum, 0);
   const projectColor = project.color || '#5B9DFF';
@@ -556,8 +564,8 @@ function VariableProjectCard({ project, visiblePeriods, scen }: {
                   <span className="text-enba-text">{fmtPct(prod.varCostRatio, 0)}</span>
                   <span className="text-enba-dim text-[10.5px]"> /gelir</span>
                 </td>
-                {visiblePeriods.map((_, i) => {
-                  const v = varCostFor(prod, i, scen);
+                {visiblePeriods.map((p, i) => {
+                  const v = sumForPeriod(p, i, mi => varCostFor(prod, mi, scen));
                   return (
                     <td key={i} className={cx('border-b border-enba-line px-2 py-2.5 text-right text-enba-text',
                       i % 3 === 2 && 'border-r border-enba-line/60')}>
@@ -572,8 +580,8 @@ function VariableProjectCard({ project, visiblePeriods, scen }: {
             <tr className="bg-enba-amber/5">
               <td className="sticky left-0 z-10 bg-enba-amber/[0.07] border-t-2 border-enba-amber/40 border-r border-enba-line px-3 py-3 font-semibold">Alt Toplam</td>
               <td className="border-t-2 border-enba-amber/40 px-2 py-3"/>
-              {visiblePeriods.map((_, i) => {
-                const sum = project.revenues.reduce((s, p) => s + varCostFor(p, i, scen), 0);
+              {visiblePeriods.map((p, i) => {
+                const sum = project.revenues.reduce((s, prod) => s + sumForPeriod(p, i, mi => varCostFor(prod, mi, scen)), 0);
                 return (
                   <td key={i} className={cx('border-t-2 border-enba-amber/40 px-2 py-3 text-right font-semibold text-enba-text',
                     i % 3 === 2 && 'border-r border-enba-line/60')}>
@@ -595,9 +603,11 @@ function VariableProjectCard({ project, visiblePeriods, scen }: {
 const ExpenseRatioChart = ({ scen, horizon, cc }: { scen: Scenario; horizon: number; cc: any }) => {
   const { products, fixedExpenses, periods } = usePlanData();
   const data = periods.slice(0, horizon).map((p, i) => {
-    const rev  = products.reduce((s, prod) => s + revenueFor(prod, i, scen), 0);
-    const opex = products.reduce((s, prod) => s + varCostFor(prod, i, scen), 0)
-               + fixedExpenses.reduce((s, e) => s + fixedCostFor(e, i, scen), 0);
+    const rev  = sumForPeriod(p, i, mi => products.reduce((s, prod) => s + revenueFor(prod, mi, scen), 0));
+    const opex = sumForPeriod(p, i, mi =>
+      products.reduce((s, prod) => s + varCostFor(prod, mi, scen), 0)
+      + fixedExpenses.reduce((s, e) => s + fixedCostFor(e, mi, scen), 0)
+    );
     return { label: p.label, ratio: rev > 0 ? opex / rev : 0 };
   });
   const avg = data.length > 0 ? data.reduce((s, x) => s + x.ratio, 0) / data.length : 0;

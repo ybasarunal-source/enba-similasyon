@@ -5,7 +5,7 @@ import {
 } from 'recharts';
 import {
   SCENARIOS, MONTHS_TR, fmtTL, fmtPct, fmtNum,
-  revenueFor, varCostFor, monthlyVolumeFor, Scenario, usePlanData,
+  revenueFor, varCostFor, monthlyVolumeFor, sumForPeriod, Scenario, usePlanData,
 } from './dpData';
 import {
   cx, Card, SectionTitle, Sparkline, Segmented, Btn, Select,
@@ -28,20 +28,21 @@ export const RevenuePanel = ({ scenarioId, periodGranularity }:
   const productTotals = useMemo(() => products.map(p => {
     let rev = 0, vol = 0, cost = 0;
     for (let i = 0; i < visiblePeriods.length; i++) {
-      rev += revenueFor(p, i, scen);
-      vol += monthlyVolumeFor(p, i);
-      cost += varCostFor(p, i, scen);
+      const per = visiblePeriods[i];
+      rev  += sumForPeriod(per, i, mi => revenueFor(p, mi, scen));
+      vol  += sumForPeriod(per, i, mi => monthlyVolumeFor(p, mi));
+      cost += sumForPeriod(per, i, mi => varCostFor(p, mi, scen));
     }
     return { p, rev, vol, cost, gp: rev - cost, gpm: rev > 0 ? (rev - cost)/rev : 0 };
-  }), [products, scenarioId, horizon]);
+  }), [products, scenarioId, horizon, visiblePeriods]);
 
   const grandRev = productTotals.reduce((s, x) => s + x.rev, 0);
   const grandCost = productTotals.reduce((s, x) => s + x.cost, 0);
   const grandGP = grandRev - grandCost;
 
-  const periodTotals = useMemo(() => visiblePeriods.map((_, i) =>
-    products.reduce((s, p) => s + revenueFor(p, i, scen), 0)
-  ), [products, scenarioId, horizon]);
+  const periodTotals = useMemo(() => visiblePeriods.map((per, i) =>
+    products.reduce((s, p) => s + sumForPeriod(per, i, mi => revenueFor(p, mi, scen)), 0)
+  ), [products, scenarioId, horizon, visiblePeriods]);
 
   const toggle = (id: string) => {
     const n = new Set(expanded);
@@ -161,8 +162,8 @@ export const RevenuePanel = ({ scenarioId, periodGranularity }:
                         <span className="text-enba-dim text-[10.5px]"> /{p.unit}</span>
                       </td>
                       <td className="border-b border-enba-line px-2 py-2.5 text-right text-enba-muted">{fmtPct(p.varCostRatio, 0)}</td>
-                      {visiblePeriods.map((_, i) => {
-                        const r = revenueFor(p, i, scen);
+                      {visiblePeriods.map((per, i) => {
+                        const r = sumForPeriod(per, i, mi => revenueFor(p, mi, scen));
                         return (
                           <td key={i} className={cx('border-b border-enba-line px-2 py-2.5 text-right text-enba-text',
                             i % 3 === 2 && 'border-r border-enba-line/60')}>
@@ -181,10 +182,10 @@ export const RevenuePanel = ({ scenarioId, periodGranularity }:
                           </td>
                           <td className="border-b border-enba-line/60 px-2 py-1.5"/><td className="border-b border-enba-line/60 px-2 py-1.5"/>
                           <td className="border-b border-enba-line/60 px-2 py-1.5"/>
-                          {visiblePeriods.map((_, i) => (
+                          {visiblePeriods.map((per, i) => (
                             <td key={i} className={cx('border-b border-enba-line/60 px-2 py-1.5 text-right text-[11.5px] text-enba-muted',
                               i % 3 === 2 && 'border-r border-enba-line/40')}>
-                              {fmtNum(monthlyVolumeFor(p, i), 0)}
+                              {fmtNum(sumForPeriod(per, i, mi => monthlyVolumeFor(p, mi)), 0)}
                             </td>
                           ))}
                           <td className="border-b border-l border-enba-line/60 px-3 py-1.5 text-right text-[11.5px] text-enba-muted">
@@ -197,10 +198,10 @@ export const RevenuePanel = ({ scenarioId, periodGranularity }:
                           </td>
                           <td className="border-b border-enba-line/60 px-2 py-1.5"/><td className="border-b border-enba-line/60 px-2 py-1.5"/>
                           <td className="border-b border-enba-line/60 px-2 py-1.5"/>
-                          {visiblePeriods.map((_, i) => (
+                          {visiblePeriods.map((per, i) => (
                             <td key={i} className={cx('border-b border-enba-line/60 px-2 py-1.5 text-right text-[11.5px] text-enba-red/80',
                               i % 3 === 2 && 'border-r border-enba-line/40')}>
-                              −{(varCostFor(p, i, scen)/1000).toLocaleString('tr-TR', {maximumFractionDigits: 0})}K
+                              −{(sumForPeriod(per, i, mi => varCostFor(p, mi, scen))/1000).toLocaleString('tr-TR', {maximumFractionDigits: 0})}K
                             </td>
                           ))}
                           <td className="border-b border-l border-enba-line/60 px-3 py-1.5 text-right text-[11.5px] text-enba-red/80">
@@ -213,8 +214,8 @@ export const RevenuePanel = ({ scenarioId, periodGranularity }:
                           </td>
                           <td className="border-b border-enba-line/60 px-2 py-1.5"/><td className="border-b border-enba-line/60 px-2 py-1.5"/>
                           <td className="border-b border-enba-line/60 px-2 py-1.5 text-right text-[11.5px] text-enba-green">{fmtPct(1 - p.varCostRatio, 0)}</td>
-                          {visiblePeriods.map((_, i) => {
-                            const g = revenueFor(p, i, scen) - varCostFor(p, i, scen);
+                          {visiblePeriods.map((per, i) => {
+                            const g = sumForPeriod(per, i, mi => revenueFor(p, mi, scen) - varCostFor(p, mi, scen));
                             return (
                               <td key={i} className={cx('border-b border-enba-line/60 px-2 py-1.5 text-right text-[11.5px] text-enba-green font-medium',
                                 i % 3 === 2 && 'border-r border-enba-line/40')}>
@@ -237,7 +238,7 @@ export const RevenuePanel = ({ scenarioId, periodGranularity }:
                 {periodTotals.map((v, i) => (
                   <td key={i} className={cx('border-t-2 border-enba-orange/40 px-2 py-3 text-right text-enba-text font-semibold',
                     i % 3 === 2 && 'border-r border-enba-line/60')}>
-                    {(v/1000).toLocaleString('tr-TR', {maximumFractionDigits: 0})}
+                    {(v / 1000).toLocaleString('tr-TR', {maximumFractionDigits: 0})}
                     <span className="text-enba-dim text-[10px]">K</span>
                   </td>
                 ))}

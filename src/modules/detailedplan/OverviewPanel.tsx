@@ -9,31 +9,14 @@ import {
 } from './dpData';
 import { cx, Card, SectionTitle, KpiCard, Sparkline, Variance, I, useChartColors } from './DPPrimitives';
 
-export const OverviewPanel = ({ scenarioId, periodGranularity }:
-  { scenarioId: string; periodGranularity: string }) => {
+export const OverviewPanel = ({ scenarioId }: { scenarioId: string; periodGranularity: string }) => {
   const scen: Scenario = SCENARIOS[scenarioId];
   const cc = useChartColors();
   const { products, fixedExpenses, periods } = usePlanData();
   const series = useMemo(() => buildSeries(products, fixedExpenses, periods, scen), [scenarioId, products, fixedExpenses, periods]);
 
-  const grouped = useMemo(() => {
-    if (periodGranularity === 'month') return series;
-    const size = periodGranularity === 'quarter' ? 3 : 12;
-    const out: any[] = [];
-    for (let i = 0; i < series.length; i += size) {
-      const chunk = series.slice(i, i + size);
-      if (!chunk.length) continue;
-      const sum = (k: string) => chunk.reduce((s: number, x: any) => s + x[k], 0);
-      const label = periodGranularity === 'quarter'
-        ? `Ç${Math.floor((chunk[0].m)/3)+1} ${String(chunk[0].y).slice(2)}`
-        : `${chunk[0].y}`;
-      out.push({ label, key: chunk[0].key, idx: chunk[0].idx,
-        revenue: sum('revenue'), opex: sum('opex'),
-        varCost: sum('varCost'), fixCost: sum('fixCost'),
-        ebitda: sum('ebitda'), net: sum('net') });
-    }
-    return out;
-  }, [series, periodGranularity]);
+  // buildSeries zaten buildDisplayPeriods'dan gelen Period'larla doğru granülasyonda
+  // aggregate edilmiş. Ek gruplamaya gerek yok — series'i direkt kullan.
 
   const totals = useMemo(() => series.reduce((a, x) => ({
     revenue: a.revenue + x.revenue, opex: a.opex + x.opex,
@@ -53,7 +36,6 @@ export const OverviewPanel = ({ scenarioId, periodGranularity }:
   }, [series]);
 
   const ebitdaMargin = totals.revenue > 0 ? totals.ebitda / totals.revenue : 0;
-  const revSpark = grouped.map(g => (g as any).revenue);
 
   return (
     <div className="space-y-5">
@@ -86,7 +68,7 @@ export const OverviewPanel = ({ scenarioId, periodGranularity }:
         />
         <div className="h-[280px]">
           <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={grouped} margin={{ top: 10, right: 12, left: 0, bottom: 0 }}>
+            <ComposedChart data={series} margin={{ top: 10, right: 12, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="revGrad" x1="0" x2="0" y1="0" y2="1">
                   <stop offset="0%" stopColor="#E35205" stopOpacity="0.45"/>
