@@ -4,6 +4,7 @@ import {
   DPlan, Product, FixedExpense, ActiveProject, CostCenter, Supplier, Customer,
   WeeklyRamp, buildMonths, buildSeries, fmtTL, SCENARIOS, weeklyRampAt,
 } from './dpData';
+import { SharedContactsService } from '../../api/dataService';
 
 /* ══════════════════════════════════════════════════════
    M-KOD VERİSİ
@@ -1120,12 +1121,22 @@ const DEFERRED_DAYS    = [7, 15, 30, 45, 60, 90];
 function SupplierFormRow({ draft, setDraft, onSave, onCancel }: {
   draft: Supplier; setDraft: (s: Supplier) => void; onSave: () => void; onCancel: () => void;
 }) {
-  const isPartial = draft.paymentTerms === 'kısmi';
+  const isPartial     = draft.paymentTerms === 'kısmi';
+  const sharedNames   = useMemo(
+    () => SharedContactsService.getAll().filter(c => c.type === 'supplier').map(c => c.name),
+    [],
+  );
   return (
     <div className="bg-enba-panel border border-enba-orange/30 rounded-xl p-4 space-y-3">
+      {sharedNames.length > 0 && (
+        <datalist id="wiz-suppliers-dl">
+          {sharedNames.map(n => <option key={n} value={n}/>)}
+        </datalist>
+      )}
       <div className="grid grid-cols-2 gap-3">
         <Field label="Tedarikçi / Şirket Adı">
-          <input autoFocus value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })}
+          <input autoFocus list="wiz-suppliers-dl"
+            value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })}
             placeholder="örn. Polimer Atık A.Ş." className={inputCls} />
         </Field>
         <Field label="Tedarik Edilen Malzeme">
@@ -1196,6 +1207,8 @@ function SupplierList({ suppliers, setSuppliers }: { suppliers: Supplier[]; setS
     if (!draft.name.trim()) return;
     if (editId) setSuppliers(suppliers.map(s => s.id === editId ? draft : s));
     else        setSuppliers([...suppliers, { ...draft, id: crypto.randomUUID() }]);
+    // Stok modülü ile paylaşımlı cari havuzuna upsert
+    SharedContactsService.upsertByName(draft.name, 'supplier');
     setAdding(false); setEditId(null);
   };
 
@@ -1257,12 +1270,22 @@ function SupplierList({ suppliers, setSuppliers }: { suppliers: Supplier[]; setS
 function CustomerFormRow({ draft, setDraft, onSave, onCancel }: {
   draft: Customer; setDraft: (c: Customer) => void; onSave: () => void; onCancel: () => void;
 }) {
-  const isPartial = draft.paymentTerms === 'kısmi';
+  const isPartial   = draft.paymentTerms === 'kısmi';
+  const sharedNames = useMemo(
+    () => SharedContactsService.getAll().filter(c => c.type === 'customer').map(c => c.name),
+    [],
+  );
   return (
     <div className="bg-enba-panel border border-enba-orange/30 rounded-xl p-4 space-y-3">
+      {sharedNames.length > 0 && (
+        <datalist id="wiz-customers-dl">
+          {sharedNames.map(n => <option key={n} value={n}/>)}
+        </datalist>
+      )}
       <div className="grid grid-cols-2 gap-3">
         <Field label="Müşteri / Şirket Adı">
-          <input autoFocus value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })}
+          <input autoFocus list="wiz-customers-dl"
+            value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })}
             placeholder="örn. EcoGreen Ltd." className={inputCls} />
         </Field>
         <Field label="Sektör (isteğe bağlı)">
@@ -1333,6 +1356,8 @@ function CustomerList({ customers, setCustomers }: { customers: Customer[]; setC
     if (!draft.name.trim()) return;
     if (editId) setCustomers(customers.map(c => c.id === editId ? draft : c));
     else        setCustomers([...customers, { ...draft, id: crypto.randomUUID() }]);
+    // Stok modülü ile paylaşımlı cari havuzuna upsert
+    SharedContactsService.upsertByName(draft.name, 'customer');
     setAdding(false); setEditId(null);
   };
 

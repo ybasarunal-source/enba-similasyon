@@ -6,10 +6,15 @@
  * - Tüm sub-component'ler modül seviyesinde tanımlı (focus kayması yok)
  */
 import React, { useState, useEffect, useMemo } from 'react';
-import { DataService, StockRecord, SalesRecord } from '../api/dataService';
+import {
+  DataService, StockRecord, SalesRecord,
+  SharedContact, SharedContactsService,
+  StockItem, StockItemsService,
+} from '../api/dataService';
 import {
   Package, ArrowDownToLine, ArrowUpFromLine, BarChart3,
   Plus, Pencil, Trash2, X, Check, AlertTriangle,
+  Truck, Users, Tag,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -43,20 +48,23 @@ const MAMUL_TURLERI = [
   'Tekstil Balya', 'İşlenmiş Ürün', 'Diğer',
 ];
 
-type ViewId = 'alis' | 'satis' | 'stok' | 'raporlar';
+type ViewId = 'alis' | 'satis' | 'stok' | 'raporlar' | 'kalemler' | 'tedarikciler' | 'musteriler';
 
-const NAV: { id: ViewId; label: string; Icon: LucideIcon }[] = [
-  { id: 'alis',     label: 'Hammadde Alış',  Icon: ArrowDownToLine },
-  { id: 'satis',    label: 'Satış / Çıkış',  Icon: ArrowUpFromLine },
-  { id: 'stok',     label: 'Stok Durumu',    Icon: Package },
-  { id: 'raporlar', label: 'Raporlar',        Icon: BarChart3 },
+const NAV_GROUPS: { label: string; items: { id: ViewId; label: string; Icon: LucideIcon }[] }[] = [
+  { label: 'İşlemler', items: [
+    { id: 'alis',     label: 'Hammadde Alış', Icon: ArrowDownToLine },
+    { id: 'satis',    label: 'Satış / Çıkış', Icon: ArrowUpFromLine },
+  ]},
+  { label: 'Takip', items: [
+    { id: 'stok',     label: 'Stok Durumu',   Icon: Package },
+    { id: 'raporlar', label: 'Raporlar',       Icon: BarChart3 },
+  ]},
+  { label: 'Tanımlar', items: [
+    { id: 'kalemler',     label: 'Stok Kalemleri', Icon: Tag },
+    { id: 'tedarikciler', label: 'Tedarikçiler',   Icon: Truck },
+    { id: 'musteriler',   label: 'Müşteriler',     Icon: Users },
+  ]},
 ];
-
-interface ContactRecord {
-  id: string;
-  name?: string;
-  contact_type: 'supplier' | 'customer';
-}
 
 type AlisForm = Omit<StockRecord, 'id'>;
 type SatisForm = Omit<SalesRecord, 'id'>;
@@ -172,7 +180,7 @@ interface AlisFormProps {
   onSave: () => void;
   onCancel: () => void;
   loading: boolean;
-  tedarikciler: ContactRecord[];
+  tedarikciler: SharedContact[];
   editingId: string | null;
 }
 
@@ -192,7 +200,7 @@ function AlisFormFields({ form, onChange, onSave, onCancel, loading, tedarikcile
 
   return (
     <>
-      <datalist id="ted-dl">{tedarikciler.map(t => <option key={t.id} value={t.name || ''}/>)}</datalist>
+      <datalist id="ted-dl">{tedarikciler.map(t => <option key={t.id} value={t.name}/>)}</datalist>
       <datalist id="ham-dl">{HAMMADDE_TURLERI.map(h => <option key={h} value={h}/>)}</datalist>
 
       <div className="grid grid-cols-2 gap-3">
@@ -265,7 +273,7 @@ interface SatisFormProps {
   onSave: () => void;
   onCancel: () => void;
   loading: boolean;
-  musteriler: ContactRecord[];
+  musteriler: SharedContact[];
   editingId: string | null;
 }
 
@@ -283,7 +291,7 @@ function SatisFormFields({ form, onChange, onSave, onCancel, loading, musteriler
 
   return (
     <>
-      <datalist id="mus-dl">{musteriler.map(m => <option key={m.id} value={m.name || ''}/>)}</datalist>
+      <datalist id="mus-dl">{musteriler.map(m => <option key={m.id} value={m.name}/>)}</datalist>
       <datalist id="ham-dl2">{HAMMADDE_TURLERI.map(h => <option key={h} value={h}/>)}</datalist>
       <datalist id="mam-dl">{MAMUL_TURLERI.map(m => <option key={m} value={m}/>)}</datalist>
 
@@ -368,7 +376,7 @@ function TableEmpty({ colSpan, label }: { colSpan: number; label: string }) {
 // ─── Alış Paneli ─────────────────────────────────────────────────────────────
 interface AlisPanelProps {
   alislar: StockRecord[];
-  tedarikciler: ContactRecord[];
+  tedarikciler: SharedContact[];
   loading: boolean;
   onInsert: (f: AlisForm) => Promise<void>;
   onUpdate: (id: string, f: AlisForm) => Promise<void>;
@@ -535,7 +543,7 @@ function AlisPanel({ alislar, tedarikciler, loading, onInsert, onUpdate, onDelet
 // ─── Satış Paneli ─────────────────────────────────────────────────────────────
 interface SatisPanelProps {
   satislar: SalesRecord[];
-  musteriler: ContactRecord[];
+  musteriler: SharedContact[];
   loading: boolean;
   onInsert: (f: SatisForm) => Promise<void>;
   onUpdate: (id: string, f: SatisForm) => Promise<void>;
@@ -936,39 +944,376 @@ function RaporlarPanel({ alislar, satislar }: RaporlarPanelProps) {
   );
 }
 
+// ─── Cari Havuzu Paneli (Tedarikçi / Müşteri) ────────────────────────────────
+
+interface ContactPanelProps {
+  contacts: SharedContact[];
+  type: 'supplier' | 'customer';
+  onAdd: (c: SharedContact) => void;
+  onUpdate: (c: SharedContact) => void;
+  onDelete: (id: string) => void;
+}
+
+type ContactForm = Omit<SharedContact, 'id' | 'type'>;
+
+const emptyContactForm = (): ContactForm => ({ name: '', phone: '', email: '', notes: '' });
+
+function ContactPanel({ contacts, type, onAdd, onUpdate, onDelete }: ContactPanelProps) {
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [editingId,  setEditingId]  = useState<string | null>(null);
+  const [form,       setForm]       = useState<ContactForm>(emptyContactForm());
+  const [deleteId,   setDeleteId]   = useState<string | null>(null);
+  const [search,     setSearch]     = useState('');
+
+  const label    = type === 'supplier' ? 'Tedarikçi' : 'Müşteri';
+  const eyebrow  = type === 'supplier' ? 'Alım' : 'Satış';
+  const filtered = contacts.filter(c =>
+    !search || c.name.toLowerCase().includes(search.toLowerCase()),
+  );
+
+  const openAdd  = () => { setForm(emptyContactForm()); setEditingId(null); setDrawerOpen(true); };
+  const openEdit = (c: SharedContact) => {
+    setForm({ name: c.name, phone: c.phone ?? '', email: c.email ?? '', notes: c.notes ?? '' });
+    setEditingId(c.id); setDrawerOpen(true);
+  };
+  const closeDrawer = () => { setDrawerOpen(false); setEditingId(null); };
+
+  const save = () => {
+    if (!form.name.trim()) return;
+    if (editingId) onUpdate({ id: editingId, type, ...form });
+    else           onAdd({ id: crypto.randomUUID(), type, ...form });
+    closeDrawer();
+  };
+
+  return (
+    <div className="flex flex-col gap-5 h-full overflow-y-auto p-5">
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <div className="text-[11px] uppercase tracking-[0.12em] text-enba-dim mb-0.5">{eyebrow} · Tanımlar</div>
+          <h2 className="text-[15px] font-semibold text-enba-text">{label}ler</h2>
+        </div>
+        <div className="flex items-center gap-2">
+          <input type="text" placeholder={`${label} ara...`}
+            className="h-8 px-3 text-[12.5px] rounded-lg border border-enba-line bg-enba-panel-2 text-enba-text placeholder-enba-dim outline-none focus:border-enba-orange/50 w-[180px]"
+            value={search} onChange={e => setSearch(e.target.value)}/>
+          <button onClick={openAdd}
+            className="h-8 px-3 bg-enba-orange text-white text-[12.5px] font-semibold rounded-lg hover:bg-enba-orange/90 transition-colors flex items-center gap-1.5">
+            <Plus size={13}/> Yeni {label}
+          </button>
+        </div>
+      </div>
+
+      {/* Tablo */}
+      <div className="bg-enba-panel border border-enba-line rounded-xl overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr>
+                <th className={th}>Ad / Ünvan</th>
+                <th className={th}>Telefon</th>
+                <th className={th}>E-posta</th>
+                <th className={th}>Notlar</th>
+                <th className={th}/>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0
+                ? <TableEmpty colSpan={5} label={search ? 'Arama sonucu yok' : `${label} bulunamadı — Yeni ${label} ekleyin`}/>
+                : filtered.map(c => (
+                  <tr key={c.id} className="group hover:bg-enba-panel-2/40 transition-colors">
+                    <td className={td + ' font-medium'}>{c.name}</td>
+                    <td className={td + ' text-enba-muted'}>{c.phone || '—'}</td>
+                    <td className={td + ' text-enba-muted'}>{c.email || '—'}</td>
+                    <td className={td + ' text-enba-dim max-w-[160px] truncate'}>{c.notes || '—'}</td>
+                    <td className={td + ' opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap'}>
+                      <button onClick={() => openEdit(c)}
+                        className="p-1.5 text-enba-dim hover:text-enba-orange rounded-lg transition-colors mr-1">
+                        <Pencil size={13}/>
+                      </button>
+                      <button onClick={() => setDeleteId(c.id)}
+                        className="p-1.5 text-enba-dim hover:text-enba-red rounded-lg transition-colors">
+                        <Trash2 size={13}/>
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Drawer */}
+      <Drawer open={drawerOpen} onClose={closeDrawer}
+        title={editingId ? `${label} Düzenle` : `Yeni ${label}`}>
+        <Field label="Ad / Ünvan *">
+          <input autoFocus type="text" className={inputCls} placeholder={`örn. Polimer Atık A.Ş.`}
+            value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}/>
+        </Field>
+        <Field label="Telefon">
+          <input type="tel" className={inputCls} placeholder="+90 555 000 00 00"
+            value={form.phone ?? ''} onChange={e => setForm(f => ({ ...f, phone: e.target.value || undefined }))}/>
+        </Field>
+        <Field label="E-posta">
+          <input type="email" className={inputCls} placeholder="ornek@firma.com"
+            value={form.email ?? ''} onChange={e => setForm(f => ({ ...f, email: e.target.value || undefined }))}/>
+        </Field>
+        <Field label="Notlar">
+          <input type="text" className={inputCls} placeholder="..."
+            value={form.notes ?? ''} onChange={e => setForm(f => ({ ...f, notes: e.target.value || undefined }))}/>
+        </Field>
+        <div className="flex gap-2 pt-1">
+          <button onClick={save} disabled={!form.name.trim()}
+            className="flex-1 h-10 bg-enba-orange text-white text-[13px] font-semibold rounded-lg hover:bg-enba-orange/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2">
+            <Check size={14}/>{editingId ? 'Güncelle' : 'Kaydet'}
+          </button>
+          <button onClick={closeDrawer}
+            className="h-10 px-4 border border-enba-line text-[13px] text-enba-muted rounded-lg hover:bg-enba-panel-2 transition-colors">
+            İptal
+          </button>
+        </div>
+      </Drawer>
+
+      {deleteId && (
+        <DeleteConfirm
+          onConfirm={() => { onDelete(deleteId); setDeleteId(null); }}
+          onCancel={() => setDeleteId(null)}/>
+      )}
+    </div>
+  );
+}
+
+// ─── Stok Kalemleri Paneli ────────────────────────────────────────────────────
+const KALEM_UNITS      = ['kg', 'ton', 'adet', 'm²', 'm³', 'litre', 'paket'] as const;
+const KALEM_CATEGORIES = ['Hammadde', 'Mamul', 'Yardımcı Malzeme', 'Ambalaj', 'Kimyasal', 'Diğer'] as const;
+
+interface StokKalemleriPanelProps {
+  items: StockItem[];
+  onAdd: (item: StockItem) => void;
+  onUpdate: (item: StockItem) => void;
+  onDelete: (id: string) => void;
+}
+
+type KalemForm = Omit<StockItem, 'id'>;
+const emptyKalemForm = (): KalemForm => ({
+  code: '', name: '', unit: 'kg', category: 'Hammadde',
+  defaultBuyPrice: undefined, defaultSellPrice: undefined, notes: '',
+});
+
+function StokKalemleriPanel({ items, onAdd, onUpdate, onDelete }: StokKalemleriPanelProps) {
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [editingId,  setEditingId]  = useState<string | null>(null);
+  const [form,       setForm]       = useState<KalemForm>(emptyKalemForm());
+  const [deleteId,   setDeleteId]   = useState<string | null>(null);
+  const [search,     setSearch]     = useState('');
+
+  const filtered = items.filter(i =>
+    !search || i.code.toLowerCase().includes(search.toLowerCase())
+            || i.name.toLowerCase().includes(search.toLowerCase()),
+  );
+
+  const openAdd  = () => { setForm(emptyKalemForm()); setEditingId(null); setDrawerOpen(true); };
+  const openEdit = (item: StockItem) => {
+    setForm({ code: item.code, name: item.name, unit: item.unit, category: item.category,
+              defaultBuyPrice: item.defaultBuyPrice, defaultSellPrice: item.defaultSellPrice,
+              notes: item.notes ?? '' });
+    setEditingId(item.id); setDrawerOpen(true);
+  };
+  const closeDrawer = () => { setDrawerOpen(false); setEditingId(null); };
+
+  const save = () => {
+    if (!form.name.trim()) return;
+    if (editingId) onUpdate({ id: editingId, ...form });
+    else           onAdd({ id: crypto.randomUUID(), ...form });
+    closeDrawer();
+  };
+
+  const numFld = (key: keyof KalemForm) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm(f => ({ ...f, [key]: e.target.value ? Number(e.target.value) : undefined }));
+
+  return (
+    <div className="flex flex-col gap-5 h-full overflow-y-auto p-5">
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <div className="text-[11px] uppercase tracking-[0.12em] text-enba-dim mb-0.5">Tanımlar</div>
+          <h2 className="text-[15px] font-semibold text-enba-text">Stok Kalemleri</h2>
+        </div>
+        <div className="flex items-center gap-2">
+          <input type="text" placeholder="Kod veya ad ara..."
+            className="h-8 px-3 text-[12.5px] rounded-lg border border-enba-line bg-enba-panel-2 text-enba-text placeholder-enba-dim outline-none focus:border-enba-orange/50 w-[180px]"
+            value={search} onChange={e => setSearch(e.target.value)}/>
+          <button onClick={openAdd}
+            className="h-8 px-3 bg-enba-orange text-white text-[12.5px] font-semibold rounded-lg hover:bg-enba-orange/90 transition-colors flex items-center gap-1.5">
+            <Plus size={13}/> Yeni Kalem
+          </button>
+        </div>
+      </div>
+
+      {/* Tablo */}
+      <div className="bg-enba-panel border border-enba-line rounded-xl overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr>
+                <th className={th}>Kod</th>
+                <th className={th}>Kalem Adı</th>
+                <th className={th}>Birim</th>
+                <th className={th}>Kategori</th>
+                <th className={thR}>Alış ₺/birim</th>
+                <th className={thR}>Satış ₺/birim</th>
+                <th className={th}>Notlar</th>
+                <th className={th}/>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0
+                ? <TableEmpty colSpan={8} label={search ? 'Arama sonucu yok' : 'Stok kalemi bulunamadı — Yeni Kalem ekleyin'}/>
+                : filtered.map(item => (
+                  <tr key={item.id} className="group hover:bg-enba-panel-2/40 transition-colors">
+                    <td className={td}>
+                      <span className="font-mono text-[12px] bg-enba-panel-2 px-2 py-0.5 rounded text-enba-orange">
+                        {item.code || '—'}
+                      </span>
+                    </td>
+                    <td className={td + ' font-medium'}>{item.name}</td>
+                    <td className={td + ' text-enba-muted'}>{item.unit}</td>
+                    <td className={td}>
+                      <span className="text-[10.5px] font-medium px-2 py-0.5 rounded-full bg-enba-panel-2 text-enba-muted">
+                        {item.category}
+                      </span>
+                    </td>
+                    <td className={tdR + ' text-enba-muted'}>
+                      {item.defaultBuyPrice != null ? `₺${item.defaultBuyPrice.toFixed(2)}` : '—'}
+                    </td>
+                    <td className={tdR + ' text-enba-muted'}>
+                      {item.defaultSellPrice != null ? `₺${item.defaultSellPrice.toFixed(2)}` : '—'}
+                    </td>
+                    <td className={td + ' text-enba-dim max-w-[120px] truncate'}>{item.notes || '—'}</td>
+                    <td className={td + ' opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap'}>
+                      <button onClick={() => openEdit(item)}
+                        className="p-1.5 text-enba-dim hover:text-enba-orange rounded-lg transition-colors mr-1">
+                        <Pencil size={13}/>
+                      </button>
+                      <button onClick={() => setDeleteId(item.id)}
+                        className="p-1.5 text-enba-dim hover:text-enba-red rounded-lg transition-colors">
+                        <Trash2 size={13}/>
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Drawer */}
+      <Drawer open={drawerOpen} onClose={closeDrawer}
+        title={editingId ? 'Kalemi Düzenle' : 'Yeni Stok Kalemi'}>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Stok Kodu">
+            <input autoFocus type="text" className={inputCls} placeholder="örn. PET-001"
+              value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value }))}/>
+          </Field>
+          <Field label="Kalem Adı *">
+            <input type="text" className={inputCls} placeholder="PET Şişe Atık"
+              value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}/>
+          </Field>
+          <Field label="Birim">
+            <select className={inputCls} value={form.unit}
+              onChange={e => setForm(f => ({ ...f, unit: e.target.value }))}>
+              {KALEM_UNITS.map(u => <option key={u}>{u}</option>)}
+            </select>
+          </Field>
+          <Field label="Kategori">
+            <select className={inputCls} value={form.category}
+              onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
+              {KALEM_CATEGORIES.map(c => <option key={c}>{c}</option>)}
+            </select>
+          </Field>
+          <Field label="Varsayılan Alış ₺/birim">
+            <input type="number" min="0" step="0.01" className={inputCls} placeholder="—"
+              value={form.defaultBuyPrice ?? ''} onChange={numFld('defaultBuyPrice')}/>
+          </Field>
+          <Field label="Varsayılan Satış ₺/birim">
+            <input type="number" min="0" step="0.01" className={inputCls} placeholder="—"
+              value={form.defaultSellPrice ?? ''} onChange={numFld('defaultSellPrice')}/>
+          </Field>
+        </div>
+        <Field label="Notlar">
+          <input type="text" className={inputCls} placeholder="..."
+            value={form.notes ?? ''} onChange={e => setForm(f => ({ ...f, notes: e.target.value || undefined }))}/>
+        </Field>
+        <div className="flex gap-2 pt-1">
+          <button onClick={save} disabled={!form.name.trim()}
+            className="flex-1 h-10 bg-enba-orange text-white text-[13px] font-semibold rounded-lg hover:bg-enba-orange/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2">
+            <Check size={14}/>{editingId ? 'Güncelle' : 'Kaydet'}
+          </button>
+          <button onClick={closeDrawer}
+            className="h-10 px-4 border border-enba-line text-[13px] text-enba-muted rounded-lg hover:bg-enba-panel-2 transition-colors">
+            İptal
+          </button>
+        </div>
+      </Drawer>
+
+      {deleteId && (
+        <DeleteConfirm
+          onConfirm={() => { onDelete(deleteId); setDeleteId(null); }}
+          onCancel={() => setDeleteId(null)}/>
+      )}
+    </div>
+  );
+}
+
 // ─── Ana Modül ────────────────────────────────────────────────────────────────
 export const Stock: React.FC = () => {
-  const [active, setActive]           = useState<ViewId>('alis');
-  const [loading, setLoading]         = useState(true);
-  const [alislar, setAlislar]         = useState<StockRecord[]>([]);
-  const [satislar, setSatislar]       = useState<SalesRecord[]>([]);
-  const [tedarikciler, setTedarikciler] = useState<ContactRecord[]>([]);
-  const [musteriler, setMusteriler]   = useState<ContactRecord[]>([]);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [active, setActive]               = useState<ViewId>('alis');
+  const [loading, setLoading]             = useState(true);
+  const [alislar, setAlislar]             = useState<StockRecord[]>([]);
+  const [satislar, setSatislar]           = useState<SalesRecord[]>([]);
+  const [tedarikciler, setTedarikciler]   = useState<SharedContact[]>([]);
+  const [musteriler, setMusteriler]       = useState<SharedContact[]>([]);
+  const [stokKalemleri, setStokKalemleri] = useState<StockItem[]>([]);
+  const [sidebarOpen, setSidebarOpen]     = useState(true);
 
   useEffect(() => {
     (async () => {
       setLoading(true);
       try {
-        const [a, s, contacts] = await Promise.all([
+        const [a, s] = await Promise.all([
           DataService.getAlislar(),
           DataService.getSatislar(),
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          DataService.fetchData<any>('contacts', '*'),
         ]);
         setAlislar(a);
         setSatislar(s);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        setTedarikciler(contacts.filter((x: any) => x.contact_type === 'supplier'));
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        setMusteriler(contacts.filter((x: any) => x.contact_type === 'customer'));
       } catch (err) {
         console.error('Stok veri yükleme hatası:', err);
       } finally {
         setLoading(false);
       }
+      // Cari havuz ve kalemleri — localStorage'dan senkron yükle
+      const all = SharedContactsService.getAll();
+      setTedarikciler(all.filter(c => c.type === 'supplier'));
+      setMusteriler(all.filter(c => c.type === 'customer'));
+      setStokKalemleri(StockItemsService.getAll());
     })();
   }, []);
+
+  // ─── Cari CRUD ──────────────────────────────────────────────────────────────
+  const reloadContacts = () => {
+    const all = SharedContactsService.getAll();
+    setTedarikciler(all.filter(c => c.type === 'supplier'));
+    setMusteriler(all.filter(c => c.type === 'customer'));
+  };
+  const handleAddContact    = (c: SharedContact) => { SharedContactsService.save([...SharedContactsService.getAll(), c]); reloadContacts(); };
+  const handleUpdateContact = (c: SharedContact) => { SharedContactsService.update(c); reloadContacts(); };
+  const handleDeleteContact = (id: string)        => { SharedContactsService.remove(id); reloadContacts(); };
+
+  // ─── Stok Kalemi CRUD ───────────────────────────────────────────────────────
+  const reloadKalemler = () => setStokKalemleri(StockItemsService.getAll());
+  const handleAddKalem    = (item: StockItem) => { StockItemsService.save([...StockItemsService.getAll(), item]); reloadKalemler(); };
+  const handleUpdateKalem = (item: StockItem) => { StockItemsService.update(item); reloadKalemler(); };
+  const handleDeleteKalem = (id: string)       => { StockItemsService.remove(id); reloadKalemler(); };
 
   const handleInsertAlis  = async (f: AlisForm) => {
     setLoading(true);
@@ -1038,24 +1383,33 @@ export const Stock: React.FC = () => {
         </div>
 
         {/* Nav */}
-        <nav className={cx('pt-2 flex-1', sidebarOpen ? 'px-2' : 'px-1.5')}>
-          {NAV.map(({ id, label, Icon }) => {
-            const isActive = active === id;
-            return (
-              <button key={id} onClick={() => setActive(id)} title={sidebarOpen ? undefined : label}
-                className={cx(
-                  'w-full flex items-center rounded-lg transition-colors mb-0.5 relative',
-                  sidebarOpen ? 'gap-3 px-3 h-9 text-[13px]' : 'justify-center h-9',
-                  isActive
-                    ? 'bg-enba-orange/12 text-enba-orange'
-                    : 'text-enba-muted hover:text-enba-text hover:bg-enba-panel-2',
-                )}>
-                {isActive && <span className="absolute left-0 top-1.5 bottom-1.5 w-[2px] bg-enba-orange rounded-r"/>}
-                <Icon size={16}/>
-                {sidebarOpen && <span className="flex-1 text-left">{label}</span>}
-              </button>
-            );
-          })}
+        <nav className={cx('pt-2 flex-1 overflow-y-auto', sidebarOpen ? 'px-2' : 'px-1.5')}>
+          {NAV_GROUPS.map((group, gi) => (
+            <div key={group.label} className={gi > 0 ? 'mt-2 pt-2 border-t border-enba-line' : ''}>
+              {sidebarOpen && (
+                <div className="px-2 pb-1 text-[9.5px] uppercase tracking-[0.15em] text-enba-dim font-medium">
+                  {group.label}
+                </div>
+              )}
+              {group.items.map(({ id, label, Icon }) => {
+                const isActive = active === id;
+                return (
+                  <button key={id} onClick={() => setActive(id)} title={sidebarOpen ? undefined : label}
+                    className={cx(
+                      'w-full flex items-center rounded-lg transition-colors mb-0.5 relative',
+                      sidebarOpen ? 'gap-3 px-3 h-9 text-[13px]' : 'justify-center h-9',
+                      isActive
+                        ? 'bg-enba-orange/12 text-enba-orange'
+                        : 'text-enba-muted hover:text-enba-text hover:bg-enba-panel-2',
+                    )}>
+                    {isActive && <span className="absolute left-0 top-1.5 bottom-1.5 w-[2px] bg-enba-orange rounded-r"/>}
+                    <Icon size={16}/>
+                    {sidebarOpen && <span className="flex-1 text-left">{label}</span>}
+                  </button>
+                );
+              })}
+            </div>
+          ))}
         </nav>
 
         {/* Loading indicator */}
@@ -1081,8 +1435,23 @@ export const Stock: React.FC = () => {
             satislar={satislar} musteriler={musteriler} loading={loading}
             onInsert={handleInsertSatis} onUpdate={handleUpdateSatis} onDelete={handleDeleteSatis}/>
         )}
-        {active === 'stok' && <StokPanel alislar={alislar} satislar={satislar}/>}
+        {active === 'stok'     && <StokPanel alislar={alislar} satislar={satislar}/>}
         {active === 'raporlar' && <RaporlarPanel alislar={alislar} satislar={satislar}/>}
+        {active === 'kalemler' && (
+          <StokKalemleriPanel
+            items={stokKalemleri}
+            onAdd={handleAddKalem} onUpdate={handleUpdateKalem} onDelete={handleDeleteKalem}/>
+        )}
+        {active === 'tedarikciler' && (
+          <ContactPanel
+            contacts={tedarikciler} type="supplier"
+            onAdd={handleAddContact} onUpdate={handleUpdateContact} onDelete={handleDeleteContact}/>
+        )}
+        {active === 'musteriler' && (
+          <ContactPanel
+            contacts={musteriler} type="customer"
+            onAdd={handleAddContact} onUpdate={handleUpdateContact} onDelete={handleDeleteContact}/>
+        )}
       </main>
     </div>
   );

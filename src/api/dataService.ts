@@ -42,6 +42,87 @@ export interface Contact {
   // Diğer alanlar eklenebilir
 }
 
+// ─── Paylaşımlı Cari Havuzu (Tedarikçi / Müşteri) ─────────────────────────────
+// localStorage key: enba_contacts_v1
+// Hem Stok modülü hem DetailedPlan Wizard bu kaynaktan okur / yazar.
+// Paraşüt entegrasyonu gelince bu liste Paraşüt'ten beslenecek.
+export interface SharedContact {
+  id: string;
+  name: string;
+  type: 'supplier' | 'customer';
+  phone?: string;
+  email?: string;
+  notes?: string;
+}
+
+export const SHARED_CONTACTS_KEY = 'enba_contacts_v1';
+
+export const SharedContactsService = {
+  getAll(): SharedContact[] {
+    try { return JSON.parse(localStorage.getItem(SHARED_CONTACTS_KEY) || '[]'); }
+    catch { return []; }
+  },
+  save(list: SharedContact[]): void {
+    try { localStorage.setItem(SHARED_CONTACTS_KEY, JSON.stringify(list)); } catch { /* ignore */ }
+  },
+  add(c: Omit<SharedContact, 'id'>): SharedContact {
+    const record: SharedContact = { ...c, id: crypto.randomUUID() };
+    SharedContactsService.save([...SharedContactsService.getAll(), record]);
+    return record;
+  },
+  update(c: SharedContact): void {
+    SharedContactsService.save(SharedContactsService.getAll().map(x => x.id === c.id ? c : x));
+  },
+  /** Wizard'dan isim ile kayıt geldiğinde: yoksa ekle, varsa güncelleme. */
+  upsertByName(name: string, type: 'supplier' | 'customer'): void {
+    if (!name.trim()) return;
+    const list = SharedContactsService.getAll();
+    const exists = list.some(
+      x => x.name.trim().toLowerCase() === name.trim().toLowerCase() && x.type === type,
+    );
+    if (!exists) SharedContactsService.save([...list, { id: crypto.randomUUID(), name: name.trim(), type }]);
+  },
+  remove(id: string): void {
+    SharedContactsService.save(SharedContactsService.getAll().filter(x => x.id !== id));
+  },
+};
+
+// ─── Stok Kalemleri (SKU / Ürün Kataloğu) ─────────────────────────────────────
+// localStorage key: enba_stock_items_v1
+export interface StockItem {
+  id: string;
+  code: string;      // örn. PET-001, HDPE-002
+  name: string;
+  unit: string;      // kg | ton | adet | m² | litre
+  category: string;  // Hammadde | Mamul | Yardımcı | Ambalaj | Diğer
+  defaultBuyPrice?: number;
+  defaultSellPrice?: number;
+  notes?: string;
+}
+
+export const STOCK_ITEMS_KEY = 'enba_stock_items_v1';
+
+export const StockItemsService = {
+  getAll(): StockItem[] {
+    try { return JSON.parse(localStorage.getItem(STOCK_ITEMS_KEY) || '[]'); }
+    catch { return []; }
+  },
+  save(list: StockItem[]): void {
+    try { localStorage.setItem(STOCK_ITEMS_KEY, JSON.stringify(list)); } catch { /* ignore */ }
+  },
+  add(item: Omit<StockItem, 'id'>): StockItem {
+    const record: StockItem = { ...item, id: crypto.randomUUID() };
+    StockItemsService.save([...StockItemsService.getAll(), record]);
+    return record;
+  },
+  update(item: StockItem): void {
+    StockItemsService.save(StockItemsService.getAll().map(x => x.id === item.id ? item : x));
+  },
+  remove(id: string): void {
+    StockItemsService.save(StockItemsService.getAll().filter(x => x.id !== id));
+  },
+};
+
 export interface BusinessPlan {
   id?: string;
   user_id?: string;
