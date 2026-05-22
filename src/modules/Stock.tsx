@@ -48,6 +48,22 @@ const MAMUL_TURLERI = [
   'Tekstil Balya', 'İşlenmiş Ürün', 'Diğer',
 ];
 
+/** Alış/Satış formlarındaki dropdown listelerinden üretilen varsayılan stok kalemleri. */
+const DEFAULT_STOCK_ITEMS: Omit<StockItem, 'id'>[] = [
+  ...HAMMADDE_TURLERI.filter(t => t !== 'Diğer').map((name, i) => ({
+    code: `HM-${String(i + 1).padStart(3, '0')}`,
+    name,
+    unit: 'kg',
+    category: 'Hammadde',
+  })),
+  ...MAMUL_TURLERI.filter(t => t !== 'Diğer').map((name, i) => ({
+    code: `MM-${String(i + 1).padStart(3, '0')}`,
+    name,
+    unit: 'kg',
+    category: 'Mamul',
+  })),
+];
+
 type ViewId = 'alis' | 'satis' | 'stok' | 'raporlar' | 'kalemler' | 'tedarikciler' | 'musteriler';
 
 const NAV_GROUPS: { label: string; items: { id: ViewId; label: string; Icon: LucideIcon }[] }[] = [
@@ -1090,6 +1106,7 @@ const KALEM_CATEGORIES = ['Hammadde', 'Mamul', 'Yardımcı Malzeme', 'Ambalaj', 
 interface StokKalemleriPanelProps {
   items: StockItem[];
   onAdd: (item: StockItem) => void;
+  onSeedAll: (items: StockItem[]) => void;
   onUpdate: (item: StockItem) => void;
   onDelete: (id: string) => void;
 }
@@ -1100,12 +1117,16 @@ const emptyKalemForm = (): KalemForm => ({
   defaultBuyPrice: undefined, defaultSellPrice: undefined, notes: '',
 });
 
-function StokKalemleriPanel({ items, onAdd, onUpdate, onDelete }: StokKalemleriPanelProps) {
+function StokKalemleriPanel({ items, onAdd, onSeedAll, onUpdate, onDelete }: StokKalemleriPanelProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingId,  setEditingId]  = useState<string | null>(null);
   const [form,       setForm]       = useState<KalemForm>(emptyKalemForm());
   const [deleteId,   setDeleteId]   = useState<string | null>(null);
   const [search,     setSearch]     = useState('');
+
+  const seedDefaults = () => {
+    onSeedAll(DEFAULT_STOCK_ITEMS.map(item => ({ ...item, id: crypto.randomUUID() })));
+  };
 
   const filtered = items.filter(i =>
     !search || i.code.toLowerCase().includes(search.toLowerCase())
@@ -1168,7 +1189,24 @@ function StokKalemleriPanel({ items, onAdd, onUpdate, onDelete }: StokKalemleriP
             </thead>
             <tbody>
               {filtered.length === 0
-                ? <TableEmpty colSpan={8} label={search ? 'Arama sonucu yok' : 'Stok kalemi bulunamadı — Yeni Kalem ekleyin'}/>
+                ? (
+                  <tr>
+                    <td colSpan={8} className="py-12 text-center">
+                      {search ? (
+                        <span className="text-[12px] text-enba-dim italic">Arama sonucu yok</span>
+                      ) : (
+                        <div className="flex flex-col items-center gap-3">
+                          <div className="text-[13px] text-enba-muted">Henüz stok kalemi tanımlanmadı.</div>
+                          <button onClick={seedDefaults}
+                            className="h-9 px-4 bg-enba-orange text-white text-[12.5px] font-semibold rounded-lg hover:bg-enba-orange/90 transition-colors flex items-center gap-2">
+                            <Plus size={13}/> Varsayılan kalemleri yükle ({DEFAULT_STOCK_ITEMS.length} kalem)
+                          </button>
+                          <div className="text-[11px] text-enba-dim">Hammadde ve mamul türleri otomatik eklenir, sonradan düzenleyebilirsiniz.</div>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                )
                 : filtered.map(item => (
                   <tr key={item.id} className="group hover:bg-enba-panel-2/40 transition-colors">
                     <td className={td}>
@@ -1312,6 +1350,10 @@ export const Stock: React.FC = () => {
   // ─── Stok Kalemi CRUD ───────────────────────────────────────────────────────
   const reloadKalemler = () => setStokKalemleri(StockItemsService.getAll());
   const handleAddKalem    = (item: StockItem) => { StockItemsService.save([...StockItemsService.getAll(), item]); reloadKalemler(); };
+  const handleSeedKalemler = (newItems: StockItem[]) => {
+    StockItemsService.save([...StockItemsService.getAll(), ...newItems]);
+    reloadKalemler();
+  };
   const handleUpdateKalem = (item: StockItem) => { StockItemsService.update(item); reloadKalemler(); };
   const handleDeleteKalem = (id: string)       => { StockItemsService.remove(id); reloadKalemler(); };
 
@@ -1463,7 +1505,8 @@ export const Stock: React.FC = () => {
         {active === 'kalemler' && (
           <StokKalemleriPanel
             items={stokKalemleri}
-            onAdd={handleAddKalem} onUpdate={handleUpdateKalem} onDelete={handleDeleteKalem}/>
+            onAdd={handleAddKalem} onSeedAll={handleSeedKalemler}
+            onUpdate={handleUpdateKalem} onDelete={handleDeleteKalem}/>
         )}
         {active === 'tedarikciler' && (
           <ContactPanel
