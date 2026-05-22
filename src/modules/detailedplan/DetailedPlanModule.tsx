@@ -10,6 +10,7 @@ import {
 } from './dpData';
 import { I, cx, Badge, Btn } from './DPPrimitives';
 import { MCODE_NOTES } from '@/api/mcodeNotes';
+import { SharedContactsService } from '../../api/dataService';
 
 const LOCAL_KEY = 'enba_dp2_plans';
 
@@ -38,6 +39,28 @@ export function DetailedPlanModule({ navigate }: Props) {
     migratedOnce.current = true;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     kaydet(planlar.map((p: any) => migratePlanFormat(p)));
+
+    // Mevcut planlardaki tedarikçi/müşteri adlarını paylaşımlı cari havuzuna sync et.
+    // Bu, özelliğin eklenmesinden önce oluşturulan planların isimlerini taşır.
+    planlar.forEach(p => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const plan = p as any;
+      (plan.suppliers ?? []).forEach((s: { name?: string }) => {
+        if (s.name) SharedContactsService.upsertByName(s.name, 'supplier');
+      });
+      (plan.customers ?? []).forEach((c: { name?: string }) => {
+        if (c.name) SharedContactsService.upsertByName(c.name, 'customer');
+      });
+      // Projeler içindeki tedarikçi/müşteri adları (varsa)
+      (plan.projects ?? []).forEach((proj: { expenses?: { supplierName?: string }[]; revenues?: { customerName?: string }[] }) => {
+        (proj.expenses ?? []).forEach(e => {
+          if (e.supplierName) SharedContactsService.upsertByName(e.supplierName, 'supplier');
+        });
+        (proj.revenues ?? []).forEach(r => {
+          if (r.customerName) SharedContactsService.upsertByName(r.customerName, 'customer');
+        });
+      });
+    });
   }, [planlar.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
