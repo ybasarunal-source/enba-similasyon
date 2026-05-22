@@ -25,9 +25,10 @@ interface SettingsProps {
   profile?: UserProfile | null;
   currentTheme?: string;
   onThemeChange?: (theme: string) => void;
+  onPomodoroChange?: (enabled: boolean) => void;
 }
 
-export const Settings: React.FC<SettingsProps> = ({ profile, currentTheme, onThemeChange }) => {
+export const Settings: React.FC<SettingsProps> = ({ profile, currentTheme, onThemeChange, onPomodoroChange }) => {
   const { t, language, setLanguage } = useTranslation();
   const [success, setSuccess] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -80,6 +81,18 @@ export const Settings: React.FC<SettingsProps> = ({ profile, currentTheme, onThe
     if (ok) {
       alert("Şifre sıfırlama e-postası gönderildi.");
     }
+  };
+
+  // ── Pomodoro enable/disable ─────────────────────────────
+  const [pomodoroEnabled, setPomodoroEnabled] = useState<boolean>(() => {
+    const v = localStorage.getItem('enba_pomodoro_enabled');
+    return v === null ? true : v === 'true';
+  });
+
+  const togglePomodoro = (val: boolean) => {
+    setPomodoroEnabled(val);
+    localStorage.setItem('enba_pomodoro_enabled', String(val));
+    onPomodoroChange?.(val);
   };
 
   // ── Local Settings State ────────────────────────────────
@@ -302,11 +315,30 @@ export const Settings: React.FC<SettingsProps> = ({ profile, currentTheme, onThe
                          <div className="text-[11px] font-black text-enba-dark uppercase tracking-widest italic">{settings.notifications ? 'TAM ERİŞİM AKTİF' : 'YALNIZCA KRİTİK'}</div>
                       </div>
                    </div>
-                   <button 
+                   <button
                      onClick={() => setSettings({...settings, notifications: !settings.notifications})}
                      className={`w-14 h-8 rounded-full relative transition-all shadow-inner ${settings.notifications ? 'bg-enba-orange' : 'bg-gray-200'}`}
                    >
                       <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all shadow-2xl ${settings.notifications ? 'right-1' : 'left-1'}`}></div>
+                   </button>
+                </div>
+                <div className="flex items-center justify-between p-6 bg-gray-50/50 rounded-[1.8rem] border border-gray-100 group/row hover:bg-white transition-all">
+                   <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-gray-200 group-hover/row:text-enba-orange shadow-sm transition-colors">
+                         <span className="text-xl">🍅</span>
+                      </div>
+                      <div>
+                         <div className="text-[10px] font-black text-gray-300 uppercase tracking-[3px] mb-1 italic">Pomodoro Sayacı</div>
+                         <div className="text-[11px] font-black text-enba-dark uppercase tracking-widest italic">
+                           {pomodoroEnabled ? 'SAĞ ALT KÖŞEDE AKTİF' : 'GİZLENDİ'}
+                         </div>
+                      </div>
+                   </div>
+                   <button
+                     onClick={() => togglePomodoro(!pomodoroEnabled)}
+                     className={`w-14 h-8 rounded-full relative transition-all shadow-inner ${pomodoroEnabled ? 'bg-enba-orange' : 'bg-gray-200'}`}
+                   >
+                      <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all shadow-2xl ${pomodoroEnabled ? 'right-1' : 'left-1'}`}></div>
                    </button>
                 </div>
              </div>

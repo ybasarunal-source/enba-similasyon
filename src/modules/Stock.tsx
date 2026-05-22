@@ -1315,15 +1315,30 @@ export const Stock: React.FC = () => {
   const handleUpdateKalem = (item: StockItem) => { StockItemsService.update(item); reloadKalemler(); };
   const handleDeleteKalem = (id: string)       => { StockItemsService.remove(id); reloadKalemler(); };
 
+  /** Tedarikçi/müşteri adı henüz listede yoksa otomatik olarak cari havuzuna ekler. */
+  const autoUpsertContact = (name: string, type: 'supplier' | 'customer') => {
+    if (!name.trim()) return;
+    SharedContactsService.upsertByName(name.trim(), type);
+    reloadContacts();
+  };
+
   const handleInsertAlis  = async (f: AlisForm) => {
     setLoading(true);
-    try { const r = await DataService.insertAlis(f); setAlislar(p => [r, ...p]); }
+    try {
+      const r = await DataService.insertAlis(f);
+      setAlislar(p => [r, ...p]);
+      autoUpsertContact(f.tedarikciAdi, 'supplier');
+    }
     catch { alert('Kayıt hatası oluştu'); }
     finally { setLoading(false); }
   };
   const handleUpdateAlis  = async (id: string, f: AlisForm) => {
     setLoading(true);
-    try { const r = await DataService.updateAlis(id, f); setAlislar(p => p.map(x => x.id === id ? r : x)); }
+    try {
+      const r = await DataService.updateAlis(id, f);
+      setAlislar(p => p.map(x => x.id === id ? r : x));
+      autoUpsertContact(f.tedarikciAdi, 'supplier');
+    }
     catch { alert('Güncelleme hatası oluştu'); }
     finally { setLoading(false); }
   };
@@ -1335,13 +1350,21 @@ export const Stock: React.FC = () => {
   };
   const handleInsertSatis = async (f: SatisForm) => {
     setLoading(true);
-    try { const r = await DataService.insertSatis(f); setSatislar(p => [r, ...p]); }
+    try {
+      const r = await DataService.insertSatis(f);
+      setSatislar(p => [r, ...p]);
+      autoUpsertContact(f.musteriAdi, 'customer');
+    }
     catch { alert('Kayıt hatası oluştu'); }
     finally { setLoading(false); }
   };
   const handleUpdateSatis = async (id: string, f: SatisForm) => {
     setLoading(true);
-    try { const r = await DataService.updateSatis(id, f); setSatislar(p => p.map(x => x.id === id ? r : x)); }
+    try {
+      const r = await DataService.updateSatis(id, f);
+      setSatislar(p => p.map(x => x.id === id ? r : x));
+      autoUpsertContact(f.musteriAdi, 'customer');
+    }
     catch { alert('Güncelleme hatası oluştu'); }
     finally { setLoading(false); }
   };

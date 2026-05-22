@@ -138,6 +138,10 @@ export const App: React.FC = () => {
     return 'work';
   });
   const [pomPanelOpen, setPomPanelOpen] = useState(false);
+  const [pomEnabled, setPomEnabled]     = useState<boolean>(() => {
+    const v = localStorage.getItem('enba_pomodoro_enabled');
+    return v === null ? true : v === 'true';
+  });
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -852,10 +856,11 @@ export const App: React.FC = () => {
                 {activeModule === 'calendar'   && <CalendarModule />}
                 {activeModule === 'licensing'  && <Licensing />}
                 {activeModule === 'settings'   && (
-                  <Settings 
-                    profile={userProfile ? { ...userProfile, role: user.role } : { role: user.role } as any} 
+                  <Settings
+                    profile={userProfile ? { ...userProfile, role: user.role } : { role: user.role } as any}
                     currentTheme={theme}
                     onThemeChange={(newTheme: string) => setTheme(newTheme)}
+                    onPomodoroChange={(enabled: boolean) => setPomEnabled(enabled)}
                   />
                 )}
                 {activeModule === 'profile'    && <Profile />}
@@ -876,7 +881,7 @@ export const App: React.FC = () => {
       </main>
 
       {/* ── Global Pomodoro floating widget ──────────────── */}
-      {session && (
+      {session && pomEnabled && (
         <div style={{ position:'fixed', bottom:24, right:24, zIndex:1000, fontFamily:'Poppins,sans-serif' }}>
           {pomPanelOpen ? (
             <div style={{ width:260, background:'#1A1A1A', borderRadius:20, padding:16, boxShadow:'0 8px 40px rgba(0,0,0,0.28)', color:'#fff' }}>
