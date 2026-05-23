@@ -42,7 +42,11 @@ const KpiCard: React.FC<{ label: string; value: string; icon: React.ReactNode; c
 );
 
 // ── Ana bileşen ───────────────────────────────────────────────
-export const Machinery: React.FC = () => {
+interface MachineryProps {
+  navigate?: (module: string) => void;
+}
+
+export const Machinery: React.FC<MachineryProps> = ({ navigate }) => {
   const [tab, setTab]       = useState<Tab>('machines');
   const [assets, setAssets] = useState<SupabaseAsset[]>([]);
   const [maint,  setMaint]  = useState<SupabaseMaintenanceRecord[]>([]);
@@ -192,7 +196,14 @@ export const Machinery: React.FC = () => {
                 {/* Bilgi notu */}
                 <div className="flex items-center gap-2 bg-blue-50 border border-blue-100 text-blue-700 px-4 py-2.5 rounded-xl text-xs font-medium">
                   <Info size={13} className="flex-shrink-0" />
-                  Makine eklemek veya düzenlemek için <strong className="mx-1">Varlık Takibi</strong> modülünü kullanın.
+                  Makine eklemek veya düzenlemek için{' '}
+                  <button
+                    onClick={() => navigate?.('varlik')}
+                    className="font-bold underline underline-offset-2 hover:text-blue-900 transition-colors"
+                  >
+                    Varlık Takibi
+                  </button>
+                  {' '}modülünü kullanın.
                 </div>
 
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">

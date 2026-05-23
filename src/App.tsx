@@ -1069,7 +1069,7 @@ export const App: React.FC = () => {
                 {activeModule === 'hr'         && <HR />}
                 {activeModule === 'archive'    && <Archive />}
                 {activeModule === 'cashflow'   && <Cashflow aktifPlanlar={JSON.parse(localStorage.getItem('enba_detailed_plans') || '[]')} />}
-                {activeModule === 'machinery'  && <Machinery />}
+                {activeModule === 'machinery'  && <Machinery navigate={navigate} />}
                 {activeModule === 'tasks'      && <Tasks />}
                 {activeModule === 'notes'      && <Notes />}
                 {activeModule === 'calendar'   && <CalendarModule />}
