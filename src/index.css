@@ -291,3 +291,78 @@ h3[class*="uppercase"] {
   color: #9ca3af;
   font-family: 'Poppins', sans-serif;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   enba-module — Tüm modül içerikleri için tasarım uyumu katmanı.
+   .enba-module scope'unda eski Tailwind sınıfları enba tokenlarına
+   eşlenir. Tek tek dosya düzenlemek gerekmeden ~80% tutarlılık.
+   ═══════════════════════════════════════════════════════════════ */
+.enba-module {
+  /* Sayfa arka planı */
+  background-color: rgb(var(--enba-bg));
+  color: rgb(var(--enba-text));
+}
+
+/* ── Arka plan renkleri ─────────────────────────────────────── */
+.enba-module .bg-white           { background-color: rgb(var(--enba-panel)); }
+.enba-module .bg-gray-50         { background-color: rgb(var(--enba-panel-2)); }
+.enba-module .bg-gray-100        { background-color: rgb(var(--enba-panel-2)); }
+.enba-module .bg-gray-200        { background-color: rgb(var(--enba-line)); }
+
+/* ── Kenarlıklar ────────────────────────────────────────────── */
+.enba-module .border-gray-100    { border-color: rgb(var(--enba-line)); }
+.enba-module .border-gray-200    { border-color: rgb(var(--enba-line)); }
+.enba-module .border-gray-300    { border-color: rgb(var(--enba-line-2)); }
+.enba-module .divide-gray-100 > * + * { border-color: rgb(var(--enba-line)); }
+.enba-module .divide-gray-200 > * + * { border-color: rgb(var(--enba-line)); }
+
+/* ── Yazı renkleri ──────────────────────────────────────────── */
+.enba-module .text-gray-900,
+.enba-module .text-gray-800      { color: rgb(var(--enba-text)); }
+.enba-module .text-gray-700,
+.enba-module .text-gray-600      { color: rgb(var(--enba-muted)); }
+.enba-module .text-gray-500,
+.enba-module .text-gray-400      { color: rgb(var(--enba-dim)); }
+.enba-module .text-enba-dark     { color: rgb(var(--enba-text)); }
+
+/* ── Hover ve focus renkleri ────────────────────────────────── */
+.enba-module .hover\:bg-gray-50:hover  { background-color: rgb(var(--enba-panel-2)); }
+.enba-module .hover\:bg-gray-100:hover { background-color: rgb(var(--enba-panel-2)); }
+.enba-module .hover\:bg-gray-200:hover { background-color: rgb(var(--enba-line)); }
+
+/* ── Köşe yuvarlaması: rounded-3xl → rounded-xl ────────────── */
+.enba-module .rounded-3xl        { border-radius: 0.75rem; }
+.enba-module .rounded-2xl        { border-radius: 0.625rem; }
+
+/* ── Gölge azaltma ──────────────────────────────────────────── */
+.enba-module .shadow-sm          { box-shadow: none; border: 1px solid rgb(var(--enba-line)); }
+.enba-module .shadow             { box-shadow: none; }
+.enba-module .shadow-card        { box-shadow: none; }
+
+/* ── Header / enba-card yeniden boyama ──────────────────────── */
+.enba-module .enba-card {
+  background-color: rgb(var(--enba-panel));
+  border-color: rgb(var(--enba-line));
+  border-radius: 0.75rem;
+  box-shadow: none;
+}
+.enba-module .enba-card:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: rgb(var(--enba-line-2));
+}
+
+/* ── Input / select alanları ────────────────────────────────── */
+.enba-module input:not([class*="bg-"]),
+.enba-module select:not([class*="bg-"]),
+.enba-module textarea:not([class*="bg-"]) {
+  background-color: rgb(var(--enba-panel-2));
+  border-color: rgb(var(--enba-line));
+  color: rgb(var(--enba-text));
+}
+.enba-module input:focus,
+.enba-module select:focus,
+.enba-module textarea:focus {
+  border-color: var(--enba-orange);
+  outline: none;
+}
