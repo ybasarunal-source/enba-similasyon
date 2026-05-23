@@ -197,10 +197,11 @@ interface AlisFormProps {
   onCancel: () => void;
   loading: boolean;
   tedarikciler: SharedContact[];
+  stokKalemleri: StockItem[];
   editingId: string | null;
 }
 
-function AlisFormFields({ form, onChange, onSave, onCancel, loading, tedarikciler, editingId }: AlisFormProps) {
+function AlisFormFields({ form, onChange, onSave, onCancel, loading, tedarikciler, stokKalemleri, editingId }: AlisFormProps) {
   const set = <K extends keyof AlisForm>(k: K) => (v: AlisForm[K]) => onChange({ ...form, [k]: v });
   const num = <K extends keyof AlisForm>(k: K) => (e: React.ChangeEvent<HTMLInputElement>) =>
     onChange({ ...form, [k]: Number(e.target.value) as AlisForm[K] });
@@ -217,7 +218,12 @@ function AlisFormFields({ form, onChange, onSave, onCancel, loading, tedarikcile
   return (
     <>
       <datalist id="ted-dl">{tedarikciler.map(t => <option key={t.id} value={t.name}/>)}</datalist>
-      <datalist id="ham-dl">{HAMMADDE_TURLERI.map(h => <option key={h} value={h}/>)}</datalist>
+      <datalist id="ham-dl">
+        {stokKalemleri.length > 0
+          ? stokKalemleri.map(k => <option key={k.id} value={k.name}/>)
+          : HAMMADDE_TURLERI.map(h => <option key={h} value={h}/>)
+        }
+      </datalist>
 
       <div className="grid grid-cols-2 gap-3">
         <Field label="Tarih">
@@ -290,10 +296,11 @@ interface SatisFormProps {
   onCancel: () => void;
   loading: boolean;
   musteriler: SharedContact[];
+  stokKalemleri: StockItem[];
   editingId: string | null;
 }
 
-function SatisFormFields({ form, onChange, onSave, onCancel, loading, musteriler, editingId }: SatisFormProps) {
+function SatisFormFields({ form, onChange, onSave, onCancel, loading, musteriler, stokKalemleri, editingId }: SatisFormProps) {
   const set = <K extends keyof SatisForm>(k: K) => (v: SatisForm[K]) => onChange({ ...form, [k]: v });
   const num = <K extends keyof SatisForm>(k: K) => (e: React.ChangeEvent<HTMLInputElement>) =>
     onChange({ ...form, [k]: Number(e.target.value) as SatisForm[K] });
@@ -308,8 +315,18 @@ function SatisFormFields({ form, onChange, onSave, onCancel, loading, musteriler
   return (
     <>
       <datalist id="mus-dl">{musteriler.map(m => <option key={m.id} value={m.name}/>)}</datalist>
-      <datalist id="ham-dl2">{HAMMADDE_TURLERI.map(h => <option key={h} value={h}/>)}</datalist>
-      <datalist id="mam-dl">{MAMUL_TURLERI.map(m => <option key={m} value={m}/>)}</datalist>
+      <datalist id="ham-dl2">
+        {stokKalemleri.filter(k => k.category === 'Hammadde').length > 0
+          ? stokKalemleri.filter(k => k.category === 'Hammadde').map(k => <option key={k.id} value={k.name}/>)
+          : HAMMADDE_TURLERI.map(h => <option key={h} value={h}/>)
+        }
+      </datalist>
+      <datalist id="mam-dl">
+        {stokKalemleri.filter(k => k.category === 'Mamul').length > 0
+          ? stokKalemleri.filter(k => k.category === 'Mamul').map(k => <option key={k.id} value={k.name}/>)
+          : MAMUL_TURLERI.map(m => <option key={m} value={m}/>)
+        }
+      </datalist>
 
       <div className="grid grid-cols-2 gap-3">
         <Field label="Tarih">
@@ -393,13 +410,14 @@ function TableEmpty({ colSpan, label }: { colSpan: number; label: string }) {
 interface AlisPanelProps {
   alislar: StockRecord[];
   tedarikciler: SharedContact[];
+  stokKalemleri: StockItem[];
   loading: boolean;
   onInsert: (f: AlisForm) => Promise<void>;
   onUpdate: (id: string, f: AlisForm) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
 }
 
-function AlisPanel({ alislar, tedarikciler, loading, onInsert, onUpdate, onDelete }: AlisPanelProps) {
+function AlisPanel({ alislar, tedarikciler, stokKalemleri, loading, onInsert, onUpdate, onDelete }: AlisPanelProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [form, setForm]             = useState<AlisForm>(emptyAlis());
   const [editingId, setEditingId]   = useState<string | null>(null);
@@ -544,7 +562,7 @@ function AlisPanel({ alislar, tedarikciler, loading, onInsert, onUpdate, onDelet
       <Drawer open={drawerOpen} onClose={closeDrawer}
         title={editingId ? 'Alış Kaydını Düzenle' : 'Yeni Alış Kaydı'}>
         <AlisFormFields form={form} onChange={setForm} onSave={save} onCancel={closeDrawer}
-          loading={loading} tedarikciler={tedarikciler} editingId={editingId}/>
+          loading={loading} tedarikciler={tedarikciler} stokKalemleri={stokKalemleri} editingId={editingId}/>
       </Drawer>
 
       {deleteId && (
@@ -560,13 +578,14 @@ function AlisPanel({ alislar, tedarikciler, loading, onInsert, onUpdate, onDelet
 interface SatisPanelProps {
   satislar: SalesRecord[];
   musteriler: SharedContact[];
+  stokKalemleri: StockItem[];
   loading: boolean;
   onInsert: (f: SatisForm) => Promise<void>;
   onUpdate: (id: string, f: SatisForm) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
 }
 
-function SatisPanel({ satislar, musteriler, loading, onInsert, onUpdate, onDelete }: SatisPanelProps) {
+function SatisPanel({ satislar, musteriler, stokKalemleri, loading, onInsert, onUpdate, onDelete }: SatisPanelProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [form, setForm]             = useState<SatisForm>(emptySatis());
   const [editingId, setEditingId]   = useState<string | null>(null);
@@ -697,7 +716,7 @@ function SatisPanel({ satislar, musteriler, loading, onInsert, onUpdate, onDelet
       <Drawer open={drawerOpen} onClose={closeDrawer}
         title={editingId ? 'Satış Kaydını Düzenle' : 'Yeni Satış Kaydı'}>
         <SatisFormFields form={form} onChange={setForm} onSave={save} onCancel={closeDrawer}
-          loading={loading} musteriler={musteriler} editingId={editingId}/>
+          loading={loading} musteriler={musteriler} stokKalemleri={stokKalemleri} editingId={editingId}/>
       </Drawer>
 
       {deleteId && (
@@ -1492,12 +1511,12 @@ export const Stock: React.FC = () => {
       <main className="flex-1 min-w-0 overflow-hidden">
         {active === 'alis' && (
           <AlisPanel
-            alislar={alislar} tedarikciler={tedarikciler} loading={loading}
+            alislar={alislar} tedarikciler={tedarikciler} stokKalemleri={stokKalemleri} loading={loading}
             onInsert={handleInsertAlis} onUpdate={handleUpdateAlis} onDelete={handleDeleteAlis}/>
         )}
         {active === 'satis' && (
           <SatisPanel
-            satislar={satislar} musteriler={musteriler} loading={loading}
+            satislar={satislar} musteriler={musteriler} stokKalemleri={stokKalemleri} loading={loading}
             onInsert={handleInsertSatis} onUpdate={handleUpdateSatis} onDelete={handleDeleteSatis}/>
         )}
         {active === 'stok'     && <StokPanel alislar={alislar} satislar={satislar}/>}
