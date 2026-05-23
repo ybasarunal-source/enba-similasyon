@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
 import { useTranslation } from './api/i18n';
 import { supabase } from './api/supabase';
 import { microsoftService } from './api/microsoft';
@@ -119,12 +118,8 @@ export const App: React.FC = () => {
   const backOverrideRef = useRef<(() => boolean) | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
-  // Alt menüsü açık olan sanal parent item'lar — başlangıçta hepsi kapalı
+  // Alt menüsü açık olan sanal parent item'lar — hem açık hem kapalı sidebar'da
   const [expandedSubmenus, setExpandedSubmenus] = useState<Set<string>>(new Set());
-  // Kapalı sidebar flyout: hangi parent'ın popover'ı açık + konumu
-  const [flyoutId, setFlyoutId] = useState<string | null>(null);
-  const [flyoutTop, setFlyoutTop] = useState(0);
-  const flyoutRef = useRef<HTMLDivElement>(null);
   const [profileAvatar, setProfileAvatar] = useState('');
   const [renderError, setRenderError] = useState<string | null>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -282,18 +277,6 @@ export const App: React.FC = () => {
       setIsProfileLoading(false);
     }
   }, [session]);
-
-  // Flyout dışına tıklayınca kapat
-  useEffect(() => {
-    if (!flyoutId) return;
-    const handler = (e: MouseEvent) => {
-      if (flyoutRef.current && !flyoutRef.current.contains(e.target as Node)) {
-        setFlyoutId(null);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [flyoutId]);
 
   // Aktif modül sanal bir parent'ın alt öğesiyse, o parent'ın sub-menüsünü aç
   useEffect(() => {
@@ -531,7 +514,7 @@ export const App: React.FC = () => {
         className={`
           enba-sidebar-glass text-white flex flex-col flex-shrink-0
           transition-all duration-500 ease-in-out z-20 overflow-hidden
-          ${isSidebarOpen ? 'w-[240px]' : 'w-16'}
+          ${isSidebarOpen ? 'w-[240px]' : expandedSubmenus.size > 0 ? 'w-[72px]' : 'w-16'}
         `}
       >
         <div className={`flex items-center flex-shrink-0 border-b border-white/5 relative
@@ -677,19 +660,12 @@ export const App: React.FC = () => {
                         <div key={item.id}>
                           {/* Parent satırı */}
                           <button
-                            onClick={(e) => {
-                              if (isSidebarOpen) {
-                                setExpandedSubmenus(prev => {
-                                  const next = new Set(prev);
-                                  next.has(item.id) ? next.delete(item.id) : next.add(item.id);
-                                  return next;
-                                });
-                              } else {
-                                // Kapalı sidebar: flyout popover aç/kapat, Y konumunu yakala
-                                const rect = e.currentTarget.getBoundingClientRect();
-                                setFlyoutTop(rect.top);
-                                setFlyoutId(prev => prev === item.id ? null : item.id);
-                              }
+                            onClick={() => {
+                              setExpandedSubmenus(prev => {
+                                const next = new Set(prev);
+                                next.has(item.id) ? next.delete(item.id) : next.add(item.id);
+                                return next;
+                              });
                             }}
                             title={!isSidebarOpen ? item.label : ''}
                             className={[
@@ -732,55 +708,44 @@ export const App: React.FC = () => {
                             )}
                           </button>
 
-                          {/* Alt öğeler — açık sidebar'da indentli liste */}
+                          {/* Alt öğeler — açık sidebar'da indentli + etiketli liste */}
                           {isSidebarOpen && isExpanded && childItems.length > 0 && (
                             <div className="flex flex-col gap-0.5 mt-0.5 ml-1 pl-3 border-l border-white/8">
                               {childItems.map(child => renderNavBtn(child, { indent: true }))}
                             </div>
                           )}
 
-                          {/* Alt öğeler — kapalı sidebar'da flyout popover (portal → overflow-hidden'dan kaçar) */}
-                          {!isSidebarOpen && flyoutId === item.id && childItems.length > 0 && createPortal(
-                            <div
-                              ref={flyoutRef}
-                              style={{
-                                position: 'fixed',
-                                left: 72,
-                                top: flyoutTop,
-                                zIndex: 9999,
-                                fontFamily: "'Poppins', sans-serif",
-                              }}
-                              className="min-w-[180px] bg-gray-900 border border-white/10 rounded-xl shadow-2xl py-1.5 overflow-hidden"
-                            >
-                              {/* Başlık */}
-                              <div className="px-3 py-1.5 mb-0.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-white/30 border-b border-white/8">
-                                {item.label}
-                              </div>
+                          {/* Alt öğeler — kapalı sidebar'da ikon-only accordion */}
+                          {!isSidebarOpen && isExpanded && childItems.length > 0 && (
+                            <div className="flex flex-col gap-0.5 mt-0.5 items-center pb-1">
                               {childItems.map(child => {
                                 const active = activeModule === child.id;
                                 const badge = NAV_BADGES[child.id];
                                 return (
                                   <button
                                     key={child.id}
-                                    onClick={() => { navigate(child.id); setFlyoutId(null); }}
+                                    onClick={() => navigate(child.id)}
+                                    title={child.label}
                                     className={[
-                                      'w-full flex items-center gap-2.5 px-3 py-2 text-[12px] font-medium transition-colors',
-                                      active ? 'bg-white/10 text-white' : 'text-gray-400 hover:bg-white/8 hover:text-white',
+                                      'relative flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-150',
+                                      active
+                                        ? 'bg-white/15 text-[var(--enba-orange)]'
+                                        : 'text-gray-500 hover:bg-white/8 hover:text-gray-200',
                                     ].join(' ')}
                                   >
-                                    {active && <span className="w-1 h-1 rounded-full bg-[var(--enba-orange)] flex-shrink-0" />}
-                                    <child.icon size={14} className={active ? 'text-[var(--enba-orange)]' : 'opacity-60'} />
-                                    <span className="flex-1 text-left">{child.label}</span>
+                                    {active && (
+                                      <div className="absolute left-0 top-1 bottom-1 w-0.5 bg-[var(--enba-orange)] rounded-full -translate-x-1" />
+                                    )}
+                                    <child.icon size={14} />
                                     {badge && (
-                                      <span className={`flex h-4 min-w-[16px] items-center justify-center rounded-full ${badge.color} px-1 text-[9px] font-bold text-white`}>
-                                        {badge.count > 99 ? '99+' : badge.count}
+                                      <span className={`absolute -top-1 -right-1 flex h-3 min-w-[12px] items-center justify-center rounded-full ${badge.color} px-0.5 text-[7px] font-bold text-white`}>
+                                        {badge.count > 9 ? '9+' : badge.count}
                                       </span>
                                     )}
                                   </button>
                                 );
                               })}
-                            </div>,
-                            document.body
+                            </div>
                           )}
                         </div>
                       );
