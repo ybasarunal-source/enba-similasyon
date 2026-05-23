@@ -212,7 +212,7 @@ function AlisFormFields({ form, onChange, onSave, onCancel, loading, tedarikcile
   const fiyat = Number(form.alisFiyati) || 0;
   const nak   = Number(form.nakliyeBedeli) || 0;
   const net   = brut * (1 - ym / 100) * (1 - nem / 100);
-  const bm    = net > 0 ? (brut * fiyat + nak) / net : 0;
+  const bm    = net > 0 ? (net * fiyat + nak) / net : 0;
   const canSave = !!form.tedarikciAdi.trim() && brut > 0 && fiyat > 0;
 
   return (
@@ -447,7 +447,7 @@ function AlisPanel({ alislar, tedarikciler, stokKalemleri, loading, onInsert, on
     const ym = Number(form.ymFire) || 0;
     const nem = Number(form.nemFire) || 0;
     const netMiktar = brut * (1 - ym / 100) * (1 - nem / 100);
-    const birimMaliyet = netMiktar > 0 ? (brut * (Number(form.alisFiyati) || 0) + (Number(form.nakliyeBedeli) || 0)) / netMiktar : 0;
+    const birimMaliyet = netMiktar > 0 ? (netMiktar * (Number(form.alisFiyati) || 0) + (Number(form.nakliyeBedeli) || 0)) / netMiktar : 0;
     const payload = { ...form, netMiktar, birimMaliyet };
     if (editingId) await onUpdate(editingId, payload);
     else await onInsert(payload);
