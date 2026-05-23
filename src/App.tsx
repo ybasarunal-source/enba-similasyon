@@ -661,11 +661,17 @@ export const App: React.FC = () => {
                           {/* Parent satırı */}
                           <button
                             onClick={() => {
+                              const expanding = !expandedSubmenus.has(item.id);
                               setExpandedSubmenus(prev => {
                                 const next = new Set(prev);
-                                next.has(item.id) ? next.delete(item.id) : next.add(item.id);
+                                expanding ? next.add(item.id) : next.delete(item.id);
                                 return next;
                               });
+                              // Açılırken ve grubun hiçbir çocuğu aktif değilse → ilk çocuğa git
+                              // Bu sayede çubuk anında eski konumdan buraya taşınır
+                              if (expanding && !anyChildActive && childItems.length > 0) {
+                                navigate(childItems[0].id as ModuleType);
+                              }
                             }}
                             title={!isSidebarOpen ? item.label : ''}
                             className={[
