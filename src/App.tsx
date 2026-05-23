@@ -671,13 +671,18 @@ export const App: React.FC = () => {
                             className={[
                               'group relative w-full flex items-center rounded-xl transition-all duration-200',
                               isSidebarOpen ? 'px-3 py-2 gap-3' : 'px-0 py-2.5 justify-center',
-                              anyChildActive ? 'text-white' : 'text-white/40 hover:bg-white/5 hover:text-white/70',
+                              anyChildActive ? 'text-white' : 'text-white/50 hover:text-white/80',
                             ].join(' ')}
                           >
                             {anyChildActive && <div className="absolute left-0 top-1.5 bottom-1.5 w-0.5 bg-[var(--enba-orange)] rounded-full" />}
-                            {/* İkon — sidebar kapalıyken iletişim badge'ini ikon üstünde göster */}
-                            <div className="relative flex-shrink-0">
-                              <item.icon size={17} className={`${anyChildActive ? 'text-[var(--enba-orange)]' : ''}`} />
+                            {/* İkon — chip arka planlı, sidebar kapalıyken badge ikon üstünde */}
+                            <div className={[
+                              'relative flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-lg transition-colors duration-200',
+                              anyChildActive
+                                ? 'bg-[var(--enba-orange)]/20'
+                                : 'bg-white/[0.08] group-hover:bg-white/[0.13]',
+                            ].join(' ')}>
+                              <item.icon size={15} className={anyChildActive ? 'text-[var(--enba-orange)]' : 'text-white/70'} />
                               {!isSidebarOpen && item.id === 'iletisim' && (unreadMailCount + overdueTaskCount) > 0 && (
                                 <span className="absolute -top-1.5 -right-1.5 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-[var(--enba-orange)] px-0.5 text-[8px] font-bold text-white">
                                   {(unreadMailCount + overdueTaskCount) > 9 ? '9+' : unreadMailCount + overdueTaskCount}
