@@ -120,6 +120,9 @@ export const App: React.FC = () => {
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   // Alt menüsü açık olan sanal parent item'lar — başlangıçta hepsi kapalı
   const [expandedSubmenus, setExpandedSubmenus] = useState<Set<string>>(new Set());
+  // Kapalı sidebar flyout: hangi parent'ın popover'ı açık
+  const [flyoutId, setFlyoutId] = useState<string | null>(null);
+  const flyoutRef = useRef<HTMLDivElement>(null);
   const [profileAvatar, setProfileAvatar] = useState('');
   const [renderError, setRenderError] = useState<string | null>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -277,6 +280,18 @@ export const App: React.FC = () => {
       setIsProfileLoading(false);
     }
   }, [session]);
+
+  // Flyout dışına tıklayınca kapat
+  useEffect(() => {
+    if (!flyoutId) return;
+    const handler = (e: MouseEvent) => {
+      if (flyoutRef.current && !flyoutRef.current.contains(e.target as Node)) {
+        setFlyoutId(null);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [flyoutId]);
 
   // Aktif modül sanal bir parent'ın alt öğesiyse, o parent'ın sub-menüsünü aç
   useEffect(() => {
@@ -657,7 +672,7 @@ export const App: React.FC = () => {
                       const anyChildActive = childItems.some(c => activeModule === c.id);
 
                       return (
-                        <div key={item.id}>
+                        <div key={item.id} className="relative">
                           {/* Parent satırı */}
                           <button
                             onClick={() => {
@@ -668,13 +683,8 @@ export const App: React.FC = () => {
                                   return next;
                                 });
                               } else {
-                                // Kapalı sidebar: önce aç, sonra bu grubu genişlet
-                                setIsSidebarOpen(true);
-                                setExpandedSubmenus(prev => {
-                                  const next = new Set(prev);
-                                  next.add(item.id);
-                                  return next;
-                                });
+                                // Kapalı sidebar: flyout popover aç/kapat
+                                setFlyoutId(prev => prev === item.id ? null : item.id);
                               }
                             }}
                             title={!isSidebarOpen ? item.label : ''}
@@ -718,10 +728,47 @@ export const App: React.FC = () => {
                             )}
                           </button>
 
-                          {/* Alt öğeler — sadece açık sidebar'da */}
+                          {/* Alt öğeler — açık sidebar'da indentli liste */}
                           {isSidebarOpen && isExpanded && childItems.length > 0 && (
                             <div className="flex flex-col gap-0.5 mt-0.5 ml-1 pl-3 border-l border-white/8">
                               {childItems.map(child => renderNavBtn(child, { indent: true }))}
+                            </div>
+                          )}
+
+                          {/* Alt öğeler — kapalı sidebar'da flyout popover */}
+                          {!isSidebarOpen && flyoutId === item.id && childItems.length > 0 && (
+                            <div
+                              ref={flyoutRef}
+                              className="absolute left-full top-0 ml-2 z-50 min-w-[180px] bg-gray-900 border border-white/10 rounded-xl shadow-2xl py-1.5 overflow-hidden"
+                              style={{ fontFamily: "'Poppins', sans-serif" }}
+                            >
+                              {/* Başlık */}
+                              <div className="px-3 py-1.5 mb-0.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-white/30 border-b border-white/8">
+                                {item.label}
+                              </div>
+                              {childItems.map(child => {
+                                const active = activeModule === child.id;
+                                const badge = NAV_BADGES[child.id];
+                                return (
+                                  <button
+                                    key={child.id}
+                                    onClick={() => { navigate(child.id); setFlyoutId(null); }}
+                                    className={[
+                                      'w-full flex items-center gap-2.5 px-3 py-2 text-[12px] font-medium transition-colors',
+                                      active ? 'bg-white/10 text-white' : 'text-gray-400 hover:bg-white/8 hover:text-white',
+                                    ].join(' ')}
+                                  >
+                                    {active && <span className="w-1 h-1 rounded-full bg-[var(--enba-orange)] flex-shrink-0" />}
+                                    <child.icon size={14} className={active ? 'text-[var(--enba-orange)]' : 'opacity-60'} />
+                                    <span className="flex-1 text-left">{child.label}</span>
+                                    {badge && (
+                                      <span className={`flex h-4 min-w-[16px] items-center justify-center rounded-full ${badge.color} px-1 text-[9px] font-bold text-white`}>
+                                        {badge.count > 99 ? '99+' : badge.count}
+                                      </span>
+                                    )}
+                                  </button>
+                                );
+                              })}
                             </div>
                           )}
                         </div>
