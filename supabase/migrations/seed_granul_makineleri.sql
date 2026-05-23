@@ -14,7 +14,7 @@
 
 DO $$
 DECLARE
-  v_company_id uuid := 'BURAYA_YAPISTIR';  -- ← company_id buraya
+  v_company_id uuid := 'a191c800-d8c3-4780-b08f-dd75faef3baf';
   v_operation  text := 'K';                -- ← 'K'=Kömürcüler 'M'=Merkez 'V'=Varsak
 
   --  adi                  kW    ton/sa  not

@@ -668,6 +668,7 @@ export const pnlReportsAPI = {
 export interface SupabaseAsset {
   id: string;
   user_id?: string;
+  company_id?: string;
   adi: string;
   marka?: string;
   motor_gucu?: number;
@@ -677,6 +678,11 @@ export interface SupabaseAsset {
   kapasite?: number;
   boyut?: string;
   tur: string;
+  // migration_v28 — Varlık Takibi birleşimi
+  operation?: string;
+  exchange_rate?: number;
+  useful_life_years?: number;
+  notes?: string;
   created_at?: string;
 }
 
