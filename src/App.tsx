@@ -48,29 +48,27 @@ const CompanyAdmin      = lazyRetry(() => import('./modules/CompanyAdmin').then(
 const Notes             = lazyRetry(() => import('./modules/Notes').then(m => ({ default: m.Notes })));
 const Ayarlar           = lazyRetry(() => import('./modules/Ayarlar').then(m => ({ default: m.Ayarlar })));
 const VarlikTakibi      = lazyRetry(() => import('./modules/VarlikTakibi').then(m => ({ default: m.VarlikTakibi })));
+import type { LucideIcon } from 'lucide-react';
 import {
   Home,
   LayoutGrid,
   Package,
   Factory,
   Truck,
-  Contact,
   Archive as ArchiveIcon,
   Coins,
   Zap,
   Wrench,
-  ClipboardList,
   FileBadge,
   Settings as SettingsIcon,
   NotebookPen,
-  PanelLeftClose,
-  PanelLeftOpen,
   User,
   BarChart3,
+  LineChart,
+  TrendingUp,
   ChevronRight,
   ChevronLeft,
   ChevronDown,
-  ChevronUp,
   LogOut,
   SlidersHorizontal,
   Calendar as CalendarIcon,
@@ -80,8 +78,13 @@ import {
   Mail as MailIcon,
   CreditCard,
   Shield,
+  Building2,
   Timer,
   Landmark,
+  Users,
+  MessageSquare,
+  CheckSquare,
+  ClipboardList,
 } from 'lucide-react';
 
 type ModuleType =
@@ -109,6 +112,8 @@ export const App: React.FC = () => {
   const backOverrideRef = useRef<(() => boolean) | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  // Alt menüsü açık olan sanal parent item'lar
+  const [expandedSubmenus, setExpandedSubmenus] = useState<Set<string>>(new Set(['iletisim']));
   const [profileAvatar, setProfileAvatar] = useState('');
   const [renderError, setRenderError] = useState<string | null>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -246,6 +251,23 @@ export const App: React.FC = () => {
     }
   }, [session]);
 
+  // Aktif modül sanal bir parent'ın alt öğesiyse, o parent'ın sub-menüsünü aç
+  useEffect(() => {
+    const VIRTUAL_PARENTS_STATIC = [
+      { id: 'iletisim', children: ['mail', 'tasks', 'notes', 'calendar'] },
+    ];
+    VIRTUAL_PARENTS_STATIC.forEach(vp => {
+      if (vp.children.includes(activeModule)) {
+        setExpandedSubmenus(prev => {
+          if (prev.has(vp.id)) return prev;
+          const next = new Set(prev);
+          next.add(vp.id);
+          return next;
+        });
+      }
+    });
+  }, [activeModule]);
+
   // Aktif modülü sessionStorage'a kaydet (her değişimde)
   useEffect(() => {
     sessionStorage.setItem('enba_active_module', activeModule);
@@ -304,42 +326,60 @@ export const App: React.FC = () => {
     ) as UserRole
   };
 
+  // Sanal üst menü öğeleri — kendi modülleri yoktur, alt öğelerini açar/kapar
+  const VIRTUAL_PARENTS = [
+    {
+      id:       'iletisim',
+      label:    'İletişim & Görev',
+      icon:     MessageSquare,
+      children: ['mail', 'tasks', 'notes', 'calendar'] as string[],
+    },
+  ] as const;
+
   const MENU_GROUPS = [
-    { id: 'g1', title: 'Operasyon (Kısayollar)', items: ['modules', 'dashboard', 'tasks', 'notes', 'calendar', 'mail'] },
-    { id: 'g2', title: 'Finans & Muhasebe', items: ['pnl', 'cashflow', 'parasut', 'fixedexpenses', 'varlik'] },
-    { id: 'g3', title: 'Üretim & Lojistik', items: ['fastplan', 'planning', 'production', 'stock', 'logistics', 'machinery'] },
-    { id: 'g4', title: 'Kurumsal Yönetim', items: ['hr', 'licensing', 'archive'] },
-    { id: 'g5', title: 'Sistem', items: ['profile', 'settings', 'ayarlar'] },
-    ...(user.role === 'super_admin' ? [{ id: 'g6', title: 'Yönetim', items: ['super_admin'] }] : []),
-    ...(user.role === 'admin' ? [{ id: 'g6', title: 'Yönetim', items: ['company_admin'] }] : [])
+    { id: 'g1', title: '',                items: ['modules', 'dashboard', 'iletisim'] },
+    { id: 'g2', title: 'İş Planı',        items: ['fastplan', 'planning'] },
+    { id: 'g3', title: 'Finans',          items: ['pnl', 'cashflow', 'parasut', 'fixedexpenses', 'varlik'] },
+    { id: 'g4', title: 'Operasyon',       items: ['stock', 'production', 'logistics', 'machinery'] },
+    { id: 'g5', title: 'Kurumsal',        items: ['hr', 'licensing', 'archive'] },
+    { id: 'g6', title: 'Sistem',          items: ['ayarlar', 'settings', 'profile'] },
+    ...(user.role === 'super_admin' ? [{ id: 'g7', title: 'Yönetim', items: ['super_admin'] }] : []),
+    ...(user.role === 'admin'       ? [{ id: 'g7', title: 'Yönetim', items: ['company_admin'] }] : []),
   ];
 
   const rawMenuItems = [
-    { id: 'modules',    label: 'Ana Sayfa',                 icon: LayoutGrid },
-    { id: 'dashboard',  label: t('nav.home'),              icon: Home },
-    { id: 'fastplan',   label: 'Hızlı İş Planı',           icon: Zap },
-    { id: 'planning',   label: 'Detaylı İş Planı',          icon: BarChart3 },
-    { id: 'pnl',        label: 'P&L Analizi',              icon: BarChart3 },
-    { id: 'stock',      label: t('modules.inventory'),     icon: Package },
-    { id: 'production', label: t('modules.prod_tracking'), icon: Factory },
-    { id: 'hr',         label: t('modules.hr'),            icon: Contact },
-    { id: 'archive',    label: t('modules.archive'),       icon: ArchiveIcon },
-    { id: 'licensing',  label: t('modules.licensing'),     icon: FileBadge },
-    { id: 'cashflow',   label: t('modules.cashflow'),      icon: Coins },
-    { id: 'parasut',    label: 'Paraşüt',                  icon: Receipt },
-    { id: 'machinery',  label: t('modules.machinery'),     icon: Wrench },
-    { id: 'tasks',      label: t('modules.tasks'),         icon: ClipboardList },
-    { id: 'notes',      label: 'Notlar',                   icon: NotebookPen },
-    { id: 'calendar',   label: 'Takvim',                   icon: CalendarIcon },
-    { id: 'mail',       label: 'E-Posta',                  icon: MailIcon },
-    { id: 'fixedexpenses', label: 'Abonelikler/Ödemeler', icon: CreditCard },
-    { id: 'logistics',  label: t('modules.logistics'),     icon: Truck },
-    { id: 'settings',   label: t('nav.sistem'),            icon: SettingsIcon },
-    { id: 'ayarlar',   label: 'Finansal Ayarlar',         icon: SlidersHorizontal },
-    { id: 'varlik',    label: 'Varlık Takibi',            icon: Landmark },
-    { id: 'profile',    label: 'Profilim',                 icon: User },
-    { id: 'super_admin',   label: 'Sistem Yönetimi',   icon: Shield },
-    { id: 'company_admin', label: 'Şirket Yönetimi',   icon: Shield },
+    { id: 'modules',      label: 'Ana Sayfa',         icon: LayoutGrid     },
+    { id: 'dashboard',    label: 'Gösterge Paneli',   icon: Home           },
+    // İletişim alt-öğeleri — sanal parent 'iletisim' altında render edilir
+    { id: 'mail',         label: 'E-Posta',           icon: MailIcon       },
+    { id: 'tasks',        label: 'Yapılacaklar',      icon: CheckSquare    },
+    { id: 'notes',        label: 'Notlar',            icon: NotebookPen    },
+    { id: 'calendar',     label: 'Takvim',            icon: CalendarIcon   },
+    // İş Planı
+    { id: 'fastplan',     label: 'Hızlı Plan',        icon: Zap            },
+    { id: 'planning',     label: 'Detaylı Plan',      icon: LineChart      },
+    // Finans
+    { id: 'pnl',          label: 'P&L Analizi',       icon: TrendingUp     },
+    { id: 'cashflow',     label: 'Nakit Akışı',       icon: Coins          },
+    { id: 'parasut',      label: 'Paraşüt',           icon: Receipt        },
+    { id: 'fixedexpenses',label: 'Abonelikler',       icon: CreditCard     },
+    { id: 'varlik',       label: 'Varlık Takibi',     icon: Landmark       },
+    // Operasyon
+    { id: 'stock',        label: 'Stok',              icon: Package        },
+    { id: 'production',   label: 'Üretim',            icon: Factory        },
+    { id: 'logistics',    label: 'Lojistik',          icon: Truck          },
+    { id: 'machinery',    label: 'Makine Bakım',      icon: Wrench         },
+    // Kurumsal
+    { id: 'hr',           label: 'İnsan Kaynakları',  icon: Users          },
+    { id: 'licensing',    label: 'Lisanslama',        icon: FileBadge      },
+    { id: 'archive',      label: 'Arşiv',             icon: ArchiveIcon    },
+    // Sistem
+    { id: 'ayarlar',      label: 'Fin. Kategoriler',  icon: SlidersHorizontal },
+    { id: 'settings',     label: 'Ayarlar',           icon: SettingsIcon   },
+    { id: 'profile',      label: 'Profilim',          icon: User           },
+    // Yönetim
+    { id: 'super_admin',  label: 'Sistem Yönetimi',   icon: Shield         },
+    { id: 'company_admin',label: 'Şirket Yönetimi',   icon: Building2      },
   ];
 
   const allowedItems = rawMenuItems.filter(item => {
@@ -482,9 +522,16 @@ export const App: React.FC = () => {
         {/* Nav items */}
         <nav className="flex-1 py-3 overflow-y-auto sidebar-scrollbar flex flex-col px-2 pb-10">
           {MENU_GROUPS.map((group, gIdx) => {
+            // Grup item'larını çöz: sanal parent'lar da dahil
             const groupItems = group.items
-              .map(itemId => allowedItems.find(i => i.id === itemId))
-              .filter(Boolean) as typeof allowedItems;
+              .map(itemId => {
+                const vp = VIRTUAL_PARENTS.find(vp => vp.id === itemId);
+                if (vp) return { id: vp.id, label: vp.label, icon: vp.icon as LucideIcon, _isVirtual: true as const, _children: vp.children as string[] };
+                const real = allowedItems.find(i => i.id === itemId);
+                if (real) return { ...real, _isVirtual: false as const, _children: [] as string[] };
+                return null;
+              })
+              .filter(Boolean) as { id: string; label: string; icon: LucideIcon; _isVirtual: boolean; _children: string[] }[];
 
             if (groupItems.length === 0) return null;
 
@@ -495,75 +542,120 @@ export const App: React.FC = () => {
               return next;
             });
 
+            const renderNavBtn = (item: { id: string; label: string; icon: LucideIcon }, opts?: { indent?: boolean }) => {
+              const active = activeModule === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => navigate(item.id)}
+                  title={!isSidebarOpen ? item.label : ''}
+                  className={[
+                    'group relative flex items-center rounded-xl transition-all duration-200',
+                    isSidebarOpen
+                      ? `${opts?.indent ? 'pl-8 pr-3' : 'px-3'} py-2 gap-3`
+                      : 'px-0 py-2.5 justify-center',
+                    active ? 'bg-white/10 text-white' : 'text-gray-500 hover:bg-white/5 hover:text-gray-200',
+                  ].join(' ')}
+                >
+                  {active && <div className="absolute left-0 top-1.5 bottom-1.5 w-0.5 bg-[var(--enba-orange)] rounded-full" />}
+                  <item.icon size={opts?.indent ? 14 : 17} className={`flex-shrink-0 transition-colors ${active ? 'text-[var(--enba-orange)]' : opts?.indent ? 'opacity-60' : ''}`} />
+                  {isSidebarOpen && (
+                    <span style={{ fontFamily: "'Poppins', sans-serif" }}
+                      className={`text-[12px] font-medium truncate transition-colors ${opts?.indent ? 'text-[11px]' : ''} ${active ? 'text-white' : ''}`}>
+                      {item.label}
+                    </span>
+                  )}
+                  {!isSidebarOpen && (
+                    <div className="absolute left-full ml-3 px-2.5 py-1.5 rounded-lg bg-gray-900 text-white text-xs font-medium whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-50 shadow-xl border border-white/5"
+                      style={{ fontFamily: "'Poppins', sans-serif" }}>
+                      {item.label}
+                    </div>
+                  )}
+                </button>
+              );
+            };
+
             return (
-              <div key={group.id} className="mb-3">
-                {isSidebarOpen ? (
+              <div key={group.id} className={gIdx === 0 ? 'mb-1' : 'mb-1'}>
+                {/* Grup başlığı — boş title ise gösterme */}
+                {isSidebarOpen && group.title && (
                   <button
                     onClick={toggleCollapse}
-                    className={`w-full flex items-center justify-between px-3 mb-1 text-[9px] font-black uppercase tracking-[2px] text-white/30 hover:text-white/60 transition-colors ${gIdx === 0 ? 'mt-0' : 'mt-2'}`}
+                    className={`w-full flex items-center justify-between px-3 mb-1 mt-3 text-[9px] font-semibold uppercase tracking-[0.16em] text-white/25 hover:text-white/50 transition-colors`}
                   >
                     <span>{group.title}</span>
-                    {isCollapsed ? <ChevronRight size={10} /> : <ChevronDown size={10} />}
+                    {isCollapsed ? <ChevronRight size={9} /> : <ChevronDown size={9} />}
                   </button>
-                ) : (
-                  gIdx > 0 && <div className="w-6 mx-auto h-[1px] bg-white/10 my-3 rounded-full" />
+                )}
+                {!isSidebarOpen && gIdx > 0 && (
+                  <div className="w-5 mx-auto h-[1px] bg-white/8 my-2.5 rounded-full" />
                 )}
 
-                {!isCollapsed && <div className="flex flex-col gap-0.5">
-                  {groupItems.map(item => {
-                    const active = activeModule === item.id;
-                    return (
-                      <button
-                        key={item.id}
-                        onClick={() => navigate(item.id)}
-                        title={!isSidebarOpen ? item.label : ''}
-                        className={`
-                          group relative flex items-center rounded-xl transition-all duration-200
-                          ${isSidebarOpen ? 'px-3 py-2.5 gap-3' : 'px-0 py-2.5 justify-center'}
-                          ${active
-                            ? 'bg-white/10 text-white'
-                            : 'text-gray-500 hover:bg-white/5 hover:text-gray-200'}
-                        `}
-                      >
-                        {/* Active indicator */}
-                        {active && (
-                          <div className="absolute left-0 top-2 bottom-2 w-0.5 bg-[var(--enba-orange)] rounded-full" />
-                        )}
+                {!isCollapsed && (
+                  <div className="flex flex-col gap-0.5">
+                    {groupItems.map(item => {
+                      if (!item._isVirtual) return renderNavBtn(item);
 
-                        {/* Icon */}
-                        <item.icon
-                          size={18}
-                          className={`flex-shrink-0 transition-colors ${active ? 'text-[var(--enba-orange)]' : ''}`}
-                        />
+                      // ── Sanal parent (İletişim & Görev vb.) ──
+                      const isExpanded = expandedSubmenus.has(item.id);
+                      const childItems = item._children
+                        .map(cid => allowedItems.find(a => a.id === cid))
+                        .filter(Boolean) as typeof allowedItems;
+                      const anyChildActive = childItems.some(c => activeModule === c.id);
 
-                        {/* Label — only when open */}
-                        {isSidebarOpen && (
-                          <span
-                            style={{ fontFamily: "'Poppins', sans-serif" }}
-                            className={`text-[12px] font-medium truncate transition-colors ${active ? 'text-white' : ''}`}
+                      return (
+                        <div key={item.id}>
+                          {/* Parent satırı */}
+                          <button
+                            onClick={() => {
+                              if (isSidebarOpen) {
+                                setExpandedSubmenus(prev => {
+                                  const next = new Set(prev);
+                                  next.has(item.id) ? next.delete(item.id) : next.add(item.id);
+                                  return next;
+                                });
+                              } else {
+                                // Kapalı sidebar: ilk erişilebilir alt öğeye git
+                                if (childItems[0]) navigate(childItems[0].id);
+                              }
+                            }}
+                            title={!isSidebarOpen ? item.label : ''}
+                            className={[
+                              'group relative w-full flex items-center rounded-xl transition-all duration-200',
+                              isSidebarOpen ? 'px-3 py-2 gap-3' : 'px-0 py-2.5 justify-center',
+                              anyChildActive ? 'text-white' : 'text-gray-500 hover:bg-white/5 hover:text-gray-200',
+                            ].join(' ')}
                           >
-                            {item.label}
-                          </span>
-                        )}
+                            {anyChildActive && <div className="absolute left-0 top-1.5 bottom-1.5 w-0.5 bg-[var(--enba-orange)] rounded-full" />}
+                            <item.icon size={17} className={`flex-shrink-0 ${anyChildActive ? 'text-[var(--enba-orange)]' : ''}`} />
+                            {isSidebarOpen && (
+                              <>
+                                <span style={{ fontFamily: "'Poppins', sans-serif" }}
+                                  className={`flex-1 text-left text-[12px] font-medium truncate ${anyChildActive ? 'text-white' : ''}`}>
+                                  {item.label}
+                                </span>
+                                <ChevronRight size={12} className={`opacity-40 flex-shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`} />
+                              </>
+                            )}
+                            {!isSidebarOpen && (
+                              <div className="absolute left-full ml-3 px-2.5 py-1.5 rounded-lg bg-gray-900 text-white text-xs font-medium whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-50 shadow-xl border border-white/5"
+                                style={{ fontFamily: "'Poppins', sans-serif" }}>
+                                {item.label}
+                              </div>
+                            )}
+                          </button>
 
-                        {/* Tooltip when closed */}
-                        {!isSidebarOpen && (
-                          <div className="
-                            absolute left-full ml-3 px-2.5 py-1.5 rounded-lg
-                            bg-gray-900 text-white text-xs font-medium whitespace-nowrap
-                            pointer-events-none opacity-0 group-hover:opacity-100
-                            transition-opacity duration-150 z-50 shadow-xl
-                            border border-white/5
-                          "
-                            style={{ fontFamily: "'Poppins', sans-serif" }}
-                          >
-                            {item.label}
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>}
+                          {/* Alt öğeler — sadece açık sidebar'da */}
+                          {isSidebarOpen && isExpanded && childItems.length > 0 && (
+                            <div className="flex flex-col gap-0.5 mt-0.5 ml-1 pl-3 border-l border-white/8">
+                              {childItems.map(child => renderNavBtn(child, { indent: true }))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             );
           })}
