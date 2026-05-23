@@ -671,7 +671,7 @@ export const App: React.FC = () => {
                             className={[
                               'group relative w-full flex items-center rounded-xl transition-all duration-200',
                               isSidebarOpen ? 'px-3 py-2 gap-3' : 'px-0 py-2.5 justify-center',
-                              anyChildActive ? 'text-white' : 'text-gray-500 hover:bg-white/5 hover:text-gray-200',
+                              anyChildActive ? 'text-white' : 'text-white/40 hover:bg-white/5 hover:text-white/70',
                             ].join(' ')}
                           >
                             {anyChildActive && <div className="absolute left-0 top-1.5 bottom-1.5 w-0.5 bg-[var(--enba-orange)] rounded-full" />}
