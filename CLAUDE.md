@@ -359,13 +359,23 @@ Veri kaybı riski olan her adımı kullanıcıya açıkça belirt ve onay al.
 - [x] **McodeCombobox** — portal + arama, TR açıklamalı
 - [x] **Tedarikçi/Müşteri** — nakliye (₺/kg) + kısmi peşin/vade
 
+### Tamamlanan (2026-05-23)
+- [x] **DetailedPlan durum yönetimi** — 4 durum (draft/pending/active/archived), filtre sekmeler, PlanCard hızlı geçiş
+- [x] **Granül Üretimi iş planı ingest** — `is_plani_konusma.md` wiki'ye eklendi (Ham-Kaynaklar + Kararlar)
+- [x] **DetailedPlan panel hesapları** — 5 kritik düzeltme (commit önceki oturum)
+- [x] **Modül reskin Faz 1** — global CSS katmanı (commit önceki oturum)
+- [x] **DetailedPlan navigasyon fix** — App ← tuşu plan listesine döner (commit fa057d7)
+- [x] **ProductionModel + rule engine + 4-step wizard** — proses tabanlı wizard yeniden yazımı (commit 6910193)
+
 ### DetailedPlan — Açık Konular
-- [ ] **Panel hesapları doğrulanacak** — wizard verisi PlanCtx'e akıyor mu, 6 panel doğru hesaplıyor mu?
+- [x] ~~**Panel hesapları doğrulanacak**~~ → ✅ Çözüldü (2026-05-23)
+- [x] ~~**startOffset/endOffset**~~ → ✅ Çözüldü (2026-05-23)
+- [x] ~~**CashFlow periods uyumsuzluğu**~~ → ✅ Çözüldü (2026-05-23)
 - [ ] **CostCenter allocationWeight** — aynı tesise bağlı çoklu proje paylaşımı doğru mu?
-- [ ] **startOffset/endOffset** — gider/gelir kalemleri doğru ay'dan başlıyor mu?
 - [ ] **BudgetTrack + aktüel veri girişi** — panel şu an boş; aktüel giriş formu eklenecek
 - [ ] **CashFlow cashEvents girişi** — yatırım/finansman nakit olayları wizard'da düzenlenemiyor
 - [ ] **PDF export** — shell'de buton var, işlevsiz
+- [ ] **Yeni wizard tarayıcı testi** — granül üretimi parametrelerini gir, panel hesaplarını doğrula
 - Detay: `Moduller/DetailedPlan.md` → Açık Konular bölümü
 
 ### ⚠️ Piyasaya Çıkmadan Önce — Güvenlik (Tenant İzolasyonu)
@@ -373,7 +383,7 @@ Veri kaybı riski olan her adımı kullanıcıya açıkça belirt ve onay al.
 - [ ] **Login'de otomatik şirket eşleşmesi** — Kullanıcı email'i Supabase'deki profile kaydıyla eşleşince şirket otomatik belirlenmeli; girişte şirket seçim adımı kalkmalı. (Şu an zaten böyle çalışıyor ama super_admin seçici UX'i karışıklık yaratıyor.)
 
 ### Bir Sonraki Oturumda İlk Yapılacak
-**DetailedPlan panel doğrulama — wizard'ı gerçek veriyle doldur, 6 panel hesaplarını doğrula, sonra Paraşüt→financial_categories eşleştirmesi**
+**Yeni proses wizard'ını tarayıcıda test et — granül tesisi parametrelerini Adım 2/3'e gir, AssistantPanel insights'larını doğrula, panel hesaplarını kontrol et. Sonra: Paraşüt→financial_categories eşleştirme modalı.**
 
 ### Bekleyen Kullanıcı Aksiyonu
 - [x] **Supabase SQL:** `migration_v25b_parasut_superadmin_rls.sql` çalıştırıldı (2026-05-19)

@@ -43,6 +43,7 @@
 | [[Kararlar/2026-05-DetailedPlan-Veri-Girisi\|DetailedPlan Veri Girişi]] | Karar bekleniyor — plan oluşturma akışı, Supabase şeması, inline editing, aktüeller | 2026-05-19 |
 | [[Kararlar/2026-05-Parasut-Token-Supabase\|Paraşüt Token Supabase]] | Karar verildi — localStorage → parasut_tokens tablosu, RLS, company izolasyonu | 2026-05-19 |
 | [[Kararlar/2026-05-Modul-Reskin-Plani\|Modül Reskin Planı]] | Tüm modüller DetailedPlan tasarım diline geçiyor — Faz 1 global CSS katmanı tamamlandı | 2026-05-23 |
+| [[Kararlar/2026-05-GranulUretimi-Parametre\|Granül Üretimi Parametreleri]] | Tüm proses parametreleri, makine verileri, fiyatlar, sabit giderler — wizard veri girişi referansı | 2026-05-23 |
 
 ---
 
@@ -80,6 +81,7 @@
 | [[Ham-Kaynaklar/Karpathy-LLM-Wiki\|Karpathy LLM-Wiki]] | Makale | Kalıcı wiki pattern, index+log, Obsidian+Claude Code entegrasyonu | 2026-05-04 |
 | CLAUDE.md (vault içi) | Schema | Oturum protokolü, wiki bakım kuralları, mimari özet | 2026-05-04 |
 | [[Ham-Kaynaklar/2026-05-Nakit-Akisi-Uretim-Ozeti\|Nakit Akışı & Üretim Özeti]] | Operasyonel özet | Gerçek nakit tablosu, üretim parametreleri, 3 ay projeksiyon, KDV mahsup — DetailedPlan için ilk gerçek veri | 2026-05-19 |
+| [[Ham-Kaynaklar/2026-05-GranulUretimi-IsPlan\|Granül Üretimi İş Planı]] | Konuşma kaydı / hesap motoru | 21 iterasyonlu granül tesisi iş planı; 5 senaryo, Python motoru, modül boşlukları tespit edildi | 2026-05-23 |
 
 ---
 

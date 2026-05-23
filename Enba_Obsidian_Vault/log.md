@@ -742,3 +742,47 @@ grep "^## \[" log.md | tail -5
 - Etkilenen dosyalar: `App.tsx`, `DetailedPlanModule.tsx`
 - Commit: fa057d7
 - Build: ✅ TypeScript sıfır hata
+
+## [2026-05-23] ingest | Granül Üretimi İş Planı Konuşması
+- Kaynak: konuşma kaydı — `is_plani_konusma.md` (kök dizin) — 21 iterasyon, Python hesap motoru
+- Güncellenen sayfalar: `Moduller/DetailedPlan.md` (Granül Üretimi bölümü + modül boşlukları eklendi)
+- Yeni sayfalar: `Ham-Kaynaklar/2026-05-GranulUretimi-IsPlan.md`, `Kararlar/2026-05-GranulUretimi-Parametre.md`
+- Önemli çıkarım: Mevcut DetailedPlan modülü sabit giderler ve gelirler için yeterli; kritik boşluk = hacim-tabanlı senaryo (ton/ay input değişkeni) ve birim değişken maliyet (TL/ton × hacim) yok
+
+---
+
+## [2026-05-23 19:00] geliştirme | DetailedPlan — proses tabanlı wizard yeniden yazımı
+
+### 1. dpData.ts — ProductionModel tipleri + hesap motoru
+- `ProductionParams`: energyUnitCost, defaultDF, hoursPerDay, daysPerMonth
+- `MachineEntry`: id, name, kw, capacityTonPerHour, df?, usesNetOutput, order
+- `WorkerGroup`: stage (sorting/production/sales/management), mode (capacity/fixed), capacityTonPerMonth?, fixedCount?, monthlyCost
+- `RawMaterial`, `OutputProduct`, `OtherVariableCost` — mcode etiketli
+- `calcProductionResults(model)` → `ProductionCalcResult` (netOutputTons, totalRevenue, totalVariableCost, machineCapacities[], workerCapacities[], bottleneck, energyCostByMachine)
+- `deriveProjectFromModel(model, existingProject?)` → shell panel uyumlu `ActiveProject` (expenses[] + revenues[])
+- `DPlan.productionModel?: ProductionModel` alanı eklendi
+
+### 2. dpAssistant.ts — yeni dosya: kural tabanlı plan asistanı
+- `generateInsights(model, hasCostCenter, calc?)` → `Insight[]`
+- Kurallar: darboğaz makineleri, >85% kapasite uyarısı, işçi yetersizliği, Gider Merkezi eksikliği, ambalaj tanımsız, SGK hatırlatması, negatif/düşük marj
+- `calcBottleneckAlternatives()` → fazla mesai (saatlik ücret×1.5×ekstra saat) vs. yeni personel maliyeti karşılaştırması
+- `calcScenariosTable()` → 5 ton senaryosu, her senaryo için gelir/gider/kâr/marj
+
+### 3. DPlanWizard.tsx — komple yeniden yazım (proses odaklı, 4 adım)
+- **Adım 1 — Plan Bilgisi:** başlık, kategori, açıklama, yıl/ay, horizon, açılış kasası, Gider Merkezi
+- **Adım 2 — Parametreler:** enerji fiyatı/DF, aylık input tonu; ham maddeler; işçi grupları (kapasite veya sabit mod); çıktı ürünleri (pay%, fiyat, ambalaj); diğer değişken maliyetler
+- **Adım 3 — Proses:** 4 aşama (Mal Girişi / Ayrıştırma / Üretim / Satış); fire oranları; makine listesi (kW, ton/sa, DF override, üretim sırasına göre yukarı/aşağı); fire-after-machine noktası; kapasite bar'ları
+- **Adım 4 — Özet:** gider breakdown bar chart, 5 senaryo tablosu (30-50-70-90-110 ton)
+- **AssistantPanel (kalıcı):** adım 2+'dan görünür; özet KPI'lar (input ton, gelir, değişken maliyet, brüt kâr); makine kapasite bar'ları; insight listesi (darboğaz alternatifleri inline)
+- Kayıtta `deriveProjectFromModel()` → `projects[0]` shell panellerine uyumlu
+
+### 4. DetailedPlanModule.tsx — 4 durum yaşam döngüsü + filtre sekmeler
+- `draft → pending → active → archived` durum geçişleri
+- Filtre sekmeler: Tümü / Taslak / Beklemede / Aktif / Arşiv (sayı badge'leri ile)
+- PlanCard: durum badge, hızlı geçiş butonları, kategori chip, açıklama snippet
+- Taslaktan direkt "Arşivle" kısayolu eklendi
+
+- Etkilenen dosyalar: `dpData.ts`, `dpAssistant.ts` (yeni), `DPlanWizard.tsx`, `DetailedPlanModule.tsx`
+- Build: ✅ TypeScript sıfır hata, production build başarılı
+- Commit: 6910193
+- Bir sonraki: Granül tesisi parametrelerini wizard'a gir → panel hesaplarını manuel doğrula
