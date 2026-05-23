@@ -717,7 +717,9 @@ export const App: React.FC = () => {
 
                           {/* Alt öğeler — kapalı sidebar'da ikon-only accordion */}
                           {!isSidebarOpen && isExpanded && childItems.length > 0 && (
-                            <div className="flex flex-col gap-0.5 mt-0.5 items-center pb-1">
+                            <div className="relative flex flex-col gap-0.5 mt-0.5 items-center pb-1">
+                              {/* Üst gruba bağlayan dikey çizgi */}
+                              <div className="absolute left-1/2 -translate-x-[14px] top-0 bottom-0 w-px bg-white/15 rounded-full" />
                               {childItems.map(child => {
                                 const active = activeModule === child.id;
                                 const badge = NAV_BADGES[child.id];
