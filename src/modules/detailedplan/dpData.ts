@@ -180,6 +180,7 @@ export interface DPlan {
   customers: Customer[];
   projects: ActiveProject[];
   cashEvents: CashEvent[];
+  productionModel?: ProductionModel;  // yeni wizard — AI'a hazır yapılandırılmış model
 }
 
 export interface SeriesPoint extends Period {
@@ -456,6 +457,291 @@ export const fmtPct = (n: number | null | undefined, digits = 1): string =>
 
 export const fmtNum = (n: number | null | undefined, digits = 0): string =>
   (n == null || isNaN(n)) ? '—' : n.toLocaleString('tr-TR', {minimumFractionDigits: digits, maximumFractionDigits: digits});
+
+// ─── Üretim Modeli Tipleri ────────────────────────────────────────────────────
+
+export interface ProductionParams {
+  energyUnitCost: number;    // TL/kWh  örn: 5
+  defaultDF:      number;    // talep faktörü  örn: 0.60
+  hoursPerDay:    number;    // günlük çalışma saati  örn: 10
+  daysPerMonth:   number;    // aylık çalışma günü  örn: 26
+}
+
+export interface MachineEntry {
+  id:                  string;
+  name:                string;
+  kw:                  number;
+  capacityTonPerHour:  number;
+  df?:                 number;   // override — boşsa params.defaultDF kullanılır
+  usesNetOutput:       boolean;  // true = fire sonrası net ton işler (granül gibi)
+  order:               number;   // proses sırası
+}
+
+export type WorkerMode = 'capacity' | 'fixed';
+export type WorkerStage = 'sorting' | 'production' | 'sales' | 'management';
+
+export interface WorkerGroup {
+  id:                    string;
+  name:                  string;
+  stage:                 WorkerStage;
+  mode:                  WorkerMode;
+  capacityTonPerMonth?:  number;  // mode='capacity' ise
+  fixedCount?:           number;  // mode='fixed' ise
+  monthlyCost:           number;  // TL/kişi
+}
+
+export interface RawMaterial {
+  id:             string;
+  name:           string;
+  mcode:          string;
+  kgPerInputTon:  number;   // giriş tonu başına tüketim (hammadde için 1000)
+  unitCost:       number;   // TL/kg
+  supplierId?:    string;
+}
+
+export interface OutputProduct {
+  id:                    string;
+  name:                  string;
+  mcode:                 string;
+  shareOfNetTons:        number;  // net çıktı tonunun payı (0-1), toplamı 1 olmalı
+  unitPrice:             number;  // TL/kg
+  packagingTonPerUnit?:  number;  // ambalaj kapasitesi ton/adet
+  packagingCostPerUnit?: number;  // ambalaj TL/adet
+  customerId?:           string;
+}
+
+export interface OtherVariableCost {
+  id:             string;
+  name:           string;
+  mcode:          string;
+  tlPerInputTon?: number;  // giriş tonu başına TL
+  monthlyFixed?:  number;  // sabit aylık TL
+}
+
+export interface ProductionModel {
+  params: ProductionParams;
+
+  // Aşama 1: Mal Girişi
+  monthlyInputTons: number;
+  inputWasteRate:   number;   // giriş fire oranı (0.03 = %3)
+
+  // Aşama 2: Ayrıştırma
+  sortingWasteRate: number;   // ayrıştırma fire oranı
+
+  // Aşama 3: Üretim
+  machines:              MachineEntry[];
+  processWasteRate:      number;  // proses fire oranı
+  fireAfterMachineIdx:   number;  // bu index'ten sonra fire uygulanır (-1 = son makine sonrası)
+
+  // Çıktı & Maliyetler
+  outputProducts:      OutputProduct[];
+  rawMaterials:        RawMaterial[];
+  workers:             WorkerGroup[];
+  otherVariableCosts:  OtherVariableCost[];
+}
+
+// Hesap sonuçları — her render'da yeniden hesaplanır, saklanmaz
+export interface MachineCapacity {
+  machine:          MachineEntry;
+  maxTonsPerMonth:  number;
+  requiredTons:     number;
+  utilization:      number;   // 0-1+
+  isBottleneck:     boolean;
+}
+
+export interface WorkerCapacity {
+  worker:           WorkerGroup;
+  count:            number;
+  maxTonsPerMonth:  number;
+  utilization:      number;
+}
+
+export interface ProductionCalcResult {
+  grossInputTons:     number;
+  afterInputWaste:    number;
+  afterSortingWaste:  number;
+  netOutputTons:      number;
+
+  productOutputs: { product: OutputProduct; tons: number; revenue: number; packagingCost: number }[];
+  totalRevenue:   number;
+
+  energyCostByMachine: { machine: MachineEntry; cost: number; kWh: number }[];
+  totalEnergyCost:     number;
+
+  workerDetails: { worker: WorkerGroup; count: number; cost: number }[];
+  totalLaborCost: number;
+
+  materialCosts:     { material: RawMaterial; cost: number }[];
+  totalMaterialCost: number;
+
+  otherCosts:     { item: OtherVariableCost; cost: number }[];
+  totalOtherCost: number;
+
+  totalVariableCost: number;
+
+  machineCapacities: MachineCapacity[];
+  bottleneck:        MachineEntry | null;
+  workerCapacities:  WorkerCapacity[];
+}
+
+export function calcProductionResults(model: ProductionModel): ProductionCalcResult {
+  const { params } = model;
+
+  const grossInputTons    = model.monthlyInputTons;
+  const afterInputWaste   = grossInputTons   * (1 - model.inputWasteRate);
+  const afterSortingWaste = afterInputWaste  * (1 - model.sortingWasteRate);
+  const netOutputTons     = afterSortingWaste * (1 - model.processWasteRate);
+
+  // Ürün çıktıları
+  const productOutputs = model.outputProducts.map(op => {
+    const tons        = netOutputTons * op.shareOfNetTons;
+    const revenue     = tons * 1000 * op.unitPrice;
+    const packagingCost = (op.packagingTonPerUnit && op.packagingCostPerUnit)
+      ? Math.ceil(tons / op.packagingTonPerUnit) * op.packagingCostPerUnit
+      : 0;
+    return { product: op, tons, revenue, packagingCost };
+  });
+  const totalRevenue = productOutputs.reduce((s, p) => s + p.revenue, 0);
+
+  // Enerji (makine bazlı)
+  const energyCostByMachine = model.machines.map(m => {
+    const ton        = m.usesNetOutput ? netOutputTons : afterSortingWaste;
+    const hoursNeeded = ton / m.capacityTonPerHour;
+    const df         = m.df ?? params.defaultDF;
+    const kWh        = m.kw * hoursNeeded * df;
+    return { machine: m, cost: kWh * params.energyUnitCost, kWh };
+  });
+  const totalEnergyCost = energyCostByMachine.reduce((s, e) => s + e.cost, 0);
+
+  // İşçilik
+  const workerDetails = model.workers.map(w => {
+    const count = (w.mode === 'capacity' && w.capacityTonPerMonth)
+      ? Math.ceil(grossInputTons / w.capacityTonPerMonth)
+      : (w.fixedCount ?? 1);
+    return { worker: w, count, cost: count * w.monthlyCost };
+  });
+  const totalLaborCost = workerDetails.reduce((s, w) => s + w.cost, 0);
+
+  // Hammadde
+  const materialCosts = model.rawMaterials.map(rm => ({
+    material: rm,
+    cost: grossInputTons * rm.kgPerInputTon * rm.unitCost,
+  }));
+  const totalMaterialCost = materialCosts.reduce((s, m) => s + m.cost, 0);
+
+  // Diğer değişken
+  const otherCosts = model.otherVariableCosts.map(vc => ({
+    item: vc,
+    cost: (vc.tlPerInputTon ?? 0) * grossInputTons + (vc.monthlyFixed ?? 0),
+  }));
+  const totalOtherCost = otherCosts.reduce((s, o) => s + o.cost, 0);
+
+  const packagingTotal  = productOutputs.reduce((s, p) => s + p.packagingCost, 0);
+  const totalVariableCost = totalEnergyCost + totalLaborCost + totalMaterialCost + totalOtherCost + packagingTotal;
+
+  // Kapasite analizi
+  const machineCapacities: MachineCapacity[] = model.machines.map(m => {
+    const maxTonsPerMonth = m.capacityTonPerHour * params.hoursPerDay * params.daysPerMonth;
+    const requiredTons    = m.usesNetOutput ? netOutputTons : afterSortingWaste;
+    return {
+      machine: m,
+      maxTonsPerMonth,
+      requiredTons,
+      utilization:   maxTonsPerMonth > 0 ? requiredTons / maxTonsPerMonth : 0,
+      isBottleneck:  requiredTons > maxTonsPerMonth,
+    };
+  });
+  const bottleneck = machineCapacities.find(c => c.isBottleneck)?.machine ?? null;
+
+  const workerCapacities: WorkerCapacity[] = model.workers
+    .filter(w => w.mode === 'capacity')
+    .map(w => {
+      const wd = workerDetails.find(x => x.worker.id === w.id);
+      const count = wd?.count ?? 0;
+      const maxTonsPerMonth = count * (w.capacityTonPerMonth ?? 0);
+      return {
+        worker: w,
+        count,
+        maxTonsPerMonth,
+        utilization: maxTonsPerMonth > 0 ? grossInputTons / maxTonsPerMonth : 0,
+      };
+    });
+
+  return {
+    grossInputTons, afterInputWaste, afterSortingWaste, netOutputTons,
+    productOutputs, totalRevenue,
+    energyCostByMachine, totalEnergyCost,
+    workerDetails, totalLaborCost,
+    materialCosts, totalMaterialCost,
+    otherCosts, totalOtherCost,
+    totalVariableCost,
+    machineCapacities, bottleneck, workerCapacities,
+  };
+}
+
+/** ProductionModel → ActiveProject (shell paneller için) */
+export function deriveProjectFromModel(
+  model:           ProductionModel,
+  existingProject?: Partial<ActiveProject>,
+): ActiveProject {
+  const calc = calcProductionResults(model);
+
+  const expenses: FixedExpense[] = [];
+
+  calc.materialCosts.forEach(mc => {
+    expenses.push({ id: mc.material.id, mcode: mc.material.mcode, costCategory: 'purchase',
+      name: mc.material.name, group: 'Hammadde', monthly: mc.cost, growth: 0 });
+  });
+
+  if (calc.totalEnergyCost > 0) {
+    expenses.push({ id: 'energy', mcode: 'M405', costCategory: 'production',
+      name: 'Elektrik Enerjisi', group: 'Üretim', monthly: calc.totalEnergyCost, growth: 0 });
+  }
+
+  calc.workerDetails.forEach(wd => {
+    expenses.push({ id: wd.worker.id, mcode: 'M489', costCategory: 'personnel',
+      name: `${wd.worker.name} (${wd.count} kişi)`, group: 'Personel',
+      monthly: wd.cost, growth: 0 });
+  });
+
+  calc.otherCosts.forEach(oc => {
+    expenses.push({ id: oc.item.id, mcode: oc.item.mcode, costCategory: 'overhead',
+      name: oc.item.name, group: 'Diğer', monthly: oc.cost, growth: 0 });
+  });
+
+  calc.productOutputs.filter(p => p.packagingCost > 0).forEach(p => {
+    expenses.push({ id: `pkg_${p.product.id}`, mcode: 'M999', costCategory: 'sales',
+      name: `${p.product.name} ambalaj`, group: 'Satış', monthly: p.packagingCost, growth: 0 });
+  });
+
+  const revenues: Product[] = calc.productOutputs.map(po => ({
+    id: po.product.id,
+    mcode: po.product.mcode || 'M105',
+    name: po.product.name,
+    category: 'Mamül',
+    unit: 'ton',
+    price: po.product.unitPrice * 1000,     // TL/ton
+    priceGrowth: 0,
+    seasonality: Array(12).fill(1),          // aylık sabit hacim
+    volume: po.tons,                          // ton/ay
+    volumeGrowth: 0,
+    varCostRatio: 0,
+    color: '#E35205',
+    customerId: po.product.customerId,
+  }));
+
+  return {
+    id:               existingProject?.id ?? crypto.randomUUID(),
+    costCenterId:     existingProject?.costCenterId ?? '',
+    isActive:         true,
+    name:             'Üretim Projesi',
+    color:            '#E35205',
+    allocationWeight: 1,
+    startOffset:      0,
+    expenses,
+    revenues,
+  };
+}
 
 // ─── Plan fabrika ─────────────────────────────────────────────────────────────
 export const createNewPlan = (title: string, year: number): DPlan => ({

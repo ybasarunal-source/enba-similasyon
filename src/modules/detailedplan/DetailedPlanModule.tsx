@@ -750,7 +750,10 @@ const STATUS_BADGE: Record<PlanStatus, { tone: 'green' | 'amber' | 'neutral' | '
 
 // next action for each status: {label, next}
 const STATUS_NEXT: Partial<Record<PlanStatus, Array<{ label: string; next: PlanStatus; variant?: 'primary' | 'outline' | 'ghost' }>>> = {
-  draft:    [{ label: 'Onaya Gönder', next: 'pending', variant: 'outline' }],
+  draft:    [
+    { label: 'Onaya Gönder', next: 'pending',  variant: 'outline' },
+    { label: 'Arşivle',      next: 'archived', variant: 'ghost'   },
+  ],
   pending:  [
     { label: 'Onayla',  next: 'active',  variant: 'primary' },
     { label: 'Reddet',  next: 'draft',   variant: 'ghost'   },
