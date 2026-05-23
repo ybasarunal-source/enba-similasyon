@@ -5,7 +5,7 @@ import { microsoftService } from './api/microsoft';
 import { googleService } from './api/google';
 import { Login } from './modules/Login';
 import type { Session } from '@supabase/supabase-js';
-import { profileAPI, companiesAPI, type UserProfile, type UserRole } from './api/supabase';
+import { profileAPI, companiesAPI, tasksAPI, type UserProfile, type UserRole } from './api/supabase';
 import { parasutService } from './api/parasut';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { DerenEasterEgg } from './components/DerenEasterEgg';
@@ -130,6 +130,8 @@ export const App: React.FC = () => {
   const [companyName, setCompanyName] = useState<string | null>(null);
   const [theme, setTheme] = useState(() => localStorage.getItem('enba_theme') || 'light');
   const [unreadMailCount, setUnreadMailCount] = useState(0);
+  const [overdueTaskCount, setOverdueTaskCount] = useState(0);
+  const [openTaskCount, setOpenTaskCount] = useState(0);
 
   // ── Global Pomodoro ───────────────────────────────────────
   const [pomSecs, setPomSecs] = useState<number>(() => {
@@ -215,6 +217,25 @@ export const App: React.FC = () => {
     return () => clearInterval(interval);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user?.id]); // Yalnızca kullanıcı değişince (login/logout) yeniden çalış — token refresh tetiklemez
+
+  // Görev sayaçları: gecikmiş + toplam açık — 5 dakikada bir günceller
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    const fetchTaskCounts = async () => {
+      try {
+        const all = await tasksAPI.getAll();
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+        const open = all.filter(t => t.status !== 'done');
+        const overdue = open.filter(t => t.deadline && new Date(t.deadline) < today);
+        setOpenTaskCount(open.length);
+        setOverdueTaskCount(overdue.length);
+      } catch { /* ağ hatası — sayaçları sıfırla */ }
+    };
+    fetchTaskCounts();
+    const iv = setInterval(fetchTaskCounts, 300_000); // 5 dk
+    return () => clearInterval(iv);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.id]);
 
   // Profil: oturum değişince yükle (basit ve güvenilir)
   useEffect(() => {
@@ -551,8 +572,14 @@ export const App: React.FC = () => {
               return next;
             });
 
+            // Alt öğe badge'leri — unread mail + gecikmiş görev
+            const NAV_BADGES: Record<string, { count: number; color: string }> = {};
+            if (unreadMailCount > 0)  NAV_BADGES['mail']  = { count: unreadMailCount,  color: 'bg-red-500'   };
+            if (overdueTaskCount > 0) NAV_BADGES['tasks'] = { count: overdueTaskCount, color: 'bg-amber-500' };
+
             const renderNavBtn = (item: { id: string; label: string; icon: LucideIcon }, opts?: { indent?: boolean }) => {
               const active = activeModule === item.id;
+              const badge = NAV_BADGES[item.id];
               return (
                 <button
                   key={item.id}
@@ -567,12 +594,27 @@ export const App: React.FC = () => {
                   ].join(' ')}
                 >
                   {active && <div className="absolute left-0 top-1.5 bottom-1.5 w-0.5 bg-[var(--enba-orange)] rounded-full" />}
-                  <item.icon size={opts?.indent ? 14 : 17} className={`flex-shrink-0 transition-colors ${active ? 'text-[var(--enba-orange)]' : opts?.indent ? 'opacity-60' : ''}`} />
+                  {/* İkon — sidebar kapalıyken badge ikon üzerinde */}
+                  <div className="relative flex-shrink-0">
+                    <item.icon size={opts?.indent ? 14 : 17} className={`transition-colors ${active ? 'text-[var(--enba-orange)]' : opts?.indent ? 'opacity-60' : ''}`} />
+                    {!isSidebarOpen && badge && (
+                      <span className={`absolute -top-1.5 -right-1.5 flex h-3.5 min-w-[14px] items-center justify-center rounded-full ${badge.color} px-0.5 text-[8px] font-bold text-white`}>
+                        {badge.count > 9 ? '9+' : badge.count}
+                      </span>
+                    )}
+                  </div>
                   {isSidebarOpen && (
-                    <span style={{ fontFamily: "'Poppins', sans-serif" }}
-                      className={`text-[12px] font-medium truncate transition-colors ${opts?.indent ? 'text-[11px]' : ''} ${active ? 'text-white' : ''}`}>
-                      {item.label}
-                    </span>
+                    <>
+                      <span style={{ fontFamily: "'Poppins', sans-serif" }}
+                        className={`flex-1 text-[12px] font-medium truncate transition-colors ${opts?.indent ? 'text-[11px]' : ''} ${active ? 'text-white' : ''}`}>
+                        {item.label}
+                      </span>
+                      {badge && (
+                        <span className={`flex-shrink-0 flex h-4 min-w-[16px] items-center justify-center rounded-full ${badge.color} px-1 text-[9px] font-bold text-white`}>
+                          {badge.count > 99 ? '99+' : badge.count}
+                        </span>
+                      )}
+                    </>
                   )}
                   {!isSidebarOpen && (
                     <div className="absolute left-full ml-3 px-2.5 py-1.5 rounded-lg bg-gray-900 text-white text-xs font-medium whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-50 shadow-xl border border-white/5"
@@ -638,13 +680,28 @@ export const App: React.FC = () => {
                             ].join(' ')}
                           >
                             {anyChildActive && <div className="absolute left-0 top-1.5 bottom-1.5 w-0.5 bg-[var(--enba-orange)] rounded-full" />}
-                            <item.icon size={17} className={`flex-shrink-0 ${anyChildActive ? 'text-[var(--enba-orange)]' : ''}`} />
+                            {/* İkon — sidebar kapalıyken iletişim badge'ini ikon üstünde göster */}
+                            <div className="relative flex-shrink-0">
+                              <item.icon size={17} className={`${anyChildActive ? 'text-[var(--enba-orange)]' : ''}`} />
+                              {!isSidebarOpen && item.id === 'iletisim' && (unreadMailCount + overdueTaskCount) > 0 && (
+                                <span className="absolute -top-1.5 -right-1.5 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-[var(--enba-orange)] px-0.5 text-[8px] font-bold text-white">
+                                  {(unreadMailCount + overdueTaskCount) > 9 ? '9+' : unreadMailCount + overdueTaskCount}
+                                </span>
+                              )}
+                            </div>
                             {isSidebarOpen && (
                               <>
                                 <span style={{ fontFamily: "'Poppins', sans-serif" }}
                                   className={`flex-1 text-left text-[12px] font-medium truncate ${anyChildActive ? 'text-white' : ''}`}>
                                   {item.label}
                                 </span>
+                                {/* İletişim & Görev toplam badge: okunmamış + gecikmiş */}
+                                {item.id === 'iletisim' && (unreadMailCount + overdueTaskCount) > 0 && (
+                                  <span className="flex-shrink-0 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-[var(--enba-orange)] px-1 text-[9px] font-bold text-white mr-1">
+                                    {(unreadMailCount + overdueTaskCount) > 99 ? '99+' : unreadMailCount + overdueTaskCount}
+                                  </span>
+                                )}
+                                {/* Tüm gruplarda toplam open görev + okunmamış mail toplamı ikon üzerinde (sidebar kapalıyken) */}
                                 <ChevronRight size={12} className={`opacity-40 flex-shrink-0 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`} />
                               </>
                             )}
@@ -773,7 +830,21 @@ export const App: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            {/* Gecikmiş görev uyarısı */}
+            {overdueTaskCount > 0 && (
+              <button
+                onClick={() => navigate('tasks')}
+                className="relative p-2 rounded-xl bg-amber-50 text-amber-500 hover:bg-amber-100 hover:text-amber-600 transition-all dark:bg-amber-500/10 dark:text-amber-400"
+                title={`${overdueTaskCount} gecikmiş görev`}
+              >
+                <ClipboardList size={18} />
+                <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-amber-500 px-1 text-[9px] font-bold text-white shadow-sm ring-2 ring-white dark:ring-[#0F172A]">
+                  {overdueTaskCount > 99 ? '99+' : overdueTaskCount}
+                </span>
+              </button>
+            )}
+
             {/* E-Posta Bildirimi */}
             <button
               onClick={() => navigate('mail')}
