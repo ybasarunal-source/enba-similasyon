@@ -105,6 +105,8 @@ export const App: React.FC = () => {
   // Sayfa geçmişi — geri/ileri navigasyon için
   const [history, setHistory] = useState<ModuleType[]>(['dashboard']);
   const [historyIndex, setHistoryIndex] = useState(0);
+  // Modül-içi geri navigasyonu — aktif modül kendi geri işleyicisini buraya kaydedebilir
+  const backOverrideRef = useRef<(() => boolean) | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [profileAvatar, setProfileAvatar] = useState('');
@@ -414,6 +416,8 @@ export const App: React.FC = () => {
   };
 
   const goBack = () => {
+    // Modül-içi override: ör. DetailedPlan shell/wizard → plan listesine dön
+    if (backOverrideRef.current?.()) return;
     if (historyIndex <= 0) return;
     const newIndex = historyIndex - 1;
     setHistoryIndex(newIndex);
@@ -870,7 +874,7 @@ export const App: React.FC = () => {
                 {activeModule === 'company_admin' && <CompanyAdmin />}
                 {activeModule === 'pnl'      && <PnL />}
                 {activeModule === 'fastplan' && <FastPlan />}
-                {activeModule === 'planning' && <DetailedPlanModule navigate={navigate} />}
+                {activeModule === 'planning' && <DetailedPlanModule navigate={navigate} setBackOverride={(fn: (() => boolean) | null) => { backOverrideRef.current = fn; }} />}
                 {activeModule === 'parasut'  && <Parasut profile={userProfile} navigate={navigate} />}
                 {activeModule === 'ayarlar'  && <Ayarlar profile={userProfile} />}
                 {activeModule === 'varlik'   && <VarlikTakibi profile={userProfile} />}

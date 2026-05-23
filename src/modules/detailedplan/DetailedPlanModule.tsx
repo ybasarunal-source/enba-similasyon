@@ -16,11 +16,13 @@ const LOCAL_KEY = 'enba_dp2_plans';
 
 interface Props {
   navigate?: (module: string) => void;
+  /** App'in global ← tuşunu kesmek için: fn null → override kaldır */
+  setBackOverride?: (fn: (() => boolean) | null) => void;
 }
 
 type View = 'list' | 'wizard' | 'shell' | 'ccEditor';
 
-export function DetailedPlanModule({ navigate }: Props) {
+export function DetailedPlanModule({ navigate, setBackOverride }: Props) {
   const { planlar, kaydet, sil, syncStatus, syncError } = usePlanSync<DPlan>({
     localKey: LOCAL_KEY,
     planType: 'detailed',
@@ -33,6 +35,23 @@ export function DetailedPlanModule({ navigate }: Props) {
   const migratedOnce = useRef(false);
 
   useEffect(() => { saveCostCenters(costCenters); }, [costCenters]);
+
+  // App'in global ← tuşunu modül-içi navigasyon için intercept et.
+  // Shell/wizard/ccEditor açıkken ← → plan listesine döner (modüle değil).
+  useEffect(() => {
+    if (!setBackOverride) return;
+    if (view !== 'list') {
+      setBackOverride(() => {
+        setView('list');
+        setActivePlanId(null);
+        setActiveCcId(null);
+        return true; // App'in goBack'ini durdur
+      });
+    } else {
+      setBackOverride(null); // Liste görünümünde normal modül geri navigasyonu
+    }
+    return () => setBackOverride(null); // Unmount'ta temizle
+  }, [view, setBackOverride]);
 
   useEffect(() => {
     if (migratedOnce.current || planlar.length === 0) return;
