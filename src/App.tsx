@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from './api/i18n';
 import { supabase } from './api/supabase';
 import { microsoftService } from './api/microsoft';
@@ -120,8 +121,9 @@ export const App: React.FC = () => {
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   // Alt menüsü açık olan sanal parent item'lar — başlangıçta hepsi kapalı
   const [expandedSubmenus, setExpandedSubmenus] = useState<Set<string>>(new Set());
-  // Kapalı sidebar flyout: hangi parent'ın popover'ı açık
+  // Kapalı sidebar flyout: hangi parent'ın popover'ı açık + konumu
   const [flyoutId, setFlyoutId] = useState<string | null>(null);
+  const [flyoutTop, setFlyoutTop] = useState(0);
   const flyoutRef = useRef<HTMLDivElement>(null);
   const [profileAvatar, setProfileAvatar] = useState('');
   const [renderError, setRenderError] = useState<string | null>(null);
@@ -672,10 +674,10 @@ export const App: React.FC = () => {
                       const anyChildActive = childItems.some(c => activeModule === c.id);
 
                       return (
-                        <div key={item.id} className="relative">
+                        <div key={item.id}>
                           {/* Parent satırı */}
                           <button
-                            onClick={() => {
+                            onClick={(e) => {
                               if (isSidebarOpen) {
                                 setExpandedSubmenus(prev => {
                                   const next = new Set(prev);
@@ -683,7 +685,9 @@ export const App: React.FC = () => {
                                   return next;
                                 });
                               } else {
-                                // Kapalı sidebar: flyout popover aç/kapat
+                                // Kapalı sidebar: flyout popover aç/kapat, Y konumunu yakala
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                setFlyoutTop(rect.top);
                                 setFlyoutId(prev => prev === item.id ? null : item.id);
                               }
                             }}
@@ -735,12 +739,18 @@ export const App: React.FC = () => {
                             </div>
                           )}
 
-                          {/* Alt öğeler — kapalı sidebar'da flyout popover */}
-                          {!isSidebarOpen && flyoutId === item.id && childItems.length > 0 && (
+                          {/* Alt öğeler — kapalı sidebar'da flyout popover (portal → overflow-hidden'dan kaçar) */}
+                          {!isSidebarOpen && flyoutId === item.id && childItems.length > 0 && createPortal(
                             <div
                               ref={flyoutRef}
-                              className="absolute left-full top-0 ml-2 z-50 min-w-[180px] bg-gray-900 border border-white/10 rounded-xl shadow-2xl py-1.5 overflow-hidden"
-                              style={{ fontFamily: "'Poppins', sans-serif" }}
+                              style={{
+                                position: 'fixed',
+                                left: 72,
+                                top: flyoutTop,
+                                zIndex: 9999,
+                                fontFamily: "'Poppins', sans-serif",
+                              }}
+                              className="min-w-[180px] bg-gray-900 border border-white/10 rounded-xl shadow-2xl py-1.5 overflow-hidden"
                             >
                               {/* Başlık */}
                               <div className="px-3 py-1.5 mb-0.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-white/30 border-b border-white/8">
@@ -769,7 +779,8 @@ export const App: React.FC = () => {
                                   </button>
                                 );
                               })}
-                            </div>
+                            </div>,
+                            document.body
                           )}
                         </div>
                       );
