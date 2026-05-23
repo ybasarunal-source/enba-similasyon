@@ -488,10 +488,10 @@ export const App: React.FC = () => {
   const goBack = () => {
     // Modül-içi override: ör. DetailedPlan shell/wizard → plan listesine dön
     if (backOverrideRef.current?.()) return;
-    if (historyIndex <= 0) return;
-    const newIndex = historyIndex - 1;
-    setHistoryIndex(newIndex);
-    setActiveModule(history[newIndex]);
+    // Başka modüldeyse → her zaman dashboard'a dön (üst menü)
+    if (activeModule === 'dashboard') return;
+    setActiveModule('dashboard');
+    sessionStorage.setItem('enba_active_module', 'dashboard');
   };
 
   const goForward = () => {
@@ -501,7 +501,7 @@ export const App: React.FC = () => {
     setActiveModule(history[newIndex]);
   };
 
-  const canGoBack    = historyIndex > 0;
+  const canGoBack    = activeModule !== 'dashboard';
   const canGoForward = historyIndex < history.length - 1;
 
   const activeLabel = menuItems.find(i => i.id === activeModule)?.label ?? '';
