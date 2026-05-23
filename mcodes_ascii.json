@@ -1,0 +1,362 @@
+[
+  {
+    "code": "M105",
+    "en": "Sales (gross) - Core Business ext.",
+    "tr": "600.01 - M105 Yurt \u0130\u00e7i Sat\u0131\u015flar (\u00dc\u00e7\u00fcnc\u00fc \u015eah\u0131slar)"
+  },
+  {
+    "code": "M106",
+    "en": "Sales (gross) - Core Business affil.",
+    "tr": "601.01 - M106 Yurt D\u0131\u015f\u0131 Sat\u0131\u015flar (Grup \u015eirketleri)"
+  },
+  {
+    "code": "M109",
+    "en": "Total Sales (gross) - Core Business",
+    "tr": "600/601 - M109 Br\u00fct Sat\u0131\u015flar Toplam\u0131"
+  },
+  {
+    "code": "M139",
+    "en": "Reduction in Sales - Core Business",
+    "tr": "610.01 - M139 Sat\u0131\u015ftan \u0130adeler ve \u0130ndirimler"
+  },
+  {
+    "code": "M149",
+    "en": "Sales from trade goods (net)",
+    "tr": "600.02 - M149 Ticari Mal Sat\u0131\u015flar\u0131 (Net)"
+  },
+  {
+    "code": "M299",
+    "en": "NET REVENUE",
+    "tr": "60 - M299 Net Sat\u0131\u015f Gelirleri"
+  },
+  {
+    "code": "M369",
+    "en": "Material expenditure - TOTAL",
+    "tr": "150/710 - M369 \u0130lk Madde ve Malzeme Giderleri Toplam\u0131"
+  },
+  {
+    "code": "M399",
+    "en": "CONTRIBUTION",
+    "tr": "[M399] Br\u00fct Katk\u0131 Pay\u0131 / Br\u00fct Kar"
+  },
+  {
+    "code": "M405",
+    "en": "Power",
+    "tr": "770.40 - M405 Elektrik Enerjisi Giderleri"
+  },
+  {
+    "code": "M410",
+    "en": "Fuels / Steam",
+    "tr": "770.41 - M410 Is\u0131nma, Yak\u0131t ve Buhar Giderleri"
+  },
+  {
+    "code": "M415",
+    "en": "Water",
+    "tr": "770.42 - M415 Su T\u00fcketim Giderleri"
+  },
+  {
+    "code": "M419",
+    "en": "Energy consumption",
+    "tr": "770.49 - M419 Toplam Enerji ve T\u00fcketim Giderleri"
+  },
+  {
+    "code": "M489",
+    "en": "Personnel expenses",
+    "tr": "770.01 - M489 Br\u00fct Personel Maa\u015f ve \u00dccret Giderleri"
+  },
+  {
+    "code": "M489.01",
+    "en": "Personnel SGK Employer Share",
+    "tr": "770.02 - M489.01 SGK \u0130\u015fveren Pay\u0131 Giderleri"
+  },
+  {
+    "code": "M489.02",
+    "en": "Personnel Unemployment Ins.",
+    "tr": "770.03 - M489.02 \u0130\u015fsizlik Sigortas\u0131 \u0130\u015fveren Pay\u0131"
+  },
+  {
+    "code": "M489.03",
+    "en": "Personnel Food & Catering",
+    "tr": "770.04 - M489.03 Personel Yemek ve Mutfak Giderleri"
+  },
+  {
+    "code": "M489.04",
+    "en": "Personnel Shuttle & Transport",
+    "tr": "770.05 - M489.04 Personel Ula\u015f\u0131m ve Yol Giderleri"
+  },
+  {
+    "code": "M509",
+    "en": "Maintenance costs",
+    "tr": "770.20 - M509 Makine, Cihaz ve Ofis Bak\u0131m Onar\u0131m Giderleri"
+  },
+  {
+    "code": "M529",
+    "en": "Environmental costs",
+    "tr": "770.25 - M529 \u00c7evre, At\u0131k Y\u00f6netimi ve \u0130SG Giderleri"
+  },
+  {
+    "code": "M604",
+    "en": "Third party services/leased pers. production",
+    "tr": "730.05 - M604 D\u0131\u015far\u0131dan Sa\u011flanan Fayda ve Hizmetler (\u00dcretim)"
+  },
+  {
+    "code": "M605",
+    "en": "Third party services/leased pers. excl. prod.",
+    "tr": "770.06 - M605 D\u0131\u015far\u0131dan Sa\u011flanan Personel Hizmetleri (Y\u00f6netim)"
+  },
+  {
+    "code": "M610",
+    "en": "Rental charges",
+    "tr": "770.10 - M610 Ofis ve Depo Kira Giderleri"
+  },
+  {
+    "code": "M615",
+    "en": "Travel expenses",
+    "tr": "770.30 - M615 Yurt \u0130\u00e7i ve Yurt D\u0131\u015f\u0131 Seyahat Giderleri"
+  },
+  {
+    "code": "M620",
+    "en": "Communication exp.",
+    "tr": "770.50 - M620 Telefon, \u0130nternet ve \u0130leti\u015fim Giderleri"
+  },
+  {
+    "code": "M625",
+    "en": "Legal/audit/consultation costs",
+    "tr": "770.60 - M625 Hukuk, M\u00fc\u015favirlik ve Denetim Giderleri"
+  },
+  {
+    "code": "M630",
+    "en": "Advertising/publicity costs",
+    "tr": "760.20 - M630 Reklam, Pazarlama ve Tan\u0131t\u0131m Giderleri"
+  },
+  {
+    "code": "M635",
+    "en": "Insurances (excl. transport insurance)",
+    "tr": "770.70 - M635 Ofis, Demirba\u015f ve Ara\u00e7 Sigorta Giderleri"
+  },
+  {
+    "code": "M640",
+    "en": "IT-costs ext.",
+    "tr": "770.80 - M640 D\u0131\u015far\u0131dan Al\u0131nan BT ve Yaz\u0131l\u0131m Lisans Giderleri"
+  },
+  {
+    "code": "M641",
+    "en": "IT-costs affil.",
+    "tr": "770.81 - M641 Grup \u015eirketlerinden Faturalanan BT Giderleri"
+  },
+  {
+    "code": "M645",
+    "en": "Holding/Division/Admin. costs",
+    "tr": "770.90 - M645 Holding Y\u00f6netim ve Genel Gider Pay\u0131"
+  },
+  {
+    "code": "M650",
+    "en": "Bank charges",
+    "tr": "653.01 - M650 Banka Hesap \u0130\u015fletim ve Komisyon Giderleri"
+  },
+  {
+    "code": "M655",
+    "en": "Loss from fx-differences excl. financing",
+    "tr": "656.01 - M655 Ticari Faaliyetlerden Kambiyo Zararlar\u0131"
+  },
+  {
+    "code": "M660",
+    "en": "Other overhead costs",
+    "tr": "770.99 - M660 Di\u011fer \u00c7e\u015fitli Genel Y\u00f6netim Giderleri"
+  },
+  {
+    "code": "M665",
+    "en": "Taxes and duties",
+    "tr": "770.15 - M665 Vergi, Resim, Har\u00e7 ve Damga Vergileri"
+  },
+  {
+    "code": "M689",
+    "en": "Other expenditures",
+    "tr": "770.98 - M689 Di\u011fer Ola\u011fan D\u0131\u015f\u0131 Gider ve Zararlar"
+  },
+  {
+    "code": "M739",
+    "en": "Other operating income - TOTAL",
+    "tr": "649 - M739 Di\u011fer Faaliyetlerden Ola\u011fan Gelir ve Karlar"
+  },
+  {
+    "code": "M759",
+    "en": "Leasing",
+    "tr": "770.11 - M759 Finansal Kiralama (Leasing) Giderleri"
+  },
+  {
+    "code": "TOTAL COSTS",
+    "en": "TOTAL COSTS",
+    "tr": "7 - TOTAL COSTS Toplam Faaliyet Maliyetleri"
+  },
+  {
+    "code": "M769",
+    "en": "EBITDA",
+    "tr": "[M769] FAV\u00d6K (Faiz Amortisman Vergi \u00d6ncesi Kar)"
+  },
+  {
+    "code": "M775",
+    "en": "Ordinary depr. and amort. excl. goodwill",
+    "tr": "770.75 - M775 Maddi ve Maddi Olmayan Duran Varl\u0131k Amortismanlar\u0131"
+  },
+  {
+    "code": "M780",
+    "en": "Ordinary amort. of goodwill",
+    "tr": "770.76 - M780 \u015eerefiye Amortisman Giderleri"
+  },
+  {
+    "code": "M785",
+    "en": "Extraordinary depr. and amortization",
+    "tr": "658 - M785 Ola\u011fan\u00fcst\u00fc Amortisman ve De\u011fer D\u00fc\u015f\u00fckl\u00fc\u011f\u00fc Giderleri"
+  },
+  {
+    "code": "M787",
+    "en": "Depr. CurrA (exceeding convent. depr.)",
+    "tr": "689 - M787 Kanunen Kabul Edilmeyen Amortisman Giderleri"
+  },
+  {
+    "code": "M789",
+    "en": "Depreciation",
+    "tr": "770/658 - M789 Toplam Amortisman Giderleri"
+  },
+  {
+    "code": "M799",
+    "en": "EBIT",
+    "tr": "[M799] Faiz ve Vergi \u00d6ncesi Kar (EBIT)"
+  },
+  {
+    "code": "M800",
+    "en": "Income investments (dividends)",
+    "tr": "640 - M800 \u0130\u015ftiraklerden Kar Pay\u0131 (Temett\u00fc) Gelirleri"
+  },
+  {
+    "code": "M801",
+    "en": "Income investments (dividends) affil.",
+    "tr": "641 - M801 Ba\u011fl\u0131 Ortakl\u0131klardan Kar Pay\u0131 Gelirleri"
+  },
+  {
+    "code": "M805",
+    "en": "Income other securities/investm.",
+    "tr": "642 - M805 Di\u011fer Menkul K\u0131ymet Gelirleri"
+  },
+  {
+    "code": "M810",
+    "en": "Income from long term loans",
+    "tr": "642.02 - M810 Verilen Uzun Vadeli Kredilerin Faiz Gelirleri"
+  },
+  {
+    "code": "M815",
+    "en": "Other interest income",
+    "tr": "642.01 - M815 Banka Vadeli Hesap Faiz Gelirleri"
+  },
+  {
+    "code": "M820",
+    "en": "Other financial income",
+    "tr": "649 - M820 Di\u011fer \u00c7e\u015fitli Finansal Gelirler"
+  },
+  {
+    "code": "M827",
+    "en": "FX-profits finance",
+    "tr": "646.01 - M827 Finansal Faaliyetlerden Kambiyo Karlar\u0131"
+  },
+  {
+    "code": "M829",
+    "en": "Financial Income",
+    "tr": "64 - M829 Toplam Finansal Gelirler"
+  },
+  {
+    "code": "M835",
+    "en": "Expenses of FinA & securites CurrA",
+    "tr": "655 - M835 Menkul K\u0131ymet Sat\u0131\u015f Zararlar\u0131"
+  },
+  {
+    "code": "M845",
+    "en": "Interest expenses",
+    "tr": "780.01 - M845 K\u0131sa Vadeli Bor\u00e7lanma Faiz Giderleri"
+  },
+  {
+    "code": "M846",
+    "en": "Interest expenses affil.",
+    "tr": "780.02 - M846 Grup \u015eirketlerine \u00d6denen Faiz Giderleri"
+  },
+  {
+    "code": "M850",
+    "en": "Other financial expenses",
+    "tr": "659 - M850 Di\u011fer Finansal Gider ve Zararlar"
+  },
+  {
+    "code": "M857",
+    "en": "fx-losses finance",
+    "tr": "656.02 - M857 Finansal Bor\u00e7lanma Kur Fark\u0131 Zararlar\u0131"
+  },
+  {
+    "code": "M859",
+    "en": "Financial expenses",
+    "tr": "780/65 - M859 Toplam Finansman Giderleri"
+  },
+  {
+    "code": "M869",
+    "en": "FINANCIAL RESULT",
+    "tr": "[M869] Finansman Dengesi / Net Finansman Sonucu"
+  },
+  {
+    "code": "M879",
+    "en": "RESULT OF ORDINARY ACTIVITIES",
+    "tr": "[M879] Ola\u011fan Faaliyet Kar\u0131/Zarar\u0131"
+  },
+  {
+    "code": "M885",
+    "en": "Extraordinary income",
+    "tr": "679 - M885 Di\u011fer Ola\u011fand\u0131\u015f\u0131 Gelir ve Karlar"
+  },
+  {
+    "code": "M887",
+    "en": "Extraordinary expenses",
+    "tr": "689 - M887 Di\u011fer Ola\u011fand\u0131\u015f\u0131 Gider ve Zararlar"
+  },
+  {
+    "code": "M889",
+    "en": "Extraordinary result",
+    "tr": "[M889] Net Ola\u011fand\u0131\u015f\u0131 D\u00f6nem Sonucu"
+  },
+  {
+    "code": "M899",
+    "en": "EBT",
+    "tr": "690 - M899 Vergi \u00d6ncesi D\u00f6nem Kar\u0131/Zarar\u0131 (EBT)"
+  },
+  {
+    "code": "M909",
+    "en": "Taxes on income",
+    "tr": "691.01 - M909 D\u00f6nem Kar\u0131 Vergi ve Yasal Y\u00fck\u00fcml\u00fcl\u00fckleri"
+  },
+  {
+    "code": "M910",
+    "en": "RESULT AFTER TAXES",
+    "tr": "692 - M910 Vergi Sonras\u0131 D\u00f6nem Net Kar\u0131/Zarar\u0131"
+  },
+  {
+    "code": "M915",
+    "en": "Other taxes",
+    "tr": "689.05 - M915 Kanunen Kabul Edilmeyen Di\u011fer Vergiler"
+  },
+  {
+    "code": "M919",
+    "en": "NET INCOME FOR THE PERIOD",
+    "tr": "590/591 - M919 D\u00f6nem Net Kar\u0131 veya Zarar\u0131"
+  },
+  {
+    "code": "M930",
+    "en": "Release of untaxed reserves",
+    "tr": "54 - M930 Vergilendirilmemi\u015f Yedek Ak\u00e7elerin \u00c7\u00f6z\u00fclmesi"
+  },
+  {
+    "code": "M955",
+    "en": "Allocation to revenue reserves",
+    "tr": "542 - M955 Ola\u011fan\u00fcst\u00fc Yedek Ak\u00e7e Alokasyonu"
+  },
+  {
+    "code": "M999",
+    "en": "NET INCOME",
+    "tr": "590 - M999 Nihai Da\u011f\u0131t\u0131labilir Net Kar"
+  }
+]

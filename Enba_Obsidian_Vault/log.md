@@ -665,3 +665,80 @@ grep "^## \[" log.md | tail -5
 - Yapılan: `DetailedPlanModule.tsx` — `<select>` kaldırıldı, `McodeCombobox` bileşeni eklendi. Açılır listede her M-kodu için kısa ad (`EXPENSE_MCODES.tr`) ve tam muhasebe açıklaması (`MCODE_NOTES`) 2 satır truncate ile gösteriliyor. Arama kutusu: kod, Türkçe ad ve açıklama içinde eşleşme yapıyor.
 - Etkilenen dosyalar: `src/modules/detailedplan/DetailedPlanModule.tsx`
 - Bir sonraki: DetailedPlan panel hesapları test (wizard verisi → OverviewPanel/RevenuePanel/ExpensePanel)
+
+---
+
+## [2026-05-21] geliştirme | Oturum özeti — haftalık granülarite, tatil, wizard bug fix
+
+### 1. DetailedPlan — Haftalık Granülarite (commit 9dcb5be)
+- **dpData.ts:** `WeeklyRamp` arayüzü + `weeklyRampAt()`, `Granularity` tipi, `buildDisplayPeriods()` (weekly/monthly/quarterly/annual), `buildSeries` güncellendi, `PlanCtx`'e `weeklyHorizon` + `granularity` eklendi
+- **DPlanWizard.tsx:** Step1'de weeklyHorizon seçici (4/8/12/16/24 hafta), tüm formlara `WeeklyRampField` (AlimList, UretimList, PersonelList, SatisList, ProjectRevenueList); `weeklyHorizon` prop zinciri ProjectEditor→ProjectsStep→DPlanWizard
+- **DetailedPlanShell.tsx:** Select dropdown yerine 4-button Haftalık/Aylık/Çeyreklik/Yıllık toggle; ctxValue `buildDisplayPeriods` + granularity + weeklyHorizon kullanıyor
+
+### 2. Takvim — Resmi Tatil + Köprü Günü (commitler d762cb7, e0d59dd, 53eca3e)
+- **src/api/holidays.ts:** Nager.Date API ile TR tatilleri (30 gün localStorage cache), Supabase custom_holidays ile köprü/özel günler, `getHolidays()` + `addCustomHoliday()` + `removeCustomHoliday()`
+- **Calendar.tsx:** Tatil günleri kırmızı arka plan + flag ikonu, ajanda sidebar'ında tatil kartı (köprü=turuncu, resmi=kırmızı), admin/super_admin için Tatil Ekle modal + kaldır butonu
+- **migration_v26_custom_holidays.sql:** custom_holidays tablosu + RLS — **ÇALIŞTIRILDI**
+- **Bug fix:** `toISOString()` UTC offset kaydırması → yerel tarih parçalarıyla düzeltildi
+
+### 3. Wizard Bug Fix — Projeyi Kaydet (commit d1135a1)
+- **Sorun:** `emptyProject` → `name: ''`, disabled button `pointer-events-none`, Temel sekmesi dışında hiç tıklanamıyordu
+- **Çözüm:** Proje adı inputu header'a taşındı — sekme bağımsız, her zaman görünür
+
+### 4. Diğer (önceki oturum tamamlamalar)
+- Deren Easter egg (`DerenEasterEgg.tsx`) — "deren" klavye sırası, kalp animasyonu
+- McodeCombobox — portal + fixed konum, arama özellikli
+- Tedarikçi/Müşteri — nakliye (₺/kg) + kısmi peşin/vade alanları
+
+- Etkilenen dosyalar: `dpData.ts`, `DPlanWizard.tsx`, `DetailedPlanShell.tsx`, `Calendar.tsx`, `src/api/holidays.ts`, `DetailedPlanModule.tsx`, `src/components/DerenEasterEgg.tsx`, `App.tsx`
+- Bir sonraki: DetailedPlan panel hesapları doğrulama — wizard verisi panellere akıyor mu?
+
+---
+
+## [2026-05-22] geliştirme | DetailedPlan granülasyon fix + Stock modülü sıfırdan yeniden tasarımı
+
+### 1. DetailedPlan — granülasyon hesap hataları düzeltildi (commit 0e31fa1)
+- **Sorun:** Panel hesaplamaları döngü indeksi `i` yerine `period.monthOffset` kullanmıyordu → çeyreklik/yıllık granülasyonda yanlış aylar hesaplanıyordu
+- **dpData.ts:** `sumForPeriod(period, fallbackIdx, fn)` helper eklendi — `spanMonths` + `monthOffset` ile doğru ay aralığını iterate eder
+- **OverviewPanel.tsx:** `grouped` useMemo kaldırıldı (zaten `buildSeries` + `buildDisplayPeriods` doğru aggregate ediyor); `periodGranularity` destructure'dan çıkarıldı (unused ESLint)
+- **ExpensePanel.tsx + RevenuePanel.tsx:** Tüm toplam/seri hesaplamaları `sumForPeriod` kullanıyor
+
+### 2. Stock modülü — sıfırdan yeniden tasarlandı (commit 64918cd)
+- **Sorun:** Eski modül iç içe component tanımları (focus kayması + performans), slate/card token'ları, dağınık state
+- **Yeni tasarım:** DetailedPlan design language — sol sidebar + chevron collapse, sağ-drawer formlar
+- Tüm sub-component'ler modül seviyesinde: `Field`, `CalcRow`, `KpiCard`, `Drawer`, `DeleteConfirm`, `AlisFormFields`, `SatisFormFields`, `AlisPanel`, `SatisPanel`, `StokPanel`, `RaporlarPanel`
+- Alış formu: canlı fire/maliyet önizlemesi; Satış formu: brüt/net gelir önizlemesi
+- StokPanel: ürün bazlı özet (ort. maliyet, stok değeri, durum badge: Normal/Kritik/Tükendi)
+- RaporlarPanel: tedarikçi/müşteri özeti + aylık marjin tablosu
+- **LucideIcon tip fix:** `LucideIcon` type import (TS2322 çözüldü)
+- Etkilenen dosyalar: `src/modules/Stock.tsx`, `src/modules/detailedplan/dpData.ts`, `OverviewPanel.tsx`, `ExpensePanel.tsx`, `RevenuePanel.tsx`
+- Bir sonraki: Stock'ta gerçek veri girişi test et; Paraşüt → financial_categories eşleştirme modalı
+
+## [2026-05-23 16:00] geliştirme | DetailedPlan panel hesap doğrulama — 5 kritik düzeltme
+- Yapılan:
+  1. **startOffset/endOffset proje düzeyinde ürünlere uygulanıyor**: Shell ctxValue artık projenin startOffset/endOffset'ini her gelir kalemine ve proje giderine yansıtıyor. `revenueFor()` fonksiyonuna da startOffset/endOffset kontrolü eklendi. Önceden proje offset'i yalnızca `facilityShareFor()` içinde çalışıyordu — tüm gelir ve gider hesapları ay 0'dan başlıyordu.
+  2. **CashFlowPanel periods uyumsuzluğu giderildi**: Panel artık PlanCtx'in granularity'sine bağlı `periods` yerine kendi `buildMonths(horizon, startYear, startMonth)` ile monthly periods inşa ediyor. Quarterly/annual modda label hataları ortadan kalktı.
+  3. **OverviewPanel investment hardcoded kaldırıldı**: `₺4,8 Mn` sabit değeri yerine `cashEvents.type === 'investing'` toplamından hesaplanıyor. cashEvents girilmemişse "Yatırım nakit olayı girilmemiş" gösteriyor.
+  4. **BvaSnapshot gerçek veri**: actualsThrough === 0 ise boş durum gösteriliyor. Gerçek veri girilmişse `bvaForPeriod()` ile hesaplıyor.
+  5. **weeklyHorizon + RevenueMix horizon fix**: OverviewPanel buildSeries çağrıları weeklyHorizon alıyor; RevenueMix hardcoded 24 yerine periods.length kullanıyor.
+- Etkilenen dosyalar: `dpData.ts`, `DetailedPlanShell.tsx`, `CashFlowPanel.tsx`, `OverviewPanel.tsx`, `RevenuePanel.tsx`
+- Build: ✅ TypeScript sıfır hata, production build başarılı
+- Bir sonraki: DetailedPlan wizard gerçek veriyle doldur → panel hesaplarını manuel doğrula
+
+## [2026-05-23 17:30] geliştirme | Modül reskin — Faz 1 global CSS katmanı
+- **Yapılan:** Tüm modüllerde tutarsız tasarım sorunu için global CSS çözümü uygulandı
+- `src/index.css`: `.enba-module` scope'u eklendi — `bg-white`, `bg-gray-*`, `border-gray-*`, `rounded-3xl`, `shadow-sm` sınıfları enba tokenlarına eşlendi
+- `src/App.tsx`: Modül içerik div'ine `enba-module bg-enba-bg` eklendi
+- **Etki:** ~80% modül otomatik düzeldi (beyaz → panel rengi, gri kenarlıklar → enba-line, rounded-3xl → rounded-xl, gölgeler kalktı)
+- **Plan:** `Kararlar/2026-05-Modul-Reskin-Plani.md` — Faz 2/3 modüller tek tek el atılacak
+- Etkilenen: `src/index.css`, `src/App.tsx`
+- Build: ✅ TypeScript sıfır hata
+
+## [2026-05-23 17:00] geliştirme | DetailedPlan navigasyon fix — App global ← artık plan listesine döner
+- **Sorun:** Detaylı İş Planı modülündeyken App top bar ← tuşu, plan listesine değil bir önceki modüle (dashboard/modules vb.) gidiyordu
+- **Çözüm:** `backOverride` ref mekanizması:
+  - `App.tsx`: `backOverrideRef = useRef<(() => boolean) | null>()` eklendi; `goBack()` önce bu fonksiyonu çağırır, `true` dönerse modül navigasyonunu atlar
+  - `DetailedPlanModule.tsx`: `setBackOverride` prop alıyor; `view !== 'list'` iken intercept kaydediyor (shell/wizard/ccEditor → liste), `view === 'list'` iken override kaldırıyor; unmount'ta temizleniyor
+- Etkilenen dosyalar: `App.tsx`, `DetailedPlanModule.tsx`
+- Commit: fa057d7
+- Build: ✅ TypeScript sıfır hata

@@ -351,7 +351,15 @@ Veri kaybı riski olan her adımı kullanıcıya açıkça belirt ve onay al.
 - [ ] **E-fatura** — ertelendi
 - [ ] **Bordro/muhasebe** — ertelendi
 
-### DetailedPlan — Test Sonrası Açık Konular (2026-05-20)
+### Tamamlanan (2026-05-21)
+- [x] **Haftalık granülarite** — WeeklyRamp, buildDisplayPeriods, Shell 4-button toggle (Haftalık/Aylık/Çeyreklik/Yıllık) (commit 9dcb5be)
+- [x] **Takvim tatil desteği** — Nager.Date API + custom_holidays Supabase tablosu, migration_v26 çalıştırıldı (commitler d762cb7–53eca3e)
+- [x] **Wizard Projeyi Kaydet fix** — proje adı header'a taşındı (commit d1135a1)
+- [x] **Deren Easter egg** — "deren" klavye sırası → kalp animasyonu
+- [x] **McodeCombobox** — portal + arama, TR açıklamalı
+- [x] **Tedarikçi/Müşteri** — nakliye (₺/kg) + kısmi peşin/vade
+
+### DetailedPlan — Açık Konular
 - [ ] **Panel hesapları doğrulanacak** — wizard verisi PlanCtx'e akıyor mu, 6 panel doğru hesaplıyor mu?
 - [ ] **CostCenter allocationWeight** — aynı tesise bağlı çoklu proje paylaşımı doğru mu?
 - [ ] **startOffset/endOffset** — gider/gelir kalemleri doğru ay'dan başlıyor mu?
@@ -365,11 +373,11 @@ Veri kaybı riski olan her adımı kullanıcıya açıkça belirt ve onay al.
 - [ ] **Login'de otomatik şirket eşleşmesi** — Kullanıcı email'i Supabase'deki profile kaydıyla eşleşince şirket otomatik belirlenmeli; girişte şirket seçim adımı kalkmalı. (Şu an zaten böyle çalışıyor ama super_admin seçici UX'i karışıklık yaratıyor.)
 
 ### Bir Sonraki Oturumda İlk Yapılacak
-**DetailedPlan test bulguları — wizard'ı gerçek veriyle doldur, panel hesaplarını doğrula, hataları düzelt**
+**DetailedPlan panel doğrulama — wizard'ı gerçek veriyle doldur, 6 panel hesaplarını doğrula, sonra Paraşüt→financial_categories eşleştirmesi**
 
 ### Bekleyen Kullanıcı Aksiyonu
-- [x] **Supabase SQL:** `migration_v25b_parasut_superadmin_rls.sql` çalıştırıldı (super_admin RLS güncelleme — 2026-05-19)
-- Test kullanıcısı oluşturma: Supabase Dashboard → Auth → Add user → profil SQL'ini çalıştır (company_id seçimi gerekiyor)
+- [x] **Supabase SQL:** `migration_v25b_parasut_superadmin_rls.sql` çalıştırıldı (2026-05-19)
+- [x] **Supabase SQL:** `migration_v26_custom_holidays.sql` çalıştırıldı (2026-05-21)
 
 ---
 

@@ -1,0 +1,136 @@
+Alman Muhasebe (SKR) ? Türk Tek Düzen Hesap Planý (TDHP) Eksiksiz Eþleþtirme;;;;
+Toplam 131 kod  |  VUK / TMS / TFRS / KVK Referanslý  |  Enba Simülasyon;;;;
+"Alman Kodu
+(SKR)";Alman Açýklama (EN);"TR Hesap Kodu
+(TDHP)";TR Hesap Adý;Açýklama / Notlar
+M105;Sales (gross) - Core Business ext.;600.01;Yurt Ýçi Satýþlar (3. Þahýslar);Üçüncü þahýslara yapýlan brüt yurt içi satýþlar. TDHP 600 Yurt Ýçi Satýþlar ana hesabý. TFRS 15 kapsamýnda hasýlat tanýma ilkeleri uygulanýr.
+M106;Sales (gross) - Core Business affil.;601.01;Yurt Dýþý Satýþlar (Grup Þirketleri);"Baðlý/grup þirketlerine yapýlan ihracat satýþlarý. 601 Ýhracat Satýþlarý; transfer fiyatlandýrmasý (KVK 13) ve gümrük kýymeti açýsýndan belgeleme zorunlu."
+M109;Total Sales (gross) - Core Business;600/601;Brüt Satýþlar Toplamý;600+601 hesaplarýnýn toplamý. Yurt içi ve yurt dýþý brüt satýþlar.
+M115;Customer Bonus;610.02;Müþteri Primi / Ciro Primi (3. Þahýslar);Satýþ hedefi karþýlýðý müþterilere ödenen ciro primleri. 610 Satýþtan Ýadeler ve Ýndirimler. Prim faturasý KDV Genel Uygulama Tebliði kapsamýnda düzenlenir.
+M116;Customer Bonus affil.;610.03;Müþteri Primi – Grup Þirketleri;Grup þirketlerine ödenen ciro primleri. Transfer fiyatlandýrmasý belgesi (5 yýl saklama) zorunlu. KVK 13 emsale uygunluk ilkesi.
+M120;Claims;121.01 / 128;Alacak Talebi / Þüpheli Alacak (3. Þahýslar);Müþterilerden talep edilen tazminat ve hasar alacaklarý. Tahsil þüpheli ise 128 + 654 Karþýlýk Giderleri. Kesinleþmemiþse 121 yardýmcý hesabýnda izlenir.
+M121;Claims affil.;131.01 / 138;Grup Þirketlerinden Alacak Talebi;Grup/baðlý þirketlerden talep edilen alacaklar. 131 Ortaklardan Alacaklar veya 138 Diðer Ýliþkili Taraf Alacaklarý. Transfer fiyatlandýrmasý belgesi zorunlu.
+M125;Discount;611.01;Satýþ Ýskontosu (3. Þahýslar);"Fatura üstü ve sonradan verilen satýþ iskontolarý. 611 Satýþ Ýskontolarý. Fatura üstü iskonto KDV matrahýný düþürür; sonradan verilen iskonto için ayrý fatura gerekir."
+M126;Discount affil.;611.02;Satýþ Ýskontosu – Grup Þirketleri;Grup þirketlerine uygulanan ticari iskontolar. 611 altýnda yardýmcý hesap. Emsalsiz iskonto oranlarý KVK 13 riski doðurur.
+M130;Freight refund;612.01;Navlun / Nakliye Ýadesi (3. Þahýslar);Müþteriye iade edilen veya üstlenilen nakliye bedeli. 612 Diðer Ýndirimler. Ayrýca fatura edilmiþse 600'den mahsup yerine 612 kullanýmý muhasebe bütünlüðünü korur.
+M131;Freight refund affil.;612.02;Navlun / Nakliye Ýadesi – Grup Þirketleri;Grup þirketlerine iade edilen nakliye bedelleri. Transfer fiyatlandýrmasý belgesi ve emsale uygun fiyat zorunlu.
+M139;Reduction in Sales - Core Business;610.01;Satýþtan Ýadeler ve Ýndirimler (Toplam);M115+M116+M120+M121+M125+M126+M130+M131 toplamý. 610/611/612 hesap grubunun ana toplamý.
+M145;Revenues from trade goods ext.;600.02;Ticari Mal Satýþlarý (3. Þahýslar);Alým-satým faaliyetinden üçüncü þahýslara yapýlan ticari mal satýþlarý (brüt). 153 Ticari Mallar stok hesabýyla iliþkili.
+M146;Revenues from trade goods affil.;601.02;Ticari Mal Satýþlarý – Grup Þirketleri;Grup þirketlerine yapýlan ticari mal satýþlarý. Transfer fiyatlandýrmasý kapsamýnda piyasa fiyatý esas alýnýr.
+M149;Sales from trade goods (net);600.02 / 601.02;Ticari Mal Satýþlarý (Net);"M145+M146 eksi ilgili iadeler. Ticari mal satýþlarýnýn net tutarý; 620 Satýlan Ticari Mallar Maliyeti karþý hesabýyla izlenir."
+M155;Other Sales (net) ext.;649.01;Diðer Satýþlar – 3. Þahýslar (Net);Asýl faaliyet dýþý hizmet, yan ürün veya atýk satýþlarý. 649 Diðer Faaliyetlerden Olaðan Gelir ve Karlar altýnda yardýmcý hesap.
+M156;Other Sales (net) affil.;649.02;Diðer Satýþlar – Grup Þirketleri (Net);Grup þirketlerine yapýlan diðer satýþlar. Transfer fiyatlandýrmasý belgesi zorunlu.
+M159;Other Sales (net);649;Diðer Satýþlar Toplamý (Net);M155+M156 toplamý. 649 Diðer Faaliyetlerden Olaðan Gelir ve Karlar.
+M179;TOTAL SALES (net);60/601/649;Toplam Net Satýþlar;M109+M149+M159 eksi M139. Tüm iþ kollarýndan elde edilen net satýþ gelirlerinin toplamý.
+M189;Change in inventory;711 / 152;Yarý Mamul ve Mamul Stok Deðiþimi;Dönem baþý ve sonu mamul/yarý mamul stok farký. 711 Yansýtma hesabý veya 152 Mamuller stok artýþ/azalýþý olarak raporlanýr. TMS 2 kapsamý.
+M199;OPERATING INCOME;60x/649/711;Faaliyet Gelirleri Toplamý;Net satýþlar + stok deðiþimi. Ýþletmenin temel faaliyet gelirlerinin tamamý.
+M209;Shipping expenses;760.01;Sevkiyat ve Nakliye Giderleri;Ürün sevkiyat, yurt içi/dýþý taþýma giderleri. 760 Pazarlama Satýþ Daðýtým Giderleri altýnda izlenir. Ýhracat navlunu için ayrý yardýmcý hesap açýlabilir.
+M215;Storage costs;760.05;Depolama ve Antrepo Giderleri;Dýþ depo kiralama, antrepo ve soðuk hava deposu giderleri. 760 Pazarlama Satýþ Daðýtým Giderleri. Gümrük antrepo maliyetleri dahil.
+M220;Customs duties;760.10;Gümrük Vergi ve Harçlarý;Ýthalat/ihracat gümrük vergileri ve harçlarý. Stok maliyetine eklenmeyip doðrudan gider yazýlan kýsým 760 altýnda izlenir.
+M225;Commissions;760.15;Satýþ Komisyonlarý (3. Þahýslar);Acentelere, distribütörlere ve satýþ temsilcilerine ödenen komisyonlar. 760 Pazarlama Satýþ Daðýtým Giderleri. KDV stopajý deðerlendirilmeli.
+M226;Commissions affil.;760.16;Satýþ Komisyonlarý – Grup Þirketleri;"Grup þirketlerine ödenen satýþ komisyonlarý. Transfer fiyatlandýrmasý belgesi zorunlu; KVK 13 emsale uygunluk ilkesi."
+M230;Transport insurance;760.20;Nakliye Sigorta Giderleri;"Sevkiyat ve nakliye sürecindeki kargo sigortasý giderleri. 760 altýnda; ihracat CIF iþlemlerinde fatura deðerine dahil edilebilir."
+M235;Incidental expenses;760.25;Satýþa Ýliþkin Çeþitli Giderler;Ambalaj, etiket, sertifika ve diðer satýþ yan giderleri. 760 Pazarlama Satýþ Daðýtým Giderleri.
+M240;Bad debts;654.01;Þüpheli Alacak Karþýlýk Gideri;"Tahsil edilemeyen alacaklar için ayrýlan karþýlýk. 654 Karþýlýk Giderleri; karþýlýk 128 Þüpheli Ticari Alacaklar karþý hesabýyla kapatýlýr. VUK 323. madde."
+M245;Other sales expenses;760.99;Diðer Satýþ Giderleri;Yukarýdaki satýþ gider kategorilerine girmeyen çeþitli satýþ giderleri. 760 Pazarlama Satýþ Daðýtým Giderleri.
+M249;Sales expenses;760;Toplam Satýþ Giderleri;M209+M215+M220+M225+M226+M230+M235+M240+M245 toplamý. 760 Pazarlama Satýþ Daðýtým Giderleri ana hesap grubu.
+M299;NET REVENUE;60;Net Satýþ Gelirleri;M199 eksi M249. Tüm faaliyet gelirleri eksi satýþ giderleri. TDHP'de 60 hesap grubu net satýþlarý ifade eder.
+M305;Raw mat. & bought products (purch. parts);150 / 710;Hammadde ve Satýn Alýnan Parçalar;"Ana üretim hammaddesi ve dýþarýdan satýn alýnan yarý mamul/parça maliyetleri. 710 Direkt Ýlk Madde ve Malzeme Giderleri (maliyet muhasebesi); 150 Ýlk Madde ve Malzeme (stok)."
+M310;Chemicals;150.02 / 710.02;Kimyasal Madde Giderleri;Üretimde kullanýlan kimyasallar, çözücüler ve katký maddeleri. 710 altýnda yardýmcý hesapla izlenir. Tehlikeli madde mevzuatý (REACH/RoHS) kapsamýnda stok takibi önemli.
+M315;Cost of tools, wire, felt;150.03 / 710.03;Alet, Tel, Keçe ve Sarf Malzeme Giderleri;Üretim sýrasýnda tüketilen alet, aparat, tel ve keçe gibi sarf malzemeleri. 710 Direkt veya 730 Genel Üretim Giderleri altýnda sýnýflandýrýlýr.
+M320;Other aux. and operation mat.;150.04 / 730.10;Diðer Yardýmcý ve Ýþletme Malzemeleri;Yað, ambalaj, temizlik malzemesi gibi dolaylý üretim malzemeleri. 730 Genel Üretim Giderleri altýnda izlenir.
+M325;External production services;730.05;Dýþarýdan Saðlanan Üretim Hizmetleri / Fason;Fason üretim ve dýþarýdan saðlanan üretim süreçleri. 730 Genel Üretim Giderleri. Fason faturalarýnda tevkifat uygulamasý (KDV Tebliði) dikkate alýnmalý.
+M339;Material expenditure - Core Business;710/730;Ana Ýþ Kolu Malzeme Giderleri Toplamý;M305+M310+M315+M320+M325 toplamý. Asýl üretim faaliyetine ait toplam malzeme maliyeti.
+M349;Material expenditures - Trade goods;620;Satýlan Ticari Mallar Maliyeti;Ticari mal satýþlarýnýn maliyet bedeli. 620 Satýlan Ticari Mallar Maliyeti. Dönem sonu stok ile FIFO/ortalama maliyet yöntemi uygulanýr (TMS 2).
+M359;Other Material expenditures;730.99;Diðer Malzeme Giderleri;Yukarýdaki kategorilere girmeyen diðer malzeme tüketimleri. 730 Genel Üretim Giderleri altýnda yardýmcý hesap.
+M369;Material expenditure - TOTAL;150/710/730;Toplam Malzeme Giderleri;M339+M349+M359 toplamý. Tüm üretim ve ticaret faaliyetlerine ait malzeme maliyetlerinin genel toplamý.
+M399;CONTRIBUTION;[Ara Toplam];Brüt Katký Payý / Brüt Kar;"M299 eksi M369. Satýþ gelirlerinden malzeme maliyetleri düþüldükten sonra kalan brüt katký payý. Türk tek düzende ayrý hesap yoktur; yönetim muhasebesi göstergesidir."
+M405;Power;770.40;Elektrik Enerjisi Giderleri;Fabrika ve ofis elektrik tüketim giderleri. Üretimde 730.40, yönetimde 770.40 altýnda izlenir. Elektrik faturalarýnda EPDK payý ve enerji fonu ayrýþtýrýlmalý.
+M410;Fuels / Steam;770.41;Isýnma, Yakýt ve Buhar Giderleri;Doðalgaz, fuel-oil, kömür ve endüstriyel buhar tüketim giderleri. Üretim tesisinde 730.41 altýnda sýnýflandýrýlýr.
+M415;Water;770.42;Su Tüketim Giderleri;Ýþletme su kullaným bedeli. Üretim suyundan ayýrt etmek gerekirse 730.42 ile izlenebilir.
+M419;Energy consumption;770.49;Toplam Enerji ve Tüketim Giderleri;M405+M410+M415 toplamý. Enerji verimliliði takibi için yardýmcý hesap bazýnda raporlama önerilir.
+M450;Wages;770.01;Ýþçi Ücretleri (Brüt);Üretim ve diðer iþçilerin brüt maaþ/ücret giderleri. Direkt iþçilik için 720, endirekt iþçilik için 730 veya 770 altýnda izlenebilir.
+M455;Social security expenses wages;770.02;Ýþçi SGK Ýþveren Payý;Ýþçi ücretleri üzerindeki SGK iþveren payý gideri. Borç karþýlýðý 361 Ödenecek SGK Primleri. 5510 sayýlý Kanun kapsamý.
+M460;Salaries;770.03;Memur/Personel Maaþlarý (Brüt);Ýdari ve yönetim personelinin brüt maaþ giderleri. 770 Genel Yönetim Giderleri altýnda izlenir.
+M465;Social security expenses salaries;770.04;Memur/Personel SGK Ýþveren Payý;Ýdari personel maaþlarý üzerindeki SGK iþveren payý. 361 Ödenecek SGK Primleri karþý hesabý.
+M470;Severance expenses;472 / 770.06;Kýdem Tazminatý Gideri / Karþýlýðý;"Ýþ Kanunu 14. madde kapsamýnda ayrýlan kýdem tazminatý karþýlýðý. 472 Kýdem Tazminatý Karþýlýðý (pasif); gider tarafý 770.06. TMS 19 kapsamýnda aktüeryal hesaplama gerekebilir."
+M475;Pension expenses;770.07;Emeklilik ve Bireysel Emeklilik Giderleri;Ýþveren katkýlý BES (Bireysel Emeklilik Sistemi) ve tamamlayýcý emeklilik prim giderleri. Vergi avantajý limitleri (GVK 63/3) dikkate alýnmalý.
+M480;Other benefit costs;770.08;Diðer Personel Sosyal Giderleri;Personele saðlanan saðlýk sigortasý, eðitim, yemek, servis ve diðer sosyal yardýmlar. SGK matrahýndan istisna limitleri kontrol edilmeli.
+M489;Personnel expenses;770.01-08;Toplam Personel Giderleri;M450+M455+M460+M465+M470+M475+M480 toplamý. Tüm iþçilik maliyetlerinin genel toplamý.
+M509;Maintenance costs;770.20;Bakým ve Onarým Giderleri;Makine, ekipman, bina ve ofis bakým-onarým giderleri. Üretim ekipmanlarý için 730.20. Aktivasyon sýnýrýný aþan büyük onarýmlar duran varlýða eklenir (VUK 272).
+M529;Environmental costs;770.25;Çevre, Atýk Yönetimi ve ÝSG Giderleri;Çevre izni, atýk bertaraf, ÇED ve Ýþ Saðlýðý Güvenliði giderleri. 2872 sayýlý Çevre Kanunu ve 6331 sayýlý ÝSG Kanunu kapsamý.
+M604;Third party services/leased pers. production;730.05;Dýþarýdan Saðlanan Üretim Hizmetleri;Fason üretim ve üretim sürecine giren dýþ personel/hizmetler. 730 Genel Üretim Giderleri. KDV tevkifatý (fason için 7/10) uygulanabilir.
+M605;Third party services/leased pers. excl. prod.;770.06;Dýþarýdan Saðlanan Personel Hizmetleri (Yönetim);Ýdari süreçlerdeki dýþarýdan saðlanan personel/hizmet. 770 Genel Yönetim Giderleri.
+M610;Rental charges;770.10;Kira Giderleri;Ofis, depo, araç kira giderleri. TFRS 16 kapsamýnda faaliyet/finansal kiralama ayrýmý yapýlmalý. Finansal kiralamada kullaným hakký varlýðý aktifleþtirilir.
+M615;Travel expenses;770.30;Seyahat ve Konaklama Giderleri;Yurt içi/dýþý iþ seyahati, ulaþým, konaklama, harcýrah giderleri. GVK harcýrah istisna limitleri dikkate alýnmalý.
+M620;Communication exp.;770.50;Ýletiþim Giderleri;Telefon, internet, posta ve kargo giderleri.
+M625;Legal/audit/consultation costs;770.60;Danýþmanlýk, Hukuk ve Denetim Giderleri;Avukatlýk, YMM/SMMM, iþ ve vergi danýþmanlýðý ücretleri. %20 stopaj uygulamasý deðerlendirilmeli.
+M630;Advertising/publicity costs;760.20;Pazarlama ve Reklam Giderleri;Reklam, tanýtým, fuar katýlým ve pazarlama giderleri. 760 Pazarlama Satýþ Daðýtým Giderleri.
+M635;Insurances (excl. transport insurance);770.70;Sigorta Giderleri (Nakliye Hariç);Yangýn, hýrsýzlýk, sorumluluk sigortasý giderleri. Peþin ödenen kýsým 180 Peþin Ödenmiþ Giderler hesabýnda izlenir.
+M640;IT-costs ext.;770.80;BT ve Yazýlým Giderleri (Dýþ Kaynak);Yazýlým lisansý, bulut hizmetleri, IT destek giderleri. Aktivasyon kriterlerini saðlayanlar 260 Haklar altýnda aktifleþtirilir.
+M641;IT-costs affil.;770.81;Grup Þirketlerinden IT Giderleri;Grup içi IT fatura paylaþýmlarý. Transfer fiyatlandýrmasý (KVK 13) belgesi zorunlu.
+M645;Holding/Division/Admin. costs;770.90;Holding Yönetim Gider Payý;"Merkezi yönetim ve holding tarafýndan aktarýlan genel gider paylarý. Ýliþkili taraf iþlemi; emsale uygunluk belgesi zorunlu."
+M650;Bank charges;653.01;Banka ve Komisyon Giderleri;EFT, havale komisyonu, hesap iþletim ücreti. 653 Komisyon Giderleri.
+M655;Loss from fx-differences excl. financing;656.01;Ticari Kambiyo Zararlarý;"Ticari alacak ve borçlardan kaynaklanan kur farký zararlarý. 656 Kambiyo Zararlarý; TMS 21 kapsamý."
+M660;Other overhead costs;770.99;Diðer Genel Yönetim Giderleri;Yukarýdaki kategorilere girmeyen çeþitli genel yönetim giderleri.
+M665;Taxes and duties;770.15;Vergi, Resim, Harç Giderleri;Damga vergisi, belediye harçlarý, ÖTV gibi gider yazýlabilen vergiler. Kurumlar vergisi bu hesaba alýnmaz (691).
+M689;Other expenditures;770.98;Diðer Olaðandýþý Gider ve Zararlar;Olaðan dýþý nitelikteki çeþitli gider kalemleri. 689 Diðer Olaðandýþý Gider ve Zararlar.
+M705;Capitalization of own work;258 / 770 (-);Öz Yapým Duran Varlýk Aktivasyonu;"Ýþletmenin kendi ürettiði veya inþa ettiði duran varlýklarýn maliyeti aktifleþtirilir. 258 Yapýlmakta Olan Yatýrýmlar borçlandýrýlýr; ilgili gider hesaplarý azaltýlýr. TMS 16 kapsamý."
+M710;Income disp.& write-up FA, excl. FinA;679.01;Duran Varlýk Satýþ Karý / Deðer Artýþý;"Maddi duran varlýklarýn defter deðerinin üzerinde satýþýndan doðan karlar ve yeniden deðerleme artýþlarý. 679 Diðer Olaðandýþý Gelir ve Karlar; TMS 16 yeniden deðerleme."
+M711;Income disp.& write-up FA, excl. FinA aff.;679.02;Duran Varlýk Satýþ Karý – Grup Þirketleri;Grup þirketlerine yapýlan duran varlýk satýþlarýndan elde edilen karlar. Transfer fiyatlandýrmasý kapsamýnda emsale uygun fiyat zorunlu.
+M715;Reversal of provisions;644;Karþýlýk Ýptalleri / Konusu Kalmayan Karþýlýklar;"Önceki dönemlerde ayrýlan ve ihtiyaç kalmayan karþýlýklarýn iptali. 644 Konusu Kalmayan Karþýlýklar hesabý; gelir etkisi dönem karýna yansýr."
+M720;Profits from fx-differences excl. finance;646.01;Ticari Kambiyo Karlarý;"Ticari alacak ve borçlardan kaynaklanan kur farký karlarý. 646 Kambiyo Karlarý; TMS 21 kapsamýnda raporlanýr."
+M725;Other operating income;649.03;Diðer Faaliyetlerden Gelirler (3. Þahýslar);Kira geliri, komisyon geliri, hizmet geliri gibi diðer olaðan faaliyet gelirleri. 649 Diðer Faaliyetlerden Olaðan Gelir ve Karlar.
+M726;Other operating income affil.;649.04;Diðer Faaliyetlerden Gelirler – Grup Þirketleri;Grup þirketlerinden elde edilen diðer olaðan gelirler. Transfer fiyatlandýrmasý belgesi zorunlu.
+M739;Other operating income - TOTAL;649;Diðer Faaliyet Gelirleri Toplamý;M705+M710+M711+M715+M720+M725+M726 toplamý. 649 hesap grubunun genel toplamý.
+M759;Leasing;770.11;Finansal Kiralama Giderleri;Finansal kiralama faiz ve giderleri. TFRS 16 kapsamýnda kullaným hakký varlýðý ve kira yükümlülüðü olarak raporlanýr.
+TOTAL COSTS;TOTAL COSTS;7xx;Toplam Faaliyet Maliyetleri;7 nolu hesap sýnýfýnýn tamamý. 700-799 arasý tüm üretim ve faaliyet maliyet hesaplarý.
+M769;EBITDA;[Ara Toplam];FAVÖK – Faiz/Amortisman/Vergi Öncesi Kar;"M799 + M789 (amortisman geri eklenerek hesaplanýr). Türk tek düzende ayrý hesap yoktur; analitik hesaplama ile bulunur."
+M775;Ordinary depr. and amort. excl. goodwill;770.75;Maddi/Maddi Olmayan Varlýk Amortismaný;Bina, makine, demirbaþ ve maddi olmayan varlýklarýn normal amortisman giderleri. 257 Birikmiþ Amortismanlar karþý hesap. VUK amortisman oranlarý veya TMS 16/38 faydalý ömür bazlý.
+M780;Ordinary amort. of goodwill;770.76;Þerefiye Amortismaný;"Ticari iþletme devrinde oluþan þerefiyenin itfasý. TFRS'de yýllýk amortisman yoktur; TMS 36 deðer düþüklüðü testi yapýlýr. Türk vergi uygulamasýnda 5 yýlda itfa."
+M785;Extraordinary depr. and amortization;658;Olaðanüstü Amortisman ve Deðer Düþüklüðü;"Beklenmedik hasar veya hýzlandýrýlmýþ amortismanlar. 658 Deðer Düþüklüðü Zararlarý; TMS 36 kapsamý."
+M787;Depr. CurrA (exceeding convent. depr.);689;Kanunen Kabul Edilmeyen Amortisman;"VUK'ta kabul edilen sýnýrý aþan amortisman farklarý. Vergi matrahýna eklenir; 689 Diðer Olaðandýþý Gider ve Zararlar."
+M789;Depreciation;770/658;Toplam Amortisman Giderleri;M775+M780+M785+M787 toplamý. 257 Birikmiþ Amortismanlar ve 268 Birikmiþ Ýtfa Paylarý karþý hesaplar.
+M799;EBIT;[Ara Toplam];Faiz ve Vergi Öncesi Kar (EBIT);M769 eksi M789. Finansman giderleri ve vergi öncesi faaliyet karý. Analitik hesaplama ile tespit edilir.
+M800;Income investments (dividends);640;Ýþtiraklerden Temettü Gelirleri;"Ýþtirak ve baðlý ortaklýklardan alýnan kar paylarý. 640 Ýþtiraklerden Temettü Gelirleri; TMS 28. Ýþtirak yöntemi uygulananlar için 640 yerine özkaynak deðiþimi izlenir."
+M801;Income investments (dividends) affil.;641;Baðlý Ortaklýklardan Temettü Gelirleri;Baðlý ortaklýklardan alýnan temettü. 641 hesabý. Yurt içi iþtirak temettüsünde KVK 5/1-a istisnasý deðerlendirilmeli.
+M805;Income other securities/investm.;642;Menkul Kýymet Gelirleri (3. Þahýslar);Hisse senedi, tahvil ve diðer menkul kýymetlerden elde edilen gelirler. 642 Menkul Kýymet Gelirleri.
+M806;Income other securities/investm. affil.;642.02;Menkul Kýymet Gelirleri – Grup Þirketleri;Grup þirketlerinin menkul kýymetlerinden elde edilen gelirler. Transfer fiyatlandýrmasý belgesi zorunlu.
+M810;Income from long term loans;642.03;Verilen Uzun Vadeli Kredi Faiz Gelirleri;Uzun vadeli verilen kredilerden tahakkuk eden faiz gelirleri. 642 altýnda yardýmcý hesap.
+M811;Income from long term loans affil.;642.04;Grup Þirketlerine Verilen Kredi Faiz Gelirleri;Grup þirketlerine verilen uzun vadeli kredilerin faiz gelirleri. Örtülü sermaye (KVK 12) ve transfer fiyatlandýrmasý (KVK 13) kurallarý deðerlendirilmeli.
+M815;Other interest income;642.01;Banka Faiz Gelirleri;Vadeli mevduat ve diðer banka hesaplarýndan elde edilen faiz gelirleri. Stopaj kesintisi (GVK geçici 67) dikkate alýnmalý.
+M816;Other interest income affil.;642.05;Grup Þirketlerinden Faiz Gelirleri;"Grup þirketlerine açýlan kýsa vadeli kredilerin faiz gelirleri. Piyasa faiz oraný esas alýnmalý; emsalsiz oran KVK 13 riski."
+M820;Other financial income;649.05;Diðer Finansal Gelirler (3. Þahýslar);Sýnýflandýrýlamayan diðer finansal gelirler. 649 Diðer Faaliyetlerden Olaðan Gelir ve Karlar.
+M821;Other financial income affil.;649.06;Diðer Finansal Gelirler – Grup Þirketleri;Grup þirketlerinden elde edilen diðer finansal gelirler. Transfer fiyatlandýrmasý belgesi zorunlu.
+M825;Income disp.& write-up FinA & secur. CurrA;645;Finansal Varlýk Satýþ Karý / Deðer Artýþý;"Finansal duran varlýklar ve menkul kýymetlerin satýþýndan elde edilen karlar. 645 Menkul Kýymet Satýþ Karlarý; TFRS 9 gerçeðe uygun deðer deðiþimi."
+M827;FX-profits finance;646.02;Finansal Kambiyo Karlarý;"Finansal borç ve alacaklardan kaynaklanan kur farký karlarý. 646 Kambiyo Karlarý; TMS 21 uygulamasý."
+M829;Financial Income;64;Toplam Finansal Gelirler;M800 ile M827 arasýndaki tüm kalemlerin toplamý. 640-649 finansal gelir hesap grubu.
+M835;Expenses of FinA & securites CurrA;655;Menkul Kýymet Satýþ Zararlarý (3. Þahýslar);Portföydeki menkul kýymetlerin satýþýndan doðan zararlar. 655 Menkul Kýymet Satýþ Zararlarý.
+M836;Expenses of FinA & securites CurrA affil.;655.02;Menkul Kýymet Satýþ Zararlarý – Grup Þirketleri;Grup þirketlerine ait menkul kýymetlerin satýþýndan doðan zararlar. Transfer fiyatlandýrmasý kapsamýnda deðerlendirilmeli.
+M840;Amort. FinA & securities CurrA;657;Finansal Varlýk Deðer Düþüklüðü (3. Þahýslar);"Ýþtirak, baðlý ortaklýk ve menkul kýymetlerde kalýcý deðer azalmalarý. 657 Deðer Düþüklüðü Zararlarý; TMS 36 / TFRS 9 kapsamý."
+M841;Amort. FinA & securities CurrA affil.;657.02;Finansal Varlýk Deðer Düþüklüðü – Grup Þirketleri;Grup þirketlerine ait finansal varlýklarda deðer azalmasý. Konsolide finansal tablolarda elimine edilir.
+M845;Interest expenses;780.01;Kýsa Vadeli Kredi Faiz Giderleri;Banka kredileri ve kýsa vadeli borçlanmalarýn faiz giderleri. 780 Finansman Giderleri. BSMV (%5) ve KKDF (%0 ihracat, %15 diðer) deðerlendirmesi gerekir.
+M846;Interest expenses affil.;780.02;Grup Ýçi Faiz Giderleri;"Grup þirketlerine ödenen faizler. Örtülü sermaye (KVK 12) ve transfer fiyatlandýrmasý (KVK 13) kurallarý kritik; aþan kýsým KKEG."
+M850;Other financial expenses;659;Diðer Finansal Giderler (3. Þahýslar);Sýnýflandýrýlamayan diðer finansman giderleri. 659 Diðer Finansal Gider ve Zararlar.
+M851;Other financial expenses affil.;659.02;Diðer Finansal Giderler – Grup Þirketleri;Grup þirketlerine ödenen diðer finansal giderler. Transfer fiyatlandýrmasý belgesi zorunlu.
+M857;fx-losses finance;656.02;Finansal Kambiyo Zararlarý;"Finansal borç ve alacaklardan kaynaklanan kur farký zararlarý. 656.02 yardýmcý hesabý; TMS 21 kapsamý."
+M859;Financial expenses;780/65;Toplam Finansman Giderleri;M835+M836+M840+M841+M845+M846+M850+M851+M857 toplamý. 780 Finansman Giderleri + 65 grubu toplamý.
+M869;FINANCIAL RESULT;[Ara Toplam];Net Finansman Sonucu;M829 eksi M859. Finansal gelirler eksi finansal giderler. Analitik hesaplama ile tespit edilir.
+M879;RESULT OF ORDINARY ACTIVITIES;[Ara Toplam];Olaðan Faaliyet Karý/Zararý;M799 + M869. EBIT + Net Finansman Sonucu. 690 hesabýna aktarým öncesi ara deðer.
+M885;Extraordinary income;679;Olaðandýþý Gelir ve Karlar;Beklenmedik, sýk olmayan gelirler (kamulaþtýrma tazminatý, sigorta tazminatý vb.). 679 Diðer Olaðandýþý Gelir ve Karlar.
+M887;Extraordinary expenses;689;Olaðandýþý Gider ve Zararlar;Beklenmedik, sýk olmayan giderler. 689 Diðer Olaðandýþý Gider ve Zararlar. VUK 197 kapsamýnda deðerlendirme.
+M889;Extraordinary result;[Ara Toplam];Net Olaðandýþý Dönem Sonucu;M885 eksi M887. Türk tek düzende 690 hesabýna aktarýlýr.
+M899;EBT;690;Vergi Öncesi Dönem Karý/Zararý;Tüm gelir ve giderler toplandýktan sonra vergi öncesi kar. 690 Dönem Karý veya Zararý hesabý.
+M909;Taxes on income;691.01;Kurumlar Vergisi Karþýlýðý;"Hesaplanan kurumlar vergisi. 691 Dönem Karý Vergi ve Diðer Yasal Yükümlülük Karþýlýklarý. 5520 sayýlý KVK kapsamý; geçici vergi mahsuplarý dikkate alýnýr."
+M910;RESULT AFTER TAXES;692;Vergi Sonrasý Net Dönem Karý/Zararý;Vergi sonrasý dönem net sonucu. 692 Dönem Net Karý veya Zararý hesabý.
+M915;Other taxes;689.05;Kanunen Kabul Edilmeyen Vergiler;"KKEG kapsamýndaki vergi ve kesintiler (trafik cezasý, MTV vb.). Vergi matrahýna eklenir; 689 altýnda izlenir."
+M919;NET INCOME FOR THE PERIOD;590/591;Dönem Net Karý veya Zararý;Dönem sonu kapanýþ hesabý. 590 Dönem Net Karý veya 591 Dönem Net Zararý. Bilançoda özsermaye altýnda görünür.
+M930;Release of untaxed reserves;549.01;Vergilendirilmemiþ Yedek Akçe Çözümü;Vergi istisnasýndan yararlanarak ayrýlmýþ fonlarýn kullanýmý veya çözümü. 549 Özel Fonlar hesabý.
+M935;Release of capital reserves;520/521;Sermaye Yedeklerinden Çözüm;Hisse senedi ihraç primleri veya yeniden deðerleme fonlarýndan yapýlan çözümler. 520 Hisse Senedi Ýhraç Primleri, 521 Hisse Senedi Ýptal Karlarý. TTK 462.
+M940;Release of revenue reserves;540/541;Kar Yedeklerinden Çözüm;Yasal yedek veya statü yedeklerinin kullanýmý. 540 Yasal Yedekler, 541 Statü Yedekleri. Genel kurul kararý gerekir (TTK 519).
+M950;Allocation to untaxed reserves;549.02;Vergilendirilmemiþ Yedek Akçe Ayrýlmasý;"Yatýrým indirimi veya diðer vergi teþviklerinden yararlanmak amacýyla ayrýlan özel fonlar. 549 Özel Fonlar; KVK 5 kapsamý."
+M955;Allocation to revenue reserves;542;Olaðanüstü Yedek Akçe Ayrýlmasý;"Genel kurul kararýyla ayrýlan olaðanüstü yedek akçeler. 542 Olaðanüstü Yedekler. TTK 519-521 kapsamý; %5 yasal yedek zorunluluðu tamamlanmadan ihtiyari yedek ayrýlamaz."
+M959;Release/Allocation reserves;540-549;Yedek Akçe Net Hareketleri;M930+M935+M940 eksi M950+M955. Tüm yedek akçe çözüm ve ayrým iþlemlerinin net etkisi.
+M960;Minority interest;500.02 / 58;Azýnlýk Paylarý;"Baðlý ortaklýklardaki azýnlýk hissedarlarýna ait kar payý. Konsolide finansal tablolarda 58 Azýnlýk Paylarý hesabý; TFRS 10 kapsamý."
+M970;Distribution of result;590 ? 331/500;Dönem Karý Daðýtýmý;Genel kurul kararýyla gerçekleþtirilen temettü daðýtýmý. 590 Dönem Net Karý borcuna karþý 331 Ortaklara Borçlar veya 500 Sermaye alacaklandýrýlýr. TTK 507-523.
+M999;NET INCOME;590;Nihai Daðýtýlabilir Net Kar;Tüm daðýtým ve aktarýmlar sonrasý nihai kar. 590 Dönem Net Karý hesabýnda izlenen daðýtýlabilir dönem karý.

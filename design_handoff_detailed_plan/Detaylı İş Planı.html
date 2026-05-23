@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=1440" />
+<title>Detaylı İş Planı — Enba Similasyon</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          'enba-orange':   'rgb(var(--enba-orange) / <alpha-value>)',
+          'enba-orange-2': 'rgb(var(--enba-orange-2) / <alpha-value>)',
+          'enba-orange-d': 'rgb(var(--enba-orange-d) / <alpha-value>)',
+          'enba-dark':     'rgb(var(--enba-dark) / <alpha-value>)',
+          'enba-bg':       'rgb(var(--enba-bg) / <alpha-value>)',
+          'enba-panel':    'rgb(var(--enba-panel) / <alpha-value>)',
+          'enba-panel-2':  'rgb(var(--enba-panel-2) / <alpha-value>)',
+          'enba-line':     'rgb(var(--enba-line) / <alpha-value>)',
+          'enba-line-2':   'rgb(var(--enba-line-2) / <alpha-value>)',
+          'enba-text':     'rgb(var(--enba-text) / <alpha-value>)',
+          'enba-muted':    'rgb(var(--enba-muted) / <alpha-value>)',
+          'enba-dim':      'rgb(var(--enba-dim) / <alpha-value>)',
+          'enba-green':    'rgb(var(--enba-green) / <alpha-value>)',
+          'enba-red':      'rgb(var(--enba-red) / <alpha-value>)',
+          'enba-amber':    'rgb(var(--enba-amber) / <alpha-value>)',
+          'enba-blue':     'rgb(var(--enba-blue) / <alpha-value>)',
+        },
+        fontFamily: {
+          sans: ['Poppins', 'system-ui', 'sans-serif'],
+          mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+        },
+        boxShadow: {
+          'enba': '0 1px 0 rgba(255,255,255,0.04) inset, 0 8px 24px rgba(0,0,0,0.35)',
+        }
+      }
+    }
+  }
+</script>
+
+<style>
+  /* === Theme tokens === */
+  :root, :root[data-theme="dark"] {
+    --enba-orange:    227 82 5;
+    --enba-orange-2:  255 106 31;
+    --enba-orange-d:  179 63 2;
+    --enba-bg:        20 20 20;     /* page background */
+    --enba-dark:      26 26 26;     /* sidebar, header */
+    --enba-panel:     33 33 33;     /* card */
+    --enba-panel-2:   38 38 38;     /* nested / subtle */
+    --enba-line:      46 46 46;
+    --enba-line-2:    58 58 58;
+    --enba-text:      237 237 237;
+    --enba-muted:     154 154 154;
+    --enba-dim:       107 107 107;
+    --enba-green:     61 190 124;
+    --enba-red:       229 72 77;
+    --enba-amber:     242 169 59;
+    --enba-blue:      91 157 255;
+    /* derived */
+    --enba-grid:      rgba(255,255,255,0.025);
+    --enba-shadow:    0 1px 0 rgba(255,255,255,0.04) inset, 0 8px 24px rgba(0,0,0,0.35);
+  }
+  :root[data-theme="light"] {
+    --enba-orange:    227 82 5;
+    --enba-orange-2:  240 96 18;
+    --enba-orange-d:  179 63 2;
+    --enba-bg:        245 244 240;
+    --enba-dark:      255 255 255;
+    --enba-panel:     255 255 255;
+    --enba-panel-2:   249 247 242;
+    --enba-line:      229 226 217;
+    --enba-line-2:    214 210 200;
+    --enba-text:      28 28 28;
+    --enba-muted:     109 109 109;
+    --enba-dim:       150 150 150;
+    --enba-green:     27 156 90;
+    --enba-red:       209 49 55;
+    --enba-amber:     201 130 12;
+    --enba-blue:      57 113 213;
+    --enba-grid:      rgba(0,0,0,0.04);
+    --enba-shadow:    0 1px 0 rgba(255,255,255,0.5) inset, 0 6px 18px rgba(50,38,20,0.08);
+  }
+
+  html, body {
+    background: rgb(var(--enba-bg));
+    color: rgb(var(--enba-text));
+    font-family: 'Poppins', system-ui, sans-serif;
+    transition: background-color 0.18s ease, color 0.18s ease;
+  }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgb(var(--enba-line)); border-radius: 6px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgb(var(--enba-line-2)); }
+
+  .tabular { font-variant-numeric: tabular-nums; }
+  .grid-bg {
+    background-image:
+      linear-gradient(to right, var(--enba-grid) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--enba-grid) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+
+  /* recharts overrides — themed */
+  .recharts-default-tooltip {
+    background: rgb(var(--enba-panel)) !important;
+    border: 1px solid rgb(var(--enba-line)) !important;
+    border-radius: 8px !important;
+    font-family: 'Poppins', sans-serif;
+    font-size: 12px;
+    box-shadow: var(--enba-shadow);
+  }
+  .recharts-tooltip-label { color: rgb(var(--enba-text)) !important; font-weight: 500; }
+  .recharts-tooltip-item { color: rgb(var(--enba-text)) !important; }
+  .recharts-cartesian-axis-tick text { fill: rgb(var(--enba-muted)); font-size: 11px; }
+  .recharts-cartesian-grid line { stroke: rgb(var(--enba-line)); opacity: 0.7; }
+  .recharts-reference-line line { stroke: rgb(var(--enba-line-2)); }
+  .recharts-legend-item-text { color: rgb(var(--enba-text)) !important; font-size: 12px; }
+</style>
+</head>
+<body class="min-h-screen bg-enba-bg text-enba-text antialiased">
+
+<script>
+  // Restore theme before render to avoid flash
+  try {
+    const t = localStorage.getItem('enba-theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', t);
+  } catch(e) { document.documentElement.setAttribute('data-theme', 'dark'); }
+</script>
+
+<div id="root"></div>
+
+<script>
+  // Filter known recharts defaultProps deprecation warnings (cosmetic only).
+  (function() {
+    const _err = console.error;
+    console.error = function(...args) {
+      const s = (args[0] || '') + '';
+      if (s.includes('Support for defaultProps will be removed')) return;
+      _err.apply(console, args);
+    };
+  })();
+</script>
+
+<!-- React 18 + Babel (pinned, with integrity) -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/recharts@2.12.7/umd/Recharts.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<!-- component files -->
+<script type="text/babel" src="src/icons.jsx"></script>
+<script type="text/babel" src="src/data.jsx"></script>
+<script type="text/babel" src="src/ui.jsx"></script>
+<script type="text/babel" src="src/overview.jsx"></script>
+<script type="text/babel" src="src/revenue.jsx"></script>
+<script type="text/babel" src="src/expense.jsx"></script>
+<script type="text/babel" src="src/cashflow.jsx"></script>
+<script type="text/babel" src="src/budget.jsx"></script>
+<script type="text/babel" src="src/scenario.jsx"></script>
+<script type="text/babel" src="src/app.jsx"></script>
+
+</body>
+</html>

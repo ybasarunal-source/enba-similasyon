@@ -143,12 +143,32 @@ export interface CashEvent {
 }
 
 // ─── Plan veri modeli — tesis giderlerini içermez ────────────────────────────
+export type PlanStatus   = 'draft' | 'pending' | 'active' | 'archived';
+export type PlanCategory = 'buyuk_yatirim' | 'kucuk_yatirim' | 'operasyonel' | 'ticari' | '';
+
+export const PLAN_STATUS_LABEL: Record<PlanStatus, string> = {
+  draft:    'Taslak',
+  pending:  'Onay Bekliyor',
+  active:   'Aktif',
+  archived: 'Arşiv',
+};
+
+export const PLAN_CATEGORY_LABEL: Record<PlanCategory, string> = {
+  buyuk_yatirim: 'Büyük Yatırım',
+  kucuk_yatirim: 'Küçük Yatırım',
+  operasyonel:   'Operasyonel',
+  ticari:        'Ticari',
+  '':            '',
+};
+
 export interface DPlan {
   id: string;
   supabaseId?: string;
   title: string;
   baslik: string;
-  status: 'draft' | 'active' | 'archived';
+  status: PlanStatus;
+  category?: PlanCategory;
+  description?: string;
   year: number;
   startYear: number;
   startMonth: number;
@@ -442,6 +462,8 @@ export const createNewPlan = (title: string, year: number): DPlan => ({
   id: crypto.randomUUID(),
   title, baslik: title,
   status: 'draft',
+  category: '',
+  description: '',
   year, startYear: year, startMonth: 0,
   horizon: 24, weeklyHorizon: 12,
   openingCash: 0, actualsThrough: 0,

@@ -5,7 +5,8 @@ import { SyncBanner } from '../../components/SyncBanner';
 import { DetailedPlanShell } from './DetailedPlanShell';
 import { DPlanWizard } from './DPlanWizard';
 import {
-  DPlan, CostCenter, FixedExpense,
+  DPlan, CostCenter, FixedExpense, PlanStatus,
+  PLAN_STATUS_LABEL, PLAN_CATEGORY_LABEL,
   migratePlanFormat, loadCostCenters, saveCostCenters, fmtTL,
 } from './dpData';
 import { I, cx, Badge, Btn } from './DPPrimitives';
@@ -32,6 +33,7 @@ export function DetailedPlanModule({ navigate, setBackOverride }: Props) {
   const [view, setView]               = useState<View>('list');
   const [activePlanId, setActivePlanId] = useState<string | null>(null);
   const [activeCcId, setActiveCcId]     = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<PlanStatus | 'all'>('all');
   const migratedOnce = useRef(false);
 
   // Eski key'lerden tek seferlik veri göçü
@@ -149,6 +151,11 @@ export function DetailedPlanModule({ navigate, setBackOverride }: Props) {
     if (activePlanId === id) { setActivePlanId(null); setView('list'); }
   };
 
+  const handleStatusChange = (id: string, newStatus: PlanStatus) => {
+    const updated = planlar.map(p => p.id === id ? { ...p, status: newStatus } : p);
+    kaydet(updated);
+  };
+
   /* ── Gider Merkezi Editörü ── */
   if (view === 'ccEditor' && activeCc) {
     return (
@@ -232,29 +239,96 @@ export function DetailedPlanModule({ navigate, setBackOverride }: Props) {
 
           {/* İş Planları */}
           <section>
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-4">
               <div>
                 <div className="text-[11px] uppercase tracking-[0.14em] text-enba-muted mb-0.5">Finansal Projeksiyon</div>
                 <h2 className="text-[14px] font-semibold text-enba-text">İş Planları</h2>
               </div>
             </div>
+
             {planlar.length === 0 ? (
               <PlanEmptyState onNew={() => { setActivePlanId(null); setView('wizard'); }} />
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                {planlar.map(plan => (
-                  <PlanCard
-                    key={plan.id}
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    plan={migratePlanFormat(plan as any)}
-                    costCenters={costCenters}
-                    onOpen={() => openPlan(plan)}
-                    onEdit={() => openWizardForEdit(plan)}
-                    onDelete={() => handleDelete(plan.id)}
-                  />
-                ))}
-              </div>
-            )}
+            ) : (() => {
+              const STATUS_TABS: Array<{ key: PlanStatus | 'all'; label: string }> = [
+                { key: 'all',      label: 'Tümü' },
+                { key: 'draft',    label: 'Taslak' },
+                { key: 'pending',  label: 'Onay Bekliyor' },
+                { key: 'active',   label: 'Aktif' },
+                { key: 'archived', label: 'Arşiv' },
+              ];
+              const TAB_DOT: Record<string, string> = {
+                draft:    'bg-enba-muted',
+                pending:  'bg-amber-400',
+                active:   'bg-enba-green',
+                archived: 'bg-gray-500',
+              };
+              const counts = planlar.reduce<Record<string, number>>((acc, p) => {
+                const s = p.status ?? 'draft';
+                acc[s] = (acc[s] ?? 0) + 1;
+                return acc;
+              }, {});
+              const filtered = statusFilter === 'all'
+                ? planlar
+                : planlar.filter(p => (p.status ?? 'draft') === statusFilter);
+
+              return (
+                <>
+                  {/* Status filter tabs */}
+                  <div className="flex items-center gap-1 mb-4 bg-enba-panel border border-enba-line rounded-xl p-1 w-fit">
+                    {STATUS_TABS.map(tab => {
+                      const count = tab.key === 'all' ? planlar.length : (counts[tab.key] ?? 0);
+                      const active = statusFilter === tab.key;
+                      return (
+                        <button
+                          key={tab.key}
+                          onClick={() => setStatusFilter(tab.key)}
+                          className={cx(
+                            'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all duration-150',
+                            active
+                              ? 'bg-enba-panel-2 text-enba-text shadow-sm'
+                              : 'text-enba-muted hover:text-enba-text hover:bg-enba-panel-2/50',
+                          )}
+                        >
+                          {tab.key !== 'all' && (
+                            <span className={cx('w-1.5 h-1.5 rounded-full flex-none', TAB_DOT[tab.key])} />
+                          )}
+                          {tab.label}
+                          {count > 0 && (
+                            <span className={cx(
+                              'inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full text-[10px] font-semibold px-1',
+                              active ? 'bg-enba-orange/20 text-enba-orange' : 'bg-enba-panel-2 text-enba-muted',
+                            )}>
+                              {count}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {filtered.length === 0 ? (
+                    <div className="py-10 text-center text-[13px] text-enba-muted">
+                      Bu filtrede plan yok.
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                      {filtered.map(plan => (
+                        <PlanCard
+                          key={plan.id}
+                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                          plan={migratePlanFormat(plan as any)}
+                          costCenters={costCenters}
+                          onOpen={() => openPlan(plan)}
+                          onEdit={() => openWizardForEdit(plan)}
+                          onDelete={() => handleDelete(plan.id)}
+                          onStatusChange={(s) => handleStatusChange(plan.id, s)}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </section>
 
         </div>
@@ -667,29 +741,64 @@ function ExpenseEditRow({ form, onChange, onCommit, onCancel }: {
 }
 
 /* ─── PlanCard ─── */
-function PlanCard({ plan, costCenters, onOpen, onEdit, onDelete }: {
+const STATUS_BADGE: Record<PlanStatus, { tone: 'green' | 'amber' | 'neutral' | 'blue'; label: string }> = {
+  draft:    { tone: 'neutral', label: 'Taslak' },
+  pending:  { tone: 'amber',   label: 'Onay Bekliyor' },
+  active:   { tone: 'green',   label: 'Aktif' },
+  archived: { tone: 'neutral', label: 'Arşiv' },
+};
+
+// next action for each status: {label, next}
+const STATUS_NEXT: Partial<Record<PlanStatus, Array<{ label: string; next: PlanStatus; variant?: 'primary' | 'outline' | 'ghost' }>>> = {
+  draft:    [{ label: 'Onaya Gönder', next: 'pending', variant: 'outline' }],
+  pending:  [
+    { label: 'Onayla',  next: 'active',  variant: 'primary' },
+    { label: 'Reddet',  next: 'draft',   variant: 'ghost'   },
+  ],
+  active:   [{ label: 'Arşivle', next: 'archived', variant: 'ghost' }],
+  archived: [{ label: 'Geri Al', next: 'draft',    variant: 'ghost' }],
+};
+
+function PlanCard({ plan, costCenters, onOpen, onEdit, onDelete, onStatusChange }: {
   plan: DPlan;
   costCenters: CostCenter[];
   onOpen: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  onStatusChange: (s: PlanStatus) => void;
 }) {
-  const isDraft        = plan.status === 'draft';
-  const tone           = plan.status === 'active' ? 'green' : plan.status === 'archived' ? 'neutral' : 'amber';
-  const label          = plan.status === 'active' ? 'Aktif' : plan.status === 'archived' ? 'Arşiv' : 'Taslak';
+  const status         = plan.status ?? 'draft';
+  const badge          = STATUS_BADGE[status];
+  const nextActions    = STATUS_NEXT[status] ?? [];
   const activeProjects = plan.projects.filter(p => p.isActive).length;
   const usedCcIds      = new Set(plan.projects.map(p => p.costCenterId).filter(Boolean));
   const usedCcs        = costCenters.filter(c => usedCcIds.has(c.id));
   const totalExpenses  = usedCcs.reduce((s, c) => s + c.fixedExpenses.length, 0);
+  const categoryLabel  = plan.category ? PLAN_CATEGORY_LABEL[plan.category] : null;
+
+  // pending state: left border accent
+  const isPending = status === 'pending';
 
   return (
-    <div className="bg-enba-panel border border-enba-line rounded-xl p-5 hover:border-enba-orange/40 transition-colors flex flex-col gap-4">
+    <div className={cx(
+      'bg-enba-panel border rounded-xl p-5 transition-colors flex flex-col gap-4',
+      isPending
+        ? 'border-amber-500/40 hover:border-amber-500/60'
+        : 'border-enba-line hover:border-enba-orange/40',
+    )}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 flex-wrap mb-1">
+            {categoryLabel && (
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-enba-panel-2 border border-enba-line text-[10px] text-enba-muted font-medium">
+                {categoryLabel}
+              </span>
+            )}
+          </div>
           <h3 className="text-[14px] font-semibold text-enba-text truncate">{plan.title}</h3>
-          <div className="text-[11px] text-enba-dim mt-1">{plan.startYear} · {plan.horizon} ay</div>
+          <div className="text-[11px] text-enba-dim mt-0.5">{plan.startYear} · {plan.horizon} ay</div>
         </div>
-        <Badge tone={tone}>{label}</Badge>
+        <Badge tone={badge.tone}>{badge.label}</Badge>
       </div>
 
       <div className="grid grid-cols-3 gap-3 text-center">
@@ -698,15 +807,29 @@ function PlanCard({ plan, costCenters, onOpen, onEdit, onDelete }: {
         <MiniStat label="Gerçek." value={`${plan.actualsThrough} ay`} accent={plan.actualsThrough > 0} />
       </div>
 
+      {/* Description snippet */}
+      {plan.description && (
+        <p className="text-[11.5px] text-enba-dim leading-relaxed line-clamp-2 -mt-1">{plan.description}</p>
+      )}
+
+      {/* Action bar */}
       <div className="flex items-center gap-2 pt-1 border-t border-enba-line">
-        <Btn
-          variant="primary"
-          size="sm"
-          className="flex-1"
-          onClick={onOpen}
-        >
-          Aç
-        </Btn>
+        <Btn variant="primary" size="sm" onClick={onOpen}>Aç</Btn>
+
+        {/* Quick status transitions */}
+        {nextActions.map(a => (
+          <Btn
+            key={a.next}
+            variant={a.variant ?? 'outline'}
+            size="sm"
+            onClick={() => onStatusChange(a.next)}
+          >
+            {a.label}
+          </Btn>
+        ))}
+
+        <div className="flex-1" />
+
         <button
           onClick={onEdit}
           className="w-8 h-8 rounded-lg text-enba-dim hover:text-enba-orange hover:bg-enba-orange/10 inline-flex items-center justify-center transition-colors"
