@@ -16,6 +16,10 @@ export interface Product {
   color: string;
   customerId?: string;
   weeklyRamp?: WeeklyRamp;
+  /** Plan başından itibaren ay ofseti — bu aydan önce gelir/maliyet = 0 */
+  startOffset?: number;
+  /** Plan başından itibaren ay ofseti — bu aydan itibaren gelir/maliyet = 0 */
+  endOffset?: number;
 }
 
 export interface FixedExpense {
@@ -264,8 +268,11 @@ export const monthlyVolumeFor = (p: Product, i: number) => {
   return p.volume * Math.pow(1 + p.volumeGrowth, i / 12) * seas;
 };
 
-export const revenueFor = (p: Product, i: number, scen: Scenario = SCENARIOS.baz) =>
-  monthlyPriceFor(p, i) * monthlyVolumeFor(p, i) * scen.rev;
+export const revenueFor = (p: Product, i: number, scen: Scenario = SCENARIOS.baz): number => {
+  if (i < (p.startOffset ?? 0)) return 0;
+  if (p.endOffset !== undefined && i >= p.endOffset) return 0;
+  return monthlyPriceFor(p, i) * monthlyVolumeFor(p, i) * scen.rev;
+};
 
 export const varCostFor = (p: Product, i: number, scen: Scenario = SCENARIOS.baz) =>
   revenueFor(p, i, scen) * p.varCostRatio * scen.cost;
@@ -482,6 +489,10 @@ export interface PlanDataCtxValue {
   actualsThrough:   number;
   weeklyHorizon:    number;
   granularity:      Granularity;
+  /** Plan başlangıç yılı — CashFlow gibi panellerde kendi monthly periods inşası için */
+  startYear:        number;
+  /** Plan başlangıç ayı (0=Oca) — CashFlow gibi panellerde kendi monthly periods inşası için */
+  startMonth:       number;
 }
 
 export const PlanCtx = React.createContext<PlanDataCtxValue>({
@@ -496,6 +507,8 @@ export const PlanCtx = React.createContext<PlanDataCtxValue>({
   actualsThrough:   ACTUALS_THROUGH,
   weeklyHorizon:    12,
   granularity:      'monthly',
+  startYear:        2025,
+  startMonth:       0,
 });
 
 export const usePlanData = (): PlanDataCtxValue => React.useContext(PlanCtx);

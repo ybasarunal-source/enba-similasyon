@@ -48,11 +48,33 @@ export function DetailedPlanShell({ plan, costCenters = [], onSave, onBack, onEd
     const usedCcIds = new Set(plan.projects.map(p => p.costCenterId));
     const usedCostCenters = costCenters.filter(cc => usedCcIds.has(cc.id));
     const facilityExpenses = usedCostCenters.flatMap(cc => cc.fixedExpenses);
-    const products         = plan.projects.flatMap(p => p.revenues);
-    const fixedExpenses    = [
+
+    // Proje startOffset/endOffset'i her gelir kalemine yansıt.
+    // Böylece buildSeries ve revenueFor proje aktivasyon aralığını doğru uygular.
+    const products = plan.projects.flatMap(p =>
+      p.revenues.map(rev => ({
+        ...rev,
+        startOffset: Math.max(rev.startOffset ?? 0, p.startOffset),
+        endOffset:
+          p.endOffset !== undefined
+            ? rev.endOffset !== undefined
+              ? Math.min(rev.endOffset, p.endOffset)
+              : p.endOffset
+            : rev.endOffset,
+      }))
+    );
+
+    // Proje startOffset'i proje giderlerine de yansıt.
+    const fixedExpenses = [
       ...facilityExpenses,
-      ...plan.projects.flatMap(p => p.expenses),
+      ...plan.projects.flatMap(p =>
+        p.expenses.map(e => ({
+          ...e,
+          startOffset: Math.max(e.startOffset ?? 0, p.startOffset),
+        }))
+      ),
     ];
+
     return {
       costCenters:      usedCostCenters,
       facilityExpenses,
@@ -65,6 +87,8 @@ export function DetailedPlanShell({ plan, costCenters = [], onSave, onBack, onEd
       actualsThrough:   plan.actualsThrough,
       weeklyHorizon,
       granularity,
+      startYear:        plan.startYear,
+      startMonth:       plan.startMonth,
     };
   }, [plan, costCenters, horizon, granularity, weeklyHorizon]);
 

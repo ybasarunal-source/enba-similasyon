@@ -5,7 +5,7 @@ import {
 } from 'recharts';
 import {
   SCENARIOS,
-  cashFlowFor, fmtTL, Scenario, usePlanData,
+  cashFlowFor, fmtTL, Scenario, usePlanData, buildMonths,
 } from './dpData';
 import { cx, Card, Segmented, Btn, Badge, I, useChartColors } from './DPPrimitives';
 
@@ -13,8 +13,16 @@ export const CashFlowPanel = ({ scenarioId, periodGranularity }:
   { scenarioId: string; periodGranularity: string }) => {
   const scen: Scenario = SCENARIOS[scenarioId];
   const cc = useChartColors();
-  const { products, fixedExpenses, periods, cashEvents, openingCash } = usePlanData();
+  const { products, fixedExpenses, cashEvents, openingCash, startYear, startMonth } = usePlanData();
   const [horizon, setHorizon] = useState(24);
+
+  // CashFlow her zaman aylık granülaritede çalışır — kendi period serisini inşa eder.
+  // PlanCtx'in granularity'sine bağlı değil; aksi hâlde quarterly/annual modda
+  // periods[i] yanlış veya tanımsız dönem etiketi döndürür.
+  const monthlyPeriods = useMemo(
+    () => buildMonths(horizon, startYear, startMonth),
+    [horizon, startYear, startMonth],
+  );
 
   const series = useMemo(() => {
     let balance = openingCash;
@@ -24,10 +32,10 @@ export const CashFlowPanel = ({ scenarioId, periodGranularity }:
       const f = cashFlowFor(i, scen, products, fixedExpenses, cashEvents);
       balance += f.net;
       if (balance < minBalance) { minBalance = balance; minIdx = i; }
-      rows.push({ ...(periods[i] ?? { label: `M${i+1}`, key: `m${i}` }), idx: i, ...f, balance });
+      rows.push({ ...(monthlyPeriods[i] ?? { label: `M${i+1}`, key: `m${i}` }), idx: i, ...f, balance });
     }
     return { rows, minBalance, minIdx };
-  }, [scenarioId, horizon, products, fixedExpenses, periods, cashEvents, openingCash]);
+  }, [scenarioId, horizon, products, fixedExpenses, monthlyPeriods, cashEvents, openingCash]);
 
   const totals = useMemo(() => series.rows.reduce((a: any, r: any) => ({
     operating: a.operating + r.operating,
@@ -115,7 +123,7 @@ export const CashFlowPanel = ({ scenarioId, periodGranularity }:
           <div className="flex-1">
             <div className="text-[13px] font-semibold text-enba-red">Negatif Bakiye Uyarısı</div>
             <div className="text-[12px] text-enba-muted mt-0.5">
-              <span className="text-enba-text font-medium">{periods[series.minIdx]?.label}</span> döneminde nakit bakiyesi{' '}
+              <span className="text-enba-text font-medium">{monthlyPeriods[series.minIdx]?.label}</span> döneminde nakit bakiyesi{' '}
               <span className="text-enba-red tabular font-medium">{fmtTL(series.minBalance)}</span> seviyesine iniyor.
               Ek kredi limiti veya ödeme planı revizyonu önerilir.
             </div>

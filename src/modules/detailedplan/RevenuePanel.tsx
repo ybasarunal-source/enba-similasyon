@@ -253,7 +253,7 @@ export const RevenuePanel = ({ scenarioId, periodGranularity }:
 
       <div className="grid grid-cols-12 gap-4">
         <Card className="col-span-5">
-          <SectionTitle eyebrow="Ürün payı" title="Gelir Mix (24 ay)"/>
+          <SectionTitle eyebrow="Ürün payı" title={`Gelir Mix (${periods.length} dönem)`}/>
           <RevenueMix scen={scen} cc={cc}/>
         </Card>
         <Card className="col-span-7">
@@ -301,10 +301,11 @@ const EditableCell = ({ value, isEditing, onClick, onBlur }:
 };
 
 const RevenueMix = ({ scen, cc }: { scen: Scenario; cc: any }) => {
-  const { products: allProducts } = usePlanData();
+  const { products: allProducts, periods } = usePlanData();
   const data = allProducts.map(p => {
     let rev = 0;
-    for (let i = 0; i < 24; i++) rev += revenueFor(p, i, scen);
+    // periods.length kullan — hardcoded 24 yerine plan horizon'ına uyumlu
+    for (let i = 0; i < periods.length; i++) rev += revenueFor(p, i, scen);
     return { name: p.name, value: rev, color: p.color, id: p.id };
   });
   const total = data.reduce((s, x) => s + x.value, 0);

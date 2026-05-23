@@ -5,15 +5,20 @@ import {
 } from 'recharts';
 import {
   SCENARIOS, buildSeries, fmtTL, fmtPct,
-  revenueFor, Scenario, usePlanData,
+  revenueFor, bvaForPeriod, Scenario, usePlanData,
 } from './dpData';
 import { cx, Card, SectionTitle, KpiCard, Sparkline, Variance, I, useChartColors } from './DPPrimitives';
 
 export const OverviewPanel = ({ scenarioId }: { scenarioId: string; periodGranularity: string }) => {
   const scen: Scenario = SCENARIOS[scenarioId];
   const cc = useChartColors();
-  const { products, fixedExpenses, periods } = usePlanData();
-  const series = useMemo(() => buildSeries(products, fixedExpenses, periods, scen), [scenarioId, products, fixedExpenses, periods]);
+  const { products, fixedExpenses, periods, weeklyHorizon, cashEvents, actualsThrough } = usePlanData();
+
+  // weeklyHorizon buildSeries'e aktarılmalı — yoksa haftalık ramp hesaplanmaz
+  const series = useMemo(
+    () => buildSeries(products, fixedExpenses, periods, scen, weeklyHorizon),
+    [scenarioId, products, fixedExpenses, periods, weeklyHorizon],
+  );
 
   // buildSeries zaten buildDisplayPeriods'dan gelen Period'larla doğru granülasyonda
   // aggregate edilmiş. Ek gruplamaya gerek yok — series'i direkt kullan.
@@ -23,17 +28,27 @@ export const OverviewPanel = ({ scenarioId }: { scenarioId: string; periodGranul
     ebitda: a.ebitda + x.ebitda, net: a.net + x.net,
   }), { revenue: 0, opex: 0, ebitda: 0, net: 0 }), [series]);
 
+  // Başlangıç yatırımı: yatırım nakit olaylarının toplam çıkışı.
+  // cashEvents girilmemişse 0 — payback hesabı atlanır.
+  const totalInvestment = useMemo(
+    () => cashEvents
+      .filter(e => e.type === 'investing')
+      .flatMap(e => e.months)
+      .reduce((s, m) => s - Math.min(0, m.amount), 0),
+    [cashEvents],
+  );
+
   const cashCum = useMemo(() => {
-    const investment = 4_800_000;
-    let cum = -investment;
+    const investment = totalInvestment;
+    let cum = investment > 0 ? -investment : 0;
     let paybackIdx: number | null = null;
-    const points = series.map((x, i) => {
+    const points = series.map((x) => {
       cum += x.net;
-      if (paybackIdx == null && cum >= 0) paybackIdx = i;
+      if (paybackIdx == null && investment > 0 && cum >= 0) paybackIdx = series.indexOf(x);
       return { ...x, cash: cum };
     });
     return { points, investment, paybackIdx };
-  }, [series]);
+  }, [series, totalInvestment]);
 
   const ebitdaMargin = totals.revenue > 0 ? totals.ebitda / totals.revenue : 0;
 
@@ -41,7 +56,7 @@ export const OverviewPanel = ({ scenarioId }: { scenarioId: string; periodGranul
     <div className="space-y-5">
       {/* KPI Row */}
       <div className="grid grid-cols-4 gap-4">
-        <KpiCard label="Toplam Gelir (24 ay)" value={fmtTL(totals.revenue)}
+        <KpiCard label={`Toplam Gelir (${periods.length} dönem)`} value={fmtTL(totals.revenue)}
           sub="Ürün + hizmet satırları toplamı" trend={0.182} accent="orange"
           icon={<I.Revenue size={14}/>} tooltip="Seçili senaryo altında planlanan toplam ciro"/>
         <KpiCard label="EBITDA" value={fmtTL(totals.ebitda)}
@@ -51,8 +66,15 @@ export const OverviewPanel = ({ scenarioId }: { scenarioId: string; periodGranul
           sub="Amortisman + vergi sonrası" trend={totals.net > 0 ? 0.156 : -0.08}
           accent={totals.net > 0 ? 'green' : 'red'} icon={<I.Bolt size={14}/>}/>
         <KpiCard label="Geri Ödeme Süresi"
-          value={cashCum.paybackIdx != null ? `${cashCum.paybackIdx + 1} ay` : '> 24 ay'}
-          sub="₺4,8 Mn başlangıç yatırımı" accent="amber" icon={<I.Calendar size={14}/>}/>
+          value={
+            cashCum.investment === 0
+              ? '—'
+              : cashCum.paybackIdx != null
+                ? `${cashCum.paybackIdx + 1} ay`
+                : `> ${periods.length} dönem`
+          }
+          sub={cashCum.investment > 0 ? `${fmtTL(cashCum.investment, { compact: true })} yatırım` : 'Yatırım nakit olayı girilmemiş'}
+          accent="amber" icon={<I.Calendar size={14}/>}/>
       </div>
 
       {/* Revenue / Cost chart */}
@@ -92,7 +114,11 @@ export const OverviewPanel = ({ scenarioId }: { scenarioId: string; periodGranul
       <div className="grid grid-cols-12 gap-4">
         <Card className="col-span-7">
           <SectionTitle eyebrow="Kümülatif" title="Nakit Akışı (Birikimli)"
-            action={<div className="text-[11.5px] text-enba-muted">Başlangıç yatırımı <span className="text-enba-text tabular">{fmtTL(cashCum.investment)}</span></div>}
+            action={
+            cashCum.investment > 0
+              ? <div className="text-[11.5px] text-enba-muted">Başlangıç yatırımı <span className="text-enba-text tabular">{fmtTL(cashCum.investment)}</span></div>
+              : <div className="text-[11.5px] text-enba-dim">Yatırım nakit olayı girilmemiş</div>
+          }
           />
           <div className="h-[220px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -123,7 +149,7 @@ export const OverviewPanel = ({ scenarioId }: { scenarioId: string; periodGranul
           <SectionTitle eyebrow="Karşılaştırma" title="Senaryo Özeti"/>
           <div className="space-y-2">
             {Object.values(SCENARIOS).map(s => {
-              const ss = buildSeries(products, fixedExpenses, periods, s);
+              const ss = buildSeries(products, fixedExpenses, periods, s, weeklyHorizon);
               const rev = ss.reduce((a, x) => a + x.revenue, 0);
               const eb = ss.reduce((a, x) => a + x.ebitda, 0);
               const margin = eb / rev;
@@ -149,11 +175,10 @@ export const OverviewPanel = ({ scenarioId }: { scenarioId: string; periodGranul
             })}
           </div>
           <div className="mt-5 pt-4 border-t border-enba-line">
-            <div className="flex items-center justify-between mb-2.5">
-              <div className="text-[11px] uppercase tracking-[0.14em] text-enba-muted">Bu Ay · Bütçe vs Gerçekleşen</div>
-              <span className="text-[10.5px] text-enba-dim">May 25</span>
+            <div className="text-[11px] uppercase tracking-[0.14em] text-enba-muted mb-2.5">
+              Son Gerçekleşen · Bütçe vs Gerçekleşen
             </div>
-            <BvaSnapshot/>
+            <BvaSnapshot scenarioId={scenarioId} scen={scen}/>
           </div>
         </Card>
       </div>
@@ -218,26 +243,44 @@ const LegendDot = ({ color, className = '' }: { color: string; className?: strin
   <span className={cx('inline-block w-2 h-2 rounded-full', className)} style={{ background: color }}/>
 );
 
-const BvaSnapshot = () => {
+const BvaSnapshot = ({ scenarioId, scen }: { scenarioId: string; scen: Scenario }) => {
+  const { products, fixedExpenses, actualsThrough } = usePlanData();
+
+  if (actualsThrough <= 0) {
+    return (
+      <div className="py-3 text-center text-[11px] text-enba-dim leading-snug">
+        Henüz gerçekleşen veri girilmemiş.<br/>
+        <span className="text-enba-muted">Bütçe Takip panelinden aktüel ekleyin.</span>
+      </div>
+    );
+  }
+
+  // Son gerçekleşen aya ait bütçe vs gerçekleşen özet satırları
+  const lastActualMonth = actualsThrough - 1;
+  const bva = bvaForPeriod(lastActualMonth, scen, products, fixedExpenses, actualsThrough);
+
   const rows = [
-    { label: 'Granül Satışı',     budget: 4_950_000, actual: 5_180_000 },
-    { label: 'Hizmet Gelirleri',  budget:   720_000, actual:   645_000 },
-    { label: 'Personel Gideri',   budget:   285_000, actual:   298_000, isExpense: true },
-    { label: 'Enerji',            budget:   138_000, actual:   162_000, isExpense: true },
+    { label: 'Gelir',          budget: bva.budget.revenue, actual: bva.actual.revenue, isExpense: false },
+    { label: 'Değ. Maliyet',   budget: bva.budget.varCost, actual: bva.actual.varCost, isExpense: true  },
+    { label: 'Sabit Gider',    budget: bva.budget.fixCost, actual: bva.actual.fixCost, isExpense: true  },
+    { label: 'EBITDA',         budget: bva.budget.ebitda,  actual: bva.actual.ebitda,  isExpense: false },
   ];
+
   return (
     <div className="space-y-2">
       {rows.map(r => {
-        const diff = r.actual - r.budget;
-        const ratio = r.actual / r.budget;
-        const good = r.isExpense ? diff <= 0 : diff >= 0;
+        const diff  = r.actual - r.budget;
+        const ratio = r.budget !== 0 ? Math.abs(r.actual / r.budget) : 1;
+        const good  = r.isExpense ? diff <= 0 : diff >= 0;
         return (
           <div key={r.label} className="flex items-center gap-3">
             <div className="w-[110px] text-[11.5px] text-enba-muted truncate">{r.label}</div>
             <div className="flex-1 h-2 bg-enba-panel-2 rounded-full overflow-hidden relative">
               <div className="absolute inset-y-0 left-0 bg-enba-line-2" style={{ width: '100%' }}/>
-              <div className={cx('absolute inset-y-0 left-0 rounded-full', good ? 'bg-enba-green' : 'bg-enba-red')}
-                style={{ width: Math.min(100, ratio * 100) + '%' }}/>
+              <div
+                className={cx('absolute inset-y-0 left-0 rounded-full', good ? 'bg-enba-green' : 'bg-enba-red')}
+                style={{ width: Math.min(100, ratio * 100) + '%' }}
+              />
             </div>
             <div className="w-[80px] text-right">
               <Variance value={r.isExpense ? -diff : diff}/>
