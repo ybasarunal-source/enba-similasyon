@@ -51,18 +51,19 @@ export function usePlanSync<T extends {
   const { localKey, planType } = opts;
   const deletedKey = `${localKey}_deleted`;
 
-  const [planlar, setPlanlar] = useState<T[]>([]);
+  // localStorage'ı ilk render'da senkron oku — boş flash önlenir
+  const [planlar, setPlanlar] = useState<T[]>(() => {
+    try {
+      const raw = localStorage.getItem(localKey);
+      return raw ? JSON.parse(raw) : [];
+    } catch { return []; }
+  });
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle');
   const [syncError, setSyncError] = useState('');
   const deletedIds = useRef<Set<string>>(getDeletedSet(deletedKey));
 
-  // ── İlk yükleme: localStorage hemen, Supabase sonra ──────────
+  // ── İlk yükleme: Supabase ile merge ──────────────────────────
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(localKey);
-      if (raw) setPlanlar(JSON.parse(raw));
-    } catch { /* ignore */ }
-
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;

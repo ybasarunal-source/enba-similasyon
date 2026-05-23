@@ -34,6 +34,28 @@ export function DetailedPlanModule({ navigate, setBackOverride }: Props) {
   const [activeCcId, setActiveCcId]     = useState<string | null>(null);
   const migratedOnce = useRef(false);
 
+  // Eski key'lerden tek seferlik veri göçü
+  // enba_detailed_plans_v2 → enba_dp2_plans (eğer yeni key boşsa)
+  useEffect(() => {
+    if (migratedOnce.current) return;
+    migratedOnce.current = true;
+    const current = localStorage.getItem(LOCAL_KEY);
+    const currentPlans: DPlan[] = current ? (JSON.parse(current) as DPlan[]) : [];
+    if (currentPlans.length > 0) return; // zaten veri var
+    // Eski key'leri sırayla dene
+    for (const oldKey of ['enba_detailed_plans_v2', 'enba_detailed_plans']) {
+      const old = localStorage.getItem(oldKey);
+      if (!old) continue;
+      try {
+        const oldPlans = JSON.parse(old) as DPlan[];
+        if (oldPlans.length > 0) {
+          kaydet(oldPlans); // localStorage + Supabase'e yaz
+          break;
+        }
+      } catch { /* ignore */ }
+    }
+  }, [kaydet]);
+
   useEffect(() => { saveCostCenters(costCenters); }, [costCenters]);
 
   // App'in global ← tuşunu modül-içi navigasyon için intercept et.
