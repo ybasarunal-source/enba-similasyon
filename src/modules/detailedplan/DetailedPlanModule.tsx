@@ -97,7 +97,7 @@ export function DetailedPlanModule({ navigate }: Props) {
 
   const openPlan = (plan: DPlan) => {
     setActivePlanId(plan.id);
-    setView(plan.status === 'draft' ? 'wizard' : 'shell');
+    setView('shell'); // Wizard sadece kalem (Düzenle) tuşundan açılır
   };
 
   const openWizardForEdit = (plan: DPlan) => { setActivePlanId(plan.id); setView('wizard'); };
@@ -659,13 +659,12 @@ function PlanCard({ plan, costCenters, onOpen, onEdit, onDelete }: {
 
       <div className="flex items-center gap-2 pt-1 border-t border-enba-line">
         <Btn
-          variant={isDraft ? 'outline' : 'primary'}
+          variant="primary"
           size="sm"
           className="flex-1"
-          icon={isDraft ? <I.Chevron size={12} className="-rotate-90" /> : undefined}
           onClick={onOpen}
         >
-          {isDraft ? 'Devam Et' : 'Aç'}
+          Aç
         </Btn>
         <button
           onClick={onEdit}
