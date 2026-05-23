@@ -668,8 +668,13 @@ export const App: React.FC = () => {
                                   return next;
                                 });
                               } else {
-                                // Kapalı sidebar: ilk erişilebilir alt öğeye git
-                                if (childItems[0]) navigate(childItems[0].id);
+                                // Kapalı sidebar: önce aç, sonra bu grubu genişlet
+                                setIsSidebarOpen(true);
+                                setExpandedSubmenus(prev => {
+                                  const next = new Set(prev);
+                                  next.add(item.id);
+                                  return next;
+                                });
                               }
                             }}
                             title={!isSidebarOpen ? item.label : ''}
