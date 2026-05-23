@@ -78,13 +78,19 @@ import {
   Mail as MailIcon,
   CreditCard,
   Shield,
+  ShieldCheck,
   Building2,
+  Building,
   Timer,
   Landmark,
   Users,
   MessageSquare,
   CheckSquare,
   ClipboardList,
+  Briefcase,
+  Banknote,
+  Boxes,
+  CircleUser,
 } from 'lucide-react';
 
 type ModuleType =
@@ -112,8 +118,8 @@ export const App: React.FC = () => {
   const backOverrideRef = useRef<(() => boolean) | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
-  // Alt menüsü açık olan sanal parent item'lar
-  const [expandedSubmenus, setExpandedSubmenus] = useState<Set<string>>(new Set(['iletisim']));
+  // Alt menüsü açık olan sanal parent item'lar — başlangıçta hepsi kapalı
+  const [expandedSubmenus, setExpandedSubmenus] = useState<Set<string>>(new Set());
   const [profileAvatar, setProfileAvatar] = useState('');
   const [renderError, setRenderError] = useState<string | null>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -253,10 +259,16 @@ export const App: React.FC = () => {
 
   // Aktif modül sanal bir parent'ın alt öğesiyse, o parent'ın sub-menüsünü aç
   useEffect(() => {
-    const VIRTUAL_PARENTS_STATIC = [
-      { id: 'iletisim', children: ['mail', 'tasks', 'notes', 'calendar'] },
+    const ALL_VP = [
+      { id: 'iletisim',  children: ['mail', 'tasks', 'notes', 'calendar'] },
+      { id: 'isplani',   children: ['fastplan', 'planning'] },
+      { id: 'finans',    children: ['pnl', 'cashflow', 'parasut', 'fixedexpenses', 'varlik'] },
+      { id: 'operasyon', children: ['stock', 'production', 'logistics', 'machinery'] },
+      { id: 'kurumsal',  children: ['hr', 'licensing', 'archive'] },
+      { id: 'sistem',    children: ['ayarlar', 'settings', 'profile'] },
+      { id: 'yonetim',   children: ['super_admin', 'company_admin'] },
     ];
-    VIRTUAL_PARENTS_STATIC.forEach(vp => {
+    ALL_VP.forEach(vp => {
       if (vp.children.includes(activeModule)) {
         setExpandedSubmenus(prev => {
           if (prev.has(vp.id)) return prev;
@@ -327,24 +339,21 @@ export const App: React.FC = () => {
   };
 
   // Sanal üst menü öğeleri — kendi modülleri yoktur, alt öğelerini açar/kapar
+  // Başlangıçta hepsi kapalı; aktif modül bir grubun alt öğesiyse o grup otomatik açılır
   const VIRTUAL_PARENTS = [
-    {
-      id:       'iletisim',
-      label:    'İletişim & Görev',
-      icon:     MessageSquare,
-      children: ['mail', 'tasks', 'notes', 'calendar'] as string[],
-    },
+    { id: 'iletisim',  label: 'İletişim & Görev', icon: MessageSquare, children: ['mail', 'tasks', 'notes', 'calendar']              as string[] },
+    { id: 'isplani',   label: 'İş Planı',          icon: Briefcase,     children: ['fastplan', 'planning']                            as string[] },
+    { id: 'finans',    label: 'Finans',             icon: Banknote,      children: ['pnl', 'cashflow', 'parasut', 'fixedexpenses', 'varlik'] as string[] },
+    { id: 'operasyon', label: 'Operasyon',          icon: Boxes,         children: ['stock', 'production', 'logistics', 'machinery']   as string[] },
+    { id: 'kurumsal',  label: 'Kurumsal',           icon: Building,      children: ['hr', 'licensing', 'archive']                     as string[] },
+    { id: 'sistem',    label: 'Sistem',             icon: CircleUser,    children: ['ayarlar', 'settings', 'profile']                 as string[] },
+    { id: 'yonetim',   label: 'Yönetim',            icon: ShieldCheck,   children: ['super_admin', 'company_admin']                   as string[] },
   ] as const;
 
+  // İki grup: üstte tek navigasyon items, altta tüm sanal parent'lar
   const MENU_GROUPS = [
-    { id: 'g1', title: '',                items: ['modules', 'dashboard', 'iletisim'] },
-    { id: 'g2', title: 'İş Planı',        items: ['fastplan', 'planning'] },
-    { id: 'g3', title: 'Finans',          items: ['pnl', 'cashflow', 'parasut', 'fixedexpenses', 'varlik'] },
-    { id: 'g4', title: 'Operasyon',       items: ['stock', 'production', 'logistics', 'machinery'] },
-    { id: 'g5', title: 'Kurumsal',        items: ['hr', 'licensing', 'archive'] },
-    { id: 'g6', title: 'Sistem',          items: ['ayarlar', 'settings', 'profile'] },
-    ...(user.role === 'super_admin' ? [{ id: 'g7', title: 'Yönetim', items: ['super_admin'] }] : []),
-    ...(user.role === 'admin'       ? [{ id: 'g7', title: 'Yönetim', items: ['company_admin'] }] : []),
+    { id: 'g0', title: '', items: ['modules', 'dashboard'] },
+    { id: 'g1', title: '', items: ['iletisim', 'isplani', 'finans', 'operasyon', 'kurumsal', 'sistem', 'yonetim'] },
   ];
 
   const rawMenuItems = [
@@ -601,6 +610,8 @@ export const App: React.FC = () => {
                       const childItems = item._children
                         .map(cid => allowedItems.find(a => a.id === cid))
                         .filter(Boolean) as typeof allowedItems;
+                      // İzinli alt öğe yoksa parent'ı hiç gösterme (ör. yönetim non-admin için)
+                      if (childItems.length === 0) return null;
                       const anyChildActive = childItems.some(c => activeModule === c.id);
 
                       return (
