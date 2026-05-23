@@ -182,15 +182,22 @@ export function DetailedPlanShell({ plan, costCenters = [], onSave, onBack, onEd
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Header row 1: title + actions */}
         <div className="bg-enba-panel border-b border-enba-line flex-none">
-          <div className="h-[60px] flex items-center px-5 gap-3">
+          <div className="h-[60px] flex items-center px-5 gap-2">
+            {/* Breadcrumb: ← Planlar / Plan Adı
+                App'in global ← → tuşları modüller arası geçiş yapar.
+                Bu breadcrumb modül içi navigasyon için — ikisini ayırt eder. */}
             {onBack && (
               <button
                 onClick={onBack}
-                className="w-8 h-8 rounded-lg text-enba-muted hover:text-enba-text hover:bg-enba-panel-2 inline-flex items-center justify-center flex-none"
-                title="Planlara dön"
+                className="flex items-center gap-1.5 h-8 px-2.5 rounded-lg text-[12px] font-medium text-enba-muted hover:text-enba-orange hover:bg-enba-orange/8 transition-colors flex-none"
+                title="Plan listesine dön"
               >
-                <I.Chevron size={14} className="rotate-90" />
+                <I.Chevron size={12} className="rotate-90 flex-none" />
+                <span>Planlar</span>
               </button>
+            )}
+            {onBack && (
+              <span className="text-enba-line text-[16px] font-light select-none flex-none">/</span>
             )}
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 min-w-0">

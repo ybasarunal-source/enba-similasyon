@@ -1629,11 +1629,19 @@ export function DPlanWizard({ onDone, onCancel, onSave, initialPlan, costCenters
 
       {/* Sol adım çubuğu */}
       <aside className="w-[200px] flex-none bg-enba-panel border-r border-enba-line flex flex-col">
-        <div className="h-[60px] flex items-center px-4 border-b border-enba-line gap-2 flex-none">
-          <button onClick={onCancel} className="w-7 h-7 rounded-md text-enba-muted hover:text-enba-text hover:bg-enba-panel-2 inline-flex items-center justify-center">
-            <I.Chevron size={13} className="rotate-90" />
+        <div className="h-[60px] flex items-center px-3 border-b border-enba-line gap-1.5 flex-none">
+          <button
+            onClick={onCancel}
+            className="flex items-center gap-1.5 h-7 px-2 rounded-lg text-[12px] font-medium text-enba-muted hover:text-enba-orange hover:bg-enba-orange/8 transition-colors flex-none"
+            title="Plan listesine dön"
+          >
+            <I.Chevron size={12} className="rotate-90 flex-none" />
+            <span>Planlar</span>
           </button>
-          <span className="text-[13px] font-semibold text-enba-text">{initialPlan ? 'Planı Düzenle' : 'Yeni Plan'}</span>
+          <span className="text-enba-line text-[16px] font-light select-none flex-none">/</span>
+          <span className="text-[13px] font-semibold text-enba-text truncate">
+            {initialPlan ? 'Planı Düzenle' : 'Yeni Plan'}
+          </span>
         </div>
 
         <nav className="flex-1 pt-3 px-2">
