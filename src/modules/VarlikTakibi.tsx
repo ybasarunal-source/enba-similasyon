@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import {
   fixedAssetsAPI, assetDepositsAPI,
-  type FixedAsset, type AssetDeposit, type AssetOperation, type DepositType, type DepositStatus,
+  type FixedAsset, type AssetDeposit, type AssetOperation, type AssetTur, type DepositType, type DepositStatus,
   assetBookValue, annualDepreciation,
 } from '../api/varlikTakibi';
 import type { UserProfile } from '../api/supabase';
@@ -53,8 +53,13 @@ function depositTypeLabel(t: DepositType) {
 type AssetForm = Omit<FixedAsset, 'id' | 'company_id' | 'created_at' | 'updated_at'>;
 type DepositForm = Omit<AssetDeposit, 'id' | 'company_id' | 'created_at' | 'updated_at'>;
 
+const TUR_OPTIONS: { id: AssetTur; label: string }[] = [
+  { id: 'makina',   label: 'Makine / Ekipman' },
+  { id: 'demirbas', label: 'Demirbaş' },
+];
+
 const emptyAsset = (): AssetForm => ({
-  name: '', category: '', operation: 'M',
+  name: '', category: '', tur: 'makina', operation: 'M',
   purchase_date: new Date().toISOString().split('T')[0],
   purchase_amount_tl: 0, exchange_rate: 40, useful_life_years: 5, notes: '',
 });
@@ -143,7 +148,7 @@ export const VarlikTakibi: React.FC<VarlikTakibiProps> = ({ profile }) => {
   const openEditAsset = (a: FixedAsset) => {
     setEditingAsset(a);
     setEditingDeposit(null);
-    setAssetForm({ name: a.name, category: a.category, operation: a.operation, purchase_date: a.purchase_date, purchase_amount_tl: a.purchase_amount_tl, exchange_rate: a.exchange_rate, useful_life_years: a.useful_life_years, notes: a.notes });
+    setAssetForm({ name: a.name, category: a.category, tur: a.tur, operation: a.operation, purchase_date: a.purchase_date, purchase_amount_tl: a.purchase_amount_tl, exchange_rate: a.exchange_rate, useful_life_years: a.useful_life_years, notes: a.notes });
     setPanelOpen(true);
   };
 
@@ -443,8 +448,13 @@ export const VarlikTakibi: React.FC<VarlikTakibiProps> = ({ profile }) => {
                   <Field label="Varlık Adı *">
                     <input className={inputCls} value={assetForm.name} onChange={e => setAssetForm(p => ({ ...p, name: e.target.value }))} placeholder="Ör: Forklift, Baskı Makinesi..." />
                   </Field>
+                  <Field label="Tür">
+                    <select className={selectCls} value={assetForm.tur} onChange={e => setAssetForm(p => ({ ...p, tur: e.target.value as AssetTur }))}>
+                      {TUR_OPTIONS.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
+                    </select>
+                  </Field>
                   <Field label="Kategori">
-                    <input className={inputCls} value={assetForm.category} onChange={e => setAssetForm(p => ({ ...p, category: e.target.value }))} placeholder="Ör: Makine, Ekipman, Araç..." />
+                    <input className={inputCls} value={assetForm.category} onChange={e => setAssetForm(p => ({ ...p, category: e.target.value }))} placeholder="Ör: Üretim Makinesi, Taşıt, Bilgisayar..." />
                   </Field>
                   <Field label="Operasyon">
                     <select className={selectCls} value={assetForm.operation} onChange={e => setAssetForm(p => ({ ...p, operation: e.target.value as AssetOperation }))}>

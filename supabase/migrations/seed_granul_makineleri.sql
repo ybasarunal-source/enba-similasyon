@@ -2,33 +2,32 @@
 -- Granül Tesisi Makineleri — Seed Verisi
 -- Kaynak: is_plani_konusma.md (2026-05-23)
 --
+-- ⚠️ migration_v28 çalıştırıldıktan SONRA çalıştır.
+--    Artık tek tablo: public.assets
+--    Hem Makina Parkı hem Varlık Takibi bu tabloyu okur.
+--
 -- Supabase Dashboard → SQL Editor
---
--- ADIM 1: Önce şu sorguyu çalıştır, company_id'ni kopyala:
---   SELECT id, name FROM public.companies;
---
--- ADIM 2: Aşağıdaki 'BURAYA_YAPISTIR' yerine o UUID'yi yaz
--- ADIM 3: Gerekirse operasyonu değiştir: 'K'=Kömürcüler 'M'=Merkez 'V'=Varsak
--- ADIM 4: Tüm dosyayı Run
+-- ADIM 1: SELECT id, name FROM public.companies;  → company_id kopyala
+-- ADIM 2: 'BURAYA_YAPISTIR' yerine UUID yapıştır
+-- ADIM 3: Run
 -- ============================================================
 
 DO $$
 DECLARE
-  v_company_id uuid    := 'BURAYA_YAPISTIR';   -- ← company_id buraya
-  v_operation  text    := 'K';                  -- ← 'K' | 'M' | 'V'
-  v_eklenen    int     := 0;
-  v_atlanan    int     := 0;
+  v_company_id uuid := 'BURAYA_YAPISTIR';  -- ← company_id buraya
+  v_operation  text := 'K';                -- ← 'K'=Kömürcüler 'M'=Merkez 'V'=Varsak
 
-  -- Makine listesi: (adi, kw, kapasite_ton_sa, notlar)
+  --  adi                  kW    ton/sa  not
   makineler text[][] := ARRAY[
     ['Kırma Makinesi',  '45',  '2.0', '45 kW — 2,0 ton/sa'],
     ['Dikey Çırpıcı',  '15',  '0.6', '15 kW — 0,6 ton/sa'],
     ['Turbo Kurutucu', '55',  '2.0', '55 kW — 2,0 ton/sa'],
     ['Yatay Sıkma',    '45',  '2.0', '45 kW — 2,0 ton/sa'],
     ['Agromel + Fan',  '60',  '2.0', '60 kW — 2,0 ton/sa'],
-    ['Granülatör',    '150', '0.3', '150 kW — 0,3 ton/sa | DARBOĞAZ']
+    ['Granülatör',    '150',  '0.3', '150 kW — 0,3 ton/sa | DARBOĞAZ']
   ];
   m text[];
+  eklenen int := 0;
 
 BEGIN
 
@@ -37,53 +36,34 @@ BEGIN
   END IF;
 
   FOREACH m SLICE 1 IN ARRAY makineler LOOP
-
-    -- ── Makina Parkı (assets) ────────────────────────────────
-    IF EXISTS (SELECT 1 FROM public.assets WHERE company_id = v_company_id AND adi = m[1]) THEN
-      RAISE NOTICE '[assets] ATLANDI (zaten var): %', m[1];
-      v_atlanan := v_atlanan + 1;
+    IF EXISTS (
+      SELECT 1 FROM public.assets
+      WHERE company_id = v_company_id AND adi = m[1]
+    ) THEN
+      RAISE NOTICE 'ATLANDI (zaten var): %', m[1];
     ELSE
       INSERT INTO public.assets
-        (company_id, adi, motor_gucu, kapasite, yatirim_bedeli, satinalma_tarihi, kategori, tur)
+        (company_id, adi, motor_gucu, kapasite,
+         yatirim_bedeli, satinalma_tarihi, kategori, tur,
+         operation, exchange_rate, useful_life_years, notes)
       VALUES
-        (v_company_id, m[1], m[2]::numeric, m[3]::numeric, 0, '2026-01-01', 'production', 'makina');
-      RAISE NOTICE '[assets] EKLENDİ: %', m[1];
-      v_eklenen := v_eklenen + 1;
+        (v_company_id, m[1], m[2]::numeric, m[3]::numeric,
+         0, '2026-01-01', 'Üretim Makinesi', 'makina',
+         v_operation, 40, 10, m[4]);
+      eklenen := eklenen + 1;
+      RAISE NOTICE 'EKLENDİ: %', m[1];
     END IF;
-
-    -- ── Varlık Takibi (fixed_assets) ────────────────────────
-    IF EXISTS (SELECT 1 FROM public.fixed_assets WHERE company_id = v_company_id AND name = m[1]) THEN
-      RAISE NOTICE '[fixed_assets] ATLANDI (zaten var): %', m[1];
-    ELSE
-      INSERT INTO public.fixed_assets
-        (company_id, name, category, operation,
-         purchase_date, purchase_amount_tl, exchange_rate,
-         useful_life_years, notes, updated_at)
-      VALUES
-        (v_company_id, m[1], 'Üretim Makinesi', v_operation,
-         '2026-01-01', 0, 40,
-         10, m[4], now());
-      RAISE NOTICE '[fixed_assets] EKLENDİ: %', m[1];
-    END IF;
-
   END LOOP;
 
-  RAISE NOTICE '';
-  RAISE NOTICE '=== assets: % yeni, % atlandı ===', v_eklenen, v_atlanan;
+  RAISE NOTICE '=== % makine eklendi ===', eklenen;
 
 END $$;
 
 -- ── Doğrulama ─────────────────────────────────────────────────
-SELECT 'Makina Parkı' AS kaynak, adi AS makine, motor_gucu AS kw, kapasite AS "ton/sa", NULL AS operation
+SELECT adi AS "Makine", motor_gucu AS "kW", kapasite AS "ton/sa",
+       operation AS "Op", notes AS "Not"
 FROM   public.assets
 WHERE  company_id = (SELECT id FROM public.companies LIMIT 1)
-  AND  adi IN ('Kırma Makinesi','Dikey Çırpıcı','Turbo Kurutucu','Yatay Sıkma','Agromel + Fan','Granülatör')
-
-UNION ALL
-
-SELECT 'Varlık Takibi', name, NULL, NULL, operation
-FROM   public.fixed_assets
-WHERE  company_id = (SELECT id FROM public.companies LIMIT 1)
-  AND  name IN ('Kırma Makinesi','Dikey Çırpıcı','Turbo Kurutucu','Yatay Sıkma','Agromel + Fan','Granülatör')
-
-ORDER BY kaynak, makine;
+  AND  adi IN ('Kırma Makinesi','Dikey Çırpıcı','Turbo Kurutucu',
+               'Yatay Sıkma','Agromel + Fan','Granülatör')
+ORDER BY created_at;
