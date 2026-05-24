@@ -26,8 +26,8 @@ export interface FixedAsset {
   purchase_amount_tl:  number;         // ← assets.yatirim_bedeli
   exchange_rate:       number;
   useful_life_years:   number;
-  motor_kw?:           number;         // ← assets.motor_kw (sadece makina)
-  kapasite_ton_saat?:  number;         // ← assets.kapasite_ton_saat (sadece makina)
+  motor_kw?:           number;         // ← assets.motor_gucu (sadece makina)
+  kapasite_ton_saat?:  number;         // ← assets.kapasite (sadece makina)
   notes:               string;
   created_at:          string;
 }
@@ -62,8 +62,8 @@ function rowToFixedAsset(r: any): FixedAsset {
     purchase_amount_tl: Number(r.yatirim_bedeli       ?? 0),
     exchange_rate:      Number(r.exchange_rate         ?? 40),
     useful_life_years:  Number(r.useful_life_years     ?? 10),
-    motor_kw:           r.motor_kw          != null ? Number(r.motor_kw)          : undefined,
-    kapasite_ton_saat:  r.kapasite_ton_saat != null ? Number(r.kapasite_ton_saat) : undefined,
+    motor_kw:           r.motor_gucu != null ? Number(r.motor_gucu) : undefined,
+    kapasite_ton_saat:  r.kapasite   != null ? Number(r.kapasite)   : undefined,
     notes:              r.notes         ?? '',
     created_at:         r.created_at    ?? '',
   };
@@ -82,14 +82,14 @@ function formToRow(item: FixedAssetForm): Record<string, unknown> {
     yatirim_bedeli:     item.purchase_amount_tl,
     exchange_rate:      item.exchange_rate,
     useful_life_years:  item.useful_life_years,
-    motor_kw:           item.motor_kw          ?? null,
-    kapasite_ton_saat:  item.kapasite_ton_saat ?? null,
+    motor_gucu:         item.motor_kw          ?? null,
+    kapasite:           item.kapasite_ton_saat ?? null,
     notes:              item.notes,
   };
 }
 
 const ASSET_SELECT =
-  'id,company_id,adi,kategori,tur,operation,satinalma_tarihi,yatirim_bedeli,exchange_rate,useful_life_years,motor_kw,kapasite_ton_saat,notes,created_at';
+  'id,company_id,adi,kategori,tur,operation,satinalma_tarihi,yatirim_bedeli,exchange_rate,useful_life_years,motor_gucu,kapasite,notes,created_at';
 
 // ── fixedAssetsAPI — artık assets tablosuna yazıyor ───────────
 export const fixedAssetsAPI = {
