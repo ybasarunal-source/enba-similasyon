@@ -47,8 +47,9 @@ interface WizardState {
   // Adım 2 — Giriş & Fire
   inputUnit:           'ton' | 'kg';
   monthlyInputAmount:  number;     // inputUnit cinsinden
+  inputUnitPrice:      number;     // ₺/ton — hammadde alış fiyatı
   moistureWasteRate:   number;     // nem (0-1)
-  trashWasteRate:      number;     // çöp (0-1)
+  trashWasteRate:      number;     // yabancı madde (taş/toprak/metal) (0-1)
   altKaliteMode:       'simple' | 'detailed';
   altKaliteSimpleRate: number;     // mod A: toplam alt kalite fire (0-1)
   inputFractions:      InputFraction[];  // mod B
@@ -87,6 +88,7 @@ function initState(plan?: DPlan): WizardState {
 
     inputUnit:           pm?.inputUnit           ?? 'ton',
     monthlyInputAmount,
+    inputUnitPrice:      pm?.inputUnitPrice      ?? 0,
     moistureWasteRate:   pm?.moistureWasteRate   ?? 0,
     trashWasteRate:      pm?.trashWasteRate       ?? 0,
     altKaliteMode:       pm?.altKaliteMode        ?? 'simple',
@@ -130,6 +132,7 @@ function stateToProductionModel(s: WizardState): ProductionModel {
     params:             s.params,
     monthlyInputTons,
     inputUnit:          s.inputUnit,
+    inputUnitPrice:     s.inputUnitPrice || undefined,
     inputWasteRate,
     moistureWasteRate:  s.moistureWasteRate,
     trashWasteRate:     s.trashWasteRate,
@@ -446,7 +449,9 @@ function Step2GirisFire({ state, set, calc }: {
       ? state.altKaliteSimpleRate
       : state.inputFractions.filter(f => f.destination !== 'production').reduce((s, f) => s + f.percentage, 0)
   );
-  const toProduction = calc.afterInputWaste;
+  const toProduction    = calc.afterInputWaste;
+  const paidTons        = calc.paidInputTons;
+  const monthlyMatCost  = state.inputUnitPrice > 0 ? paidTons * state.inputUnitPrice : 0;
 
   const updateFraction = (id: string, patch: Partial<InputFraction>) =>
     set('inputFractions', state.inputFractions.map(f => f.id === id ? { ...f, ...patch } : f));
@@ -483,8 +488,17 @@ function Step2GirisFire({ state, set, calc }: {
             </div>
           </FormGroup>
         </div>
-        <div className="mt-3 text-[12px] text-enba-dim">
-          = <span className="font-semibold text-enba-text">{calc.grossInputTons.toFixed(1)} ton/ay</span> giriş
+        <div className="mt-4 pt-4 border-t border-enba-line">
+          <FormGroup label="Alış Fiyatı" hint="₺/ton (fire indirimi uygulanmış ton başına)">
+            <NumInput value={state.inputUnitPrice} onChange={v => set('inputUnitPrice', v)} step={100} placeholder="0" />
+          </FormGroup>
+          {state.inputUnitPrice > 0 && (
+            <div className="mt-2 flex items-center gap-2 text-[12px]">
+              <span className="text-enba-dim">Aylık hammadde maliyeti:</span>
+              <span className="font-semibold text-enba-text">{fmtTL(monthlyMatCost, { compact: true })}</span>
+              <span className="text-enba-dim">({paidTons.toFixed(1)} ton × {fmtTL(state.inputUnitPrice, { compact: true })}/ton)</span>
+            </div>
+          )}
         </div>
       </ParamSection>
 
@@ -508,11 +522,11 @@ function Step2GirisFire({ state, set, calc }: {
 
           <div className="border-t border-enba-line" />
 
-          {/* Geri dönüşümsüz çöp */}
+          {/* Yabancı madde */}
           <div className="grid grid-cols-[1fr_120px] gap-3 items-center">
             <div>
-              <div className="text-[13px] font-medium text-enba-text">Geri Dönüşümsüz Çöp</div>
-              <div className="text-[11px] text-enba-dim">Hiçbir değeri olmayan atık</div>
+              <div className="text-[13px] font-medium text-enba-text">Yabancı Madde Firesi</div>
+              <div className="text-[11px] text-enba-dim">Taş, toprak, metal ve diğer katışkılar</div>
             </div>
             <div className="flex items-center gap-2">
               <NumInput value={state.trashWasteRate * 100}
@@ -609,13 +623,23 @@ function Step2GirisFire({ state, set, calc }: {
         {/* Özet */}
         <div className="mt-4 pt-4 border-t border-enba-line grid grid-cols-2 gap-3 text-[12px]">
           <div className="bg-enba-panel-2 rounded-lg px-3 py-2">
-            <span className="text-enba-dim">Toplam fire</span>
-            <span className="ml-2 font-semibold text-red-400">{(totalFireRate * 100).toFixed(1)}%</span>
+            <div className="text-enba-dim mb-0.5">Toplam fire</div>
+            <div className="font-semibold text-red-400">{(totalFireRate * 100).toFixed(1)}%</div>
           </div>
           <div className="bg-enba-panel-2 rounded-lg px-3 py-2">
-            <span className="text-enba-dim">Üretime giren</span>
-            <span className="ml-2 font-semibold text-enba-green">{toProduction.toFixed(1)} ton/ay</span>
+            <div className="text-enba-dim mb-0.5">Ödenen ton / ay</div>
+            <div className="font-semibold text-enba-text">{paidTons.toFixed(1)} ton</div>
           </div>
+          <div className="bg-enba-panel-2 rounded-lg px-3 py-2">
+            <div className="text-enba-dim mb-0.5">Üretime giren</div>
+            <div className="font-semibold text-enba-green">{toProduction.toFixed(1)} ton/ay</div>
+          </div>
+          {monthlyMatCost > 0 && (
+            <div className="bg-enba-panel-2 rounded-lg px-3 py-2">
+              <div className="text-enba-dim mb-0.5">Hammadde maliyeti</div>
+              <div className="font-semibold text-enba-orange">{fmtTL(monthlyMatCost, { compact: true })}/ay</div>
+            </div>
+          )}
         </div>
       </ParamSection>
     </div>
@@ -1132,7 +1156,8 @@ function Step6Ozet({ state, calc, fixedCostMonth }: {
         <div className="text-[11px] uppercase tracking-wider text-enba-muted mb-3">Maliyet Dağılımı</div>
         <div className="flex flex-col gap-1.5">
           {[
-            { label: 'Hammadde (yardımcı)', val: calc.totalMaterialCost },
+            { label: 'Hammadde Alışı',      val: calc.inputMaterialCost },
+            { label: 'Yardımcı Malzeme',    val: calc.totalMaterialCost },
             { label: 'Enerji',              val: calc.totalEnergyCost },
             { label: 'İşçilik',             val: calc.totalLaborCost },
             { label: 'Diğer Değişken',      val: calc.totalOtherCost },

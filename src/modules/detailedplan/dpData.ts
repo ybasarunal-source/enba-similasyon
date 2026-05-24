@@ -560,11 +560,12 @@ export interface ProductionModel {
   // Aşama 1: Mal Girişi
   monthlyInputTons: number;    // her zaman ton cinsinden tutulur
   inputUnit?:       'ton' | 'kg';  // kullanıcının tercih ettiği giriş birimi
+  inputUnitPrice?:  number;    // ₺/ton — hammaddenin alış fiyatı
 
   // Giriş firesi
   inputWasteRate:       number;   // (eski compat) toplam giriş fire
   moistureWasteRate?:   number;   // nem firesi (0-1)
-  trashWasteRate?:      number;   // çöp firesi (0-1)
+  trashWasteRate?:      number;   // yabancı madde firesi — taş/toprak/metal (0-1)
   altKaliteMode?:       'simple' | 'detailed';
   altKaliteSimpleRate?: number;   // mod A: toplam alt kalite fire (0-1)
   inputFractions?:      InputFraction[];  // mod B: fraksiyonlar
@@ -605,6 +606,7 @@ export interface WorkerCapacity {
 
 export interface ProductionCalcResult {
   grossInputTons:     number;
+  paidInputTons:      number;  // fire indirimi sonrası ödenen ton
   afterInputWaste:    number;
   afterSortingWaste:  number;
   netOutputTons:      number;
@@ -624,6 +626,8 @@ export interface ProductionCalcResult {
 
   otherCosts:     { item: OtherVariableCost; cost: number }[];
   totalOtherCost: number;
+
+  inputMaterialCost:  number;  // hammadde alış maliyeti (paidInputTons × inputUnitPrice)
 
   totalVariableCost: number;
 
@@ -733,7 +737,13 @@ export function calcProductionResults(model: ProductionModel): ProductionCalcRes
   const totalOtherCost = otherCosts.reduce((s, o) => s + o.cost, 0);
 
   const packagingTotal  = productOutputs.reduce((s, p) => s + p.packagingCost, 0);
-  const totalVariableCost = totalEnergyCost + totalLaborCost + totalMaterialCost + totalOtherCost + packagingTotal;
+
+  // Hammadde alış maliyeti — nem + yabancı madde fire indirimi uygulanmış ödenen ton üzerinden
+  const purchaseFireRate  = Math.min((model.moistureWasteRate ?? 0) + (model.trashWasteRate ?? 0), 0.99);
+  const paidInputTons     = grossInputTons * (1 - purchaseFireRate);
+  const inputMaterialCost = model.inputUnitPrice ? paidInputTons * model.inputUnitPrice : 0;
+
+  const totalVariableCost = totalEnergyCost + totalLaborCost + totalMaterialCost + totalOtherCost + packagingTotal + inputMaterialCost;
 
   // Kapasite analizi
   const machineCapacities: MachineCapacity[] = model.machines.map(m => {
@@ -764,12 +774,13 @@ export function calcProductionResults(model: ProductionModel): ProductionCalcRes
     });
 
   return {
-    grossInputTons, afterInputWaste, afterSortingWaste: afterWashing, netOutputTons,
+    grossInputTons, paidInputTons, afterInputWaste, afterSortingWaste: afterWashing, netOutputTons,
     productOutputs, fractionOutputs, totalRevenue,
     energyCostByMachine, totalEnergyCost,
     workerDetails, totalLaborCost,
     materialCosts, totalMaterialCost,
     otherCosts, totalOtherCost,
+    inputMaterialCost,
     totalVariableCost,
     machineCapacities, bottleneck, workerCapacities,
   };
@@ -783,6 +794,12 @@ export function deriveProjectFromModel(
   const calc = calcProductionResults(model);
 
   const expenses: FixedExpense[] = [];
+
+  // Hammadde alış maliyeti (ana giriş malzemesi)
+  if (calc.inputMaterialCost > 0) {
+    expenses.push({ id: 'input_material', mcode: 'M100', costCategory: 'purchase',
+      name: 'Hammadde Alışı', group: 'Hammadde', monthly: calc.inputMaterialCost, growth: 0 });
+  }
 
   calc.materialCosts.forEach(mc => {
     expenses.push({ id: mc.material.id, mcode: mc.material.mcode, costCategory: 'purchase',
