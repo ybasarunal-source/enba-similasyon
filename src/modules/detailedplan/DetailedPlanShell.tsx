@@ -1,6 +1,9 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { cx, I, Badge, Btn, ScenarioChip } from './DPPrimitives';
-import { SCENARIOS, DPlan, CostCenter, PlanCtx, Granularity, buildDisplayPeriods, PlanActuals } from './dpData';
+import {
+  SCENARIOS, DPlan, CostCenter, PlanCtx, Granularity, buildDisplayPeriods, PlanActuals,
+  calcProductionResults, FixedExpense,
+} from './dpData';
 import { OverviewPanel }    from './OverviewPanel';
 import { RevenuePanel }     from './RevenuePanel';
 import { ExpensePanel }     from './ExpensePanel';
@@ -81,15 +84,34 @@ export function DetailedPlanShell({ plan, costCenters = [], onSave, onBack, onEd
     );
 
     // Proje startOffset'i proje giderlerine de yansıt.
-    const fixedExpenses = [
-      ...facilityExpenses,
-      ...plan.projects.flatMap(p =>
-        p.expenses.map(e => ({
-          ...e,
-          startOffset: Math.max(e.startOffset ?? 0, p.startOffset),
-        }))
-      ),
-    ];
+    // productionModel varsa hammadde alış maliyetini dinamik hesapla
+    // (plan eski versiyonda kaydedilmiş olsa bile doğru tutar görünür)
+    const rawProjectExpenses: FixedExpense[] = plan.projects.flatMap(p =>
+      p.expenses.map(e => ({
+        ...e,
+        startOffset: Math.max(e.startOffset ?? 0, p.startOffset),
+      }))
+    );
+
+    // productionModel.inputUnitPrice girilmişse dinamik hammadde giderini upsert et
+    const fixedExpenses: FixedExpense[] = (() => {
+      const pm = plan.productionModel;
+      if (!pm?.inputUnitPrice) return [...facilityExpenses, ...rawProjectExpenses];
+
+      const calcResult      = calcProductionResults(pm);
+      const inputMatCost    = calcResult.inputMaterialCost;
+      if (inputMatCost <= 0) return [...facilityExpenses, ...rawProjectExpenses];
+
+      const hammaddeExpense: FixedExpense = {
+        id: 'input_material', mcode: 'M100', costCategory: 'purchase',
+        name: 'Hammadde Alışı', group: 'Hammadde',
+        monthly: inputMatCost, growth: 0,
+      };
+
+      // Zaten varsa güncelle, yoksa ekle
+      const others = rawProjectExpenses.filter(e => e.id !== 'input_material');
+      return [...facilityExpenses, hammaddeExpense, ...others];
+    })();
 
     return {
       costCenters:      usedCostCenters,
