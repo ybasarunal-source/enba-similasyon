@@ -755,8 +755,8 @@ function Step4Uretim({ state, set, calc }: {
     set('machines', [...state.machines, {
       id:                 crypto.randomUUID(),
       name:               asset.name,
-      kw:                 0,
-      capacityTonPerHour: 0,
+      kw:                 asset.motor_kw          ?? 0,
+      capacityTonPerHour: asset.kapasite_ton_saat ?? 0,
       usesNetOutput:      false,
       order:              state.machines.length,
       assetId:            asset.id,
