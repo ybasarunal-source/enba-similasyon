@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Plus, Pencil, Trash2, X, AlertCircle, TrendingDown,
   Landmark, Wallet, ToggleLeft, ToggleRight,
@@ -9,6 +9,7 @@ import {
   assetBookValue, annualDepreciation,
 } from '../api/varlikTakibi';
 import type { UserProfile } from '../api/supabase';
+import type { DPlan } from './detailedplan/dpData';
 
 interface VarlikTakibiProps {
   profile: UserProfile | null;
@@ -136,6 +137,30 @@ export const VarlikTakibi: React.FC<VarlikTakibiProps> = ({ profile }) => {
   }, [companyId]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Hangi makine hangi planlarda kullanılıyor — localStorage'dan okur
+  const assetPlanMap = useMemo<Record<string, string[]>>(() => {
+    try {
+      const raw = localStorage.getItem('enba_detailed_plans');
+      if (!raw) return {};
+      const plans: DPlan[] = JSON.parse(raw);
+      const map: Record<string, string[]> = {};
+      for (const plan of plans) {
+        const planTitle = plan.title || plan.baslik || '—';
+        for (const machine of plan.productionModel?.machines ?? []) {
+          if (machine.assetId) {
+            if (!map[machine.assetId]) map[machine.assetId] = [];
+            if (!map[machine.assetId].includes(planTitle)) {
+              map[machine.assetId].push(planTitle);
+            }
+          }
+        }
+      }
+      return map;
+    } catch {
+      return {};
+    }
+  }, []);
 
   const openAddPanel = () => {
     setEditingAsset(null);
@@ -335,6 +360,15 @@ export const VarlikTakibi: React.FC<VarlikTakibiProps> = ({ profile }) => {
                       <div className="px-3 py-3">
                         <div className="text-sm font-semibold text-gray-800 truncate">{a.name}</div>
                         {a.notes && <div className="text-[11px] text-gray-400 truncate">{a.notes}</div>}
+                        {(assetPlanMap[a.id] ?? []).length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {assetPlanMap[a.id].map(planName => (
+                              <span key={planName} className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-orange-50 text-orange-600 border border-orange-100">
+                                📋 {planName}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                       <div className="px-3 py-3 text-xs text-gray-500 truncate">{a.category || '—'}</div>
                       <div className="px-3 py-3">

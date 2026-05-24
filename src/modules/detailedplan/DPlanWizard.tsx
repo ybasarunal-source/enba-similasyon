@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { cx, I, Btn, Badge } from './DPPrimitives';
 import {
   DPlan, CostCenter, PlanCategory, PLAN_CATEGORY_LABEL,
@@ -6,6 +6,8 @@ import {
   RawMaterial, OutputProduct, OtherVariableCost, InputFraction,
   calcProductionResults, deriveProjectFromModel, fmtTL,
 } from './dpData';
+import { fixedAssetsAPI, FixedAsset } from '../../api/varlikTakibi';
+import { supabase } from '../../api/supabase';
 import {
   generateInsights, calcScenariosTable,
   Insight, InsightLevel,
@@ -703,12 +705,37 @@ function Step4Uretim({ state, set, calc }: {
   const setParam = (k: keyof ProductionParams, v: number) =>
     set('params', { ...state.params, [k]: v });
 
+  // Varlık envanterinden makineler
+  const [inventoryMachines, setInventoryMachines] = useState<FixedAsset[]>([]);
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      const companyId = (data.session?.user?.app_metadata?.company_id as string) ?? '';
+      if (!companyId) return;
+      fixedAssetsAPI.getAll(companyId).then(assets =>
+        setInventoryMachines(assets.filter(a => a.tur === 'makina'))
+      ).catch(() => {});
+    });
+  }, []);
+
   const addMachine = () => {
     set('machines', [...state.machines, {
       id: crypto.randomUUID(), name: '', kw: 0,
       capacityTonPerHour: 0, usesNetOutput: false, order: state.machines.length,
     }]);
   };
+
+  const addFromInventory = (asset: FixedAsset) => {
+    set('machines', [...state.machines, {
+      id:                 crypto.randomUUID(),
+      name:               asset.name,
+      kw:                 0,
+      capacityTonPerHour: 0,
+      usesNetOutput:      false,
+      order:              state.machines.length,
+      assetId:            asset.id,
+    }]);
+  };
+
   const updateMachine = (id: string, patch: Partial<MachineEntry>) =>
     set('machines', state.machines.map(m => m.id === id ? { ...m, ...patch } : m));
   const removeMachine = (id: string) =>
@@ -720,6 +747,10 @@ function Step4Uretim({ state, set, calc }: {
     [arr[idx], arr[swap]] = [arr[swap], arr[idx]];
     set('machines', arr.map((m, i) => ({ ...m, order: i })));
   };
+
+  // Envanterde olup henüz eklenmemiş makineler
+  const addedAssetIds = new Set(state.machines.map(m => m.assetId).filter(Boolean));
+  const unaddedInventory = inventoryMachines.filter(a => !addedAssetIds.has(a.id));
 
   return (
     <div className="flex flex-col gap-8">
@@ -745,14 +776,36 @@ function Step4Uretim({ state, set, calc }: {
 
       {/* Makineler */}
       <ParamSection title="Makineler" icon="⚙️">
+
+        {/* Varlık envanterinden hızlı ekle */}
+        {unaddedInventory.length > 0 && (
+          <div className="mb-4 pb-4 border-b border-enba-line">
+            <div className="text-[11px] text-enba-dim mb-2">Varlık envanterinden ekle:</div>
+            <div className="flex flex-wrap gap-2">
+              {unaddedInventory.map(asset => (
+                <button key={asset.id} onClick={() => addFromInventory(asset)}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-enba-panel-2 border border-enba-line text-[12px] text-enba-muted hover:border-enba-orange/50 hover:text-enba-orange transition-colors">
+                  <I.Plus size={11} />
+                  {asset.name}
+                  <span className="text-[10px] text-enba-dim ml-1">
+                    {asset.operation}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="flex flex-col gap-3 mb-3">
           {state.machines.map((m, idx) => {
-            const cap = machineCapMap.get(m.id);
+            const cap    = machineCapMap.get(m.id);
+            const isFromInventory = Boolean(m.assetId);
             return (
               <div key={m.id} className={cx(
-                'bg-enba-panel-2 border rounded-xl p-3 flex flex-col gap-3',
+                'bg-enba-panel-2 border rounded-xl p-3 flex flex-col gap-2',
                 cap?.isBottleneck ? 'border-red-500/50' : 'border-enba-line',
               )}>
+                {/* Satır 1: sıra + isim + sil */}
                 <div className="flex items-center gap-2">
                   <div className="flex flex-col gap-0.5 flex-none">
                     <button onClick={() => moveMachine(idx, -1)} disabled={idx === 0}
@@ -767,19 +820,36 @@ function Step4Uretim({ state, set, calc }: {
                   </div>
                   <input value={m.name} onChange={e => updateMachine(m.id, { name: e.target.value })}
                     placeholder="Makine adı" className={cx(inputCls, 'flex-1')} />
-                  <NumInput value={m.kw} onChange={v => updateMachine(m.id, { kw: v })}
-                    placeholder="kW" className="w-16" />
-                  <NumInput value={m.capacityTonPerHour} onChange={v => updateMachine(m.id, { capacityTonPerHour: v })}
-                    placeholder="ton/sa" step={0.5} className="w-20" />
+                  {isFromInventory && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-enba-orange/10 border border-enba-orange/30 text-enba-orange flex-none">
+                      envanter
+                    </span>
+                  )}
                   <DelBtn onClick={() => removeMachine(m.id)} />
                 </div>
+                {/* Satır 2: kW + ton/sa (kompakt) */}
+                <div className="flex items-center gap-3 pl-7">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] text-enba-dim w-6">kW</span>
+                    <NumInput value={m.kw} onChange={v => updateMachine(m.id, { kw: v })}
+                      placeholder="0" className="w-20" />
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] text-enba-dim w-12">ton/sa</span>
+                    <NumInput value={m.capacityTonPerHour} onChange={v => updateMachine(m.id, { capacityTonPerHour: v })}
+                      placeholder="0" step={0.5} className="w-20" />
+                  </div>
+                </div>
+                {/* Kapasite bar */}
                 {cap && (
-                  <CapacityBar
-                    label={`${cap.maxTonsPerMonth.toFixed(0)} ton/ay kapasite`}
-                    used={cap.utilization}
-                    isBottleneck={cap.isBottleneck}
-                    detail={`%${(cap.utilization * 100).toFixed(0)}`}
-                  />
+                  <div className="pl-7">
+                    <CapacityBar
+                      label={`${cap.maxTonsPerMonth.toFixed(0)} ton/ay kapasite`}
+                      used={cap.utilization}
+                      isBottleneck={cap.isBottleneck}
+                      detail={`%${(cap.utilization * 100).toFixed(0)}`}
+                    />
+                  </div>
                 )}
               </div>
             );
@@ -787,7 +857,7 @@ function Step4Uretim({ state, set, calc }: {
         </div>
         <button onClick={addMachine}
           className="flex items-center gap-2 text-[12.5px] text-enba-muted hover:text-enba-orange transition-colors px-1 py-1">
-          <I.Plus size={13} /> Makine ekle
+          <I.Plus size={13} /> Yeni makine ekle
         </button>
       </ParamSection>
 

@@ -66,7 +66,7 @@ function rowToFixedAsset(r: any): FixedAsset {
 }
 
 // ── Kolon çevirisi: FixedAsset form → DB satırı ──────────────
-type FixedAssetForm = Omit<FixedAsset, 'id' | 'company_id' | 'created_at'>;
+export type FixedAssetForm = Omit<FixedAsset, 'id' | 'company_id' | 'created_at'>;
 
 function formToRow(item: FixedAssetForm): Record<string, unknown> {
   return {

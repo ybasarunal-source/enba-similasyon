@@ -12,6 +12,8 @@ import {
 import { I, cx, Badge, Btn } from './DPPrimitives';
 import { MCODE_NOTES } from '@/api/mcodeNotes';
 import { SharedContactsService } from '../../api/dataService';
+import { fixedAssetsAPI, FixedAssetForm } from '../../api/varlikTakibi';
+import { supabase } from '../../api/supabase';
 
 const LOCAL_KEY = 'enba_dp2_plans';
 
@@ -154,6 +156,38 @@ export function DetailedPlanModule({ navigate, setBackOverride }: Props) {
   const handleStatusChange = (id: string, newStatus: PlanStatus) => {
     const updated = planlar.map(p => p.id === id ? { ...p, status: newStatus } : p);
     kaydet(updated);
+
+    // Plan aktifleşince → envanterde olmayan makineleri varlık tablosuna ekle
+    if (newStatus === 'active') {
+      const plan     = planlar.find(p => p.id === id);
+      const machines = plan?.productionModel?.machines ?? [];
+      if (machines.length === 0) return;
+
+      supabase.auth.getSession().then(({ data }) => {
+        const companyId = (data.session?.user?.app_metadata?.company_id as string | undefined) ?? '';
+        if (!companyId) return;
+
+        fixedAssetsAPI.getAll(companyId).then(existingAssets => {
+          const existingIds = new Set(existingAssets.map(a => a.id));
+          const toAdd = machines.filter(m => !m.assetId || !existingIds.has(m.assetId));
+          toAdd.forEach(m => {
+            if (!m.name) return;
+            const form: FixedAssetForm = {
+              name:               m.name,
+              category:           'Makina',
+              tur:                'makina',
+              operation:          'K',
+              purchase_date:      new Date().toISOString().slice(0, 10),
+              purchase_amount_tl: 0,
+              exchange_rate:      1,
+              useful_life_years:  10,
+              notes:              `Detaylı İş Planı: ${plan?.title ?? ''}`,
+            };
+            fixedAssetsAPI.add(companyId, form).catch(() => {});
+          });
+        }).catch(() => {});
+      }).catch(() => {});
+    }
   };
 
   /* ── Gider Merkezi Editörü ── */

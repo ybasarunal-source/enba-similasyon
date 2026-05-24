@@ -475,6 +475,7 @@ export interface MachineEntry {
   df?:                 number;   // override — boşsa params.defaultDF kullanılır
   usesNetOutput:       boolean;  // true = fire sonrası net ton işler (granül gibi)
   order:               number;   // proses sırası
+  assetId?:            string;   // varlık envanterindeki karşılığı (assets.id)
 }
 
 export type WorkerMode = 'capacity' | 'fixed';

@@ -823,10 +823,39 @@ grep "^## \[" log.md | tail -5
 
 ---
 
+## [2026-05-24] oturum kapanışı | Wizard yeniden yazımı + mobil kararları
+
+**Bu oturumda yapılanlar:**
+- `seed_granul_makineleri.sql` önceki gün çalıştırıldı — CLAUDE.md güncellendi
+- Geri dönüşüm proses domain bilgisi arşivlendi: nem/çöp/alt kalite fire tipleri, ön seçim, hat uyumluluğu, wizard adımları netleşti
+- `Wiki/Geri-Donusum-Proses-Bilgisi.md` oluşturuldu (kırpılmadan)
+- Plan tipi seçim ekranı eklendi: Granül Üretimi (aktif) + Kağıt/Çapak/Levha (daha sonra)
+- DPlanWizard.tsx tamamen yeniden yazıldı: 4 adım → 6 adım (Plan Bilgisi / Giriş & Fire / Ön Seçim / Üretim / Çıktı Ürünleri / Özet)
+- dpData.ts: InputFraction tipi, ProductionModel yeni alanlar, calcProductionResults güncellendi
+- Commit: 47bc576, push edildi
+- Mobil modül kararları alındı: 14 modül mobil, geri kalanlar masaüstü — `Kararlar/2026-05-Mobil-Modul-Kararlari.md`
+- Mobil teknik yaklaşım: Hibrit (C) — basit modüller breakpoint, karmaşık modüller `useIsMobile()` hook
+
+**Bir sonraki oturumda:**
+1. Wizard tarayıcı testi — granül tesisi parametreleri + AssistantPanel doğrulama
+2. DetailedPlan — BudgetTrack aktüel veri girişi formu
+3. Paraşüt → financial_categories eşleştirme modalı
+
+---
+
 ## [2026-05-24] ingest | Geri dönüşüm proses domain bilgisi
 - Kaynak: Başar ile wizard tasarım konuşması (tam sohbet arşivlendi)
 - Güncellenen sayfalar: `index.md`
 - Yeni sayfalar: `Wiki/Geri-Donusum-Proses-Bilgisi.md`
+## [2026-05-24] karar | Mobil modül kararları
+- Mobil olacaklar: dashboard (özet), tasks, calendar, mail (inbox odaklı), notes, fixedexpenses, fastplan, stock, production, cashflow, pnl (özet), machinery, settings, planning (sadece özet)
+- Masaüstü only: profile, modules, varlik, parasut, ayarlar, archive, licensing, company_admin, super_admin
+- İleride karar: logistics, hr
+- Önemli: Mail mobilde inbox-okuma uygulaması gibi tasarlanacak; DetailedPlan mobilde read-only özet
+- Yeni sayfa: `Kararlar/2026-05-Mobil-Modul-Kararlari.md`
+
+---
+
 - Önemli çıkarımlar:
   - Fire 3 tipte: nem (saf kayıp), çöp (saf kayıp), alt kalite fraksiyonlar (plan bazında gelir ya da kayıp)
   - Ön seçim malzeme bazında — bazı malzemeler bypass ederek direkt üretime girer

@@ -72,6 +72,7 @@
 | [[Wiki/Entegrasyon-Mimarisi\|Entegrasyon Mimarisi]] | Microsoft/Google/Paraşüt OAuth karşılaştırması, login akışı, riskler | 2026-05-04 |
 | [[Wiki/Is-Modeli\|İş Modeli & Hedefler]] | Kendi şirket ERP'i + SaaS demo/pazarlama, multi-tenancy kritik, SQL öncelikleri | 2026-05-04 |
 | [[Wiki/Geri-Donusum-Proses-Bilgisi\|Geri Dönüşüm Proses Bilgisi]] | Malzeme akışı, fire tipleri, hat uyumluluğu, wizard adımları — granül + ilerideki prosesler | 2026-05-24 |
+| [[Kararlar/2026-05-Mobil-Modul-Kararlari\|Mobil Modül Kararları]] | Hangi modüller mobil, hibrit teknik yaklaşım (C), mail inbox odaklı not | 2026-05-24 |
 
 ---
 

@@ -386,7 +386,7 @@ Veri kaybı riski olan her adımı kullanıcıya açıkça belirt ve onay al.
 - [ ] **Login'de otomatik şirket eşleşmesi** — Kullanıcı email'i Supabase'deki profile kaydıyla eşleşince şirket otomatik belirlenmeli; girişte şirket seçim adımı kalkmalı. (Şu an zaten böyle çalışıyor ama super_admin seçici UX'i karışıklık yaratıyor.)
 
 ### Bir Sonraki Oturumda İlk Yapılacak
-1. **DetailedPlan wizard yeniden yazımı** — plan tipi seçim ekranı + granül wizard 6 adım (bkz. Wiki/Geri-Donusum-Proses-Bilgisi.md)
+1. **Wizard tarayıcı testi** — granül tesisi parametrelerini gir, Giriş & Fire / Ön Seçim adımlarını doğrula
 2. **DetailedPlan — BudgetTrack aktüel veri girişi formu** — panel şu an boş
 3. **Paraşüt → financial_categories** eşleştirme modalı Supabase tablosundan çeksin
 
