@@ -288,7 +288,7 @@ export function DPlanWizard({ initialPlan, costCenters, onDone, onSave, onCancel
         </div>
 
         {showAssistant && (
-          <div className="hidden md:flex w-[300px] flex-none border-l border-enba-line flex-col overflow-hidden">
+          <div className="hidden md:flex w-[300px] flex-none border-l border-enba-line flex-col overflow-y-auto">
             <AssistantPanel
               insights={insights}
               calc={calc}
