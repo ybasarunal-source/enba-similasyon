@@ -366,6 +366,9 @@ Veri kaybı riski olan her adımı kullanıcıya açıkça belirt ve onay al.
 - [x] **Modül reskin Faz 1** — global CSS katmanı (commit önceki oturum)
 - [x] **DetailedPlan navigasyon fix** — App ← tuşu plan listesine döner (commit fa057d7)
 - [x] **ProductionModel + rule engine + 4-step wizard** — proses tabanlı wizard yeniden yazımı (commit 6910193)
+- [x] **migration_v28 — unified assets** — `fixed_assets` tablosu kaldırıldı, `assets` tablosuna kolon eklendi; varlikTakibi.ts + VarlikTakibi.tsx güncellendi (commit 00bb527)
+- [x] **Machinery.tsx yeniden tasarım** — enba design language: 3 sekme tümü çalışıyor, drawer panel, operasyon rozeti, Bakım Arşivi sekmesi (commit 561c017)
+- [x] **seed_granul_makineleri.sql** — 6 granül makinesi Supabase SQL Editor'de çalıştırıldı (2026-05-23)
 
 ### DetailedPlan — Açık Konular
 - [x] ~~**Panel hesapları doğrulanacak**~~ → ✅ Çözüldü (2026-05-23)
@@ -383,11 +386,14 @@ Veri kaybı riski olan her adımı kullanıcıya açıkça belirt ve onay al.
 - [ ] **Login'de otomatik şirket eşleşmesi** — Kullanıcı email'i Supabase'deki profile kaydıyla eşleşince şirket otomatik belirlenmeli; girişte şirket seçim adımı kalkmalı. (Şu an zaten böyle çalışıyor ama super_admin seçici UX'i karışıklık yaratıyor.)
 
 ### Bir Sonraki Oturumda İlk Yapılacak
-**Yeni proses wizard'ını tarayıcıda test et — granül tesisi parametrelerini Adım 2/3'e gir, AssistantPanel insights'larını doğrula, panel hesaplarını kontrol et. Sonra: Paraşüt→financial_categories eşleştirme modalı.**
+1. **DetailedPlan wizard yeniden yazımı** — plan tipi seçim ekranı + granül wizard 6 adım (bkz. Wiki/Geri-Donusum-Proses-Bilgisi.md)
+2. **DetailedPlan — BudgetTrack aktüel veri girişi formu** — panel şu an boş
+3. **Paraşüt → financial_categories** eşleştirme modalı Supabase tablosundan çeksin
 
 ### Bekleyen Kullanıcı Aksiyonu
 - [x] **Supabase SQL:** `migration_v25b_parasut_superadmin_rls.sql` çalıştırıldı (2026-05-19)
 - [x] **Supabase SQL:** `migration_v26_custom_holidays.sql` çalıştırıldı (2026-05-21)
+- [x] **Supabase SQL:** `seed_granul_makineleri.sql` çalıştırıldı (2026-05-23)
 
 ---
 

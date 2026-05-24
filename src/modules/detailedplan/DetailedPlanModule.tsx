@@ -21,7 +21,7 @@ interface Props {
   setBackOverride?: (fn: (() => boolean) | null) => void;
 }
 
-type View = 'list' | 'wizard' | 'shell' | 'ccEditor';
+type View = 'list' | 'typeSelect' | 'wizard' | 'shell' | 'ccEditor';
 
 export function DetailedPlanModule({ navigate, setBackOverride }: Props) {
   const { planlar, kaydet, sil, syncStatus, syncError } = usePlanSync<DPlan>({
@@ -167,6 +167,16 @@ export function DetailedPlanModule({ navigate, setBackOverride }: Props) {
     );
   }
 
+  /* ── Plan türü seçim ekranı ── */
+  if (view === 'typeSelect') {
+    return (
+      <PlanTypeSelect
+        onSelect={() => setView('wizard')}
+        onCancel={() => setView('list')}
+      />
+    );
+  }
+
   /* ── Sihirbaz görünümü ── */
   if (view === 'wizard') {
     return (
@@ -202,7 +212,7 @@ export function DetailedPlanModule({ navigate, setBackOverride }: Props) {
       <div className="flex-none border-b border-enba-line bg-enba-panel px-6 h-[60px] flex items-center gap-3">
         <span className="w-2 h-2 rounded-full bg-enba-orange shadow-[0_0_8px] shadow-enba-orange/60" />
         <h1 className="text-[15px] font-semibold flex-1">Detaylı İş Planı</h1>
-        <Btn variant="primary" size="md" icon={<I.Plus size={14} />} onClick={() => { setActivePlanId(null); setView('wizard'); }}>
+        <Btn variant="primary" size="md" icon={<I.Plus size={14} />} onClick={() => { setActivePlanId(null); setView('typeSelect'); }}>
           Yeni Plan
         </Btn>
       </div>
@@ -247,7 +257,7 @@ export function DetailedPlanModule({ navigate, setBackOverride }: Props) {
             </div>
 
             {planlar.length === 0 ? (
-              <PlanEmptyState onNew={() => { setActivePlanId(null); setView('wizard'); }} />
+              <PlanEmptyState onNew={() => { setActivePlanId(null); setView('typeSelect'); }} />
             ) : (() => {
               const STATUS_TABS: Array<{ key: PlanStatus | 'all'; label: string }> = [
                 { key: 'all',      label: 'Tümü' },
@@ -874,6 +884,108 @@ function PlanEmptyState({ onNew }: { onNew: () => void }) {
         <div className="text-[12px] text-enba-dim">Gider merkezini tanımladıktan sonra yeni plan oluşturun.</div>
       </div>
       <Btn variant="primary" size="md" icon={<I.Plus size={14} />} onClick={onNew}>Yeni Plan Oluştur</Btn>
+    </div>
+  );
+}
+
+// ─── Plan Türü Seçim Ekranı ──────────────────────────────────────────────────
+
+const PLAN_TYPES = [
+  {
+    id:       'granul',
+    emoji:    '🏭',
+    title:    'Granül Üretimi',
+    desc:     'PET, PP, LDPE, HDPE ve diğer plastik geri dönüşüm tesisleri için',
+    active:   true,
+  },
+  {
+    id:       'kagit',
+    emoji:    '📦',
+    title:    'Kağıt Balyalama',
+    desc:     'Atık kağıt ve karton balyalama tesisleri için',
+    active:   false,
+  },
+  {
+    id:       'capak',
+    emoji:    '⚙️',
+    title:    'Çapak Üretimi',
+    desc:     'Metal çapak işleme ve geri dönüşüm tesisleri için',
+    active:   false,
+  },
+  {
+    id:       'levha',
+    emoji:    '🪟',
+    title:    'Levha Üretimi',
+    desc:     'Plastik levha ve profil üretim tesisleri için',
+    active:   false,
+  },
+] as const;
+
+function PlanTypeSelect({ onSelect, onCancel }: { onSelect: () => void; onCancel: () => void }) {
+  return (
+    <div className="h-full flex flex-col bg-enba-bg overflow-hidden">
+      {/* Header */}
+      <div className="flex-none bg-enba-panel border-b border-enba-line h-[60px] flex items-center px-5 gap-4">
+        <button
+          onClick={onCancel}
+          className="w-8 h-8 rounded-lg text-enba-muted hover:text-enba-text hover:bg-enba-panel-2 inline-flex items-center justify-center"
+        >
+          <I.Chevron size={14} className="rotate-90" />
+        </button>
+        <div>
+          <div className="text-[13px] font-semibold text-enba-text">Yeni İş Planı</div>
+          <div className="text-[10.5px] text-enba-dim">Plan türünü seçin</div>
+        </div>
+      </div>
+
+      {/* İçerik */}
+      <div className="flex-1 overflow-y-auto flex items-start justify-center p-8">
+        <div className="w-full max-w-[640px] flex flex-col gap-4">
+          <div className="text-[13px] text-enba-muted mb-2">
+            Tesisinizin üretim sürecine uygun plan türünü seçin.
+          </div>
+
+          {PLAN_TYPES.map(pt => (
+            <button
+              key={pt.id}
+              onClick={pt.active ? onSelect : undefined}
+              disabled={!pt.active}
+              className={cx(
+                'w-full text-left rounded-xl border p-5 flex items-start gap-4 transition-all',
+                pt.active
+                  ? 'bg-enba-panel border-enba-orange/40 hover:border-enba-orange hover:bg-enba-panel-2 cursor-pointer'
+                  : 'bg-enba-panel border-enba-line opacity-50 cursor-not-allowed',
+              )}
+            >
+              <span className="text-3xl leading-none mt-0.5">{pt.emoji}</span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className={cx(
+                    'text-[14px] font-semibold',
+                    pt.active ? 'text-enba-text' : 'text-enba-muted',
+                  )}>
+                    {pt.title}
+                  </span>
+                  {!pt.active && (
+                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-enba-panel-2 text-enba-dim border border-enba-line">
+                      daha sonra
+                    </span>
+                  )}
+                  {pt.active && (
+                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-enba-orange/15 text-enba-orange border border-enba-orange/30">
+                      mevcut
+                    </span>
+                  )}
+                </div>
+                <div className="text-[12px] text-enba-dim">{pt.desc}</div>
+              </div>
+              {pt.active && (
+                <I.Chevron size={14} className="-rotate-90 text-enba-muted mt-1 flex-none" />
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

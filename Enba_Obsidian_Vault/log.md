@@ -786,3 +786,53 @@ grep "^## \[" log.md | tail -5
 - Build: ✅ TypeScript sıfır hata, production build başarılı
 - Commit: 6910193
 - Bir sonraki: Granül tesisi parametrelerini wizard'a gir → panel hesaplarını manuel doğrula
+
+## [2026-05-23 21:00] geliştirme | Machinery.tsx — enba design language yeniden tasarım + migration_v28 unified assets
+
+### Mimari değişiklik: Unified Assets Table
+- `fixed_assets` tablosu kaldırıldı (migration_v28)
+- `assets` tablosuna `operation`, `exchange_rate`, `useful_life_years`, `notes` kolonları eklendi
+- `varlikTakibi.ts`: `fixedAssetsAPI` artık `assets` tablosunu kullanıyor; `rowToFixedAsset()` / `formToRow()` ile kolon adı çevirisi
+- `VarlikTakibi.tsx`: `tur` (makina/demirbas) alanı eklendi
+- `supabase.ts`: `SupabaseAsset` arayüzü genişletildi (company_id, operation, exchange_rate, useful_life_years, notes)
+
+### Machinery.tsx yeniden tasarım
+- Eski: dev yuvarlak kartlar, ortalanmış modal, bakım sekmesi hiç render edilmiyordu
+- Yeni: kompakt KpiCard bileşeni, 3 sekme (Makina Parkı / Demirbaşlar / Bakım Arşivi) tümü çalışıyor
+- Tablo düzeni (grid-cols), sağ taraf drawer panel
+- Operasyon rozeti (M=mavi, K=yeşil, V=mor) her satırda
+- Bakım Arşivi sekmesi: varlık dropdown + tip + tarih + maliyet + açıklama
+- `openAddMaint(asset?)` → makine satırının ingiliz anahtarı butonu ile tetikleniyor
+
+### Seed SQL
+- `seed_granul_makineleri.sql`: 6 granül makinesi `assets` tablosuna (tek tablo)
+- company_id: `a191c800-d8c3-4780-b08f-dd75faef3baf`, operation: 'K'
+- Supabase SQL Editor'de çalıştırılmayı bekliyor
+
+- Etkilenen dosyalar: `src/modules/Machinery.tsx`, `src/api/supabase.ts`, `src/api/varlikTakibi.ts`, `src/modules/VarlikTakibi.tsx`, `supabase/migrations/migration_v28_unified_assets.sql`, `supabase/migrations/seed_granul_makineleri.sql`
+- Build: ✅ TypeScript sıfır hata
+- Commit: 561c017
+- Bir sonraki: Supabase'de seed SQL çalıştır → makineler hem Makina Parkı hem Varlık Takibi'nde görünmeli. Sonra: Paraşüt → financial_categories eşleştirme modalı
+
+---
+
+## [2026-05-24 09:00] geliştirme | seed_granul_makineleri.sql çalıştırıldı
+- Yapılan: 6 granül makinesi `assets` tablosuna eklendi (Kömürcüler / company_id: a191c800)
+- Makineler Makina Parkı (Machinery.tsx) ve Varlık Takibi (VarlikTakibi.tsx) modüllerinde görünür
+- Bir sonraki: Yeni proses wizard'ını tarayıcıda test et → granül tesisi parametreleri + AssistantPanel doğrulama
+
+---
+
+## [2026-05-24] ingest | Geri dönüşüm proses domain bilgisi
+- Kaynak: Başar ile wizard tasarım konuşması (tam sohbet arşivlendi)
+- Güncellenen sayfalar: `index.md`
+- Yeni sayfalar: `Wiki/Geri-Donusum-Proses-Bilgisi.md`
+- Önemli çıkarımlar:
+  - Fire 3 tipte: nem (saf kayıp), çöp (saf kayıp), alt kalite fraksiyonlar (plan bazında gelir ya da kayıp)
+  - Ön seçim malzeme bazında — bazı malzemeler bypass ederek direkt üretime girer
+  - Her fraksiyon için 3 karar: direkt sat / üretime sok / at
+  - PP/LDPE/HDPE aynı hat paylaşabilir ama aynı anda çalışamaz; PET ayrı hat zorunlu
+  - Hat değişimi = temizlik = hammadde + zaman kaybı → çok malzeme planlaması istenen durum değil
+  - Her plan tek malzeme üzerine kurulur; kapasite boşluğu AssistantPanel insight'ı olur
+  - Wizard başında plan tipi seçim ekranı gelecek: Granül Üretimi ilk seçenek; kağıt balyalama, çapak, levha ileride
+  - Granül wizard adımları netleşti: Plan Bilgisi → Giriş & Fire → Ön Seçim → Üretim → Çıktı → Özet

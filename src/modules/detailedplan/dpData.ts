@@ -518,20 +518,40 @@ export interface OtherVariableCost {
   monthlyFixed?:  number;  // sabit aylık TL
 }
 
+/** Giriş materyalinin içindeki bir fraksiyon (kağıt, LDPE, 2. kalite vb.) */
+export interface InputFraction {
+  id:           string;
+  name:         string;        // örn: "Kağıt", "LDPE", "2. Kalite PP"
+  percentage:   number;        // giriş tonunun payı (0-1)
+  destination:  'sell' | 'production' | 'discard';
+  unitPrice?:   number;        // TL/kg — destination === 'sell' ise
+}
+
 export interface ProductionModel {
   params: ProductionParams;
 
   // Aşama 1: Mal Girişi
-  monthlyInputTons: number;
-  inputWasteRate:   number;   // giriş fire oranı (0.03 = %3)
+  monthlyInputTons: number;    // her zaman ton cinsinden tutulur
+  inputUnit?:       'ton' | 'kg';  // kullanıcının tercih ettiği giriş birimi
 
-  // Aşama 2: Ayrıştırma
-  sortingWasteRate: number;   // ayrıştırma fire oranı
+  // Giriş firesi
+  inputWasteRate:       number;   // (eski compat) toplam giriş fire
+  moistureWasteRate?:   number;   // nem firesi (0-1)
+  trashWasteRate?:      number;   // çöp firesi (0-1)
+  altKaliteMode?:       'simple' | 'detailed';
+  altKaliteSimpleRate?: number;   // mod A: toplam alt kalite fire (0-1)
+  inputFractions?:      InputFraction[];  // mod B: fraksiyonlar
 
-  // Aşama 3: Üretim
+  // Ön seçim
+  sortingWasteRate: number;    // (eski compat)
+  sortingEnabled?:  boolean;   // false → malzeme direkt üretime girer
+
+  // Üretim
   machines:              MachineEntry[];
-  processWasteRate:      number;  // proses fire oranı
-  fireAfterMachineIdx:   number;  // bu index'ten sonra fire uygulanır (-1 = son makine sonrası)
+  processWasteRate:      number;
+  fireAfterMachineIdx:   number;
+  washingEnabled?:       boolean;  // yıkama hattı var mı?
+  washingWasteRate?:     number;   // yıkama fire oranı (0-1)
 
   // Çıktı & Maliyetler
   outputProducts:      OutputProduct[];
@@ -563,7 +583,8 @@ export interface ProductionCalcResult {
   netOutputTons:      number;
 
   productOutputs: { product: OutputProduct; tons: number; revenue: number; packagingCost: number }[];
-  totalRevenue:   number;
+  fractionOutputs: { fraction: InputFraction; tons: number; revenue: number }[];
+  totalRevenue:    number;  // ürün + fraksiyon satış geliri
 
   energyCostByMachine: { machine: MachineEntry; cost: number; kWh: number }[];
   totalEnergyCost:     number;
@@ -587,12 +608,49 @@ export interface ProductionCalcResult {
 export function calcProductionResults(model: ProductionModel): ProductionCalcResult {
   const { params } = model;
 
-  const grossInputTons    = model.monthlyInputTons;
-  const afterInputWaste   = grossInputTons   * (1 - model.inputWasteRate);
-  const afterSortingWaste = afterInputWaste  * (1 - model.sortingWasteRate);
-  const netOutputTons     = afterSortingWaste * (1 - model.processWasteRate);
+  const grossInputTons = model.monthlyInputTons;
 
-  // Ürün çıktıları
+  // ── Giriş firesi hesabı ──────────────────────────────────────────────────
+  let effectiveInputWasteRate: number;
+  if (model.moistureWasteRate !== undefined) {
+    // Yeni model: nem + çöp + alt kalite
+    const moisture = model.moistureWasteRate ?? 0;
+    const trash    = model.trashWasteRate ?? 0;
+    let altKalite  = 0;
+    if (model.altKaliteMode === 'detailed' && model.inputFractions?.length) {
+      altKalite = model.inputFractions
+        .filter(f => f.destination !== 'production')
+        .reduce((s, f) => s + f.percentage, 0);
+    } else {
+      altKalite = model.altKaliteSimpleRate ?? 0;
+    }
+    effectiveInputWasteRate = Math.min(moisture + trash + altKalite, 0.99);
+  } else {
+    // Eski model: tek rate
+    effectiveInputWasteRate = model.inputWasteRate;
+  }
+
+  // Üretime giren fraksiyon tonu (destination === 'production')
+  const fractionToProductionTons = (model.altKaliteMode === 'detailed' && model.inputFractions?.length)
+    ? grossInputTons * model.inputFractions
+        .filter(f => f.destination === 'production')
+        .reduce((s, f) => s + f.percentage, 0)
+    : 0;
+
+  const afterInputWaste   = grossInputTons * (1 - effectiveInputWasteRate) + fractionToProductionTons;
+
+  // Ön seçim: enabled değilse ek kayıp yok
+  const sortingRate       = (model.sortingEnabled === false) ? 0 : model.sortingWasteRate;
+  const afterSortingWaste = afterInputWaste * (1 - sortingRate);
+
+  // Yıkama
+  const afterWashing = model.washingEnabled
+    ? afterSortingWaste * (1 - (model.washingWasteRate ?? 0))
+    : afterSortingWaste;
+
+  const netOutputTons = afterWashing * (1 - model.processWasteRate);
+
+  // ── Ürün çıktıları ───────────────────────────────────────────────────────
   const productOutputs = model.outputProducts.map(op => {
     const tons        = netOutputTons * op.shareOfNetTons;
     const revenue     = tons * 1000 * op.unitPrice;
@@ -601,7 +659,18 @@ export function calcProductionResults(model: ProductionModel): ProductionCalcRes
       : 0;
     return { product: op, tons, revenue, packagingCost };
   });
-  const totalRevenue = productOutputs.reduce((s, p) => s + p.revenue, 0);
+
+  // ── Fraksiyon satış geliri ───────────────────────────────────────────────
+  const fractionOutputs = (model.inputFractions ?? [])
+    .filter(f => f.destination === 'sell')
+    .map(f => {
+      const tons    = grossInputTons * f.percentage;
+      const revenue = tons * 1000 * (f.unitPrice ?? 0);
+      return { fraction: f, tons, revenue };
+    });
+
+  const totalRevenue = productOutputs.reduce((s, p) => s + p.revenue, 0)
+                     + fractionOutputs.reduce((s, f) => s + f.revenue, 0);
 
   // Enerji (makine bazlı)
   const energyCostByMachine = model.machines.map(m => {
@@ -668,8 +737,8 @@ export function calcProductionResults(model: ProductionModel): ProductionCalcRes
     });
 
   return {
-    grossInputTons, afterInputWaste, afterSortingWaste, netOutputTons,
-    productOutputs, totalRevenue,
+    grossInputTons, afterInputWaste, afterSortingWaste: afterWashing, netOutputTons,
+    productOutputs, fractionOutputs, totalRevenue,
     energyCostByMachine, totalEnergyCost,
     workerDetails, totalLaborCost,
     materialCosts, totalMaterialCost,
