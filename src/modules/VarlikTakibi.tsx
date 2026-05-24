@@ -62,7 +62,9 @@ const TUR_OPTIONS: { id: AssetTur; label: string }[] = [
 const emptyAsset = (): AssetForm => ({
   name: '', category: '', tur: 'makina', operation: 'M',
   purchase_date: new Date().toISOString().split('T')[0],
-  purchase_amount_tl: 0, exchange_rate: 40, useful_life_years: 5, notes: '',
+  purchase_amount_tl: 0, exchange_rate: 40, useful_life_years: 5,
+  motor_kw: undefined, kapasite_ton_saat: undefined,
+  notes: '',
 });
 const emptyDeposit = (): DepositForm => ({
   name: '', deposit_type: 'rent', operation: 'M',
@@ -173,7 +175,7 @@ export const VarlikTakibi: React.FC<VarlikTakibiProps> = ({ profile }) => {
   const openEditAsset = (a: FixedAsset) => {
     setEditingAsset(a);
     setEditingDeposit(null);
-    setAssetForm({ name: a.name, category: a.category, tur: a.tur, operation: a.operation, purchase_date: a.purchase_date, purchase_amount_tl: a.purchase_amount_tl, exchange_rate: a.exchange_rate, useful_life_years: a.useful_life_years, notes: a.notes });
+    setAssetForm({ name: a.name, category: a.category, tur: a.tur, operation: a.operation, purchase_date: a.purchase_date, purchase_amount_tl: a.purchase_amount_tl, exchange_rate: a.exchange_rate, useful_life_years: a.useful_life_years, motor_kw: a.motor_kw, kapasite_ton_saat: a.kapasite_ton_saat, notes: a.notes });
     setPanelOpen(true);
   };
 
@@ -359,6 +361,19 @@ export const VarlikTakibi: React.FC<VarlikTakibiProps> = ({ profile }) => {
                     <div key={a.id} className="grid grid-cols-[1fr_100px_56px_100px_110px_110px_110px_80px] items-center hover:bg-gray-50/50 transition-colors">
                       <div className="px-3 py-3">
                         <div className="text-sm font-semibold text-gray-800 truncate">{a.name}</div>
+                        {(a.motor_kw != null || a.kapasite_ton_saat != null) && (
+                          <div className="flex items-center gap-2 mt-0.5">
+                            {a.motor_kw != null && (
+                              <span className="text-[11px] text-gray-500">{a.motor_kw} kW</span>
+                            )}
+                            {a.motor_kw != null && a.kapasite_ton_saat != null && (
+                              <span className="text-[11px] text-gray-300">·</span>
+                            )}
+                            {a.kapasite_ton_saat != null && (
+                              <span className="text-[11px] text-gray-500">{a.kapasite_ton_saat} ton/sa</span>
+                            )}
+                          </div>
+                        )}
                         {a.notes && <div className="text-[11px] text-gray-400 truncate">{a.notes}</div>}
                         {(assetPlanMap[a.id] ?? []).length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-1">
@@ -511,6 +526,16 @@ export const VarlikTakibi: React.FC<VarlikTakibiProps> = ({ profile }) => {
                     <div className="flex justify-between text-gray-600"><span>Yıllık Amortisman:</span><span className="font-semibold">{(assetForm.purchase_amount_tl / Math.max(1, assetForm.useful_life_years)).toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺</span></div>
                     <div className="flex justify-between text-gray-400 text-xs"><span>Aylık:</span><span>{(assetForm.purchase_amount_tl / Math.max(1, assetForm.useful_life_years) / 12).toLocaleString('tr-TR', { maximumFractionDigits: 0 })} ₺</span></div>
                   </div>
+                  {assetForm.tur === 'makina' && (
+                    <div className="grid grid-cols-2 gap-3">
+                      <Field label="Motor Gücü (kW)">
+                        <input type="number" min="0" step="0.1" className={inputCls} value={assetForm.motor_kw ?? ''} onChange={e => setAssetForm(p => ({ ...p, motor_kw: e.target.value === '' ? undefined : parseFloat(e.target.value) }))} placeholder="Ör: 75" />
+                      </Field>
+                      <Field label="Kapasite (ton/sa)">
+                        <input type="number" min="0" step="0.01" className={inputCls} value={assetForm.kapasite_ton_saat ?? ''} onChange={e => setAssetForm(p => ({ ...p, kapasite_ton_saat: e.target.value === '' ? undefined : parseFloat(e.target.value) }))} placeholder="Ör: 1.5" />
+                      </Field>
+                    </div>
+                  )}
                   <Field label="Notlar">
                     <textarea className={inputCls + ' resize-none'} rows={2} value={assetForm.notes} onChange={e => setAssetForm(p => ({ ...p, notes: e.target.value }))} placeholder="İsteğe bağlı..." />
                   </Field>
