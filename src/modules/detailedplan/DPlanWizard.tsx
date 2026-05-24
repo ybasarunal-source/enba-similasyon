@@ -223,6 +223,10 @@ export function DPlanWizard({ initialPlan, costCenters, onDone, onSave, onCancel
     else          onSave(plan);
   };
 
+  const handleOvertimePlan = useCallback((hoursPerDay: number) => {
+    setState(prev => ({ ...prev, params: { ...prev.params, hoursPerDay } }));
+  }, []);
+
   const showAssistant = step >= 3;
   const isLastStep    = step === STEP_LABELS.length - 1;
 
@@ -298,6 +302,7 @@ export function DPlanWizard({ initialPlan, costCenters, onDone, onSave, onCancel
               model={model}
               fixedCostMonth={fixedCostMonth}
               onGoStep={setStep}
+              onOvertimePlan={handleOvertimePlan}
             />
           </div>
         )}
@@ -1264,12 +1269,13 @@ function Step6Ozet({ state, calc, fixedCostMonth }: {
 
 // ─── Asistan Paneli ───────────────────────────────────────────────────────────
 
-function AssistantPanel({ insights, calc, model, fixedCostMonth, onGoStep }: {
-  insights:       Insight[];
-  calc:           ReturnType<typeof calcProductionResults>;
-  model:          ProductionModel;
-  fixedCostMonth: number;
-  onGoStep:       (s: number) => void;
+function AssistantPanel({ insights, calc, model, fixedCostMonth, onGoStep, onOvertimePlan }: {
+  insights:        Insight[];
+  calc:            ReturnType<typeof calcProductionResults>;
+  model:           ProductionModel;
+  fixedCostMonth:  number;
+  onGoStep:        (s: number) => void;
+  onOvertimePlan:  (hoursPerDay: number) => void;
 }) {
   const LEVEL_STYLE: Record<InsightLevel, { bg: string; border: string; icon: string }> = {
     error:   { bg: 'bg-red-500/8',    border: 'border-red-500/30',   icon: '⚠' },
@@ -1277,7 +1283,39 @@ function AssistantPanel({ insights, calc, model, fixedCostMonth, onGoStep }: {
     info:    { bg: 'bg-enba-blue/8',  border: 'border-enba-blue/30', icon: 'ℹ' },
     success: { bg: 'bg-enba-green/8', border: 'border-enba-green/30',icon: '✓' },
   };
-  void model;
+
+  // ── Fazla mesai hesabı ────────────────────────────────────────────────────────
+  const overtimeSuggestion = useMemo(() => {
+    const bottlenecks = calc.machineCapacities.filter(mc => mc.isBottleneck && mc.machine.capacityTonPerHour > 0);
+    if (bottlenecks.length === 0) return null;
+
+    // Her darboğaz için gereken minimum günlük saat
+    const perMachine = bottlenecks.map(mc => {
+      const rawHours = mc.requiredTons / (mc.machine.capacityTonPerHour * model.params.daysPerMonth);
+      const needed   = Math.ceil(rawHours * 2) / 2; // 0.5 saat adımıyla yukarı yuvarla
+      return { mc, needed };
+    });
+    const suggestedHours = Math.max(...perMachine.map(x => x.needed));
+    if (suggestedHours <= model.params.hoursPerDay) return null; // zaten yeterli
+    if (suggestedHours > 16) return null; // gerçekçi değil — kapasite artışı gerekir
+
+    // Fazla mesai gerektirmeyen makineler (mevcut yükün %85'inin altında)
+    const noOvertimeNeeded = calc.machineCapacities.filter(
+      mc => !mc.isBottleneck && mc.utilization < 0.85 && mc.machine.name
+    );
+
+    // Fazla mesai sonrası tahmin edilen kullanım (kapasiteler artar)
+    const afterOtMap = new Map(
+      calc.machineCapacities.map(mc => [
+        mc.machine.id,
+        mc.machine.capacityTonPerHour > 0
+          ? (mc.requiredTons / (mc.machine.capacityTonPerHour * suggestedHours * model.params.daysPerMonth))
+          : mc.utilization,
+      ])
+    );
+
+    return { perMachine, suggestedHours, noOvertimeNeeded, afterOtMap };
+  }, [calc.machineCapacities, model.params]);
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -1323,6 +1361,58 @@ function AssistantPanel({ insights, calc, model, fixedCostMonth, onGoStep }: {
               />
             ))}
           </div>
+        </div>
+      )}
+
+      {/* ── Fazla Mesai Önerisi ─────────────────────────────────────────────── */}
+      {overtimeSuggestion && (
+        <div className="flex-none mx-3 mt-3 rounded-xl border border-amber-500/35 bg-amber-500/8 p-3">
+          <div className="flex items-center gap-2 mb-2.5">
+            <span className="text-[14px]">🕐</span>
+            <span className="text-[12px] font-semibold text-enba-text">Fazla Mesai Önerisi</span>
+          </div>
+
+          {/* Darboğaz makineler */}
+          <div className="flex flex-col gap-1.5 mb-2.5">
+            {overtimeSuggestion.perMachine.map(({ mc, needed }) => {
+              const afterPct = Math.round((overtimeSuggestion.afterOtMap.get(mc.machine.id) ?? 0) * 100);
+              return (
+                <div key={mc.machine.id} className="text-[11px]">
+                  <span className="font-medium text-amber-300">{mc.machine.name}</span>
+                  <span className="text-enba-dim"> — şu an </span>
+                  <span className="font-semibold text-red-400">%{Math.round(mc.utilization * 100)}</span>
+                  <span className="text-enba-dim"> → {needed} saat/gün ile </span>
+                  <span className="font-semibold text-enba-green">%{afterPct}</span>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Fazla mesai gerektirmeyen makineler */}
+          {overtimeSuggestion.noOvertimeNeeded.length > 0 && (
+            <div className="flex flex-col gap-1 mb-2.5 pl-1 border-l-2 border-enba-line">
+              {overtimeSuggestion.noOvertimeNeeded.slice(0, 3).map(mc => (
+                <div key={mc.machine.id} className="text-[10.5px] text-enba-dim">
+                  {mc.machine.name} <span className="text-enba-green">%{Math.round(mc.utilization * 100)}</span> — fazla mesai gerekmez
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="text-[11px] text-enba-dim mb-3">
+            Günde{' '}
+            <span className="line-through text-enba-dim">{model.params.hoursPerDay} saat</span>
+            {' '}yerine{' '}
+            <span className="font-semibold text-enba-text">{overtimeSuggestion.suggestedHours} saat</span>
+            {' '}çalışarak tüm darboğazlar çözülür.
+          </div>
+
+          <button
+            onClick={() => onOvertimePlan(overtimeSuggestion.suggestedHours)}
+            className="w-full py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/40 text-[11.5px] font-semibold text-amber-300 hover:bg-amber-500/30 transition-colors"
+          >
+            Fazla Mesai Planla → {overtimeSuggestion.suggestedHours} saat/gün
+          </button>
         </div>
       )}
 
