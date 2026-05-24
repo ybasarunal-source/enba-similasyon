@@ -5,14 +5,21 @@ import {
 } from 'recharts';
 import {
   SCENARIOS, buildSeries, fmtTL, fmtPct,
-  revenueFor, bvaForPeriod, Scenario, usePlanData,
+  revenueFor, bvaForPeriod, Scenario, usePlanData, Granularity,
 } from './dpData';
 import { cx, Card, SectionTitle, KpiCard, Sparkline, Variance, I, useChartColors } from './DPPrimitives';
+
+const GRAN_LABEL: Record<Granularity, string> = {
+  weekly:    'haftalık',
+  monthly:   'aylık',
+  quarterly: 'çeyreklik',
+  annual:    'yıllık',
+};
 
 export const OverviewPanel = ({ scenarioId }: { scenarioId: string; periodGranularity: string }) => {
   const scen: Scenario = SCENARIOS[scenarioId];
   const cc = useChartColors();
-  const { products, fixedExpenses, periods, weeklyHorizon, cashEvents, actualsThrough } = usePlanData();
+  const { products, fixedExpenses, periods, weeklyHorizon, cashEvents, actualsThrough, granularity } = usePlanData();
 
   // weeklyHorizon buildSeries'e aktarılmalı — yoksa haftalık ramp hesaplanmaz
   const series = useMemo(
@@ -20,16 +27,21 @@ export const OverviewPanel = ({ scenarioId }: { scenarioId: string; periodGranul
     [scenarioId, products, fixedExpenses, periods, weeklyHorizon],
   );
 
-  // buildSeries zaten buildDisplayPeriods'dan gelen Period'larla doğru granülasyonda
-  // aggregate edilmiş. Ek gruplamaya gerek yok — series'i direkt kullan.
-
   const totals = useMemo(() => series.reduce((a, x) => ({
     revenue: a.revenue + x.revenue, opex: a.opex + x.opex,
     ebitda: a.ebitda + x.ebitda, net: a.net + x.net,
   }), { revenue: 0, opex: 0, ebitda: 0, net: 0 }), [series]);
 
+  // Dönem ortalaması — granülarite değişince bu değer görünür şekilde değişir
+  const n   = series.length || 1;
+  const avg = {
+    revenue: totals.revenue / n,
+    ebitda:  totals.ebitda  / n,
+    net:     totals.net     / n,
+  };
+  const granLbl = GRAN_LABEL[granularity] ?? 'dönem';
+
   // Başlangıç yatırımı: yatırım nakit olaylarının toplam çıkışı.
-  // cashEvents girilmemişse 0 — payback hesabı atlanır.
   const totalInvestment = useMemo(
     () => cashEvents
       .filter(e => e.type === 'investing')
@@ -54,17 +66,31 @@ export const OverviewPanel = ({ scenarioId }: { scenarioId: string; periodGranul
 
   return (
     <div className="space-y-5">
-      {/* KPI Row */}
+      {/* KPI Row — dönem ortalaması gösterir, granülarite değişince değer değişir */}
       <div className="grid grid-cols-4 gap-4">
-        <KpiCard label={`Toplam Gelir (${periods.length} dönem)`} value={fmtTL(totals.revenue)}
-          sub="Ürün + hizmet satırları toplamı" trend={0.182} accent="orange"
-          icon={<I.Revenue size={14}/>} tooltip="Seçili senaryo altında planlanan toplam ciro"/>
-        <KpiCard label="EBITDA" value={fmtTL(totals.ebitda)}
-          sub={`Marj ${fmtPct(ebitdaMargin)} · Faaliyet Karı`} trend={0.241} accent="green"
-          icon={<I.Sparkles size={14}/>}/>
-        <KpiCard label="Net Kâr" value={fmtTL(totals.net)}
-          sub="Amortisman + vergi sonrası" trend={totals.net > 0 ? 0.156 : -0.08}
-          accent={totals.net > 0 ? 'green' : 'red'} icon={<I.Bolt size={14}/>}/>
+        <KpiCard
+          label={`Ort. Gelir / ${granLbl}`}
+          value={fmtTL(avg.revenue, { compact: true })}
+          sub={`Plan toplamı: ${fmtTL(totals.revenue, { compact: true })} · ${n} dönem`}
+          trend={0.182} accent="orange"
+          icon={<I.Revenue size={14}/>}
+          tooltip="Seçili granülaritede dönem başına ortalama gelir"
+        />
+        <KpiCard
+          label={`Ort. EBITDA / ${granLbl}`}
+          value={fmtTL(avg.ebitda, { compact: true })}
+          sub={`Marj ${fmtPct(ebitdaMargin)} · Plan toplam ${fmtTL(totals.ebitda, { compact: true })}`}
+          trend={0.241} accent="green"
+          icon={<I.Sparkles size={14}/>}
+        />
+        <KpiCard
+          label={`Ort. Net Kâr / ${granLbl}`}
+          value={fmtTL(avg.net, { compact: true })}
+          sub={`Plan toplam: ${fmtTL(totals.net, { compact: true })}`}
+          trend={totals.net > 0 ? 0.156 : -0.08}
+          accent={totals.net > 0 ? 'green' : 'red'}
+          icon={<I.Bolt size={14}/>}
+        />
         <KpiCard label="Geri Ödeme Süresi"
           value={
             cashCum.investment === 0
