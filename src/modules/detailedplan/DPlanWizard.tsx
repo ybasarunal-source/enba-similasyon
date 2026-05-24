@@ -277,7 +277,7 @@ export function DPlanWizard({ initialPlan, costCenters, onDone, onSave, onCancel
       {/* ── Body ── */}
       <div className="flex-1 flex overflow-hidden">
         <div className={cx('flex-1 overflow-y-auto', showAssistant ? 'md:w-0' : '')}>
-          <div className="p-6 max-w-[760px]">
+          <div className="p-6 max-w-[640px] mx-auto">
             {step === 0 && <Step1PlanInfo    state={state} set={set} costCenters={costCenters} />}
             {step === 1 && <Step2GirisFire   state={state} set={set} calc={calc} />}
             {step === 2 && <Step3OnSecim     state={state} set={set} calc={calc} />}
