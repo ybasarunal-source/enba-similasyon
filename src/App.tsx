@@ -44,6 +44,7 @@ const ModulesOverview   = lazyRetry(() => import('./modules/ModulesOverview').th
 const Mail              = lazyRetry(() => import('./modules/Mail').then(m => ({ default: m.Mail })));
 const FixedExpenses     = lazyRetry(() => import('./modules/FixedExpenses').then(m => ({ default: m.FixedExpenses })));
 const SuperAdmin        = lazyRetry(() => import('./modules/SuperAdmin').then(m => ({ default: m.SuperAdmin })));
+const SektorNot         = lazyRetry(() => import('./modules/SektorNot').then(m => ({ default: m.SektorNot })));
 const CompanyAdmin      = lazyRetry(() => import('./modules/CompanyAdmin').then(m => ({ default: m.CompanyAdmin })));
 const Notes             = lazyRetry(() => import('./modules/Notes').then(m => ({ default: m.Notes })));
 const Ayarlar           = lazyRetry(() => import('./modules/Ayarlar').then(m => ({ default: m.Ayarlar })));
@@ -91,12 +92,13 @@ import {
   Banknote,
   Boxes,
   CircleUser,
+  BookOpen,
 } from 'lucide-react';
 
 type ModuleType =
   | 'dashboard' | 'stock' | 'production' | 'logistics' | 'hr'
   | 'archive' | 'cashflow' | 'planning' | 'fastplan' | 'machinery'
-  | 'tasks' | 'calendar' | 'licensing' | 'settings' | 'ayarlar' | 'varlik' | 'pnl' | 'profile' | 'parasut' | 'modules' | 'mail' | 'fixedexpenses' | 'notes' | 'super_admin' | 'company_admin';
+  | 'tasks' | 'calendar' | 'licensing' | 'settings' | 'ayarlar' | 'varlik' | 'pnl' | 'profile' | 'parasut' | 'modules' | 'mail' | 'fixedexpenses' | 'notes' | 'super_admin' | 'company_admin' | 'sektor_not';
 
 export const App: React.FC = () => {
   const { t, language, setLanguage, isLoading } = useTranslation();
@@ -409,6 +411,7 @@ export const App: React.FC = () => {
     { id: 'profile',      label: 'Profilim',          icon: User           },
     // Yönetim
     { id: 'super_admin',  label: 'Sistem Yönetimi',   icon: Shield         },
+    { id: 'sektor_not',   label: 'Sektör Bilgi Bankası', icon: BookOpen     },
     { id: 'company_admin',label: 'Şirket Yönetimi',   icon: Building2      },
   ];
 
@@ -416,12 +419,13 @@ export const App: React.FC = () => {
     try {
       // Demo kullanıcısı her şeyi görür (Sistem Yönetimi hariç)
       if (session?.user?.email === 'demo@enba.com') {
-        return item.id !== 'super_admin';
+        return item.id !== 'super_admin' && item.id !== 'sektor_not';
       }
 
       // Rol bazlı erişim — rol artık profil yüklenmeden önce de bilinebilir
       if (user.role === 'super_admin' || user.role === 'admin') {
         if (item.id === 'super_admin')   return user.role === 'super_admin';
+        if (item.id === 'sektor_not')    return user.role === 'super_admin';
         if (item.id === 'company_admin') return user.role === 'admin';
         return true;
       }
@@ -1086,6 +1090,7 @@ export const App: React.FC = () => {
                 {activeModule === 'mail'       && <Mail />}
                 {activeModule === 'fixedexpenses' && <FixedExpenses />}
                 {activeModule === 'super_admin'   && <SuperAdmin />}
+                {activeModule === 'sektor_not'    && <SektorNot />}
                 {activeModule === 'company_admin' && <CompanyAdmin />}
                 {activeModule === 'pnl'      && <PnL />}
                 {activeModule === 'fastplan' && <FastPlan />}
