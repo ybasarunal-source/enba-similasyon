@@ -244,14 +244,22 @@ export function DPlanWizard({ initialPlan, costCenters, onDone, onSave, onCancel
           {STEP_LABELS.map((label, i) => (
             <button
               key={i}
-              onClick={() => i < step + 1 && setStep(i)}
+              onClick={() => {
+                if (i === step) return;
+                if (i > 0 && !state.title.trim()) {
+                  setSaveError('Plan başlığı zorunludur. Lütfen önce bir başlık girin.');
+                  return;
+                }
+                setSaveError(null);
+                setStep(i);
+              }}
               className={cx(
-                'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all',
+                'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all cursor-pointer',
                 i === step
                   ? 'bg-enba-orange text-white'
                   : i < step
-                  ? 'text-enba-orange hover:bg-enba-orange/10 cursor-pointer'
-                  : 'text-enba-dim cursor-default',
+                  ? 'text-enba-orange hover:bg-enba-orange/10'
+                  : 'text-enba-dim hover:bg-enba-panel-2 hover:text-enba-text',
               )}
             >
               <span className={cx(
