@@ -489,8 +489,8 @@ function Step2GirisFire({ state, set, calc }: {
           </FormGroup>
         </div>
         <div className="mt-4 pt-4 border-t border-enba-line">
-          <FormGroup label="Alış Fiyatı" hint="₺/ton (fire indirimi uygulanmış ton başına)">
-            <NumInput value={state.inputUnitPrice} onChange={v => set('inputUnitPrice', v)} step={100} placeholder="0" />
+          <FormGroup label="Alış Fiyatı" hint="₺/ton">
+            <NumInput value={state.inputUnitPrice} onChange={v => set('inputUnitPrice', v)} step={100} placeholder="örn: 5000" />
           </FormGroup>
           {state.inputUnitPrice > 0 && (
             <div className="mt-2 flex items-center gap-2 text-[12px]">
