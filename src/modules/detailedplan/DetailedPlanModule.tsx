@@ -820,7 +820,7 @@ function PlanCard({ plan, costCenters, onOpen, onEdit, onDelete, onStatusChange 
   const activeProjects = plan.projects.filter(p => p.isActive).length;
   const usedCcIds      = new Set(plan.projects.map(p => p.costCenterId).filter(Boolean));
   const usedCcs        = costCenters.filter(c => usedCcIds.has(c.id));
-  const totalExpenses  = usedCcs.reduce((s, c) => s + c.fixedExpenses.length, 0);
+  const totalExpenses  = usedCcs.reduce((s, c) => s + c.fixedExpenses.reduce((sum, e) => sum + e.monthly, 0), 0);
   const categoryLabel  = plan.category ? PLAN_CATEGORY_LABEL[plan.category] : null;
 
   // pending state: left border accent
@@ -850,7 +850,7 @@ function PlanCard({ plan, costCenters, onOpen, onEdit, onDelete, onStatusChange 
 
       <div className="grid grid-cols-3 gap-3 text-center">
         <MiniStat label="Proje" value={String(plan.projects.length)} sub={activeProjects > 0 ? `${activeProjects} aktif` : undefined} />
-        <MiniStat label="Tesis Gider" value={String(totalExpenses)} sub={usedCcs.length > 1 ? `${usedCcs.length} merkez` : undefined} />
+        <MiniStat label="Tesis Gider" value={totalExpenses > 0 ? fmtTL(totalExpenses, { compact: true }) : '—'} sub={usedCcs.length > 0 ? `/ay` : undefined} />
         <MiniStat label="Gerçek." value={`${plan.actualsThrough} ay`} accent={plan.actualsThrough > 0} />
       </div>
 
