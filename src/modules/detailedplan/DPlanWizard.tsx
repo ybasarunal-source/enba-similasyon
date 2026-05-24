@@ -6,7 +6,7 @@ import {
   RawMaterial, OutputProduct, OtherVariableCost, InputFraction,
   calcProductionResults, deriveProjectFromModel, fmtTL,
 } from './dpData';
-import { fixedAssetsAPI, FixedAsset } from '../../api/varlikTakibi';
+import { fixedAssetsAPI, FixedAsset, FixedAssetForm } from '../../api/varlikTakibi';
 import { supabase } from '../../api/supabase';
 import {
   generateInsights, calcScenariosTable,
@@ -757,16 +757,47 @@ function Step4Uretim({ state, set, calc }: {
     set('params', { ...state.params, [k]: v });
 
   // Varlık envanterinden makineler
-  const [inventoryMachines, setInventoryMachines] = useState<FixedAsset[]>([]);
+  const [inventoryMachines,   setInventoryMachines]   = useState<FixedAsset[]>([]);
+  const [companyId,           setCompanyId]           = useState<string>('');
+  const [addingToInventory,   setAddingToInventory]   = useState<Set<string>>(new Set());
+  const [addedToInventory,    setAddedToInventory]    = useState<Set<string>>(new Set());
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      const companyId = (data.session?.user?.app_metadata?.company_id as string) ?? '';
-      if (!companyId) return;
-      fixedAssetsAPI.getAll(companyId).then(assets =>
+      const cid = (data.session?.user?.app_metadata?.company_id as string) ?? '';
+      setCompanyId(cid);
+      if (!cid) return;
+      fixedAssetsAPI.getAll(cid).then(assets =>
         setInventoryMachines(assets.filter(a => a.tur === 'makina'))
       ).catch(() => {});
     });
   }, []);
+
+  const addToInventory = async (m: MachineEntry) => {
+    if (!companyId || addingToInventory.has(m.id)) return;
+    setAddingToInventory(prev => new Set([...prev, m.id]));
+    try {
+      const form: FixedAssetForm = {
+        name:               m.name || 'İsimsiz Makine',
+        category:           'Makine',
+        tur:                'makina',
+        operation:          'M',
+        purchase_date:      new Date().toISOString().split('T')[0],
+        purchase_amount_tl: 0,
+        exchange_rate:      40,
+        useful_life_years:  10,
+        motor_kw:           m.kw           > 0 ? m.kw           : undefined,
+        kapasite_ton_saat:  m.capacityTonPerHour > 0 ? m.capacityTonPerHour : undefined,
+        notes:              '',
+      };
+      const asset = await fixedAssetsAPI.add(companyId, form);
+      updateMachine(m.id, { assetId: asset.id });
+      setInventoryMachines(prev => [...prev, asset]);
+      setAddedToInventory(prev => new Set([...prev, m.id]));
+    } catch { /* sessiz hata */ } finally {
+      setAddingToInventory(prev => { const n = new Set(prev); n.delete(m.id); return n; });
+    }
+  };
 
   const addMachine = () => {
     set('machines', [...state.machines, {
@@ -871,11 +902,24 @@ function Step4Uretim({ state, set, calc }: {
                   </div>
                   <input value={m.name} onChange={e => updateMachine(m.id, { name: e.target.value })}
                     placeholder="Makine adı" className={cx(inputCls, 'flex-1')} />
-                  {isFromInventory && (
+                  {isFromInventory ? (
                     <span className="text-[10px] px-1.5 py-0.5 rounded bg-enba-orange/10 border border-enba-orange/30 text-enba-orange flex-none">
                       envanter
                     </span>
-                  )}
+                  ) : addedToInventory.has(m.id) ? (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-enba-green/10 border border-enba-green/30 text-enba-green flex-none">
+                      ✓ eklendi
+                    </span>
+                  ) : companyId ? (
+                    <button
+                      onClick={() => addToInventory(m)}
+                      disabled={addingToInventory.has(m.id) || !m.name.trim()}
+                      title={!m.name.trim() ? 'Önce makine adı girin' : 'Varlık envanterine ekle'}
+                      className="text-[10px] px-2 py-0.5 rounded border border-enba-line text-enba-muted hover:border-enba-orange/60 hover:text-enba-orange transition-colors flex-none disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
+                    >
+                      {addingToInventory.has(m.id) ? '…' : '+ Envantere Ekle'}
+                    </button>
+                  ) : null}
                   <DelBtn onClick={() => removeMachine(m.id)} />
                 </div>
                 {/* Satır 2: kW + ton/sa (kompakt) */}
