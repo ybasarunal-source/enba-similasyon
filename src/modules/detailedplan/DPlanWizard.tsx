@@ -163,8 +163,9 @@ interface Props {
 // ─── Ana wizard bileşeni ─────────────────────────────────────────────────────
 
 export function DPlanWizard({ initialPlan, costCenters, onDone, onSave, onCancel }: Props) {
-  const [step, setStep]   = useState(0);
-  const [state, setState] = useState<WizardState>(() => initState(initialPlan));
+  const [step, setStep]               = useState(0);
+  const [state, setState]             = useState<WizardState>(() => initState(initialPlan));
+  const [saveError, setSaveError]     = useState<string | null>(null);
 
   const set = useCallback(<K extends keyof WizardState>(key: K, val: WizardState[K]) => {
     setState(prev => ({ ...prev, [key]: val }));
@@ -182,6 +183,11 @@ export function DPlanWizard({ initialPlan, costCenters, onDone, onSave, onCancel
   const fixedCostMonth = selectedCC?.fixedExpenses.reduce((s, e) => s + e.monthly, 0) ?? 0;
 
   const savePlan = (andClose: boolean) => {
+    if (!state.title.trim()) {
+      setSaveError('Plan başlığı zorunludur. Lütfen "Plan Bilgisi" adımında bir başlık girin.');
+      return;
+    }
+    setSaveError(null);
     const pm      = stateToProductionModel(state);
     const derived = deriveProjectFromModel(pm, {
       id:           initialPlan?.projects?.[0]?.id,
@@ -287,27 +293,40 @@ export function DPlanWizard({ initialPlan, costCenters, onDone, onSave, onCancel
       </div>
 
       {/* ── Footer ── */}
-      <div className="flex-none bg-enba-panel border-t border-enba-line px-5 h-[56px] flex items-center justify-between gap-3">
-        <Btn variant="ghost" size="md" onClick={() => step > 0 ? setStep(step - 1) : onCancel()}>
-          {step === 0 ? 'İptal' : 'Geri'}
-        </Btn>
-        <div className="flex items-center gap-2">
-          {step > 0 && (
+      <div className="flex-none bg-enba-panel border-t border-enba-line">
+        {/* Hata mesajı */}
+        {saveError && (
+          <div className="px-5 py-2 bg-red-50 border-b border-red-100 text-[12px] text-red-600 flex items-center gap-2">
+            <I.Info size={13} className="flex-shrink-0" />
+            {saveError}
+          </div>
+        )}
+        <div className="px-5 h-[56px] flex items-center justify-between gap-3">
+          <Btn variant="ghost" size="md" onClick={() => step > 0 ? setStep(step - 1) : onCancel()}>
+            {step === 0 ? 'İptal' : 'Geri'}
+          </Btn>
+          <div className="flex items-center gap-2">
             <Btn variant="outline" size="md" onClick={() => savePlan(false)}>Kaydet</Btn>
-          )}
-          {!isLastStep ? (
-            <Btn
-              variant="primary" size="md"
-              onClick={() => setStep(step + 1)}
-              disabled={step === 0 && !state.title.trim()}
-            >
-              Devam
-            </Btn>
-          ) : (
-            <Btn variant="primary" size="md" onClick={() => savePlan(true)}>
-              Planı Oluştur
-            </Btn>
-          )}
+            {!isLastStep ? (
+              <Btn
+                variant="primary" size="md"
+                onClick={() => {
+                  if (step === 0 && !state.title.trim()) {
+                    setSaveError('Plan başlığı zorunludur. Devam etmek için bir başlık girin.');
+                    return;
+                  }
+                  setSaveError(null);
+                  setStep(step + 1);
+                }}
+              >
+                Devam
+              </Btn>
+            ) : (
+              <Btn variant="primary" size="md" onClick={() => savePlan(true)}>
+                Planı Oluştur
+              </Btn>
+            )}
+          </div>
         </div>
       </div>
     </div>

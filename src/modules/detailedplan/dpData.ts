@@ -161,6 +161,14 @@ export const PLAN_CATEGORY_LABEL: Record<PlanCategory, string> = {
   '':            '',
 };
 
+/** Gerçekleşen (aktüel) veri deposu.
+ *  Key formatları:
+ *    `rev:${productId}:${periodIdx}`  → gerçekleşen gelir (TL)
+ *    `fix:${expenseId}:${periodIdx}`  → gerçekleşen sabit gider (TL)
+ *    `var:${productId}:${periodIdx}`  → gerçekleşen değişken maliyet (TL, opsiyonel)
+ */
+export type PlanActuals = Record<string, number>;
+
 export interface DPlan {
   id: string;
   supabaseId?: string;
@@ -181,6 +189,7 @@ export interface DPlan {
   projects: ActiveProject[];
   cashEvents: CashEvent[];
   productionModel?: ProductionModel;  // yeni wizard — AI'a hazır yapılandırılmış model
+  actuals?: PlanActuals;              // bütçe-gerçekleşen karşılaştırma için elle girilmiş veriler
 }
 
 export interface SeriesPoint extends Period {
@@ -391,22 +400,38 @@ const hash = (s: string) => {
   return h / 0xffffffff;
 };
 
-export const actualRevenueFor = (p: Product, i: number, scen: Scenario = SCENARIOS.baz, actualsThrough = ACTUALS_THROUGH): number | null => {
+export const actualRevenueFor = (
+  p: Product, i: number, scen: Scenario = SCENARIOS.baz,
+  actualsThrough = ACTUALS_THROUGH, actuals?: PlanActuals,
+): number | null => {
   if (i >= actualsThrough) return null;
+  const key = `rev:${p.id}:${i}`;
+  if (actuals && key in actuals) return actuals[key];
+  // Demo placeholder — gerçek veri girişi yapılmamışsa hash ile tahmin
   const n = (hash(p.id + '|r|' + i) - 0.5) * 0.28;
   return revenueFor(p, i, scen) * (1 + n);
 };
 
-export const actualVarCostFor = (p: Product, i: number, scen: Scenario = SCENARIOS.baz, actualsThrough = ACTUALS_THROUGH): number | null => {
+export const actualVarCostFor = (
+  p: Product, i: number, scen: Scenario = SCENARIOS.baz,
+  actualsThrough = ACTUALS_THROUGH, actuals?: PlanActuals,
+): number | null => {
   if (i >= actualsThrough) return null;
-  const rev = actualRevenueFor(p, i, scen, actualsThrough)!;
+  const varKey = `var:${p.id}:${i}`;
+  if (actuals && varKey in actuals) return actuals[varKey];
+  const rev = actualRevenueFor(p, i, scen, actualsThrough, actuals)!;
   const n   = (hash(p.id + '|c|' + i) - 0.4) * 0.20;
   return rev * p.varCostRatio * (1 + n);
 };
 
-export const actualFixedCostFor = (e: FixedExpense, i: number, scen: Scenario = SCENARIOS.baz, actualsThrough = ACTUALS_THROUGH): number | null => {
+export const actualFixedCostFor = (
+  e: FixedExpense, i: number, scen: Scenario = SCENARIOS.baz,
+  actualsThrough = ACTUALS_THROUGH, actuals?: PlanActuals,
+): number | null => {
   if (i >= actualsThrough) return null;
   if (i < (e.startOffset ?? 0)) return 0;
+  const key = `fix:${e.id}:${i}`;
+  if (actuals && key in actuals) return actuals[key];
   const budget = fixedCostFor(e, i, scen);
   const n = (hash(e.id + '|f|' + i) - 0.45) * 0.16;
   return budget * (1 + n);
@@ -415,6 +440,7 @@ export const actualFixedCostFor = (e: FixedExpense, i: number, scen: Scenario = 
 export const bvaForPeriod = (
   i: number, scen: Scenario,
   products: Product[], fixedExpenses: FixedExpense[], actualsThrough: number,
+  actuals?: PlanActuals,
 ) => {
   const budgetRev  = products.reduce((s, p) => s + revenueFor(p, i, scen), 0);
   const budgetVar  = products.reduce((s, p) => s + varCostFor(p, i, scen), 0);
@@ -428,9 +454,9 @@ export const bvaForPeriod = (
     actual: { revenue: 0, opex: 0, ebitda: 0, varCost: 0, fixCost: 0 },
   };
 
-  const actualRev  = products.reduce((s, p) => s + (actualRevenueFor(p, i, scen, actualsThrough) ?? 0), 0);
-  const actualVar  = products.reduce((s, p) => s + (actualVarCostFor(p, i, scen, actualsThrough) ?? 0), 0);
-  const actualFix  = fixedExpenses.reduce((s, e) => s + (actualFixedCostFor(e, i, scen, actualsThrough) ?? 0), 0);
+  const actualRev  = products.reduce((s, p) => s + (actualRevenueFor(p, i, scen, actualsThrough, actuals) ?? 0), 0);
+  const actualVar  = products.reduce((s, p) => s + (actualVarCostFor(p, i, scen, actualsThrough, actuals) ?? 0), 0);
+  const actualFix  = fixedExpenses.reduce((s, e) => s + (actualFixedCostFor(e, i, scen, actualsThrough, actuals) ?? 0), 0);
   const actualOpex = actualVar + actualFix;
   const actualEb   = actualRev - actualOpex;
   return {
@@ -871,6 +897,10 @@ export interface PlanDataCtxValue {
   startYear:        number;
   /** Plan başlangıç ayı (0=Oca) — CashFlow gibi panellerde kendi monthly periods inşası için */
   startMonth:       number;
+  /** Gerçekleşen veriler (boş = henüz girilmemiş) */
+  actuals:          PlanActuals;
+  /** Aktüel veri kaydetme + actualsThrough güncelleme */
+  onActualChange:   (actuals: PlanActuals, actualsThrough?: number) => void;
 }
 
 export const PlanCtx = React.createContext<PlanDataCtxValue>({
@@ -887,6 +917,8 @@ export const PlanCtx = React.createContext<PlanDataCtxValue>({
   granularity:      'monthly',
   startYear:        2025,
   startMonth:       0,
+  actuals:          {},
+  onActualChange:   () => {},
 });
 
 export const usePlanData = (): PlanDataCtxValue => React.useContext(PlanCtx);

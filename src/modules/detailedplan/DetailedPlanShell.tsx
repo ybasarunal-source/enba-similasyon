@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { cx, I, Badge, Btn, ScenarioChip } from './DPPrimitives';
-import { SCENARIOS, DPlan, CostCenter, PlanCtx, Granularity, buildDisplayPeriods } from './dpData';
+import { SCENARIOS, DPlan, CostCenter, PlanCtx, Granularity, buildDisplayPeriods, PlanActuals } from './dpData';
 import { OverviewPanel }    from './OverviewPanel';
 import { RevenuePanel }     from './RevenuePanel';
 import { ExpensePanel }     from './ExpensePanel';
@@ -43,6 +43,22 @@ export function DetailedPlanShell({ plan, costCenters = [], onSave, onBack, onEd
 
   const weeklyHorizon = plan?.weeklyHorizon ?? 12;
 
+  // Aktüel veriler — plan.actuals'tan başlatılır, local state'te tutulur
+  const [actuals, setActuals] = useState<PlanActuals>(() => plan?.actuals ?? {});
+  const [actualsThrough, setActualsThrough] = useState(() => plan?.actualsThrough ?? 0);
+
+  const onActualChange = useCallback((newActuals: PlanActuals, newThrough?: number) => {
+    setActuals(newActuals);
+    if (newThrough !== undefined) setActualsThrough(newThrough);
+    if (onSave && plan) {
+      onSave({
+        ...plan,
+        actuals: newActuals,
+        actualsThrough: newThrough ?? actualsThrough,
+      });
+    }
+  }, [onSave, plan, actualsThrough]);
+
   const ctxValue = useMemo(() => {
     if (!plan) return undefined;
     const usedCcIds = new Set(plan.projects.map(p => p.costCenterId));
@@ -84,13 +100,15 @@ export function DetailedPlanShell({ plan, costCenters = [], onSave, onBack, onEd
       periods:          buildDisplayPeriods(horizon, plan.startYear, plan.startMonth, granularity, weeklyHorizon),
       cashEvents:       plan.cashEvents,
       openingCash:      plan.openingCash,
-      actualsThrough:   plan.actualsThrough,
+      actualsThrough,
       weeklyHorizon,
       granularity,
       startYear:        plan.startYear,
       startMonth:       plan.startMonth,
+      actuals,
+      onActualChange,
     };
-  }, [plan, costCenters, horizon, granularity, weeklyHorizon]);
+  }, [plan, costCenters, horizon, granularity, weeklyHorizon, actuals, actualsThrough, onActualChange]);
 
   const shell = (
     <div className="h-full flex bg-enba-bg overflow-hidden">

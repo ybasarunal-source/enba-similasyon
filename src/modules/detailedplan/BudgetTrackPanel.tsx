@@ -10,7 +10,7 @@ import {
   SCENARIOS,
   bvaForPeriod, revenueFor, varCostFor, fixedCostFor,
   actualRevenueFor, actualVarCostFor, actualFixedCostFor,
-  fmtTL, Scenario, usePlanData,
+  fmtTL, Scenario, usePlanData, PlanActuals,
 } from './dpData';
 
 /* ─── BudgetTrackPanel ─── */
@@ -22,25 +22,26 @@ interface BudgetTrackPanelProps {
 export function BudgetTrackPanel({ scenarioId }: BudgetTrackPanelProps) {
   const scen = SCENARIOS[scenarioId];
   const cc = useChartColors();
-  const { products, fixedExpenses, periods, actualsThrough } = usePlanData();
+  const { products, fixedExpenses, periods, actualsThrough, actuals, onActualChange } = usePlanData();
   const [periodIdx, setPeriodIdx] = useState(Math.max(0, actualsThrough - 1));
+  const [modalOpen, setModalOpen] = useState(false);
 
   const ytd = useMemo(() => {
     let bRev = 0, aRev = 0, bOp = 0, aOp = 0, bEb = 0, aEb = 0;
     for (let i = 0; i < actualsThrough; i++) {
-      const bva = bvaForPeriod(i, scen, products, fixedExpenses, actualsThrough);
+      const bva = bvaForPeriod(i, scen, products, fixedExpenses, actualsThrough, actuals);
       bRev += bva.budget.revenue; bOp += bva.budget.opex; bEb += bva.budget.ebitda;
       aRev += bva.actual.revenue; aOp += bva.actual.opex; aEb += bva.actual.ebitda;
     }
     return { bRev, aRev, bOp, aOp, bEb, aEb };
-  }, [scen, products, fixedExpenses, actualsThrough]);
+  }, [scen, products, fixedExpenses, actualsThrough, actuals]);
 
-  const sel = useMemo(() => bvaForPeriod(periodIdx, scen, products, fixedExpenses, actualsThrough), [periodIdx, scen, products, fixedExpenses, actualsThrough]);
+  const sel = useMemo(() => bvaForPeriod(periodIdx, scen, products, fixedExpenses, actualsThrough, actuals), [periodIdx, scen, products, fixedExpenses, actualsThrough, actuals]);
 
   const trendData = useMemo(() => {
     const out = [];
     for (let i = 0; i < Math.min(24, periods.length); i++) {
-      const bva = bvaForPeriod(i, scen, products, fixedExpenses, actualsThrough);
+      const bva = bvaForPeriod(i, scen, products, fixedExpenses, actualsThrough, actuals);
       out.push({
         label: periods[i].label,
         budget: bva.budget.revenue,
@@ -51,7 +52,7 @@ export function BudgetTrackPanel({ scenarioId }: BudgetTrackPanelProps) {
       });
     }
     return out;
-  }, [scen, products, fixedExpenses, periods, actualsThrough]);
+  }, [scen, products, fixedExpenses, periods, actualsThrough, actuals]);
 
   return (
     <div className="space-y-5">
@@ -83,12 +84,22 @@ export function BudgetTrackPanel({ scenarioId }: BudgetTrackPanelProps) {
           <div className="flex-1">
             <PeriodScrubber selected={periodIdx} onSelect={setPeriodIdx} />
           </div>
-          <div className="text-right">
-            <div className="text-[10.5px] uppercase tracking-[0.14em] text-enba-muted">Veri Durumu</div>
-            <div className="mt-1 flex items-center gap-1.5">
-              <Badge tone="green"><span className="w-1.5 h-1.5 rounded-full bg-enba-green inline-block mr-1" />Kapanmış</Badge>
-              <span className="text-[10.5px] text-enba-dim">{actualsThrough} ay aktif</span>
+          <div className="text-right flex flex-col items-end gap-2">
+            <div>
+              <div className="text-[10.5px] uppercase tracking-[0.14em] text-enba-muted">Veri Durumu</div>
+              <div className="mt-1 flex items-center gap-1.5">
+                <Badge tone="green"><span className="w-1.5 h-1.5 rounded-full bg-enba-green inline-block mr-1" />Kapanmış</Badge>
+                <span className="text-[10.5px] text-enba-dim">{actualsThrough} dönem aktif</span>
+              </div>
             </div>
+            <Btn
+              variant="primary"
+              size="sm"
+              icon={<I.Edit size={12} />}
+              onClick={() => setModalOpen(true)}
+            >
+              Aktüel Gir
+            </Btn>
           </div>
         </div>
       </Card>
@@ -215,8 +226,26 @@ export function BudgetTrackPanel({ scenarioId }: BudgetTrackPanelProps) {
           title="Ay × Kategori Sapma Yoğunluğu"
           action={<span className="text-[10.5px] text-enba-dim">Yeşil = bütçenin altında/üstünde (iyi), kırmızı = bütçenin sapmış (kötü)</span>}
         />
-        <VarianceHeatmap scen={scen} />
+        <VarianceHeatmap scen={scen} actuals={actuals} />
       </Card>
+
+      {/* Aktüel Veri Giriş Modalı */}
+      {modalOpen && (
+        <ActualEntryModal
+          periodIdx={periodIdx}
+          periods={periods}
+          products={products}
+          fixedExpenses={fixedExpenses}
+          scen={scen}
+          actuals={actuals}
+          actualsThrough={actualsThrough}
+          onSave={(newActuals, newThrough) => {
+            onActualChange(newActuals, newThrough);
+            setModalOpen(false);
+          }}
+          onClose={() => setModalOpen(false)}
+        />
+      )}
     </div>
   );
 }
@@ -389,7 +418,7 @@ interface LineItemTableProps {
 }
 
 function LineItemTable({ periodIdx, scen }: LineItemTableProps) {
-  const { products, fixedExpenses } = usePlanData();
+  const { products, fixedExpenses, actualsThrough, actuals } = usePlanData();
   const rows = useMemo(() => {
     const out: { id: string; group: string; name: string; budget: number; actual: number; higherIsBetter: boolean; color: string }[] = [];
     products.forEach(p => {
@@ -398,7 +427,7 @@ function LineItemTable({ periodIdx, scen }: LineItemTableProps) {
         group: 'Gelir',
         name: p.name,
         budget: revenueFor(p, periodIdx, scen),
-        actual: actualRevenueFor(p, periodIdx, scen) ?? 0,
+        actual: actualRevenueFor(p, periodIdx, scen, actualsThrough, actuals) ?? 0,
         higherIsBetter: true,
         color: p.color,
       });
@@ -409,14 +438,14 @@ function LineItemTable({ periodIdx, scen }: LineItemTableProps) {
         group: 'Sabit Gider',
         name: e.name,
         budget: fixedCostFor(e, periodIdx, scen),
-        actual: actualFixedCostFor(e, periodIdx, scen) ?? 0,
+        actual: actualFixedCostFor(e, periodIdx, scen, actualsThrough, actuals) ?? 0,
         higherIsBetter: false,
         color: '#9A9A9A',
       });
     });
     out.sort((a, b) => Math.abs(b.actual - b.budget) - Math.abs(a.actual - a.budget));
     return out;
-  }, [periodIdx, scen, products, fixedExpenses]);
+  }, [periodIdx, scen, products, fixedExpenses, actualsThrough, actuals]);
 
   return (
     <div className="overflow-x-auto">
@@ -488,14 +517,15 @@ function BulletBar({ budget, actual, positive }: { budget: number; actual: numbe
 }
 
 /* ─── VarianceHeatmap ─── */
-function VarianceHeatmap({ scen }: { scen: Scenario }) {
-  const { products, fixedExpenses, periods, actualsThrough } = usePlanData();
+function VarianceHeatmap({ scen, actuals: externalActuals }: { scen: Scenario; actuals?: PlanActuals }) {
+  const { products, fixedExpenses, periods, actualsThrough, actuals: ctxActuals } = usePlanData();
+  const actuals = externalActuals ?? ctxActuals;
   const categories = [
     {
       id: 'rev', label: 'Gelir', higherIsBetter: true,
       resolver: (i: number) => {
         const b = products.reduce((s, p) => s + revenueFor(p, i, scen), 0);
-        const a = products.reduce((s, p) => s + (actualRevenueFor(p, i, scen) ?? 0), 0);
+        const a = products.reduce((s, p) => s + (actualRevenueFor(p, i, scen, actualsThrough, actuals) ?? 0), 0);
         return { b, a, has: i < actualsThrough };
       },
     },
@@ -503,7 +533,7 @@ function VarianceHeatmap({ scen }: { scen: Scenario }) {
       id: 'var', label: 'Değişken Gider', higherIsBetter: false,
       resolver: (i: number) => {
         const b = products.reduce((s, p) => s + varCostFor(p, i, scen), 0);
-        const a = products.reduce((s, p) => s + (actualVarCostFor(p, i, scen) ?? 0), 0);
+        const a = products.reduce((s, p) => s + (actualVarCostFor(p, i, scen, actualsThrough, actuals) ?? 0), 0);
         return { b, a, has: i < actualsThrough };
       },
     },
@@ -511,14 +541,14 @@ function VarianceHeatmap({ scen }: { scen: Scenario }) {
       id: 'fix', label: 'Sabit Gider', higherIsBetter: false,
       resolver: (i: number) => {
         const b = fixedExpenses.reduce((s, e) => s + fixedCostFor(e, i, scen), 0);
-        const a = fixedExpenses.reduce((s, e) => s + (actualFixedCostFor(e, i, scen) ?? 0), 0);
+        const a = fixedExpenses.reduce((s, e) => s + (actualFixedCostFor(e, i, scen, actualsThrough, actuals) ?? 0), 0);
         return { b, a, has: i < actualsThrough };
       },
     },
     {
       id: 'eb', label: 'EBITDA', higherIsBetter: true,
       resolver: (i: number) => {
-        const bva = bvaForPeriod(i, scen, products, fixedExpenses, actualsThrough);
+        const bva = bvaForPeriod(i, scen, products, fixedExpenses, actualsThrough, actuals);
         return { b: bva.budget.ebitda, a: bva.actual.ebitda, has: i < actualsThrough };
       },
     },
@@ -592,6 +622,169 @@ function VarianceHeatmap({ scen }: { scen: Scenario }) {
         </div>
         <span>kritik</span>
         <span className="ml-4">Boş hücreler · projeksiyon dönemi</span>
+      </div>
+    </div>
+  );
+}
+
+/* ─── ActualEntryModal ─── */
+import type { Product, FixedExpense, Period } from './dpData';
+
+interface ActualEntryModalProps {
+  periodIdx: number;
+  periods: Period[];
+  products: Product[];
+  fixedExpenses: FixedExpense[];
+  scen: Scenario;
+  actuals: PlanActuals;
+  actualsThrough: number;
+  onSave: (actuals: PlanActuals, actualsThrough: number) => void;
+  onClose: () => void;
+}
+
+function ActualEntryModal({
+  periodIdx, periods, products, fixedExpenses, scen,
+  actuals, actualsThrough, onSave, onClose,
+}: ActualEntryModalProps) {
+  // Local form state — TL string olarak tutulur, sayıya çevrilir
+  const [form, setForm] = useState<Record<string, string>>(() => {
+    const init: Record<string, string> = {};
+    products.forEach(p => {
+      const key = `rev:${p.id}:${periodIdx}`;
+      const budget = revenueFor(p, periodIdx, scen);
+      init[key] = actuals[key] !== undefined
+        ? String(actuals[key])
+        : String(Math.round(budget));
+    });
+    fixedExpenses.forEach(e => {
+      const key = `fix:${e.id}:${periodIdx}`;
+      const budget = fixedCostFor(e, periodIdx, scen);
+      init[key] = actuals[key] !== undefined
+        ? String(actuals[key])
+        : String(Math.round(budget));
+    });
+    return init;
+  });
+
+  const periodLabel = periods[periodIdx]?.label ?? `Dönem ${periodIdx + 1}`;
+  const isNewPeriod = periodIdx >= actualsThrough;
+
+  const handleSave = () => {
+    const newActuals = { ...actuals };
+    Object.entries(form).forEach(([k, v]) => {
+      const n = parseFloat(v.replace(/\./g, '').replace(',', '.'));
+      if (!isNaN(n)) newActuals[k] = n;
+    });
+    const newThrough = Math.max(actualsThrough, periodIdx + 1);
+    onSave(newActuals, newThrough);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div className="bg-enba-panel border border-enba-line rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-enba-line flex items-center justify-between">
+          <div>
+            <div className="text-[10.5px] uppercase tracking-[0.14em] text-enba-muted mb-0.5">Aktüel Veri Girişi</div>
+            <h2 className="text-[15px] font-semibold text-enba-text">{periodLabel}</h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-lg hover:bg-enba-panel-2 flex items-center justify-center text-enba-muted hover:text-enba-text transition-colors text-lg leading-none"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          {/* Gelir kalemleri */}
+          {products.length > 0 && (
+            <div>
+              <div className="text-[11px] uppercase tracking-[0.14em] text-enba-muted font-semibold mb-3 flex items-center gap-2">
+                <I.Revenue size={13} /> Gelir Kalemleri
+              </div>
+              <div className="space-y-2">
+                {products.map(p => {
+                  const key = `rev:${p.id}:${periodIdx}`;
+                  const budget = revenueFor(p, periodIdx, scen);
+                  return (
+                    <div key={key} className="flex items-center gap-3">
+                      <div className="flex-1">
+                        <div className="text-[13px] font-medium text-enba-text leading-tight">{p.name}</div>
+                        <div className="text-[10.5px] text-enba-dim">Bütçe: {fmtTL(budget)}</div>
+                      </div>
+                      <div className="relative w-44">
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={form[key] ?? ''}
+                          onChange={e => setForm(prev => ({ ...prev, [key]: e.target.value }))}
+                          className="w-full text-sm text-right border border-enba-line rounded-lg px-3 py-2 bg-enba-panel-2 text-enba-text focus:outline-none focus:border-enba-orange focus:ring-1 focus:ring-enba-orange/20"
+                          placeholder="0"
+                        />
+                        <span className="absolute right-9 top-1/2 -translate-y-1/2 text-[11px] text-enba-dim pointer-events-none">₺</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Sabit gider kalemleri */}
+          {fixedExpenses.length > 0 && (
+            <div>
+              <div className="text-[11px] uppercase tracking-[0.14em] text-enba-muted font-semibold mb-3 flex items-center gap-2">
+                <I.Expense size={13} /> Sabit Gider Kalemleri
+              </div>
+              <div className="space-y-2">
+                {fixedExpenses.map(e => {
+                  const key = `fix:${e.id}:${periodIdx}`;
+                  const budget = fixedCostFor(e, periodIdx, scen);
+                  return (
+                    <div key={key} className="flex items-center gap-3">
+                      <div className="flex-1">
+                        <div className="text-[13px] font-medium text-enba-text leading-tight">{e.name}</div>
+                        <div className="text-[10.5px] text-enba-dim">Bütçe: {fmtTL(budget)}</div>
+                      </div>
+                      <div className="relative w-44">
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          value={form[key] ?? ''}
+                          onChange={e2 => setForm(prev => ({ ...prev, [key]: e2.target.value }))}
+                          className="w-full text-sm text-right border border-enba-line rounded-lg px-3 py-2 bg-enba-panel-2 text-enba-text focus:outline-none focus:border-enba-orange focus:ring-1 focus:ring-enba-orange/20"
+                          placeholder="0"
+                        />
+                        <span className="absolute right-9 top-1/2 -translate-y-1/2 text-[11px] text-enba-dim pointer-events-none">₺</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-enba-line flex items-center justify-between">
+          {isNewPeriod && (
+            <div className="flex items-center gap-2 text-[11px] text-enba-amber">
+              <I.Info size={13} />
+              Bu dönem yeni kapatılacak
+            </div>
+          )}
+          {!isNewPeriod && (
+            <div className="text-[11px] text-enba-dim">Mevcut aktüel güncelleniyor</div>
+          )}
+          <div className="flex items-center gap-2 ml-auto">
+            <Btn variant="outline" size="sm" onClick={onClose}>İptal</Btn>
+            <Btn variant="primary" size="sm" icon={<I.Save size={13} />} onClick={handleSave}>
+              {isNewPeriod ? 'Kaydet & Dönemi Kapat' : 'Güncelle'}
+            </Btn>
+          </div>
+        </div>
       </div>
     </div>
   );
