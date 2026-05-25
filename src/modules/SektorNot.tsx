@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import {
   BookOpen, Recycle, Zap, Layers, ArrowRight, AlertTriangle,
   ChevronDown, ChevronRight, FlaskConical, Cpu, Package,
-  Search, Tag as TagIcon, Hash, ChevronLeft,
+  Search, Tag as TagIcon, Hash, ChevronLeft, Factory,
 } from 'lucide-react';
 
 // ─── Primitives ──────────────────────────────────────────────────────────────
@@ -85,7 +85,7 @@ const Flow: React.FC<{ steps: { label: string; sub?: string; highlight?: boolean
 
 // ─── Sayfa tipleri ────────────────────────────────────────────────────────────
 
-type PageId = 'overview' | 'proses' | 'malzeme' | 'makine' | 'ekonomi' | 'sozluk';
+type PageId = 'overview' | 'proses' | 'hatlar' | 'malzeme' | 'makine' | 'ekonomi' | 'sozluk';
 
 interface NavItem {
   id: PageId;
@@ -104,27 +104,62 @@ export interface WikiTerm {
 }
 
 const WIKI_TERMS: WikiTerm[] = [
-  // ── Malzeme ──
+  // ── Malzeme / Polimer ──
   { term: 'Granül', category: 'Ürün', definition: 'Plastik atıkların yıkanıp kurutularak kırılması ve ekstrüzyona sokulmasıyla elde edilen küçük, düzgün plastik parçacıklar. Nihai ürün olarak ham madde yerine kullanılır.', tags: ['plastik', 'ürün'] },
-  { term: 'PET', category: 'Malzeme', definition: 'Polietilen tereftalat. Su şişeleri, meşrubat ambalajlarında kullanılan şeffaf plastik türü. Geri dönüşümde ayrı hat gerektirir, PP/LDPE/HDPE ile uyumsuz.', tags: ['plastik', 'polimer'] },
-  { term: 'PP', category: 'Malzeme', definition: 'Polipropilen. Kapaklar, kolalar, bazı ambalajlarda kullanılır. PP/LDPE/HDPE aynı hattı paylaşabilir ancak aynı anda işlenemez.', tags: ['plastik', 'polimer'] },
-  { term: 'LDPE', category: 'Malzeme', definition: 'Düşük yoğunluklu polietilen (Low Density Polyethylene). Naylon poşetler, ambalaj filmleri. PP ile aynı hattı sıralı olarak kullanabilir.', tags: ['plastik', 'polimer'] },
-  { term: 'HDPE', category: 'Malzeme', definition: 'Yüksek yoğunluklu polietilen (High Density Polyethylene). Bidon, kova, boru. PP/LDPE hattını paylaşır.', tags: ['plastik', 'polimer'] },
+  { term: 'Flake / Pul', category: 'Ürün', definition: 'Kırılıp yıkanmış plastik parçacıkları. Ekstrüde edilmemiş ara ürün; boyut 8–12 mm. Hat 2\'nin çıktısıdır. Doğrudan kullanıcıya satılabilir veya ekstrüzyon hattına beslenir. Granülden farklıdır — işlem adımı daha azdır.', tags: ['ürün', 'PET', 'ara ürün'] },
+  { term: 'PET', category: 'Malzeme', definition: 'Polietilen tereftalat. Su şişeleri ve meşrubat ambalajlarında kullanılan şeffaf plastik türü. Geri dönüşümde ayrı hat gerektirir, PP/LDPE/HDPE ile uyumsuz. Yoğunluğu ~1,38 g/cm³ — float-sink\'te batar.', tags: ['plastik', 'polimer'] },
+  { term: 'PP', category: 'Malzeme', definition: 'Polipropilen. Kapaklar, kolalar, bazı ambalajlarda kullanılır. PP/LDPE/HDPE aynı hattı paylaşabilir ancak aynı anda işlenemez. Yoğunluğu ~0,90 g/cm³ — float-sink\'te yüzer.', tags: ['plastik', 'polimer'] },
+  { term: 'LDPE', category: 'Malzeme', definition: 'Düşük yoğunluklu polietilen (Low Density Polyethylene). Naylon poşetler, ambalaj filmleri. PP ile aynı hattı sıralı olarak kullanabilir. Film formunda özel wet granülatör veya compactor gerektirir.', tags: ['plastik', 'polimer', 'folyo'] },
+  { term: 'HDPE', category: 'Malzeme', definition: 'Yüksek yoğunluklu polietilen (High Density Polyethylene). Bidon, kova, boru. PP/LDPE hattını paylaşır. Kirlilik profili ağır (yağ, boya, çamur) olabilir; kaustik konsantrasyonu %2–4\'e çıkabilir.', tags: ['plastik', 'polimer'] },
+  { term: 'rPET', category: 'Ürün', definition: 'Recycled PET — geri dönüştürülmüş polietilen tereftalat. Food-grade kalite için EFSA onaylı SuperClean prosesi veya SSP reaktörü gerektirir. AB PPWR kapsamında PCR içerik hedeflerinde sayılır. Şeffaf/mavi/miks renk sınıflaması değeri belirler.', tags: ['ürün', 'polimer', 'sertifikasyon'] },
+  { term: 'PCR içerik', category: 'Malzeme', definition: 'Post-Consumer Recycled content. Tüketici sonrası atıktan üretilen geri dönüştürülmüş malzeme içeriği. AB PPWR ve GRS çerçevesinde ambalajlarda zorunlu PCR hedefleri belirlenir. rPET granül/flake bu içeriği sağlar.', tags: ['malzeme', 'standart', 'çevre'] },
   { term: 'Fraksiyon', category: 'Proses', definition: 'Hammadde içinde ana plastikten ayrışan farklı cinsteki malzeme parçaları. Kağıt, cam, diğer plastik türleri, metal vb. Her fraksiyon için ayrı karar verilir: direkt sat / üretime sok / at.', tags: ['proses', 'fire'] },
+
   // ── Fire ──
   { term: 'Nem firesi', category: 'Fire', definition: 'Islak veya nemli hammaddedeki su oranından kaynaklanan ağırlık kaybı. Tamamen saf kayıptır — değer yaratmaz, gelire dönüştürülemez.', tags: ['fire', 'kayıp'] },
   { term: 'Giriş firesi', category: 'Fire', definition: 'Hammaddenin üretime girdiği andan itibaren oluşan toplam ağırlık kaybı. Nem, çöp ve fraksiyonları kapsar. Toplam fire = nem + çöp + fraksiyonlar.', tags: ['fire', 'proses'] },
   { term: 'Alt kalite fraksiyon', category: 'Fire', definition: 'Kağıt, LDPE, 2./3. kalite plastik gibi yan ürüne veya düşük değerli satışa dönüştürülebilen fraksiyon. Bazı işletmeler bunlara ödeme yapar; bazılarında saf kayıp sayılır.', tags: ['fire', 'fraksiyon'] },
+
   // ── Makine ──
   { term: 'Agromel', category: 'Makine', definition: 'İnce plastik filmleri ve düşük yoğunluklu malzemeleri ısı ve sürtünme yoluyla yoğunlaştıran makine. Granülatör öncesi ön işlem ünitesi.', tags: ['makine', 'granül'] },
   { term: 'Granülatör', category: 'Makine', definition: 'Plastik eriyiğini ince tel şeklinde ekstrüde edip soğutarak keserek granül üretilen ana makine. Genellikle hat darboğazıdır.', tags: ['makine', 'darboğaz'] },
+  { term: 'Ekstrüder', category: 'Makine', definition: 'Plastik eriyiğini filament şeklinde çıkarıp soğutarak keserek granül üreten makine. Tek vida (single screw) basit PP/PE için; çift vida (twin screw) katkılı/renklendirmeli formülasyonlar için kullanılır. Enerji tüketiminin büyük kısmını oluşturur.', tags: ['makine', 'granül', 'darboğaz'] },
+  { term: 'Shredder', category: 'Makine', definition: 'Çift mil kırıcı. İri hacimli parçalar (büyük bidonlar, kasalar) için kullanılır. Çıktı boyutu 30–80 mm. Granülatör öncesi boyut küçültme adımında yer alır. Bıçak aşınması özgül enerji tüketimini artırır.', tags: ['makine', 'kırma'] },
+  { term: 'Screen changer', category: 'Makine', definition: 'Filtre paketi. Ekstrüder eriyik içindeki yabancı madde ve karbonlaşmış partikülleri tutar. Filtre boyutu 100–500 µm. Tıkandığında eriyik basıncı artar, motor zorlanır, ürün kalitesi düşer. Otomatik değişimli model üretim duruşunu önler.', tags: ['makine', 'filtre', 'kalite'] },
+  { term: 'Float-sink tankı', category: 'Makine', definition: 'Yoğunluk bazlı plastik ayırma tankı. PE ve PP yüzer (< 1 g/cm³), PET ve PVC batar (> 1 g/cm³). Özellikle PVC kontaminasyonunu önlemek için kritik. Su yoğunluğu tuz (NaCl) ekleyerek ayarlanabilir.', tags: ['makine', 'ayırma', 'PVC'] },
+  { term: 'Santrifüj kurutucu', category: 'Makine', definition: 'Yıkama sonrası ıslak malzemeden mekanik su uzaklaştıran makine. Nemi yaklaşık %2–5\'e düşürür. Isıl kurutma için ön adım; sonrasında bant fırın veya silo kurutucu ≤ %0,1\'e indirir.', tags: ['makine', 'kurutma'] },
+  { term: 'Trommel elek', category: 'Makine', definition: 'Döner tambur elek. Hat beslemesinde büyük yabancı madde (taş, cam, iri plastik) ile iri malzemeyi boyuta göre ayırır. Yıkama hattı öncesi ön sınıflandırma için kullanılır.', tags: ['makine', 'elek'] },
+  { term: 'Balistik seperatör', category: 'Makine', definition: 'Film ve rijit plastik parçaları birbirinden balistik hareket farkıyla ayıran makine. Yıkama hattı öncesinde folyo ile katı parçaların ön sınıflandırmasını yapar.', tags: ['makine', 'ayırma', 'folyo'] },
+  { term: 'Compactor', category: 'Makine', definition: 'Agglomerat makinası. İnce plastik filmleri ve LDPE/LLDPE folyo atıklarını ısı ve sürtünme yoluyla yoğunlaştırır. Film hattında kurutma yetersiz kaldığında granülasyon öncesi bu adım devreye girer.', tags: ['makine', 'folyo', 'film'] },
+  { term: 'SSP reaktörü', category: 'Makine', definition: 'Solid State Polycondensation reaktörü. Food-grade rPET üretiminde PET flake\'in intrinsik viskozitesini (IV) artırmak için kullanılır. EFSA ve FDA bu çıktıyı sertifikalandırır; challenge test belgesi zorunludur.', tags: ['makine', 'food-grade', 'PET'] },
+  { term: 'Eddy current seperatör', category: 'Makine', definition: 'Alüminyum ve demir dışı metal parçacıklarını atık akışından uzaklaştıran manyetik seperatör türü. Hat besleme adımında manyetik seperatörle birlikte kullanılır.', tags: ['makine', 'metal', 'ayırma'] },
+  { term: 'NIR seperatör', category: 'Makine', definition: 'Near Infrared (yakın kızılötesi) teknolojisiyle plastik türlerini tanıyıp otomatik hava jetleriyle ayıran makine. PVC ve diğer kirletici polimerlerin tespitinde kullanılır; manuel kontrolü tamamlar.', tags: ['makine', 'ayırma', 'otomasyon'] },
   { term: 'Darboğaz', category: 'Proses', definition: 'Hattın kapasitesini en çok sınırlayan makine veya adım. Granülatör çoğu tesiste darboğazdır (0,3 ton/saat). Fazla mesai ile telafi edilebilir.', tags: ['kapasite', 'proses'] },
-  { term: 'Talep faktörü (DF)', category: 'Enerji', definition: 'Makinenin nominal gücüne karşı gerçekte çektiği güç oranı. Varsayılan: 0,60. İlk elektrik faturasıyla kalibre edilir. Enerji maliyeti hesabında kullanılır.', tags: ['enerji', 'elektrik'] },
+
+  // ── Proses ──
+  { term: 'Kaustik yıkama', category: 'Proses', definition: 'Kırılmış plastik pulların %1–3 NaOH çözeltisiyle 80–90 °C\'de yıkanması. Etiket, yapıştırıcı, yağ ve organik kirliliği söker. Hat 2\'nin kalp adımıdır. 90 °C\'yi aşarsa PET flake yumuşar (sticking riski).', tags: ['proses', 'yıkama', 'kimyasal'] },
+  { term: 'Nötralizasyon', category: 'Proses', definition: 'Kaustik yıkama sonrası flake üzerindeki NaOH kalıntısını gidermek için çok aşamalı durulama ve pH dengeleme adımı. Çıkış suyu pH 6,5–8,0 hedeflenir. Atlanırsa MFI kayması ve müşteri şikayeti oluşur.', tags: ['proses', 'yıkama', 'pH'] },
+  { term: 'Lot yönetimi', category: 'Proses', definition: 'Üretim partilerinin takibi. Her lotun atık tipi, ağırlık, tedarikçi, MFI değeri ve numune sonuçlarıyla etiketlenmesi. Farklı MFI\'lı partiler karışınca müşteride tutarsızlık şikayeti oluşur.', tags: ['proses', 'kalite', 'takip'] },
+  { term: 'Hat değişimi', category: 'Proses', definition: 'Farklı malzeme tipine geçiş için hattın temizlenmesi ve yeniden ayarlanması. Hem hammadde hem zaman kaybı yaratır. Bu yüzden tek malzeme planlaması tercih edilir.', tags: ['proses', 'verimlilik'] },
+  { term: 'Ön seçim', category: 'Proses', definition: 'Hammaddenin kırma hattına girmeden önce elle veya mekanik olarak fraksiyonlarından ayrıştırılması adımı. Malzeme bazında bypass edilebilir.', tags: ['proses'] },
+
+  // ── Kalite ──
+  { term: 'MFI', category: 'Kalite', definition: 'Melt Flow Index — Eriyik Akış İndeksi. Plastiğin 190 °C / 2,16 kg koşulunda 10 dakikada ne kadar aktığını ölçer (g/10 dk). Lot homojenliği ve müşteri spesifikasyon uyumunun en temel kalite göstergesi. Nemli malzeme ve filtre tıkanması MFI\'yı bozar.', tags: ['kalite', 'proses', 'ölçüm'] },
+  { term: 'Food-grade', category: 'Kalite', definition: 'Gıdayla temas edebilir kalite standardı. rPET için EFSA (Avrupa) ve FDA (ABD) belirler. SuperClean proses veya SSP reaktörü + challenge test belgesi zorunludur. Kontaminasyon ≤ 50 ppm, nem ≤ %0,02, PVC ≤ 10 ppm.', tags: ['kalite', 'sertifikasyon', 'PET'] },
+  { term: 'PVC kontaminasyonu', category: 'Kalite', definition: 'PET akışına karışan PVC (polivinil klorür) kirliliği. Float-sink\'te ayrılmazsa granülde klorür korozyonuna ve MFI bozulmasına yol açar. Food-grade PET\'te ≤ 10 ppm sınırı. XRF veya NIR ile tespit edilir.', tags: ['kalite', 'kirlilik', 'PET'] },
+
   // ── Ekonomi ──
   { term: 'Başabaş noktası', category: 'Ekonomi', definition: 'Sabit ve değişken maliyetlerin toplam gelire eşitlendiği üretim miktarı. Kömürcüler tesisi için ≈ 57 ton/ay.', tags: ['ekonomi', 'kârlılık'] },
-  { term: 'Hat değişimi', category: 'Proses', definition: 'Farklı malzeme tipine geçiş için hattın temizlenmesi ve yeniden ayarlanması. Hem hammadde hem zaman kaybı yaratır. Bu yüzden tek malzeme planlaması tercih edilir.', tags: ['proses', 'verimlilik'] },
+  { term: 'Özgül enerji', category: 'Ekonomi', definition: 'kWh/ton cinsinden enerji verimliliği göstergesi. Bıçak aşınması, filtre tıkanması ve hat ayarsızlığı özgül enerjiyi artırır. Üretim maliyetinin en değişken kalemidir.', tags: ['ekonomi', 'enerji', 'verimlilik'] },
+  { term: 'Talep faktörü (DF)', category: 'Enerji', definition: 'Makinenin nominal gücüne karşı gerçekte çektiği güç oranı. Varsayılan: 0,60. İlk elektrik faturasıyla kalibre edilir. Enerji maliyeti hesabında kullanılır.', tags: ['enerji', 'elektrik'] },
   { term: 'Atık su bedeli', category: 'Maliyet', definition: 'Yıkama prosesinde oluşan atık su deşarj ya da arıtma maliyeti. Kömürcüler tesisinde 800 ₺/giriş tonu olarak bütçelenir.', tags: ['maliyet', 'çevre'] },
-  { term: 'Ön seçim', category: 'Proses', definition: 'Hammaddenin kırma hattına girmeden önce elle veya mekanik olarak fraksiyonlarından ayrıştırılması adımı. Malzeme bazında bypass edilebilir.', tags: ['proses'] },
+
+  // ── Çevre ──
+  { term: 'KOİ', category: 'Çevre', definition: 'Kimyasal Oksijen İhtiyacı. Atık sudaki organik madde miktarını gösteren parametre (mg/L). Yıkama hattı proses suyu kapalı döngüde tutulmazsa KOİ yükü artar, çevre mevzuatına göre deşarj sınırı (Su Kirliliği Kontrol Yönetmeliği) aşılır.', tags: ['çevre', 'atık su', 'mevzuat'] },
+
+  // ── Standart / Sertifikasyon ──
+  { term: 'GRS', category: 'Standart', definition: 'Global Recycled Standard. Geri dönüştürülmüş hammadde kullanan ürünlerin bağımsız denetimle belgelendiği uluslararası sertifikasyon standardı. Denetimlerde proses su yönetimi ve kimyasal kullanım kayıtları incelenir.', tags: ['standart', 'sertifikasyon', 'çevre'] },
+  { term: 'PPWR', category: 'Standart', definition: 'AB Packaging and Packaging Waste Regulation — Ambalaj ve Ambalaj Atıkları Yönetmeliği. Ambalajlarda zorunlu PCR içerik oranları ve geri dönüşüm hedefleri belirler. rPET granül/flake üreticilerinin ana pazar sürücüsü.', tags: ['standart', 'AB', 'mevzuat'] },
 ];
 
 // ─── Sayfa içerikleri ─────────────────────────────────────────────────────────
@@ -141,8 +176,8 @@ const PageOverview: React.FC = () => (
 
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
       {[
-        { label: 'Proses Adımı', count: '6', color: 'bg-orange-50 border-orange-200 text-orange-700' },
-        { label: 'Malzeme Türü', count: '4+', color: 'bg-blue-50 border-blue-200 text-blue-700' },
+        { label: 'Üretim Hattı', count: '2', color: 'bg-orange-50 border-orange-200 text-orange-700' },
+        { label: 'Malzeme Türü', count: '5+', color: 'bg-blue-50 border-blue-200 text-blue-700' },
         { label: 'Terim', count: String(WIKI_TERMS.length), color: 'bg-purple-50 border-purple-200 text-purple-700' },
         { label: 'Senaryo', count: '5', color: 'bg-green-50 border-green-200 text-green-700' },
       ].map(c => (
@@ -157,32 +192,43 @@ const PageOverview: React.FC = () => (
       <div className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5">
         <div className="flex items-center gap-2 mb-3">
           <Recycle size={16} className="text-orange-500" />
-          <span className="text-[13px] font-semibold text-gray-800 dark:text-white">Temel Proses</span>
+          <span className="text-[13px] font-semibold text-gray-800 dark:text-white">Hat 1 — Mekanik Geri Dönüşüm</span>
         </div>
         <Flow steps={[
-          { label: 'Giriş' }, { label: 'Fire' }, { label: 'Ön Seçim' },
-          { label: 'Üretim' }, { label: 'Granül', highlight: true },
+          { label: 'Besleme' }, { label: 'Kırma' }, { label: 'Yıkama' },
+          { label: 'Kurutma' }, { label: 'Ekstrüzyon', highlight: true }, { label: 'Granül', highlight: true },
         ]} />
       </div>
       <div className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5">
         <div className="flex items-center gap-2 mb-3">
-          <Zap size={16} className="text-orange-500" />
-          <span className="text-[13px] font-semibold text-gray-800 dark:text-white">Referans Senaryo</span>
+          <Factory size={16} className="text-orange-500" />
+          <span className="text-[13px] font-semibold text-gray-800 dark:text-white">Hat 2 — Yıkama Hattı</span>
         </div>
-        <div className="space-y-1.5 text-[12.5px]">
-          {[
-            ['Giriş', '110 ton/ay'],
-            ['1. kalite granül', '93,5 ton/ay'],
-            ['Hammadde alış', '19 ₺/kg'],
-            ['Granül satış (1. kal.)', '40 ₺/kg'],
-            ['Başabaş noktası', '≈ 57 ton/ay'],
-          ].map(([k, v]) => (
-            <div key={k} className="flex justify-between">
-              <span className="text-gray-500">{k}</span>
-              <span className="font-semibold text-gray-800 dark:text-white">{v}</span>
-            </div>
-          ))}
-        </div>
+        <Flow steps={[
+          { label: 'Besleme' }, { label: 'Ön Kırma' }, { label: 'Float-sink' },
+          { label: 'Kaustik', highlight: true }, { label: 'Durulama' }, { label: 'Flake', highlight: true },
+        ]} />
+      </div>
+    </div>
+
+    <div className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5">
+      <div className="flex items-center gap-2 mb-3">
+        <Zap size={16} className="text-orange-500" />
+        <span className="text-[13px] font-semibold text-gray-800 dark:text-white">Referans Senaryo (Kömürcüler)</span>
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {[
+          ['Giriş', '110 ton/ay'],
+          ['1. kalite granül', '93,5 ton/ay'],
+          ['Hammadde alış', '19 ₺/kg'],
+          ['Granül satış', '40 ₺/kg'],
+          ['Başabaş', '≈ 57 ton/ay'],
+        ].map(([k, v]) => (
+          <div key={k} className="text-center p-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/8">
+            <div className="text-[13px] font-bold text-gray-800 dark:text-white">{v}</div>
+            <div className="text-[10px] text-gray-400 mt-0.5">{k}</div>
+          </div>
+        ))}
       </div>
     </div>
 
@@ -296,11 +342,339 @@ const PageProses: React.FC = () => (
   </div>
 );
 
+// ─── Hatlar Sayfası ───────────────────────────────────────────────────────────
+
+const PageHatlar: React.FC = () => {
+  const [activeHat, setActiveHat] = useState<'hat1' | 'hat2'>('hat1');
+
+  return (
+    <div className="space-y-5">
+      {/* Hat seçici */}
+      <div>
+        <h3 className="text-[15px] font-bold text-gray-800 dark:text-white mb-3 flex items-center gap-2">
+          <Factory size={16} className="text-orange-500" /> Üretim Hatları
+        </h3>
+        <div className="flex gap-2">
+          {([
+            { key: 'hat1', label: 'Hat 1 — Mekanik Geri Dönüşüm', sub: 'Granül üretimi' },
+            { key: 'hat2', label: 'Hat 2 — Yıkama Hattı', sub: 'Flake / pul üretimi' },
+          ] as const).map(h => (
+            <button key={h.key} onClick={() => setActiveHat(h.key)}
+              className={cx(
+                'flex-1 p-3 rounded-xl border text-left transition-all',
+                activeHat === h.key
+                  ? 'bg-orange-50 dark:bg-orange-500/10 border-orange-200 dark:border-orange-500/30 text-orange-700 dark:text-orange-400'
+                  : 'bg-white dark:bg-[#1A1A1A] border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:border-orange-200 dark:hover:border-orange-500/20',
+              )}>
+              <div className="text-[12.5px] font-semibold">{h.label}</div>
+              <div className="text-[11px] opacity-70 mt-0.5">{h.sub}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {activeHat === 'hat1' ? <Hat1Content /> : <Hat2Content />}
+    </div>
+  );
+};
+
+const Hat1Content: React.FC = () => (
+  <div className="space-y-6">
+    {/* Tanım */}
+    <section className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5">
+      <div className="flex items-center gap-2 mb-3">
+        <div className="w-6 h-6 rounded-lg bg-orange-100 dark:bg-orange-500/15 flex items-center justify-center">
+          <span className="text-[11px] font-black text-orange-600">1</span>
+        </div>
+        <span className="text-[13px] font-bold text-gray-800 dark:text-white">Mekanik Geri Dönüşüm Hattı</span>
+        <Tag color="orange">kırma-granülasyon</Tag>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-[12.5px]">
+        <div className="p-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/8">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-orange-500 mb-1">Sektörel</div>
+          <p className="text-gray-600 dark:text-gray-400 leading-relaxed">Atık plastiği kırıcıdan geçiren, yıkayan, kuruyan ve ekstrüderden granül olarak çıkaran hat. Girişte balya, çıkışta torbalanmış granül.</p>
+        </div>
+        <div className="p-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/8">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-orange-500 mb-1">Teknik</div>
+          <p className="text-gray-600 dark:text-gray-400 leading-relaxed">Boyut küçültme → yıkama → susuzlaştırma → kurutma → ekstrüzyon-granülasyon. Her adımda fiziksel ve termal parametreler kontrol altında. Çıktı: MFI, nem, renk, kontaminasyon speke göre.</p>
+        </div>
+        <div className="p-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/8">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-orange-500 mb-1">Uluslararası</div>
+          <p className="text-gray-600 dark:text-gray-400 leading-relaxed">Mechanical recycling — kimyasal yapıyı bozmadan fiziksel dönüşüm. AB PPWR ve GRS kapsamında PCR içerik üretiminin birincil yolu. Çıktı: rPET, rHDPE, rPP.</p>
+        </div>
+      </div>
+    </section>
+
+    {/* Proses akışı */}
+    <section>
+      <h4 className="text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-3">Proses Akışı</h4>
+      <Flow steps={[
+        { label: 'Besleme & Eleme', sub: 'balya açıcı · manyetik' },
+        { label: 'Kırma', sub: 'shredder · granülatör' },
+        { label: 'Yıkama', sub: 'float-sink · friksiyonlu' },
+        { label: 'Kurutma', sub: 'santrifüj · silo / bant' },
+        { label: 'Ekstrüzyon', sub: 'single/twin screw', highlight: true },
+        { label: 'Granülasyon', sub: 'su altı / strand', highlight: true },
+        { label: 'QC & Lot', sub: 'MFI · nem · renk' },
+      ]} />
+    </section>
+
+    {/* İşlenen atık tipleri */}
+    <section>
+      <h4 className="text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-3">İşlenen Atık Tipleri</h4>
+      <DataTable
+        headers={['Atık Tipi', 'Sektörel Adı', 'Min. Kalite Kriteri', 'Uyarı']}
+        rows={[
+          ['PET şişe balya',  'PET şişe / pet balya',     'Renk ayrımı, etiket ≤ %5',     'Kapak ve halka MFI\'yı bozar'],
+          ['HDPE bidon / kasa', 'HDPE katı',               'Metal konaminasyon yok',         'Boyalı HDPE ayrı tutulmalı'],
+          ['PP kap / big bag',  'PP karışık',              'MFI homojenliği kritik',         'BOPP folyo karışmamalı'],
+          ['PS ambalaj',        'PS köpük / PS rijit',     'Köpük ile rijit ayrı işlenir',  'EPS compacting gerektirir'],
+          ['LDPE folyo',        'Folyo / film',            'Rijit makinada işlenmez',        'Bkz. Hat 2'],
+        ]}
+      />
+    </section>
+
+    {/* Makinalar */}
+    <section>
+      <h4 className="text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-3">Kullanılan Başlıca Makinalar</h4>
+      <DataTable
+        headers={['Makina', 'Teknik Adı (İng.)', 'Görev']}
+        rows={[
+          ['Balya açıcı',            'Bale opener',             'Sıkıştırılmış balyayı dağıtır'],
+          ['Manyetik seperatör',     'Overband magnet',         'Demir parçacık uzaklaştırma'],
+          ['Eddy current sep.',      'Eddy current separator',  'Alüminyum ve demir dışı metal'],
+          ['Shredder',               'Twin-shaft shredder',     'İri kırma (30–80 mm çıktı)'],
+          ['Granülatör',             'Granulator / grinder',    'Orta-ince kırma (8–20 mm)'],
+          ['Float-sink tankı',       'Sink-float tank',         'Yoğunluk farkıyla ayırma'],
+          ['Friksiyonlu yıkayıcı',   'Friction washer',         'Yüzey kirliliği temizleme'],
+          ['Santrifüj kurutucu',     'Centrifugal dryer',       'Mekanik su uzaklaştırma'],
+          ['Silo kurutucu',          'Hopper dryer',            'Isıl kurutma'],
+          ['Kristalizasyon silosu',  'Crystallizer (PET)',      'PET ön kristalizasyon (160–180 °C)'],
+          ['Tek vida ekstrüder',     'Single screw extruder',   'PE, PP, PS için basit granülasyon'],
+          [<span className="text-orange-600 font-semibold">Çift vida ekstrüder</span>, 'Twin screw extruder', 'Katkı madde, renklendirme, dolgu'],
+          ['Screen changer',         'Melt filter',             'Eriyik içi yabancı madde tutma'],
+          ['Su altı granülatör',     'Underwater pelletizer',   'Yuvarlak pelet — yüksek kapasite'],
+        ]}
+      />
+    </section>
+
+    {/* Kritik parametreler */}
+    <section>
+      <h4 className="text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-3">Kritik Parametreler</h4>
+      <DataTable
+        headers={['Parametre', 'Sektörel Adı', 'Birim', 'Hedef Aralık']}
+        rows={[
+          ['MFI',          'Akışkanlık / eriyik indeksi', 'g/10 dk',   'Reçineye özgü, ±%10 tolerans'],
+          ['Nem',          'Rutubet',                     '%',          '≤ %0,1 (PET: ≤ %0,02)'],
+          ['Kül içeriği',  'Yanmayan kalıntı',            '%',          '≤ %0,5'],
+          ['Kontaminasyon','Kirlilik / yabancı madde',    'ppm',        '≤ 200 ppm (gıda: ≤ 50 ppm)'],
+          ['Pelet boyutu', 'Granül çapı',                 'mm',         '3–5 mm standart'],
+          ['Özgül enerji', 'kWh/ton',                     'kWh/t',      'İzlenir; bıçak aşınınca artar'],
+        ]}
+      />
+    </section>
+
+    {/* Sık hatalar */}
+    <section>
+      <h4 className="text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-3">Sık Yapılan Hatalar</h4>
+      <div className="space-y-2">
+        <Note type="warn">
+          <strong>Nem kontrolü atlanıyor:</strong> Ekstrüdere nemli giren malzeme ürün içinde gözenek ve köpük oluşturur. PET\'te hidroliz riski — MFI anormal yükselir.
+        </Note>
+        <Note type="warn">
+          <strong>Screen changer zamanlaması ihmal ediliyor:</strong> Filtre tıkandığında eriyik basıncı artar, motor zorlanır, çıktı kalitesi düşer. Basınç göstergesi sürekli izlenmeli.
+        </Note>
+        <Note type="warn">
+          <strong>Float-sink bakımı gözardı:</strong> PVC karışımı PET granülünü bozar (klorür korozyonu). Yoğunluk tankı düzgün çalışmıyorsa kirlilik oranı patlar.
+        </Note>
+        <Note type="info">
+          <strong>Optimum kırma boyutu:</strong> 8–15 mm ekstrüzyon için ideal. İri kırma erime sorununa, çok ince kırma enerji israfına ve toz kaybına yol açar.
+        </Note>
+      </div>
+    </section>
+  </div>
+);
+
+const Hat2Content: React.FC = () => (
+  <div className="space-y-6">
+    {/* Tanım */}
+    <section className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5">
+      <div className="flex items-center gap-2 mb-3">
+        <div className="w-6 h-6 rounded-lg bg-blue-100 dark:bg-blue-500/15 flex items-center justify-center">
+          <span className="text-[11px] font-black text-blue-600">2</span>
+        </div>
+        <span className="text-[13px] font-bold text-gray-800 dark:text-white">Yıkama Hattı</span>
+        <Tag color="blue">pul hattı · flake washing</Tag>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-[12.5px]">
+        <div className="p-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/8">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-blue-500 mb-1">Sektörel</div>
+          <p className="text-gray-600 dark:text-gray-400 leading-relaxed">Balya halindeki PET şişe, HDPE bidon ve folyoyu kırıp yıkayarak pul (flake) hâline getiren hat. Çıktı granül değil, pultur. En kritik adım sıcak kaustik yıkamadır.</p>
+        </div>
+        <div className="p-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/8">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-blue-500 mb-1">Teknik</div>
+          <p className="text-gray-600 dark:text-gray-400 leading-relaxed">Mekanik ön kırma → float-sink → sıcak alkali yıkama (80–90 °C, %1–3 NaOH) → nötralizasyon → mekanik+ısıl kurutma. Proses suyu kapalı devre; atık su pH nötr ve KOİ uyumlu.</p>
+        </div>
+        <div className="p-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/8">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-blue-500 mb-1">Uluslararası</div>
+          <p className="text-gray-600 dark:text-gray-400 leading-relaxed">rPET üretiminin kalp adımı. Food-grade için SuperClean veya SSP reaktörü + EFSA/FDA challenge test zorunlu. GRS denetimlerinde proses su ve kimyasal kayıtları incelenir.</p>
+        </div>
+      </div>
+    </section>
+
+    {/* Alt hat tipleri */}
+    <section>
+      <h4 className="text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-3">Alt Hat Tipleri</h4>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {[
+          {
+            label: 'A — PET Şişe', color: 'border-orange-200 bg-orange-50 dark:bg-orange-500/5',
+            title: 'PET şişe balya → rPET flake',
+            points: [
+              'Sıcak kaustik zorunlu',
+              'Food-grade: SuperClean / SSP',
+              'Kapasite: 500–5.000 kg/sa',
+              'Renk ayrımı (şeffaf ≥ %90)',
+            ],
+          },
+          {
+            label: 'B — HDPE / PP Katı', color: 'border-blue-200 bg-blue-50 dark:bg-blue-500/5',
+            title: 'Bidon, kasa, büyük hacimli',
+            points: [
+              'Güçlü shredder gerekir',
+              'Kaustik %2–4\'e çıkabilir',
+              'Renk miks kabul',
+              'Yağ / çamur profili ağır',
+            ],
+          },
+          {
+            label: 'C — Folyo / Film', color: 'border-green-200 bg-green-50 dark:bg-green-500/5',
+            title: 'LDPE, LLDPE, PP film / big bag',
+            points: [
+              'Wet granülatör / friksiyonlu ıslak',
+              'Float-sink yeterli değil',
+              'Kurutma zor; çıktı nem yüksek',
+              'Compactor / agglomerat sık',
+            ],
+          },
+        ].map(h => (
+          <div key={h.label} className={`rounded-xl border p-4 ${h.color}`}>
+            <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1">{h.label}</div>
+            <div className="text-[12.5px] font-bold text-gray-800 dark:text-white mb-2">{h.title}</div>
+            <ul className="space-y-1">
+              {h.points.map(p => (
+                <li key={p} className="text-[12px] text-gray-600 dark:text-gray-400 flex items-start gap-1.5">
+                  <span className="text-gray-300 mt-1 flex-shrink-0">•</span>{p}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    {/* Proses akışı */}
+    <section>
+      <h4 className="text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-3">Proses Akışı</h4>
+      <Flow steps={[
+        { label: 'Besleme & Eleme', sub: 'balya açıcı · trommel' },
+        { label: 'Ön Kırma', sub: 'wet granülatör' },
+        { label: 'Ön Yıkama', sub: 'çalkantı / skrew' },
+        { label: 'Float-sink', sub: 'yoğunluk ayrımı' },
+        { label: 'Kaustik Yıkama', sub: '80–90 °C · NaOH', highlight: true },
+        { label: 'Durulama', sub: 'pH 6,5–8,0', highlight: true },
+        { label: 'Kurutma', sub: 'santrifüj · bant fırın' },
+      ]} />
+    </section>
+
+    {/* İşlenen atık tipleri */}
+    <section>
+      <h4 className="text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-3">İşlenen Atık Tipleri</h4>
+      <DataTable
+        headers={['Atık Tipi', 'Sektörel Adı', 'Min. Kalite Kriteri', 'Dikkat']}
+        rows={[
+          ['PET şişe balya',      'PET şişe / şeffaf balya',    'Şeffaf ≥ %90 tercih',          'Kapak + halka ≤ %5'],
+          ['PET miks renkli',     'Renkli PET balya',           'Siyah PET sorunlu',            'NIR ile ayırt edilemez'],
+          ['HDPE bidon / kasa',   'HDPE katı karışık',          'Metal yok, aşırı boya kabul',  'Yoğunluk heterojenliği'],
+          ['LDPE folyo balya',    'LDPE film balya',            'Kuru ağırlık tartımı',         'Folyo hattı gerektirir'],
+          ['PP big bag',          'PP çuval / big bag',         'Dikişleri PP, yabancı ip yok', 'PE-PP float-sink\'te ayrılır'],
+        ]}
+      />
+    </section>
+
+    {/* Makinalar */}
+    <section>
+      <h4 className="text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-3">Kullanılan Başlıca Makinalar</h4>
+      <DataTable
+        headers={['Makina', 'Teknik Adı (İng.)', 'Görev']}
+        rows={[
+          ['Balya açıcı',          'Bale opener',            'Sıkıştırılmış balyayı dağıtır'],
+          ['Trommel elek',         'Trommel screen',         'Döner tambur boyut eleme'],
+          ['Balistik seperatör',   'Ballistic separator',    'Film–rijit ön ayırma'],
+          ['Manyetik seperatör',   'Overband magnet',        'Demir metal ayrımı'],
+          ['Wet granülatör',       'Wet granulator',         'Suyla birlikte ön kırma'],
+          ['Skrew yıkayıcı',       'Screw washer',           'Kaba kir ve kum sökme'],
+          ['Float-sink tankı',     'Sink-float tank',        'Yoğunluk bazlı reçine ayrımı'],
+          [<span className="text-orange-600 font-semibold">Kaustik yıkama tankı</span>, 'Hot caustic wash tank', 'Etiket, yapıştırıcı, yağ giderimi'],
+          ['Yüksek hızlı yıkayıcı','High-speed washer',     'Mekanik sürtünme + kaustik'],
+          ['Durulama halkası',     'Rinsing stage',          'Kaustik kalıntısı temizleme'],
+          ['Santrifüj kurutucu',   'Centrifugal dryer',      'Mekanik nem uzaklaştırma'],
+          ['Hava bıçağı',          'Air knife',              'Yüzey suyu üfleme'],
+          ['Bant fırın',           'Belt dryer',             'Isıl son kurutma'],
+          ['Compactor',            'Agglomerator',           'Film pul yoğunlaştırma'],
+          ['SSP reaktörü',         'Solid State Polycondensation', 'Food-grade PET IV artırımı'],
+        ]}
+      />
+    </section>
+
+    {/* Kritik parametreler */}
+    <section>
+      <h4 className="text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-3">Kritik Parametreler</h4>
+      <DataTable
+        headers={['Parametre', 'Sektörel Adı', 'Birim', 'Hedef Aralık']}
+        rows={[
+          ['Kaustik konsantrasyonu', 'Kostik oran',      '% NaOH',   '%1–3'],
+          ['Kaustik sıcaklığı',     'Yıkama sıcaklığı', '°C',        '80–90 (90+ → PET sticking riski)'],
+          ['Bekleme süresi',         'Temas süresi',    'dk',         '10–20'],
+          ['Durulama pH',            'pH çıkış',        '—',          '6,5–8,0'],
+          ['Nem (pul çıkış)',        'Rutubet',         '%',          '≤ %1 (PET food: ≤ %0,02)'],
+          ['Kontaminasyon',          'Kirlilik',        'ppm',        '≤ 200 (food-grade: ≤ 50)'],
+          ['Flake boyutu',           'Pul granülometri','mm',          '8–12'],
+          [<Tag color="red">PVC içeriği</Tag>, 'PVC kirliliği', 'ppm', '≤ 10 (food-grade PET)'],
+          ['Proses suyu KOİ',       '—',               'mg/L',       'Mevzuata göre deşarj sınırı'],
+        ]}
+      />
+    </section>
+
+    {/* Sık hatalar */}
+    <section>
+      <h4 className="text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-3">Sık Yapılan Hatalar</h4>
+      <div className="space-y-2">
+        <Note type="warn">
+          <strong>Kaustik sıcaklığı düşük tutulmuş:</strong> 70 °C\'de etiket ve yapıştırıcı tam sökülmez. Hot-melt yapıştırıcılar yüksek sıcaklık ister.
+        </Note>
+        <Note type="warn">
+          <strong>Durulama yetersiz:</strong> Kaustik kalıntısı flake üzerinde kalınca müşteri işleme sırasında MFI kayması yaşar. pH ölçümü atlanmamalı.
+        </Note>
+        <Note type="warn">
+          <strong>Float-sink tank bakımı ihmal edilmiş:</strong> Tank altında çökelti birikmesi yoğunluk ayrımını bozar. Haftalık dip temizliği şart.
+        </Note>
+        <Note type="warn">
+          <strong>PVC kontaminasyonu fark edilmiyor:</strong> {'<'}%0,1 PVC bile food-grade PET flake\'i reddettirmeye yeter. XRF veya NIR spot kontrol önerilir.
+        </Note>
+        <Note type="info">
+          <strong>Su döngüsü:</strong> Proses suyu yenilenmeden kullanılırsa KOİ yükü artar, yıkama verimliliği düşer, ürün kokusu şikayeti gelir. Kapalı döngü ve düzenli yenileme şart.
+        </Note>
+      </div>
+    </section>
+  </div>
+);
+
 const PageMakine: React.FC = () => (
   <div className="space-y-8">
     <section>
       <h3 className="text-[15px] font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-        <Cpu size={16} className="text-orange-500" /> Granül Tesisi — Hat Sırası
+        <Cpu size={16} className="text-orange-500" /> Granül Tesisi — Hat Sırası (Kömürcüler)
       </h3>
       <Flow steps={[
         { label: 'Kırma' },
@@ -549,11 +923,12 @@ const PageSozluk: React.FC<{ initialQuery?: string }> = ({ initialQuery = '' }) 
 // ─── Ana bileşen ──────────────────────────────────────────────────────────────
 
 const NAV_ITEMS: NavItem[] = [
-  { id: 'overview', label: 'Genel Bakış',   icon: <BookOpen size={15} /> },
-  { id: 'proses',   label: 'Prosesler',     icon: <Recycle size={15} /> },
-  { id: 'makine',   label: 'Makine & Hat',  icon: <Cpu size={15} /> },
-  { id: 'ekonomi',  label: 'Ekonomi',       icon: <Zap size={15} /> },
-  { id: 'sozluk',   label: 'Terimler',      icon: <Hash size={15} />, count: WIKI_TERMS.length },
+  { id: 'overview', label: 'Genel Bakış',      icon: <BookOpen size={15} /> },
+  { id: 'proses',   label: 'Prosesler',        icon: <Recycle size={15} /> },
+  { id: 'hatlar',   label: 'Üretim Hatları',   icon: <Factory size={15} /> },
+  { id: 'makine',   label: 'Makine & Hat',     icon: <Cpu size={15} /> },
+  { id: 'ekonomi',  label: 'Ekonomi',          icon: <Zap size={15} /> },
+  { id: 'sozluk',   label: 'Terimler',         icon: <Hash size={15} />, count: WIKI_TERMS.length },
 ];
 
 export function SektorNot() {
@@ -571,6 +946,7 @@ export function SektorNot() {
     switch (activePage) {
       case 'overview': return <PageOverview />;
       case 'proses':   return <PageProses />;
+      case 'hatlar':   return <PageHatlar />;
       case 'makine':   return <PageMakine />;
       case 'ekonomi':  return <PageEkonomi />;
       case 'sozluk':   return <PageSozluk initialQuery={globalSearch} />;
