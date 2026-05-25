@@ -270,8 +270,10 @@ export function DetailedPlanModule({ navigate, setBackOverride }: Props) {
 
         {/* SAĞ: Plan listesi sidebar — her zaman render edilir, gizlenebilir */}
         <div className={cx(
-          'flex-none border-l border-enba-line bg-enba-panel flex flex-col overflow-hidden transition-[width] duration-200',
-          rightOpen ? 'w-[300px]' : 'w-10',
+          'flex-none border-l flex flex-col overflow-hidden transition-all duration-200',
+          rightOpen
+            ? 'w-[300px] border-enba-line bg-enba-panel'
+            : 'w-10 border-enba-orange/30 bg-enba-orange/5',
         )}>
           {rightOpen ? (
             <PlanListSidebar
@@ -286,19 +288,19 @@ export function DetailedPlanModule({ navigate, setBackOverride }: Props) {
               onToggle={() => setRightOpen(false)}
             />
           ) : (
-            /* Daraltılmış — yalnızca toggle butonu + plan sayısı */
-            <div className="h-full flex flex-col items-center pt-[18px] gap-3">
-              <button
-                onClick={() => setRightOpen(true)}
-                title="Plan listesini aç"
-                className="w-7 h-7 rounded-lg text-enba-dim hover:text-enba-text hover:bg-enba-panel-2 inline-flex items-center justify-center transition-colors"
-              >
-                <I.Chevron size={13} className="rotate-90" />
-              </button>
+            /* Daraltılmış şerit — turuncu tonda, toggle + plan sayısı */
+            <button
+              onClick={() => setRightOpen(true)}
+              title="Plan listesini aç"
+              className="w-full h-full flex flex-col items-center pt-[18px] gap-3 hover:bg-enba-orange/10 transition-colors"
+            >
+              <span className="w-6 h-6 rounded-lg bg-enba-orange/15 border border-enba-orange/30 text-enba-orange inline-flex items-center justify-center">
+                <I.Chevron size={12} className="rotate-90" />
+              </span>
               {planlar.length > 0 && (
-                <span className="text-[10px] font-semibold text-enba-dim tabular">{planlar.length}</span>
+                <span className="text-[10px] font-bold text-enba-orange tabular">{planlar.length}</span>
               )}
-            </div>
+            </button>
           )}
         </div>
 
