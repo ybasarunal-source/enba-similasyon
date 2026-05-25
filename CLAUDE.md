@@ -381,9 +381,9 @@ Veri kaybı riski olan her adımı kullanıcıya açıkça belirt ve onay al.
 - [x] **Yeni wizard tarayıcı testi** — granül üretimi parametrelerini gir, panel hesaplarını doğrula (2026-05-24 ok)
 - Detay: `Moduller/DetailedPlan.md` → Açık Konular bölümü
 
-### ⚠️ Piyasaya Çıkmadan Önce — Güvenlik (Tenant İzolasyonu)
-- [ ] **Şirket listesi gizliliği** — Paraşüt super_admin dropdown'ı şu an tüm şirket adlarını gösteriyor; kullanıcı sayısı artınca tenantlar birbirini görmemeli. Çözüm: şirket adı yerine şirket kodu (slug) göster, veya dropdown'ı kaldır (super_admin için farklı erişim mekanizması).
-- [ ] **Login'de otomatik şirket eşleşmesi** — Kullanıcı email'i Supabase'deki profile kaydıyla eşleşince şirket otomatik belirlenmeli; girişte şirket seçim adımı kalkmalı. (Şu an zaten böyle çalışıyor ama super_admin seçici UX'i karışıklık yaratıyor.)
+### ✅ Tamamlanan Güvenlik (Tenant İzolasyonu) — 2026-05-25
+- [x] **Şirket listesi gizliliği** — Paraşüt super_admin dropdown'ında şirket adı yerine UUID prefix (8 karakter) gösteriliyor (commit 3dada9f)
+- [x] **Login'de otomatik şirket eşleşmesi** — Login sayfasındaki şirket dropdown'ı tamamen kaldırıldı; şirket profiles.company_id'den otomatik belirlenir (commit 3dada9f)
 
 ### Bir Sonraki Oturumda İlk Yapılacak
 1. **DetailedPlan — BudgetTrack aktüel veri girişi formu** — panel şu an boş
