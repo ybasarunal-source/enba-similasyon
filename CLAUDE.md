@@ -378,7 +378,7 @@ Veri kaybı riski olan her adımı kullanıcıya açıkça belirt ve onay al.
 - [ ] **BudgetTrack + aktüel veri girişi** — panel şu an boş; aktüel giriş formu eklenecek
 - [ ] **CashFlow cashEvents girişi** — yatırım/finansman nakit olayları wizard'da düzenlenemiyor
 - [ ] **PDF export** — shell'de buton var, işlevsiz
-- [ ] **Yeni wizard tarayıcı testi** — granül üretimi parametrelerini gir, panel hesaplarını doğrula
+- [x] **Yeni wizard tarayıcı testi** — granül üretimi parametrelerini gir, panel hesaplarını doğrula (2026-05-24 ok)
 - Detay: `Moduller/DetailedPlan.md` → Açık Konular bölümü
 
 ### ⚠️ Piyasaya Çıkmadan Önce — Güvenlik (Tenant İzolasyonu)
@@ -386,9 +386,8 @@ Veri kaybı riski olan her adımı kullanıcıya açıkça belirt ve onay al.
 - [ ] **Login'de otomatik şirket eşleşmesi** — Kullanıcı email'i Supabase'deki profile kaydıyla eşleşince şirket otomatik belirlenmeli; girişte şirket seçim adımı kalkmalı. (Şu an zaten böyle çalışıyor ama super_admin seçici UX'i karışıklık yaratıyor.)
 
 ### Bir Sonraki Oturumda İlk Yapılacak
-1. **Wizard tarayıcı testi** — granül tesisi parametrelerini gir, Giriş & Fire / Ön Seçim adımlarını doğrula
-2. **DetailedPlan — BudgetTrack aktüel veri girişi formu** — panel şu an boş
-3. **Paraşüt → financial_categories** eşleştirme modalı Supabase tablosundan çeksin
+1. **DetailedPlan — BudgetTrack aktüel veri girişi formu** — panel şu an boş
+2. **Paraşüt → financial_categories** eşleştirme modalı Supabase tablosundan çeksin
 
 ### Bekleyen Kullanıcı Aksiyonu
 - [x] **Supabase SQL:** `migration_v25b_parasut_superadmin_rls.sql` çalıştırıldı (2026-05-19)

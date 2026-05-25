@@ -35,7 +35,7 @@ export function DetailedPlanModule({ navigate, setBackOverride }: Props) {
   const [view, setView]               = useState<View>('list');
   const [activePlanId, setActivePlanId] = useState<string | null>(null);
   const [activeCcId, setActiveCcId]     = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<PlanStatus | 'all'>('all');
+  // statusFilter artık sidebar'da tutulmuyor — plan listesi gruplara ayrılarak gösteriliyor
   const migratedOnce = useRef(false);
 
   // Eski key'lerden tek seferlik veri göçü
@@ -240,143 +240,42 @@ export function DetailedPlanModule({ navigate, setBackOverride }: Props) {
 
   /* ── Liste görünümü ── */
   return (
-    <div className="h-full flex flex-col bg-enba-bg overflow-y-auto">
+    <div className="h-full flex flex-col bg-enba-bg overflow-hidden">
       <SyncBanner status={syncStatus} error={syncError} onRetry={() => kaydet(planlar)} />
 
       <div className="flex-none border-b border-enba-line bg-enba-panel px-6 h-[60px] flex items-center gap-3">
         <span className="w-2 h-2 rounded-full bg-enba-orange shadow-[0_0_8px] shadow-enba-orange/60" />
         <h1 className="text-[15px] font-semibold flex-1">Detaylı İş Planı</h1>
-        <Btn variant="primary" size="md" icon={<I.Plus size={14} />} onClick={() => { setActivePlanId(null); setView('typeSelect'); }}>
-          Yeni Plan
-        </Btn>
       </div>
 
-      <main className="flex-1 p-6">
-        <div className="max-w-[1380px] mx-auto flex flex-col gap-8">
+      {/* İki panel: sol dashboard, sağ plan listesi */}
+      <div className="flex-1 flex overflow-hidden min-h-0">
 
-          {/* Gider Merkezleri */}
-          <section>
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <div className="text-[11px] uppercase tracking-[0.14em] text-enba-muted mb-0.5">Sabit Maliyet</div>
-                <h2 className="text-[14px] font-semibold text-enba-text">Gider Merkezleri</h2>
-              </div>
-              <Btn variant="outline" size="sm" icon={<I.Plus size={13} />} onClick={() => openCcEditor(null)}>
-                Yeni Merkez
-              </Btn>
-            </div>
-            {costCenters.length === 0 ? (
-              <CostCenterEmptyState onNew={() => openCcEditor(null)} />
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-                {costCenters.map(cc => (
-                  <CostCenterCard
-                    key={cc.id}
-                    cc={cc}
-                    onEdit={() => openCcEditor(cc.id)}
-                    onDelete={() => deleteCc(cc.id)}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
-
-          {/* İş Planları */}
-          <section>
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <div className="text-[11px] uppercase tracking-[0.14em] text-enba-muted mb-0.5">Finansal Projeksiyon</div>
-                <h2 className="text-[14px] font-semibold text-enba-text">İş Planları</h2>
-              </div>
-            </div>
-
-            {planlar.length === 0 ? (
-              <PlanEmptyState onNew={() => { setActivePlanId(null); setView('typeSelect'); }} />
-            ) : (() => {
-              const STATUS_TABS: Array<{ key: PlanStatus | 'all'; label: string }> = [
-                { key: 'all',      label: 'Tümü' },
-                { key: 'draft',    label: 'Taslak' },
-                { key: 'pending',  label: 'Onay Bekliyor' },
-                { key: 'active',   label: 'Aktif' },
-                { key: 'archived', label: 'Arşiv' },
-              ];
-              const TAB_DOT: Record<string, string> = {
-                draft:    'bg-enba-muted',
-                pending:  'bg-amber-400',
-                active:   'bg-enba-green',
-                archived: 'bg-gray-500',
-              };
-              const counts = planlar.reduce<Record<string, number>>((acc, p) => {
-                const s = p.status ?? 'draft';
-                acc[s] = (acc[s] ?? 0) + 1;
-                return acc;
-              }, {});
-              const filtered = statusFilter === 'all'
-                ? planlar
-                : planlar.filter(p => (p.status ?? 'draft') === statusFilter);
-
-              return (
-                <>
-                  {/* Status filter tabs */}
-                  <div className="flex items-center gap-1 mb-4 bg-enba-panel border border-enba-line rounded-xl p-1 w-fit">
-                    {STATUS_TABS.map(tab => {
-                      const count = tab.key === 'all' ? planlar.length : (counts[tab.key] ?? 0);
-                      const active = statusFilter === tab.key;
-                      return (
-                        <button
-                          key={tab.key}
-                          onClick={() => setStatusFilter(tab.key)}
-                          className={cx(
-                            'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all duration-150',
-                            active
-                              ? 'bg-enba-panel-2 text-enba-text shadow-sm'
-                              : 'text-enba-muted hover:text-enba-text hover:bg-enba-panel-2/50',
-                          )}
-                        >
-                          {tab.key !== 'all' && (
-                            <span className={cx('w-1.5 h-1.5 rounded-full flex-none', TAB_DOT[tab.key])} />
-                          )}
-                          {tab.label}
-                          {count > 0 && (
-                            <span className={cx(
-                              'inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full text-[10px] font-semibold px-1',
-                              active ? 'bg-enba-orange/20 text-enba-orange' : 'bg-enba-panel-2 text-enba-muted',
-                            )}>
-                              {count}
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {filtered.length === 0 ? (
-                    <div className="py-10 text-center text-[13px] text-enba-muted">
-                      Bu filtrede plan yok.
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                      {filtered.map(plan => (
-                        <PlanCard
-                          key={plan.id}
-                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                          plan={migratePlanFormat(plan as any)}
-                          costCenters={costCenters}
-                          onOpen={() => openPlan(plan)}
-                          onEdit={() => openWizardForEdit(plan)}
-                          onDelete={() => handleDelete(plan.id)}
-                          onStatusChange={(s) => handleStatusChange(plan.id, s)}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </>
-              );
-            })()}
-          </section>
-
+        {/* SOL: Aktif planlar dashboard + gider merkezleri */}
+        <div className="flex-1 overflow-y-auto p-6 min-w-0">
+          <ActiveDashboard
+            plans={planlar}
+            costCenters={costCenters}
+            onOpenPlan={openPlan}
+            onNewCostCenter={() => openCcEditor(null)}
+            onEditCostCenter={openCcEditor}
+            onDeleteCostCenter={deleteCc}
+          />
         </div>
-      </main>
+
+        {/* SAĞ: Tüm planlar (kompakt liste) */}
+        <div className="flex-none w-[300px] border-l border-enba-line flex flex-col overflow-hidden bg-enba-panel">
+          <PlanListSidebar
+            plans={planlar}
+            costCenters={costCenters}
+            onOpen={openPlan}
+            onEdit={openWizardForEdit}
+            onDelete={handleDelete}
+            onStatusChange={handleStatusChange}
+            onNew={() => { setActivePlanId(null); setView('typeSelect'); }}
+          />
+        </div>
+      </div>
     </div>
   );
 }
@@ -918,6 +817,385 @@ function PlanEmptyState({ onNew }: { onNew: () => void }) {
         <div className="text-[12px] text-enba-dim">Gider merkezini tanımladıktan sonra yeni plan oluşturun.</div>
       </div>
       <Btn variant="primary" size="md" icon={<I.Plus size={14} />} onClick={onNew}>Yeni Plan Oluştur</Btn>
+    </div>
+  );
+}
+
+// ─── ActiveDashboard — Sol panel ─────────────────────────────────────────────
+
+function ActiveDashboard({
+  plans, costCenters, onOpenPlan, onNewCostCenter, onEditCostCenter, onDeleteCostCenter,
+}: {
+  plans: DPlan[];
+  costCenters: CostCenter[];
+  onOpenPlan: (p: DPlan) => void;
+  onNewCostCenter: () => void;
+  onEditCostCenter: (id: string) => void;
+  onDeleteCostCenter: (id: string) => void;
+}) {
+  const activePlans = plans.filter(p => (p.status ?? 'draft') === 'active');
+
+  if (plans.length === 0) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4 text-center">
+          <div className="w-14 h-14 rounded-2xl bg-enba-panel-2 border border-enba-line flex items-center justify-center">
+            <I.Budget size={24} className="text-enba-dim" />
+          </div>
+          <div>
+            <div className="text-[14px] font-semibold text-enba-text mb-1">Henüz iş planı yok</div>
+            <div className="text-[12px] text-enba-dim">
+              Sağ panelden <span className="text-enba-orange font-medium">Yeni</span> butonuna tıklayarak ilk planı oluşturun.
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // KPI: aggregate hesaplar
+  const totalActiveProjects = activePlans.reduce(
+    (s, p) => s + p.projects.filter(pr => pr.isActive).length, 0,
+  );
+  const allUsedCcIds = new Set(
+    activePlans.flatMap(p => p.projects.map(pr => pr.costCenterId).filter(Boolean)),
+  );
+  const totalMonthlyExpense = costCenters
+    .filter(c => allUsedCcIds.has(c.id))
+    .reduce((s, c) => s + c.fixedExpenses.reduce((sum, e) => sum + e.monthly, 0), 0);
+  const avgActuals = activePlans.length > 0
+    ? activePlans.reduce((s, p) => s + p.actualsThrough, 0) / activePlans.length
+    : 0;
+
+  return (
+    <div className="max-w-[940px] mx-auto flex flex-col gap-8">
+
+      {/* KPI Şeridi */}
+      <div className="grid grid-cols-4 gap-3">
+        {[
+          {
+            label: 'Aktif Plan', value: String(activePlans.length),
+            icon: <I.Check size={15} />, accent: activePlans.length > 0 ? 'green' : 'neutral',
+          },
+          {
+            label: 'Aktif Proje', value: String(totalActiveProjects),
+            icon: <I.Bolt size={15} />, accent: totalActiveProjects > 0 ? 'orange' : 'neutral',
+          },
+          {
+            label: 'Tesis Gideri / ay',
+            value: totalMonthlyExpense > 0 ? fmtTL(totalMonthlyExpense, { compact: true }) : '—',
+            icon: <I.Budget size={15} />, accent: 'neutral',
+          },
+          {
+            label: 'Ort. Gerçekleşme',
+            value: activePlans.length > 0 ? `${Math.round(avgActuals)} ay` : '—',
+            icon: <I.Calendar size={15} />, accent: 'neutral',
+          },
+        ].map(k => (
+          <div key={k.label} className="bg-enba-panel border border-enba-line rounded-xl px-4 py-3.5 flex items-center gap-3">
+            <div className={cx(
+              'w-9 h-9 rounded-xl flex items-center justify-center flex-none',
+              k.accent === 'green'   ? 'bg-enba-green/15 text-enba-green' :
+              k.accent === 'orange'  ? 'bg-enba-orange/15 text-enba-orange' :
+              'bg-enba-panel-2 text-enba-muted',
+            )}>
+              {k.icon}
+            </div>
+            <div className="min-w-0">
+              <div className="text-[10px] uppercase tracking-wider text-enba-dim mb-0.5">{k.label}</div>
+              <div className="text-[18px] font-semibold text-enba-text leading-none">{k.value}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Aktif Planlar */}
+      <section>
+        <div className="mb-3">
+          <div className="text-[11px] uppercase tracking-[0.14em] text-enba-muted mb-0.5">Canlı Takip</div>
+          <h2 className="text-[14px] font-semibold text-enba-text">Aktif Planlar</h2>
+        </div>
+
+        {activePlans.length === 0 ? (
+          <div className="border border-dashed border-enba-line rounded-xl p-8 text-center">
+            <div className="w-10 h-10 rounded-xl bg-enba-panel-2 border border-enba-line flex items-center justify-center mx-auto mb-3">
+              <I.Check size={18} className="text-enba-dim" />
+            </div>
+            <div className="text-[13px] font-semibold text-enba-text mb-1">Aktif plan yok</div>
+            <div className="text-[12px] text-enba-dim">
+              Sağ paneldeki bir planı <span className="text-enba-orange">"Onayla"</span> ile aktifleştirin.
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+            {activePlans.map(plan => (
+              <ActivePlanDashCard
+                key={plan.id}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                plan={migratePlanFormat(plan as any)}
+                costCenters={costCenters}
+                onOpen={() => onOpenPlan(plan)}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Gider Merkezleri */}
+      <section>
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <div className="text-[11px] uppercase tracking-[0.14em] text-enba-muted mb-0.5">Sabit Maliyet</div>
+            <h2 className="text-[14px] font-semibold text-enba-text">Gider Merkezleri</h2>
+          </div>
+          <Btn variant="outline" size="sm" icon={<I.Plus size={13} />} onClick={onNewCostCenter}>
+            Yeni Merkez
+          </Btn>
+        </div>
+        {costCenters.length === 0 ? (
+          <CostCenterEmptyState onNew={onNewCostCenter} />
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+            {costCenters.map(cc => (
+              <CostCenterCard
+                key={cc.id}
+                cc={cc}
+                onEdit={() => onEditCostCenter(cc.id)}
+                onDelete={() => onDeleteCostCenter(cc.id)}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+
+    </div>
+  );
+}
+
+// ─── ActivePlanDashCard ───────────────────────────────────────────────────────
+
+function ActivePlanDashCard({
+  plan, costCenters, onOpen,
+}: {
+  plan: DPlan;
+  costCenters: CostCenter[];
+  onOpen: () => void;
+}) {
+  const usedCcIds     = new Set(plan.projects.map(p => p.costCenterId).filter(Boolean));
+  const usedCcs       = costCenters.filter(c => usedCcIds.has(c.id));
+  const totalExpenses = usedCcs.reduce((s, c) => s + c.fixedExpenses.reduce((sum, e) => sum + e.monthly, 0), 0);
+  const activeProjs   = plan.projects.filter(p => p.isActive).length;
+  const actuPct       = plan.horizon > 0 ? Math.min(100, (plan.actualsThrough / plan.horizon) * 100) : 0;
+  const categoryLabel = plan.category ? PLAN_CATEGORY_LABEL[plan.category] : null;
+
+  return (
+    <div className="bg-enba-panel border border-enba-green/25 rounded-xl p-5 hover:border-enba-green/50 transition-colors flex flex-col gap-4">
+      {/* Başlık */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-enba-green animate-pulse flex-none" />
+            {categoryLabel && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-enba-panel-2 border border-enba-line text-enba-muted font-medium">
+                {categoryLabel}
+              </span>
+            )}
+          </div>
+          <h3 className="text-[15px] font-semibold text-enba-text leading-snug">{plan.title}</h3>
+          <div className="text-[11px] text-enba-dim mt-0.5">{plan.startYear} başlangıç · {plan.horizon} aylık projeksiyon</div>
+        </div>
+        <Btn variant="primary" size="sm" onClick={onOpen}>Aç →</Btn>
+      </div>
+
+      {/* Metrikler */}
+      <div className="grid grid-cols-3 gap-2.5">
+        <div className="bg-enba-panel-2 rounded-xl px-3 py-2.5">
+          <div className="text-[10px] text-enba-dim uppercase tracking-wider mb-1">Proje</div>
+          <div className="text-[15px] font-semibold text-enba-text leading-none">{plan.projects.length}</div>
+          {activeProjs > 0 && <div className="text-[10px] text-enba-green mt-0.5">{activeProjs} aktif</div>}
+        </div>
+        <div className="bg-enba-panel-2 rounded-xl px-3 py-2.5">
+          <div className="text-[10px] text-enba-dim uppercase tracking-wider mb-1">Tesis Gider</div>
+          <div className="text-[15px] font-semibold text-enba-text leading-none">
+            {totalExpenses > 0 ? fmtTL(totalExpenses, { compact: true }) : '—'}
+          </div>
+          {totalExpenses > 0 && <div className="text-[10px] text-enba-dim mt-0.5">/ay</div>}
+        </div>
+        <div className="bg-enba-panel-2 rounded-xl px-3 py-2.5">
+          <div className="text-[10px] text-enba-dim uppercase tracking-wider mb-1">Gerçekleşen</div>
+          <div className="text-[15px] font-semibold text-enba-text leading-none">{plan.actualsThrough} ay</div>
+          <div className="text-[10px] text-enba-dim mt-0.5">/ {plan.horizon} ay</div>
+        </div>
+      </div>
+
+      {/* Gerçekleşme ilerleme çubuğu */}
+      <div>
+        <div className="flex items-center justify-between text-[10.5px] text-enba-dim mb-1.5">
+          <span>Gerçekleşme ilerlemesi</span>
+          <span className="tabular">{actuPct.toFixed(0)}%</span>
+        </div>
+        <div className="h-1.5 bg-enba-panel-2 rounded-full overflow-hidden">
+          <div
+            className={cx(
+              'h-full rounded-full transition-all duration-700',
+              actuPct >= 80 ? 'bg-enba-green' : actuPct >= 40 ? 'bg-enba-orange' : 'bg-enba-muted',
+            )}
+            style={{ width: `${actuPct}%` }}
+          />
+        </div>
+      </div>
+
+      {plan.description && (
+        <p className="text-[11.5px] text-enba-dim leading-relaxed line-clamp-2 -mt-1">{plan.description}</p>
+      )}
+    </div>
+  );
+}
+
+// ─── PlanListSidebar — Sağ panel ──────────────────────────────────────────────
+
+const SIDEBAR_GROUPS = [
+  { key: 'active'   as PlanStatus, label: 'Aktif',        dot: 'bg-enba-green' },
+  { key: 'pending'  as PlanStatus, label: 'Onay Bekliyor', dot: 'bg-amber-400'  },
+  { key: 'draft'    as PlanStatus, label: 'Taslak',        dot: 'bg-enba-muted' },
+  { key: 'archived' as PlanStatus, label: 'Arşiv',         dot: 'bg-gray-500'   },
+];
+
+function PlanListSidebar({
+  plans, costCenters, onOpen, onEdit, onDelete, onStatusChange, onNew,
+}: {
+  plans: DPlan[];
+  costCenters: CostCenter[];
+  onOpen: (p: DPlan) => void;
+  onEdit: (p: DPlan) => void;
+  onDelete: (id: string) => void;
+  onStatusChange: (id: string, s: PlanStatus) => void;
+  onNew: () => void;
+}) {
+  return (
+    <div className="h-full flex flex-col overflow-hidden">
+      {/* Sidebar header */}
+      <div className="flex-none px-4 h-[60px] flex items-center justify-between border-b border-enba-line">
+        <div className="flex items-center gap-2">
+          <span className="text-[12.5px] font-semibold text-enba-text">Tüm Planlar</span>
+          {plans.length > 0 && (
+            <span className="text-[10.5px] text-enba-dim px-1.5 py-0.5 rounded bg-enba-panel-2 border border-enba-line tabular">
+              {plans.length}
+            </span>
+          )}
+        </div>
+        <Btn variant="primary" size="sm" icon={<I.Plus size={12} />} onClick={onNew}>
+          Yeni
+        </Btn>
+      </div>
+
+      {/* Plan grupları */}
+      <div className="flex-1 overflow-y-auto py-2">
+        {plans.length === 0 ? (
+          <div className="px-4 py-10 text-center text-[12px] text-enba-muted">
+            Henüz plan yok.<br/>
+            <button onClick={onNew} className="mt-2 text-enba-orange hover:underline text-[12px]">
+              İlk planı oluştur →
+            </button>
+          </div>
+        ) : (
+          SIDEBAR_GROUPS.map(g => {
+            const groupPlans = plans.filter(p => (p.status ?? 'draft') === g.key);
+            if (groupPlans.length === 0) return null;
+            return (
+              <div key={g.key} className="mb-3">
+                <div className="flex items-center gap-1.5 px-4 py-1.5">
+                  <span className={cx('w-1.5 h-1.5 rounded-full flex-none', g.dot)} />
+                  <span className="text-[10.5px] uppercase tracking-wider text-enba-dim font-medium flex-1">{g.label}</span>
+                  <span className="text-[10px] text-enba-dim tabular">{groupPlans.length}</span>
+                </div>
+                <div className="flex flex-col gap-1 px-2">
+                  {groupPlans.map(plan => (
+                    <PlanSidebarRow
+                      key={plan.id}
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      plan={migratePlanFormat(plan as any)}
+                      onOpen={() => onOpen(plan)}
+                      onEdit={() => onEdit(plan)}
+                      onDelete={() => onDelete(plan.id)}
+                      onStatusChange={(s) => onStatusChange(plan.id, s)}
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── PlanSidebarRow ───────────────────────────────────────────────────────────
+
+function PlanSidebarRow({
+  plan, onOpen, onEdit, onDelete, onStatusChange,
+}: {
+  plan: DPlan;
+  onOpen: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+  onStatusChange: (s: PlanStatus) => void;
+}) {
+  const status      = plan.status ?? 'draft';
+  const nextActions = STATUS_NEXT[status] ?? [];
+  const isPending   = status === 'pending';
+
+  return (
+    <div className={cx(
+      'rounded-xl border p-3 transition-colors group cursor-pointer',
+      isPending
+        ? 'border-amber-500/30 bg-amber-500/5 hover:border-amber-500/50'
+        : 'border-enba-line bg-enba-bg/40 hover:border-enba-orange/30 hover:bg-enba-panel-2/40',
+    )}>
+      {/* Başlık satırı */}
+      <div className="flex items-start gap-1.5 mb-2.5" onClick={onOpen}>
+        <div className="flex-1 min-w-0">
+          <div className="text-[12.5px] font-semibold text-enba-text truncate group-hover:text-enba-orange transition-colors">
+            {plan.title}
+          </div>
+          <div className="text-[10.5px] text-enba-dim mt-0.5">
+            {plan.startYear} · {plan.horizon} ay · {plan.projects.length} proje
+          </div>
+        </div>
+        {/* İnce butonlar — hover'da görünür */}
+        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-none">
+          <button
+            onClick={e => { e.stopPropagation(); onEdit(); }}
+            className="w-6 h-6 rounded text-enba-dim hover:text-enba-orange inline-flex items-center justify-center"
+            title="Düzenle"
+          >
+            <I.Edit size={11} />
+          </button>
+          <button
+            onClick={e => { e.stopPropagation(); onDelete(); }}
+            className="w-6 h-6 rounded text-enba-dim hover:text-enba-red inline-flex items-center justify-center"
+            title="Sil"
+          >
+            <I.Trash size={11} />
+          </button>
+        </div>
+      </div>
+
+      {/* Aksiyon butonları */}
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <Btn variant="primary" size="sm" onClick={onOpen}>Aç</Btn>
+        {nextActions.slice(0, 1).map(a => (
+          <Btn
+            key={a.next}
+            variant={a.variant ?? 'outline'}
+            size="sm"
+            onClick={() => onStatusChange(a.next)}
+          >
+            {a.label}
+          </Btn>
+        ))}
+      </div>
     </div>
   );
 }

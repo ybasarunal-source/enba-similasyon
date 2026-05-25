@@ -865,3 +865,10 @@ grep "^## \[" log.md | tail -5
   - Her plan tek malzeme üzerine kurulur; kapasite boşluğu AssistantPanel insight'ı olur
   - Wizard başında plan tipi seçim ekranı gelecek: Granül Üretimi ilk seçenek; kağıt balyalama, çapak, levha ileride
   - Granül wizard adımları netleşti: Plan Bilgisi → Giriş & Fire → Ön Seçim → Üretim → Çıktı → Özet
+
+## [2026-05-25 17:30] geliştirme | DetailedPlan karşılama ekranı yeniden tasarım
+- Yapılan: Liste görünümü iki panele bölündü — sol: aktif planlar dashboard + gider merkezleri, sağ: 300px sabit kompakt plan listesi
+- Sol panel: KPI şeridi (aktif plan sayısı, aktif proje, tesis gideri/ay, ort. gerçekleşme), aktif plan kartları (yeşil çerçeve + progress bar), gider merkezleri
+- Sağ panel: Aktif → Onay Bekliyor → Taslak → Arşiv gruplama, kompakt satır, hover'da düzenle/sil, hızlı durum butonları
+- Etkilenen dosyalar: src/modules/detailedplan/DetailedPlanModule.tsx
+- Bir sonraki: Sektör Bilgi Bankası (sektor_not) erişim kısıtlaması gözden geçirilecek

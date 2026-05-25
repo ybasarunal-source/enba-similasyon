@@ -370,7 +370,7 @@ export const App: React.FC = () => {
     { id: 'operasyon', label: 'Operasyon',          icon: Boxes,         children: ['stock', 'production', 'logistics', 'machinery']   as string[] },
     { id: 'kurumsal',  label: 'Kurumsal',           icon: Building,      children: ['hr', 'licensing', 'archive']                     as string[] },
     { id: 'sistem',    label: 'Sistem',             icon: CircleUser,    children: ['ayarlar', 'settings', 'profile']                 as string[] },
-    { id: 'yonetim',   label: 'Yönetim',            icon: ShieldCheck,   children: ['super_admin', 'company_admin']                   as string[] },
+    { id: 'yonetim',   label: 'Yönetim',            icon: ShieldCheck,   children: ['super_admin', 'company_admin', 'sektor_not']     as string[] },
   ] as const;
 
   // İki grup: üstte tek navigasyon items, altta tüm sanal parent'lar
