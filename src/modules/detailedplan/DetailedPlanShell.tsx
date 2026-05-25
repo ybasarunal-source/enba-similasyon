@@ -45,7 +45,8 @@ export function DetailedPlanShell({ plan, costCenters = [], onSave, onBack, onEd
   const [horizon, setHorizon]         = useState(plan?.horizon ?? 24);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  const weeklyHorizon = plan?.weeklyHorizon ?? 12;
+  // weeklyHorizon: en az 4 hafta garanti — 0 olursa haftalık görünüm periods=[] verir
+  const weeklyHorizon = Math.max(4, plan?.weeklyHorizon ?? 12);
 
   // Aktüel veriler — plan.actuals'tan başlatılır, local state'te tutulur
   const [actuals, setActuals] = useState<PlanActuals>(() => plan?.actuals ?? {});

@@ -253,12 +253,22 @@ export const RevenuePanel = ({ scenarioId, periodGranularity }:
 
       <div className="grid grid-cols-12 gap-4">
         <Card className="col-span-5">
-          <SectionTitle eyebrow="Ürün payı" title={`Gelir Mix (${periods.length} dönem)`}/>
+          {/* visiblePeriods.length kullan — display granularity bağımsız, en az 1 */}
+          <SectionTitle eyebrow="Ürün payı" title={`Gelir Mix (${visiblePeriods.length || '–'} dönem)`}/>
           <RevenueMix scen={scen} cc={cc}/>
         </Card>
         <Card className="col-span-7">
-          <SectionTitle eyebrow="Mevsimsellik" title="Ortalama Aylık Hacim Endeksi"
-            action={<span className="text-[10.5px] text-enba-dim">Endeks 1.0 = yıllık ortalama</span>}/>
+          {(() => {
+            // Tüm ürünlerin mevsimsellik değerleri 1.0 mu? Tanımlanmamış demek.
+            const isFlat = allProducts.every(p => p.seasonality.every(v => Math.abs(v - 1) < 0.001));
+            return (
+              <SectionTitle eyebrow="Mevsimsellik" title="Ortalama Aylık Hacim Endeksi"
+                action={isFlat
+                  ? <span className="text-[10.5px] text-enba-dim italic">Mevsimsellik tanımlanmamış — tüm aylar eşit</span>
+                  : <span className="text-[10.5px] text-enba-dim">Endeks 1.0 = yıllık ortalama</span>}
+              />
+            );
+          })()}
           <div className="h-[180px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={MONTHS_TR.map((m, i) => {
@@ -301,11 +311,29 @@ const EditableCell = ({ value, isEditing, onClick, onBlur }:
 };
 
 const RevenueMix = ({ scen, cc }: { scen: Scenario; cc: any }) => {
-  const { products: allProducts, periods } = usePlanData();
+  const { products: allProducts, periods, granularity, weeklyHorizon } = usePlanData();
+
+  /**
+   * Pie chart her zaman plan'ın AYLIK ömrü üzerinden hesaplanır.
+   * Display granularity'ye (haftalık/çeyreklik) göre periods içeriği değişir;
+   * bunu monthly eşdeğerine çeviriyoruz:
+   *   - monthly   → periods.length
+   *   - quarterly → her period spanMonths toplam
+   *   - annual    → her period spanMonths toplam
+   *   - weekly    → weeklyHorizon / WEEKS_PER_MONTH ≈ ay sayısı
+   * Hiçbiri 0 dönmemesi için min 1, fallback 24.
+   */
+  const monthCount = (() => {
+    if (granularity === 'monthly')   return periods.length;
+    if (granularity === 'weekly')    return Math.max(1, Math.ceil(weeklyHorizon / 4.333));
+    // quarterly or annual: sum of spanMonths
+    return periods.reduce((s, p) => s + (p.spanMonths ?? 0), 0);
+  })();
+  const safeN = monthCount || 24; // defensive fallback
+
   const data = allProducts.map(p => {
     let rev = 0;
-    // periods.length kullan — hardcoded 24 yerine plan horizon'ına uyumlu
-    for (let i = 0; i < periods.length; i++) rev += revenueFor(p, i, scen);
+    for (let i = 0; i < safeN; i++) rev += revenueFor(p, i, scen);
     return { name: p.name, value: rev, color: p.color, id: p.id };
   });
   const total = data.reduce((s, x) => s + x.value, 0);
