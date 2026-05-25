@@ -267,6 +267,17 @@ const WIKI_TERMS: WikiTerm[] = [
   { term: 'Char', category: 'Proses', definition: 'Piroliz prosesinin katı kalıntısı. Karbon içerikli; giriş kalitesine ve sıcaklığa göre %5–30 oranında oluşur. Karbon siyahı ikamesi olarak araştırılıyor; aksi hâlde bertaraf gerekir. Düzenli boşaltma planı olmadan tesis içinde birikim sorunu oluşur.', tags: ['proses', 'atık', 'piroliz'] },
   { term: 'Depolimerizasyon', category: 'Proses', definition: 'Polimer zincirinin kimyasal reaktiflerle (glikol, metanol, su) monomer veya oligomerlere kadar parçalanması. PET için en değerli kimyasal geri dönüşüm yoludur — çıktı yeni PET üretiminde kullanılır. Alt yollar: glikoliz, metanoliz, hidroliz. "Sonsuz geri dönüşüm" kavramının teknik karşılığı.', tags: ['proses', 'kimyasal', 'PET'] },
   { term: 'Glikoliz', category: 'Proses', definition: 'PET + etilen glikol (EG) → BHET (bis-hidroksietil tereftalat) reaksiyonu. 180–240 °C, katalizör çinko asetat. Kirli ve gıda temaslı PET için uygun — mekanik yolun işleyemediği malzemeyi değerlendirir. Depolimerizasyonun en yaygın ve görece basit alt yolu.', tags: ['proses', 'PET', 'kimyasal'] },
+
+  // ── Hat 5 — Balyalama / Çuvallama / Sevkiyat ──
+  { term: 'Balya', category: 'Paketleme', definition: 'Balyalama presiyle sıkıştırılarak tel veya plastik iple bağlanan katı malzeme bloğu. PET şişe, HDPE/PP rijit, kağıt-karton ve metal için standarttır. Granül ve pul balyalanamaz — bunlar big bag veya oktabine gider.', tags: ['paketleme', 'lojistik'] },
+  { term: 'Yatay kanal presi', category: 'Makine', definition: 'Horizontal channel baler. En yaygın endüstriyel balyalama presi. Sürekli besleme alır, hidrolik sıkıştırma ile malzemeyi bloklar; tel bağlama ünitesi otomatik bağlar. Kapasite: 2–20 ton/saat. PET şişe, HDPE/PP rijit ve kağıt-karton için standart.', tags: ['makine', 'paketleme'] },
+  { term: 'İki ram presi', category: 'Makine', definition: 'Two-ram baler. İki aşamalı sıkıştırma: birinci ram ön sıkıştırma, ikinci ram nihai baskı. Film, folyo ve springback\'li miks malzeme için kullanılır. Yatay prese göre balya yoğunluğu %20–40 daha yüksek — ton başı nakliye maliyetini düşürür.', tags: ['makine', 'paketleme', 'folyo'] },
+  { term: 'Big bag', category: 'Paketleme', definition: 'FIBC (Flexible Intermediate Bulk Container). Granül ve pul için standart ambalaj; 500–1.000 kg kapasiteli. Tartımlı dolum başlığıyla ±5 kg toleransla doldurulur. Food-grade malzeme için PE iç kaplı (food-grade big bag) zorunludur. Tek veya çok kullanımlık tipleri var.', tags: ['paketleme', 'lojistik', 'granül'] },
+  { term: 'Oktabin', category: 'Paketleme', definition: 'Sekizgen karton kutu + PE iç torba. Granül sevkiyatında big bag\'e alternatif; nemden koruma ve uzun depolama gerektiren durumlarda tercih edilir. Kapasite 500–1.000 kg. Karton yapı nem emebilir — dış ortamda uzun bekletilmemeli.', tags: ['paketleme', 'lojistik'] },
+  { term: 'Springback', category: 'Proses', definition: 'Geri yaylanma. Film ve folyo gibi elastik malzemelerin balya presinden çıkınca hacmini bir miktar geri kazanması olgusu. Bağlama teli yetersizse balya açılır. İki ram presi springback\'i yatay prese göre daha iyi baskılar.', tags: ['proses', 'paketleme', 'folyo'] },
+  { term: 'FIFO', category: 'Proses', definition: 'First In First Out — İlk Giren İlk Çıkar. Depo yönetiminde eski stoğun önce sevk edilmesini sağlayan ilke. Plastik ham maddede raf ömrü resmi yoktur; ancak uzun bekleyen malzeme nem, UV ve sıkışma bozunması yaşayabilir.', tags: ['proses', 'lojistik', 'depo'] },
+  { term: 'Incoterms', category: 'Lojistik', definition: 'Uluslararası Ticaret Teslim Koşulları. Satıcı ve alıcı arasında nakliye sorumluluğunu ve sigorta yükümlülüğünü belirler. FCA: fabrika çıkışı teslim; DAP: belirlenen noktaya kadar satıcı taşır; CIF: deniz yolu ihracatta maliyet+sigorta+navlun satıcıda.', tags: ['lojistik', 'ihracat', 'standart'] },
+  { term: 'Lot izlenebilirliği', category: 'Kalite', definition: 'Traceability. Ürünün hammaddeden nihai alıcıya kadar her adımda lot numarasıyla takip edilebilmesi. GRS sertifikasyon denetimlerinde zorunlu. Müşteri şikayetinde kaynağın bulunması, EFSA food-grade denetimleri ve iade yönetimi için kritik.', tags: ['kalite', 'standart', 'GRS'] },
 ];
 
 // ─── Sayfa içerikleri ─────────────────────────────────────────────────────────
@@ -850,10 +861,212 @@ const Hat4Content: React.FC = () => {
   );
 };
 
+// ─── Hat 5 — Balyalama, Çuvallama & Sevkiyat ────────────────────────────────
+
+const Hat5Content: React.FC = () => (
+  <div className="space-y-6">
+    {/* Tanım */}
+    <section className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5">
+      <div className="flex items-center gap-2 mb-3">
+        <div className="w-6 h-6 rounded-lg bg-green-100 dark:bg-green-500/15 flex items-center justify-center">
+          <span className="text-[11px] font-black text-green-600">5</span>
+        </div>
+        <span className="text-[13px] font-bold text-gray-800 dark:text-white">Balyalama, Çuvallama & Sevkiyat Hattı</span>
+        <Tag color="green">paketleme · lojistik</Tag>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-[12.5px]">
+        <div className="p-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/8">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-green-500 mb-1">Sektörel</div>
+          <p className="text-gray-600 dark:text-gray-400 leading-relaxed">Çıktı malzemeyi satışa hazır hâle getiren hat. Sektörde "balya hattı" veya "pres" diye geçer. Granül ve pul için balyalama presi kullanılmaz — bunlar big bag veya oktabine gider. Bu ayrım sık karıştırılır.</p>
+        </div>
+        <div className="p-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/8">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-green-500 mb-1">Teknik</div>
+          <p className="text-gray-600 dark:text-gray-400 leading-relaxed">İki paralel sistem: (A) Balyalama presi — hidrolik sıkıştırmayla katı malzeme bloğu üretir, tel/ip bağlar. (B) Çuvallama istasyonu — tartımlı dolum başlığıyla big bag veya oktabini ±5 kg toleransla doldurur.</p>
+        </div>
+        <div className="p-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/8">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-green-500 mb-1">Uluslararası</div>
+          <p className="text-gray-600 dark:text-gray-400 leading-relaxed">Baling ve filling işlemleri, tedarik zincirinde ağırlık ölçümü ve lot izlenebilirliğinin (traceability) başladığı noktadır. GRS sertifikalı ürünlerde lot numarasının hammaddeden nihai ürüne izlenebilir olması zorunludur.</p>
+        </div>
+      </div>
+    </section>
+
+    {/* Paralel sistemler */}
+    <section>
+      <h4 className="text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-3">İki Paralel Sistem</h4>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="rounded-xl border border-green-200 bg-green-50 dark:bg-green-500/5 dark:border-green-500/20 p-4">
+          <div className="text-[11px] font-semibold text-green-600 uppercase tracking-wider mb-2">A — Balyalama Presi</div>
+          <div className="text-[12.5px] font-bold text-gray-800 dark:text-white mb-2">Katı, sıkıştırılabilir malzeme → tel balya</div>
+          <ul className="space-y-1">
+            {[
+              'PET şişe, HDPE/PP rijit, kağıt-karton, metal',
+              'Yatay kanal presi: sürekli besleme, 2–20 ton/sa',
+              'İki ram presi: film/folyo — %20–40 daha yoğun balya',
+              'Balya boyutu tipik: 1.100 × 700 × 700 mm',
+              'Tel sayısı: 4–6 çelik tel',
+            ].map(p => (
+              <li key={p} className="text-[12px] text-gray-600 dark:text-gray-400 flex items-start gap-1.5">
+                <span className="text-green-400 mt-1 flex-shrink-0">•</span>{p}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="rounded-xl border border-blue-200 bg-blue-50 dark:bg-blue-500/5 dark:border-blue-500/20 p-4">
+          <div className="text-[11px] font-semibold text-blue-600 uppercase tracking-wider mb-2">B — Çuvallama İstasyonu</div>
+          <div className="text-[12.5px] font-bold text-gray-800 dark:text-white mb-2">Dökülebilir malzeme → big bag / oktabin</div>
+          <ul className="space-y-1">
+            {[
+              'Granül, pul (flake) — kesinlikle pres değil',
+              'Big bag (FIBC): 500–1.000 kg, ±5 kg tolerans',
+              'Oktabin: sekizgen karton + PE iç torba, 500–1.000 kg',
+              'Food-grade granül için PE iç kaplı big bag zorunlu',
+              'Vibrasyon ile malzeme oturması sağlanır',
+            ].map(p => (
+              <li key={p} className="text-[12px] text-gray-600 dark:text-gray-400 flex items-start gap-1.5">
+                <span className="text-blue-400 mt-1 flex-shrink-0">•</span>{p}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    {/* Proses akışı */}
+    <section>
+      <h4 className="text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-3">Akış Şeması</h4>
+      <ProcessDiagram steps={[
+        {
+          label: 'Malzeme Girişi & Akış Ayrımı', type: 'default',
+          sub: 'Hat 1–4 çıktıları bu hatta gelir. İlk karar: sıkıştırılabilir mi (→ Balyalama Presi) yoksa dökülebilir mi (→ Çuvallama İstasyonu)? Granül ve pul mutlaka çuvallama istasyonuna gider; preste sıkıştırılamaz, makinaya zarar verir.',
+          machines: ['Bant konveyör'],
+          params: ['Granül / pul → Çuvallama İstasyonu', 'Katı atık balya → Balyalama Presi'],
+        },
+        {
+          label: 'A — Balyalama Presi (Katı Malzeme)', type: 'separation', highlight: true,
+          sub: 'Yatay kanal presi PET şişe, HDPE/PP rijit ve kağıt-karton için standarttır. İki ram presi film ve folyo için — springback\'li malzemelerde yatay prese göre %20–40 daha yoğun balya üretir, ton başı nakliye maliyetini düşürür.',
+          machines: ['Yatay kanal presi (horizontal channel baler)', 'İki ram presi (two-ram baler)'],
+          params: ['PET balya: 200–350 kg', 'HDPE/PP: 300–500 kg', 'Film: 150–300 kg (yatay) · 250–450 kg (iki ram)'],
+        },
+        {
+          label: 'B — Çuvallama İstasyonu (Granül & Pul)', type: 'quality', highlight: true,
+          sub: 'Tartımlı dolum başlığı (filling head) big bag veya oktabini ±5 kg toleransla doldurur. Bag filler frame dolum sırasında çanta deformasyonunu önler. Vibrasyon malzeme oturmasını sağlar.',
+          machines: ['Big bag dolum başlığı (FIBC filling head)', 'Oktabin dolum başlığı', 'Bag filler frame'],
+          params: ['Dolum hedefi: 500–1.000 kg ±5 kg', 'Food-grade → PE iç kaplı big bag'],
+        },
+        {
+          label: 'Tartım', type: 'quality',
+          sub: 'Tartım hem üretim kaydı hem de alım-satım belgesidir. Yasal metroloji (TSE EN 45501) zorunlu — yıllık damga şart. Tartım tutanağı ihtilaf çözümünde birincil delildir.',
+          machines: ['İnline tartım bandı (checkweigher)', 'Platform terazi / baskül'],
+          params: ['İnline hassasiyet: ±1–2 kg', 'Yıllık damga: TSE EN 45501'],
+        },
+        {
+          label: 'Etiketleme & Lot Kaydı', type: 'quality',
+          sub: 'Her balya/big bag/oktabine etiket yapıştırılır. Etiketsiz ambalaj kimliksizdir — depo içi karışma, sevkiyatta hata ve müşteri iade anında geri izleme imkânsız hâle gelir. GRS denetimlerinde zorunlu.',
+          machines: ['Etiket yazıcı (barkod / QR)'],
+          params: ['Lot no · Reçine tipi · Ağırlık · Tarih · Hat no · QR kod'],
+        },
+        {
+          label: 'Depolama', type: 'default',
+          sub: 'Reçine bazlı alan ayrımı, FIFO uygulaması ve nem/UV koruması kritik. Açık depoda LDPE örtü zorunlu. Güneş altında uzun süre kalan PET balyası sararmaya başlar. Beton zemin şart — toprak zemin nem çeker.',
+          machines: ['Forklift'],
+          params: ['Balya: max 4–5 sıra', 'Big bag: max 2–3 sıra', 'Bağıl nem: ≤ %70'],
+        },
+        {
+          label: 'Sevkiyat', type: 'default',
+          sub: 'TIR yükleme düzeni, irsaliye ve numune alma alıcıyla ilişkiyi doğrudan etkiler. Incoterms seçimi (FCA/DAP/CIF) nakliye ve sigorta sorumluluğunu belirler. İhracat için: ATR/EUR.1, menşe şahadetnamesi, analiz sertifikası.',
+          machines: ['TIR / araç'],
+          params: ['FCA: fabrika çıkışı teslim', 'DAP: noktaya kadar satıcı', 'CIF: maliyet+sigorta+navlun satıcıda'],
+        },
+      ]} />
+    </section>
+
+    {/* Ambalaj seçim rehberi */}
+    <section>
+      <h4 className="text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-3">Malzeme Bazlı Ambalaj Seçim Rehberi</h4>
+      <DataTable
+        headers={['Malzeme', 'Uygun Ambalaj', 'Uygun Değil', 'Not']}
+        rows={[
+          ['PET şişe (balya)', 'Yatay kanal presi', 'Big bag / oktabin', 'Tel balya standart'],
+          ['HDPE / PP rijit (balya)', 'Yatay kanal presi', '—', 'Ağır malzeme, yüksek balya ağırlığı'],
+          ['LDPE / PP film (balya)', 'İki ram presi', 'Yatay pres (düşük yoğunluk)', 'Springback sorunu'],
+          ['Kağıt / karton (balya)', 'Yatay kanal presi', 'Big bag / oktabin', 'Nem önlemi şart'],
+          ['Metal fraksiyon (balya)', 'Yatay kanal presi', '—', 'Demir ve Al ayrı depolama'],
+          ['PET granül / pul', 'Big bag · Oktabin', 'Balya presi', 'Food-grade için PE iç kaplı big bag'],
+          ['PP / PE granül', 'Big bag · Oktabin', 'Balya presi', 'Standart big bag yeterli'],
+          ['PS / ABS granül', 'Big bag · Oktabin', 'Balya presi', 'Nem hassasiyeti düşük'],
+          ['Piroliz yağı', 'Varil / IBC tank', 'Balya / big bag', 'Sıvı — farklı depolama gerekir'],
+        ]}
+      />
+    </section>
+
+    {/* Ekipmanlar */}
+    <section>
+      <h4 className="text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-3">Kullanılan Başlıca Ekipmanlar</h4>
+      <DataTable
+        headers={['Ekipman', 'Teknik Adı (İng.)', 'Görev']}
+        rows={[
+          ['Yatay kanal presi',        'Horizontal channel baler',       'Katı plastik, kağıt-karton, metal balyalama'],
+          ['İki ram presi',            'Two-ram baler',                  'Film, folyo, miks — yüksek yoğunluk balyalama'],
+          ['Dikey pres',               'Vertical baler',                 'Küçük hacimli, düşük kapasite'],
+          ['Big bag dolum başlığı',    'FIBC filling head / bag filler', 'Granül ve pul big bag dolumu'],
+          ['Oktabin dolum başlığı',    'Octabin filling station',        'Granül ve pul oktabin dolumu'],
+          ['Big bag çerçevesi',        'Bag filler frame',               'Dolum sırasında çanta formunu korur'],
+          ['İnline tartım bandı',      'Inline checkweigher',            'Geçerken otomatik tartım'],
+          ['Platform terazi / baskül', 'Platform scale',                 'Balya / big bag tartımı'],
+          ['Etiket yazıcı',            'Label printer',                  'Barkod / QR etiket basımı'],
+          ['Konveyör sistemi',         'Belt / roller conveyor',         'Hat boyunca taşıma'],
+        ]}
+      />
+    </section>
+
+    {/* Kritik parametreler */}
+    <section>
+      <h4 className="text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-3">Kritik Parametreler</h4>
+      <DataTable
+        headers={['Parametre', 'Sektörel Adı', 'Birim', 'Hedef / Not']}
+        rows={[
+          ['Balya yoğunluğu (PET)',     'Yoğunluk / sıkılık',    'kg/m³', '250–400 kg/m³'],
+          ['Balya yoğunluğu (film)',    'Film balya yoğunluğu',  'kg/m³', '150–250 kg/m³'],
+          ['Tartım toleransı',          'Terazi hassasiyeti',     'kg',    '±1–2 kg (inline)'],
+          ['Big bag dolum hedefi',      'Dolum ağırlığı',         'kg',    '500–1.000 ±5 kg'],
+          ['Balya bağlama tel sayısı',  'Tel adedi',              'adet',  '4–6 tel'],
+          ['Depo bağıl nem',            'Nem oranı',              '%',     '≤ %70 (granül depo)'],
+          ['İstif yüksekliği (balya)',  'İstif yüksekliği',       'sıra',  'Max 4–5 sıra'],
+        ]}
+      />
+    </section>
+
+    {/* Sık hatalar */}
+    <section>
+      <h4 className="text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-3">Sık Yapılan Hatalar</h4>
+      <div className="space-y-2">
+        <Note type="warn">
+          <strong>Granülü balyalama presine vermeye çalışmak:</strong> Pres granülü sıkıştıramaz — dökülen malzeme makinaya zarar verir. Granül ve pul mutlaka çuvallama istasyonuna gitmeli.
+        </Note>
+        <Note type="warn">
+          <strong>Balya yoğunluğu düşük tutulmak:</strong> TIR başına düşen ağırlık azalır, ton başı nakliye maliyeti artar. Alıcı düşük yoğunluğu iskonto gerekçesi olarak kullanabilir. İki ram presi bu sorunu çözer.
+        </Note>
+        <Note type="warn">
+          <strong>Tartım kalibrasyonu yapılmamış:</strong> Yasal metroloji damgası olmayan terazi ile yapılan ağırlık kayıtları ihtilafta geçersiz sayılabilir. Yıllık damga zorunlu.
+        </Note>
+        <Note type="warn">
+          <strong>Nem kontrolü yapılmadan depolama:</strong> Açık depoda bekleyen balya ve big bag nem çeker; tartım şişer (gerçek ağırlıktan fazla görünür), küf riski oluşur, alıcı reddi.
+        </Note>
+        <Note type="warn">
+          <strong>Lot takibi yapılmıyor:</strong> Müşteri şikayetinde hangi tedarikçi balyasından üretildiği izlenemiyor. GRS denetiminde lot izlenebilirliği zorunlu — etiketsiz ambalaj reddedilir.
+        </Note>
+        <Note type="info">
+          <strong>Yükleme sırası planlanmıyor:</strong> Ağır balyalar üste, hafif (film) balyalar alta konulursa ezilme ve balya açılması riski artar. TIR yükleme planı sevkiyattan önce yapılmalı.
+        </Note>
+      </div>
+    </section>
+  </div>
+);
+
 // ─── Hatlar Sayfası ───────────────────────────────────────────────────────────
 
 const PageHatlar: React.FC = () => {
-  const [activeHat, setActiveHat] = useState<'hat1' | 'hat2' | 'hat3' | 'hat4'>('hat1');
+  const [activeHat, setActiveHat] = useState<'hat1' | 'hat2' | 'hat3' | 'hat4' | 'hat5'>('hat1');
 
   return (
     <div className="space-y-5">
@@ -889,12 +1102,24 @@ const PageHatlar: React.FC = () => {
             );
           })}
         </div>
+        {/* Hat 5 — tam genişlik */}
+        <button onClick={() => setActiveHat('hat5')}
+          className={cx(
+            'w-full mt-2 p-3 rounded-xl border text-left transition-all',
+            activeHat === 'hat5'
+              ? 'bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/30 text-green-700 dark:text-green-400'
+              : 'bg-white dark:bg-[#1A1A1A] border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-white/20',
+          )}>
+          <div className="text-[12.5px] font-semibold">Hat 5 — Balyalama & Sevkiyat</div>
+          <div className="text-[11px] opacity-70 mt-0.5">Paketleme · lojistik · ihracat</div>
+        </button>
       </div>
 
       {activeHat === 'hat1' && <Hat1Content />}
       {activeHat === 'hat2' && <Hat2Content />}
       {activeHat === 'hat3' && <Hat3Content />}
       {activeHat === 'hat4' && <Hat4Content />}
+      {activeHat === 'hat5' && <Hat5Content />}
     </div>
   );
 };
