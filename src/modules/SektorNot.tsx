@@ -160,6 +160,22 @@ const WIKI_TERMS: WikiTerm[] = [
   // ── Standart / Sertifikasyon ──
   { term: 'GRS', category: 'Standart', definition: 'Global Recycled Standard. Geri dönüştürülmüş hammadde kullanan ürünlerin bağımsız denetimle belgelendiği uluslararası sertifikasyon standardı. Denetimlerde proses su yönetimi ve kimyasal kullanım kayıtları incelenir.', tags: ['standart', 'sertifikasyon', 'çevre'] },
   { term: 'PPWR', category: 'Standart', definition: 'AB Packaging and Packaging Waste Regulation — Ambalaj ve Ambalaj Atıkları Yönetmeliği. Ambalajlarda zorunlu PCR içerik oranları ve geri dönüşüm hedefleri belirler. rPET granül/flake üreticilerinin ana pazar sürücüsü.', tags: ['standart', 'AB', 'mevzuat'] },
+  { term: 'WEEE', category: 'Standart', definition: 'Waste Electrical and Electronic Equipment — Elektrikli ve Elektronik Ekipman Atıkları yönetmeliği. Bu kapsam dahindeki e-atık plastikler (ABS, PS, PC) bromlu alev geciktiriciler içerebilir. XRF ile Br kontrolü ve özel debromination prosesi zorunludur.', tags: ['standart', 'e-atık', 'mevzuat'] },
+
+  // ── Hat 3 — Ayrıştırma ──
+  { term: 'MRF', category: 'Tesis', definition: 'Materials Recovery Facility — Malzeme Geri Kazanım Tesisi. Karışık ambalaj atıklarını reçine tipine, renge ve malzeme grubuna göre ayrıştıran tesisin uluslararası adı. NIR sıralayıcı, balistik seperatör ve metal ayrım ekipmanlarının entegre çalıştığı büyük ölçekli hat.', tags: ['tesis', 'ayrıştırma'] },
+  { term: 'Renk sıralayıcı', category: 'Makine', definition: 'CCD veya RGB kamera + arka aydınlatma ile plastikleri renge göre ayıran optik makine. NIR reçine tipini söyler ama rengi söylemez; ikisi birlikte kullanılır. PET şeffaf ile PET mavi/opak ayrımını yapar — satış fiyatını doğrudan etkiler. Siyah plastik göremez.', tags: ['makine', 'optik', 'kalite'] },
+  { term: 'Ejektör sistemi', category: 'Makine', definition: 'NIR sinyali aldıktan sonra doğru parçaya hava üfleyen ve fraksiyonu kanalına yönlendiren otomasyon sistemi. Nozzle dizilimi 1.200–2.400 mm konveyör genişliğine yayılır. Tetikleme süresi ≤ 10 ms; yanlış ejeksiyon oranı hedefi < %2.', tags: ['makine', 'otomasyon', 'ayırma'] },
+  { term: 'Siyah plastik sorunu', category: 'Kalite', definition: 'Karbon siyahı içeren plastikler NIR sensörde tanınamaz — NIR ışığını tamamen emer. Renk sıralayıcı kamera da göremez. Sonuç: reject kanalına veya yanlış fraksiyona gider. Çözüm MWIR (orta dalga kızılötesi) veya lazer sensör; Türkiye\'de henüz yaygın değil, büyük ölçüde kayıp sayılır.', tags: ['kalite', 'NIR', 'reject'] },
+  { term: 'Picking station', category: 'Makine', definition: 'Manuel ayıklama bandı. Otomatik sistemin gözünden kaçan PVC, bromlu plastik ve kalite uygunsuzluklarının elle tespit edildiği konveyör üstü çalışma noktası. Birçok tesiste hâlâ birincil kalite güvencesidir.', tags: ['makine', 'kalite', 'manuel'] },
+
+  // ── Hat 4 — Kimyasal Geri Dönüşüm ──
+  { term: 'Kimyasal geri dönüşüm', category: 'Proses', definition: 'Advanced recycling / chemical recycling. Mekanik yolun ulaşamadığı atıklar için kullanılan prosesler bütünü: piroliz, depolimerizasyon, solvent saflaştırma. Türkiye\'de 2024 itibarıyla büyük ölçüde pilot / AR-GE aşamasında. AB PPWR baskısıyla 5 yılda hızlı gelişim bekleniyor.', tags: ['proses', 'ileri dönüşüm', 'AB'] },
+  { term: 'Piroliz', category: 'Proses', definition: 'Oksijensiz ortamda (N₂ / vakum) 350–700 °C\'de plastik polimer zincirlerinin termokimyasal yolla kırılması. Yanma değil, bozunma. Çıktı: piroliz yağı %40–70, yanıcı gaz %10–20, char %5–30. PVC kesinlikle giriş öncesi ayrılmalıdır — HCl gazı üretir ve reaktörü aşındırır.', tags: ['proses', 'kimyasal', 'ısıl'] },
+  { term: 'Piroliz yağı', category: 'Ürün', definition: 'Pyoil. Piroliz prosesinin sıvı çıktısı; hafif (nafta benzeri) + ağır (fuel oil benzeri) fraksiyon. Petrokimya tesisine besleme veya yakıt olarak kullanılabilir. Doğrudan plastik değildir. AB PPWR\'da "recycled content" sayılabilmesi tartışmalıdır.', tags: ['ürün', 'kimyasal', 'yakıt'] },
+  { term: 'Char', category: 'Proses', definition: 'Piroliz prosesinin katı kalıntısı. Karbon içerikli; giriş kalitesine ve sıcaklığa göre %5–30 oranında oluşur. Karbon siyahı ikamesi olarak araştırılıyor; aksi hâlde bertaraf gerekir. Düzenli boşaltma planı olmadan tesis içinde birikim sorunu oluşur.', tags: ['proses', 'atık', 'piroliz'] },
+  { term: 'Depolimerizasyon', category: 'Proses', definition: 'Polimer zincirinin kimyasal reaktiflerle (glikol, metanol, su) monomer veya oligomerlere kadar parçalanması. PET için en değerli kimyasal geri dönüşüm yoludur — çıktı yeni PET üretiminde kullanılır. Alt yollar: glikoliz, metanoliz, hidroliz. "Sonsuz geri dönüşüm" kavramının teknik karşılığı.', tags: ['proses', 'kimyasal', 'PET'] },
+  { term: 'Glikoliz', category: 'Proses', definition: 'PET + etilen glikol (EG) → BHET (bis-hidroksietil tereftalat) reaksiyonu. 180–240 °C, katalizör çinko asetat. Kirli ve gıda temaslı PET için uygun — mekanik yolun işleyemediği malzemeyi değerlendirir. Depolimerizasyonun en yaygın ve görece basit alt yolu.', tags: ['proses', 'PET', 'kimyasal'] },
 ];
 
 // ─── Sayfa içerikleri ─────────────────────────────────────────────────────────
@@ -342,38 +358,390 @@ const PageProses: React.FC = () => (
   </div>
 );
 
+// ─── Hat 3 — Atık Ayrıştırma ─────────────────────────────────────────────────
+
+const Hat3Content: React.FC = () => (
+  <div className="space-y-6">
+    <section className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5">
+      <div className="flex items-center gap-2 mb-3">
+        <div className="w-6 h-6 rounded-lg bg-purple-100 dark:bg-purple-500/15 flex items-center justify-center">
+          <span className="text-[11px] font-black text-purple-600">3</span>
+        </div>
+        <span className="text-[13px] font-bold text-gray-800 dark:text-white">Atık Ayrıştırma Hattı</span>
+        <Tag color="purple">separasyon · NIR sorting</Tag>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-[12.5px]">
+        <div className="p-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/8">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-purple-500 mb-1">Sektörel</div>
+          <p className="text-gray-600 dark:text-gray-400 leading-relaxed">Karışık atığı reçine tipine, renge ve malzeme grubuna göre ayıran hat. Çıktı granül değil, birden fazla fraksiyon. Hat 1 ve Hat 2'nin giriş kalitesini bu hat belirler.</p>
+        </div>
+        <div className="p-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/8">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-purple-500 mb-1">Teknik</div>
+          <p className="text-gray-600 dark:text-gray-400 leading-relaxed">Trommel elek → balistik seperatör → manyetik + eddy current → NIR spektroskopi → ejektör sistemi → renk sıralayıcı → XRF spot kontrol. Büyük ölçekli tesis: MRF (Materials Recovery Facility).</p>
+        </div>
+        <div className="p-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/8">
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-purple-500 mb-1">Uluslararası</div>
+          <p className="text-gray-600 dark:text-gray-400 leading-relaxed">Sorting line geri dönüşüm zincirinin "değer kapısı"dır. AB PPWR ve RecyClass çerçevesinde ambalaj tasarımı "sortability" skoru bu hattın performansına dayanır.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h4 className="text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-3">Proses Akışı</h4>
+      <Flow steps={[
+        { label: 'Besleme & Eleme', sub: 'balya açıcı · trommel' },
+        { label: 'Balistik', sub: 'film–rijit ayrımı' },
+        { label: 'Metal Ayrımı', sub: 'manyetik · eddy current' },
+        { label: 'NIR Tarama', sub: 'reçine tipi tanıma', highlight: true },
+        { label: 'Ejektör', sub: '≤ 10 ms · < %2 hata', highlight: true },
+        { label: 'Renk Sıralayıcı', sub: 'şeffaf / renkli / opak' },
+        { label: 'XRF + Picking', sub: 'PVC · Br kontrolü' },
+      ]} />
+    </section>
+
+    <section>
+      <h4 className="text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-3">Fraksiyon Çıktıları — Sonraki Hat Yönlendirmesi</h4>
+      <DataTable
+        headers={['Fraksiyon', 'Sonraki Adım', 'Not']}
+        rows={[
+          [<span className="font-semibold text-green-700">PET şeffaf</span>, 'Hat 2 (PET yıkama) veya satış', 'En yüksek değerli fraksiyon'],
+          ['PET mavi / renkli', 'Hat 2 veya satış (daha düşük fiyat)', 'Renk sıralayıcı ayrımına göre'],
+          ['rHDPE / rPP rijit', 'Hat 1 veya Hat 2', 'Kaliteye göre'],
+          ['PE / PP film', 'Hat 2 (folyo yıkama)', 'Balistik çıktısı'],
+          ['PS / EPS', 'Hat 1 veya EPS kompaksiyon', 'EPS önce kompakt hâle getirilmeli'],
+          ['Metal (demir)', 'Hurda metal — çelikhane', 'Manyetik fraksiyon'],
+          ['Metal (alüminyum)', 'Hurda metal — eritme', 'Eddy current fraksiyon'],
+          [<span className="text-red-600">Siyah plastik</span>, 'Reject → Hat 4 veya bertaraf', 'NIR tanıyamaz — kayıp'],
+          [<span className="text-red-600">Reject / kirli miks</span>, 'Hat 4 (kimyasal) veya enerji geri kazanımı', 'Mekanik yolla işlenemez'],
+        ]}
+      />
+    </section>
+
+    <section>
+      <h4 className="text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-3">İşlenen Atık Tipleri</h4>
+      <DataTable
+        headers={['Atık Tipi', 'Sektörel Adı', 'Dikkat']}
+        rows={[
+          ['Karışık ambalaj balya', 'Miks ambalaj / MRF balya', 'Organik kirlilik ve nem oranı yüksek olabilir'],
+          ['PET şişe (ayrılmamış)', 'Karışık PET şişe', 'Siyah PET NIR\'da tanınamaz'],
+          ['HDPE/PP karışık', 'Miks sert plastik', 'Metal yok, renk miks kabul'],
+          ['LDPE/PP film balya', 'Film balya / folyo balya', 'Islak ve kirli film verim düşürür'],
+          ['PS köpük + rijit', 'PS ambalaj', 'EPS kompaksiyon ister'],
+          [<Tag color="red">PVC ambalaj</Tag>, 'PVC şişe / blister', 'Az miktarda bile PET\'i bozar — XRF zorunlu'],
+          ['Karışık metal', 'Metal miks', 'Manyetik + EC ile ayrılır'],
+          ['E-atık plastik', 'WEEE plastik', 'ABS, PS, PC — bromlu alev geciktiriciler kontrol'],
+          ['Siyah plastik', 'Siyah fraksiyon', 'Karbon siyahı NIR\'ı emer — özel sensör gerekir'],
+        ]}
+      />
+    </section>
+
+    <section>
+      <h4 className="text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-3">Kullanılan Başlıca Makinalar</h4>
+      <DataTable
+        headers={['Makina', 'Teknik Adı (İng.)', 'Görev']}
+        rows={[
+          ['Balya açıcı',         'Bale opener',             'Balyayı dağıtır'],
+          ['Trommel elek',        'Trommel screen',          'Döner tambur boyut eleme'],
+          ['Titreşimli elek',     'Vibrating screen',        'Düzlemsel boyut eleme'],
+          ['Balistik seperatör',  'Ballistic separator',     'Film–rijit ayırma'],
+          ['Overband mıknatıs',   'Overband magnet',         'Demir metal giderimi'],
+          ['Eddy current sep.',   'Eddy current separator',  'Alüminyum ve demir dışı metal'],
+          [<span className="font-semibold text-purple-600">NIR sıralayıcı</span>, 'NIR / optical sorter', 'Reçine tipi tanıma + ejeksiyon'],
+          ['Renk sıralayıcı',     'Colour sorter / RGB',     'Renk bazlı fraksiyon ayrımı'],
+          ['El XRF analizörü',    'Handheld XRF analyzer',   'PVC / Br spot dedeksiyon'],
+          ['Picking station',     'Sorting cabin',           'Manuel ayıklama bandı'],
+          ['Ön şredder',          'Pre-shredder',            'İri hacimli atık boyut küçültme'],
+        ]}
+      />
+    </section>
+
+    <section>
+      <h4 className="text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-3">Kritik Parametreler</h4>
+      <DataTable
+        headers={['Parametre', 'Birim', 'Hedef']}
+        rows={[
+          ['Giriş kirlilik oranı', '%', '≤ %10 verimli çalışma için'],
+          ['NIR tanıma doğruluğu', '%', '≥ %95'],
+          ['Yanlış ejeksiyon oranı', '%', '≤ %2'],
+          ['Konveyör hızı', 'm/s', '2,5–3,5 (NIR tipine göre)'],
+          [<Tag color="red">PVC içeriği (PET çıktı)</Tag>, 'ppm', '≤ 10'],
+          ['Nem oranı (giriş)', '%', 'Yüksek nem NIR doğruluğunu bozar'],
+          ['Elek altı oranı', '%', 'Tedarikçi kalite göstergesi — kayıt alınmalı'],
+        ]}
+      />
+    </section>
+
+    <section>
+      <h4 className="text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-3">Sık Yapılan Hatalar</h4>
+      <div className="space-y-2">
+        <Note type="warn">
+          <strong>Siyah plastik gözardı ediliyor:</strong> Karbon siyahı içeren plastikler NIR\'da tanınamaz. Çözüm MWIR veya lazer sensör; Türkiye\'de henüz yaygın değil.
+        </Note>
+        <Note type="warn">
+          <strong>PVC kontaminasyonu gözden kaçıyor:</strong> Küçük parçaları NIR okuyamayabilir. XRF spot kontrol ve picking station şart.
+        </Note>
+        <Note type="warn">
+          <strong>Balistik ayar yapılmıyor:</strong> Mevsime göre film farklı davranır. Malzeme tipine göre ayar güncellenmezse film fraksiyonu rijit kanala karışır.
+        </Note>
+        <Note type="info">
+          <strong>Elek altı tartılmalı:</strong> Elek altı oranı (organik artık, kum, cam) giriş kalitesinin göstergesi. Kayıt altına alınmazsa tedarikçi kalite değerlendirmesi yapılamaz.
+        </Note>
+      </div>
+    </section>
+  </div>
+);
+
+// ─── Hat 4 — Kimyasal Geri Dönüşüm ──────────────────────────────────────────
+
+const Hat4Content: React.FC = () => {
+  const [altHat, setAltHat] = useState<'piroliz' | 'depolim' | 'solvent'>('piroliz');
+
+  return (
+    <div className="space-y-6">
+      <section className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-6 h-6 rounded-lg bg-red-100 dark:bg-red-500/15 flex items-center justify-center">
+            <span className="text-[11px] font-black text-red-600">4</span>
+          </div>
+          <span className="text-[13px] font-bold text-gray-800 dark:text-white">Kimyasal Geri Dönüşüm Hattı</span>
+          <Tag color="red">piroliz · depolimerizasyon</Tag>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-[12.5px]">
+          <div className="p-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/8">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-red-500 mb-1">Sektörel</div>
+            <p className="text-gray-600 dark:text-gray-400 leading-relaxed">Mekanik yolun ulaşamadığı atıklar için kullanılan hat: çok kirli, gıda temaslı, karmaşık katmanlı plastikler. Çıktı granül değil, kimyasal hammadde veya yakıt. Türkiye\'de büyük ölçüde pilot / AR-GE aşamasında.</p>
+          </div>
+          <div className="p-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/8">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-red-500 mb-1">Teknik</div>
+            <p className="text-gray-600 dark:text-gray-400 leading-relaxed">3 ana kol: (A) Piroliz — termal/katalitik. (B) Depolimerizasyon — glikoliz, metanoliz, hidroliz. (C) Solvent bazlı saflaştırma. Her kolun giriş atığı, proses koşulları ve çıktısı farklıdır.</p>
+          </div>
+          <div className="p-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/8">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-red-500 mb-1">Uluslararası</div>
+            <p className="text-gray-600 dark:text-gray-400 leading-relaxed">AB PPWR\'da "recycled content" sayılabilmesi metodoloji tartışması sürüyor. Depolimerizasyon çıktısı gerçek anlamda döngüsel ekonomiyi tamamlar: PET → monomer → yeni PET. Eastman, Indorama, Carbios öne çıkan yatırımcılar.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Alt hat seçici */}
+      <div className="flex gap-2">
+        {([
+          { key: 'piroliz', label: 'A — Piroliz', sub: '350–700 °C · pyoil + char' },
+          { key: 'depolim', label: 'B — Depolimerizasyon', sub: 'PET → monomer' },
+          { key: 'solvent', label: 'C — Solvent Saflaştırma', sub: 'çözücüyle izolasyon' },
+        ] as const).map(h => (
+          <button key={h.key} onClick={() => setAltHat(h.key)}
+            className={cx(
+              'flex-1 p-2.5 rounded-xl border text-left transition-all',
+              altHat === h.key
+                ? 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-400'
+                : 'bg-white dark:bg-[#1A1A1A] border-gray-200 dark:border-white/10 text-gray-500 dark:text-gray-400 hover:border-red-200',
+            )}>
+            <div className="text-[12px] font-semibold">{h.label}</div>
+            <div className="text-[10px] opacity-70 mt-0.5">{h.sub}</div>
+          </button>
+        ))}
+      </div>
+
+      {altHat === 'piroliz' && (
+        <div className="space-y-4">
+          <Note type="info">
+            <strong>Piroliz ≠ yakma.</strong> Oksijen yoktur; malzeme yanmaz, moleküller kırılır. 350–700 °C, inert atmosfer (N₂ / vakum).
+          </Note>
+          <h4 className="text-[13px] font-semibold text-gray-700 dark:text-gray-300">Proses Akışı</h4>
+          <Flow steps={[
+            { label: 'Boyut Küçültme', sub: 'shredder' },
+            { label: 'Kurutma', sub: 'nem < %5' },
+            { label: 'PVC Ayrımı', sub: 'XRF kontrolü', highlight: true },
+            { label: 'Reaktör', sub: '350–700 °C', highlight: true },
+            { label: 'Kondansasyon', sub: 'gaz → yağ' },
+            { label: 'Char Boşaltma', sub: 'periyodik' },
+          ]} />
+          <DataTable
+            headers={['Çıktı', 'Oran', 'Kullanım']}
+            rows={[
+              ['Piroliz yağı', '%40–70', 'Petrokimya beslemesi veya yakıt'],
+              ['Yanıcı gaz',   '%10–20', 'Proses enerjisinde kullanılır'],
+              ['Char / kurum', '%5–30',  'Karbon siyahı ikamesi araştırılıyor; aksi hâlde bertaraf'],
+            ]}
+          />
+          <DataTable
+            headers={['Reaktör Tipi', 'Açıklama']}
+            rows={[
+              ['Döner fırın (rotary kiln)', 'Sürekli besleme, iri parça kabul, ölçeklendirme kolay'],
+              ['Sabit yataklı (fixed bed)', 'Basit, küçük ölçek, batch çalışma'],
+              ['Akışkan yataklı (fluidized bed)', 'Katalitik piroliz için uygun, homojen sıcaklık'],
+            ]}
+          />
+          <Note type="warn">
+            <strong>PVC ayrıştırılmadan giremez:</strong> HCl gazı üretir, reaktörü ve kondansasyon ekipmanını aşındırır, piroliz yağı kalitesini bozar.
+          </Note>
+        </div>
+      )}
+
+      {altHat === 'depolim' && (
+        <div className="space-y-4">
+          <Note type="tip">
+            Polimer zincirleri kimyasal reaktiflerle monomer seviyesine indirilir. PET için en değerli kimyasal geri dönüşüm yolu — çıktı yeni PET üretiminde kullanılır.
+          </Note>
+          <DataTable
+            headers={['Alt Yol', 'Reaksiyon', 'Sıcaklık', 'Çıktı', 'Durum']}
+            rows={[
+              [
+                <span className="font-semibold">B1 · Glikoliz</span>,
+                'PET + EG → BHET + oligomer',
+                '180–240 °C',
+                'BHET (yeni PET hammaddesi)',
+                <Tag color="green">En yaygın</Tag>,
+              ],
+              [
+                <span className="font-semibold">B2 · Metanoliz</span>,
+                'PET + metanol → DMT + EG',
+                '180–280 °C',
+                'DMT + EG (ayrı saflaştırma)',
+                <Tag color="amber">Yüksek yatırım</Tag>,
+              ],
+              [
+                <span className="font-semibold">B3 · Hidroliz</span>,
+                'PET + su → TPA + EG',
+                'Yüksek T + basınç',
+                'TPA (en temiz döngü)',
+                <Tag color="gray">Ölçeklendirme güç</Tag>,
+              ],
+            ]}
+          />
+          <Note type="info">
+            Glikoliz: kirli ve gıda temaslı PET için uygun — mekanik yolun reddettiği malzemeyi değerlendirir. Katalizör: çinko asetat veya manganez asetat.
+          </Note>
+        </div>
+      )}
+
+      {altHat === 'solvent' && (
+        <div className="space-y-4">
+          <Note type="info">
+            Plastik çözücüde eritilir, safsızlıklar süzülür, polimer yeniden çöktürülür. Kimyasal yapı bozulmaz — bu yönüyle depolimerizasyondan farklıdır.
+          </Note>
+          <DataTable
+            headers={['Polimer', 'Çözücü', 'Durum']}
+            rows={[
+              ['PS / EPS köpük', 'Limonen (d-limonene) veya aseton', <Tag color="green">AB\'de ticari ölçek</Tag>],
+              ['PP / PE', 'Xilen veya dekalin bazlı', <Tag color="amber">Pilot aşama</Tag>],
+              ['PVC', 'THF veya MEK bazlı', <Tag color="gray">Ticari uygulama sınırlı</Tag>],
+            ]}
+          />
+          <Note type="warn">
+            Çözücü geri kazanım verimi ekonomiyi belirler. Damıtmayla döngüye alınan çözücü kayıp oranı {'<'} %5 hedeflenir; düştüğünde hem maliyet hem çevre riski artar.
+          </Note>
+        </div>
+      )}
+
+      {/* Ortak: atık tipleri */}
+      <section>
+        <h4 className="text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-3">İşlenen Atık Tipleri</h4>
+        <DataTable
+          headers={['Atık Tipi', 'Uygun Alt Hat', 'Dikkat']}
+          rows={[
+            ['Kirli / karışık PE-PP', 'Piroliz (A)', 'PVC yok, nem < %5'],
+            ['Kirli PS / EPS', 'Piroliz (A) veya Solvent (C)', 'Brom içerip içermediği kontrol'],
+            ['PET gıda temaslı', 'Glikoliz (B1)', 'Mekanik yolun reddettiği malzeme'],
+            ['Çok katmanlı ambalaj', 'Piroliz (A)', 'Film + folyo laminat — ayrıştırma imkânsız'],
+            ['Siyah plastik', 'Piroliz (A)', 'Hat 3 reject — char oranı yüksek'],
+            [<Tag color="red">Bromlu plastik (e-atık)</Tag>, 'Özel piroliz (debromination)', 'Brom ayrıştırma ünitesi şart'],
+          ]}
+        />
+      </section>
+
+      {/* Kritik parametreler */}
+      <section>
+        <h4 className="text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-3">Kritik Parametreler</h4>
+        <DataTable
+          headers={['Parametre', 'Alt Hat', 'Hedef']}
+          rows={[
+            ['Piroliz sıcaklığı', 'A', '350–700 °C (malzemeye göre)'],
+            ['Piroliz yağı verimi', 'A', '%40–70 (giriş kalitesine bağlı)'],
+            [<Tag color="red">Klorür içeriği (giriş)</Tag>, 'A', '< 200 ppm (HCl riski)'],
+            ['Nem (giriş)', 'A, B', '< %5'],
+            ['Glikoliz sıcaklığı', 'B1', '180–240 °C'],
+            ['BHET saflığı', 'B1', '≥ %95 hedef'],
+            ['DMT saflığı', 'B2', '≥ %99 hedef'],
+            ['Çözücü geri kazanım', 'C', '≥ %95 hedef'],
+          ]}
+        />
+      </section>
+
+      {/* Türkiye notu */}
+      <section className="bg-amber-50 dark:bg-amber-500/5 rounded-2xl border border-amber-200 dark:border-amber-500/20 p-4">
+        <div className="text-[12px] font-semibold text-amber-700 dark:text-amber-400 mb-2">🇹🇷 Türkiye Durum Notu (2024)</div>
+        <p className="text-[12px] text-amber-800 dark:text-amber-300 leading-relaxed">
+          Kimyasal geri dönüşüm tesisleri büyük ölçüde <strong>pilot ve AR-GE aşamasında</strong>. Piroliz kurulumları artmakla birlikte çıktı kalitesi ve düzenleyici çerçeve henüz olgunlaşmadı. ÇED sürecine ve sıfır atık lisansına ek kimyasal proses izinleri gerekiyor — yatırım planlamasında bu süre göz önüne alınmalı. AB PPWR baskısı ve ihracat hedefleri bu alanı önümüzdeki 5 yılda hızla geliştirecek.
+        </p>
+      </section>
+
+      <section>
+        <h4 className="text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-3">Sık Yapılan Hatalar</h4>
+        <div className="space-y-2">
+          <Note type="warn">
+            <strong>PVC ayrıştırılmadan pirolize giriyor:</strong> HCl gazı reaktör ve kondansasyon ekipmanını aşındırır. Hat 3\'teki XRF kontrolü bu yüzden kritik.
+          </Note>
+          <Note type="warn">
+            <strong>Nem yönetimi ihmal ediliyor:</strong> Yüksek nem pirolizde enerji tüketimini dramatik artırır; glikolizde reaksiyon dengesini bozar.
+          </Note>
+          <Note type="info">
+            <strong>Piroliz yağı "geri dönüştürülmüş plastik" sayılmıyor:</strong> Yakıt veya petrokimya beslemesidir. AB PPWR\'da hesaplama metodolojisi hâlâ tartışmalı.
+          </Note>
+          <Note type="warn">
+            <strong>Char bertarafı planlanmıyor:</strong> Düzenli boşaltma planı olmadan tesis içinde birikim sorunu çıkar.
+          </Note>
+        </div>
+      </section>
+    </div>
+  );
+};
+
 // ─── Hatlar Sayfası ───────────────────────────────────────────────────────────
 
 const PageHatlar: React.FC = () => {
-  const [activeHat, setActiveHat] = useState<'hat1' | 'hat2'>('hat1');
+  const [activeHat, setActiveHat] = useState<'hat1' | 'hat2' | 'hat3' | 'hat4'>('hat1');
 
   return (
     <div className="space-y-5">
-      {/* Hat seçici */}
       <div>
         <h3 className="text-[15px] font-bold text-gray-800 dark:text-white mb-3 flex items-center gap-2">
           <Factory size={16} className="text-orange-500" /> Üretim Hatları
         </h3>
-        <div className="flex gap-2">
+        <div className="grid grid-cols-2 gap-2">
           {([
-            { key: 'hat1', label: 'Hat 1 — Mekanik Geri Dönüşüm', sub: 'Granül üretimi' },
-            { key: 'hat2', label: 'Hat 2 — Yıkama Hattı', sub: 'Flake / pul üretimi' },
-          ] as const).map(h => (
-            <button key={h.key} onClick={() => setActiveHat(h.key)}
-              className={cx(
-                'flex-1 p-3 rounded-xl border text-left transition-all',
-                activeHat === h.key
-                  ? 'bg-orange-50 dark:bg-orange-500/10 border-orange-200 dark:border-orange-500/30 text-orange-700 dark:text-orange-400'
-                  : 'bg-white dark:bg-[#1A1A1A] border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:border-orange-200 dark:hover:border-orange-500/20',
-              )}>
-              <div className="text-[12.5px] font-semibold">{h.label}</div>
-              <div className="text-[11px] opacity-70 mt-0.5">{h.sub}</div>
-            </button>
-          ))}
+            { key: 'hat1', label: 'Hat 1 — Mekanik Geri Dönüşüm', sub: 'Granül üretimi', color: 'orange' },
+            { key: 'hat2', label: 'Hat 2 — Yıkama Hattı',          sub: 'Flake / pul üretimi', color: 'blue' },
+            { key: 'hat3', label: 'Hat 3 — Atık Ayrıştırma',        sub: 'NIR separasyon', color: 'purple' },
+            { key: 'hat4', label: 'Hat 4 — Kimyasal Geri Dönüşüm', sub: 'Piroliz · depolimerizasyon', color: 'red' },
+          ] as const).map(h => {
+            const active = activeHat === h.key;
+            const cls: Record<string, string> = {
+              orange: active ? 'bg-orange-50 dark:bg-orange-500/10 border-orange-200 dark:border-orange-500/30 text-orange-700 dark:text-orange-400' : '',
+              blue:   active ? 'bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30 text-blue-700 dark:text-blue-400' : '',
+              purple: active ? 'bg-purple-50 dark:bg-purple-500/10 border-purple-200 dark:border-purple-500/30 text-purple-700 dark:text-purple-400' : '',
+              red:    active ? 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-400' : '',
+            };
+            return (
+              <button key={h.key} onClick={() => setActiveHat(h.key)}
+                className={cx(
+                  'p-3 rounded-xl border text-left transition-all',
+                  active
+                    ? cls[h.color]
+                    : 'bg-white dark:bg-[#1A1A1A] border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-white/20',
+                )}>
+                <div className="text-[12.5px] font-semibold">{h.label}</div>
+                <div className="text-[11px] opacity-70 mt-0.5">{h.sub}</div>
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {activeHat === 'hat1' ? <Hat1Content /> : <Hat2Content />}
+      {activeHat === 'hat1' && <Hat1Content />}
+      {activeHat === 'hat2' && <Hat2Content />}
+      {activeHat === 'hat3' && <Hat3Content />}
+      {activeHat === 'hat4' && <Hat4Content />}
     </div>
   );
 };
