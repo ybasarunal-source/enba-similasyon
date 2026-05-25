@@ -277,8 +277,8 @@ export function WhatIfBar({ scenarioId, productionModel: pm }: Props) {
 
           {/* ── Col 1: Ürün Çıktı Fiyatı & Hacim ── */}
           <div
-            className="overflow-y-auto p-4"
-            style={{ maskImage: 'linear-gradient(to bottom, black calc(100% - 24px), transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, black calc(100% - 24px), transparent 100%)' }}
+            className="overflow-y-scroll p-4 whatif-col-scroll"
+            style={{ maskImage: 'linear-gradient(to bottom, black calc(100% - 28px), transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, black calc(100% - 28px), transparent 100%)' }}
           >
             <p className="text-[9.5px] uppercase tracking-[0.14em] text-enba-muted font-semibold mb-3">
               Ürün Fiyatı &amp; Çıktı Hacmi
@@ -333,8 +333,8 @@ export function WhatIfBar({ scenarioId, productionModel: pm }: Props) {
 
           {/* ── Col 2: Değişken Gider Birim Fiyatları ── */}
           <div
-            className="overflow-y-auto p-4"
-            style={{ maskImage: 'linear-gradient(to bottom, black calc(100% - 24px), transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, black calc(100% - 24px), transparent 100%)' }}
+            className="overflow-y-scroll p-4 whatif-col-scroll"
+            style={{ maskImage: 'linear-gradient(to bottom, black calc(100% - 28px), transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, black calc(100% - 28px), transparent 100%)' }}
           >
             <p className="text-[9.5px] uppercase tracking-[0.14em] text-enba-muted font-semibold mb-3">
               Değişken Gider Birim Fiyatları
