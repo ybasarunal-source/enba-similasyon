@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import {
   BookOpen, Recycle, Zap, Layers, ArrowRight, AlertTriangle,
   ChevronDown, ChevronRight, FlaskConical, Cpu, Package,
-  Search, Tag as TagIcon, Hash, ChevronLeft, Factory,
+  Search, Tag as TagIcon, Hash, ChevronLeft, Factory, ArrowDown,
 } from 'lucide-react';
 
 // ─── Primitives ──────────────────────────────────────────────────────────────
@@ -63,6 +63,97 @@ const DataTable: React.FC<{ headers: string[]; rows: (string | React.ReactNode)[
     </table>
   </div>
 );
+
+// ─── Akış Şeması ─────────────────────────────────────────────────────────────
+
+type StepType = 'default' | 'thermal' | 'chemical' | 'quality' | 'separation';
+
+interface FlowStepDef {
+  label:     string;
+  sub?:      string;
+  machines?: string[];
+  params?:   string[];
+  type?:     StepType;
+  highlight?: boolean;
+}
+
+const STEP_STYLES: Record<StepType, { card: string; num: string; label: string }> = {
+  default:    { card: 'bg-gray-50 dark:bg-white/3 border-gray-200 dark:border-white/10',          num: 'bg-gray-200 dark:bg-white/10 text-gray-600 dark:text-gray-400',                             label: 'text-gray-800 dark:text-white' },
+  thermal:    { card: 'bg-amber-50 dark:bg-amber-500/5 border-amber-200 dark:border-amber-500/20', num: 'bg-amber-200 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400',                      label: 'text-amber-800 dark:text-amber-200' },
+  chemical:   { card: 'bg-orange-50 dark:bg-orange-500/5 border-orange-200 dark:border-orange-500/20', num: 'bg-orange-200 dark:bg-orange-500/20 text-orange-700 dark:text-orange-400',             label: 'text-orange-800 dark:text-orange-200' },
+  quality:    { card: 'bg-blue-50 dark:bg-blue-500/5 border-blue-200 dark:border-blue-500/20',    num: 'bg-blue-200 dark:bg-blue-500/20 text-blue-700 dark:text-blue-400',                          label: 'text-blue-800 dark:text-blue-200' },
+  separation: { card: 'bg-purple-50 dark:bg-purple-500/5 border-purple-200 dark:border-purple-500/20', num: 'bg-purple-200 dark:bg-purple-500/20 text-purple-700 dark:text-purple-400',             label: 'text-purple-800 dark:text-purple-200' },
+};
+
+const STEP_LABELS: Record<StepType, string> = {
+  default:    'Fiziksel',
+  thermal:    'Isıl',
+  chemical:   'Kimyasal / Ekstrüzyon',
+  quality:    'Kalite / Kontrol',
+  separation: 'Ayırma',
+};
+
+const ProcessDiagram: React.FC<{ steps: FlowStepDef[] }> = ({ steps }) => {
+  const types = Array.from(new Set(steps.map(s => s.type ?? 'default'))) as StepType[];
+  return (
+    <div className="space-y-3">
+      {/* Renk açıklaması */}
+      <div className="flex gap-2 flex-wrap">
+        {types.map(t => (
+          <span key={t} className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10.5px] font-semibold border ${STEP_STYLES[t].card} ${STEP_STYLES[t].label}`}>
+            <span className={`w-2 h-2 rounded-full ${STEP_STYLES[t].num}`} />
+            {STEP_LABELS[t]}
+          </span>
+        ))}
+      </div>
+      {/* Adımlar */}
+      <div className="space-y-1">
+        {steps.map((s, i) => {
+          const t: StepType = s.type ?? 'default';
+          const st = STEP_STYLES[t];
+          return (
+            <React.Fragment key={i}>
+              <div className={`flex items-start gap-3 px-4 py-3 rounded-xl border ${st.card}`}>
+                {/* Numara */}
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-bold mt-0.5 ${st.num}`}>
+                  {i + 1}
+                </div>
+                {/* İçerik */}
+                <div className="flex-1 min-w-0">
+                  <div className={`text-[13px] font-semibold ${st.label}`}>{s.label}</div>
+                  {s.sub && (
+                    <p className="text-[12px] text-gray-500 dark:text-gray-400 leading-relaxed mt-0.5">{s.sub}</p>
+                  )}
+                  {s.machines && s.machines.length > 0 && (
+                    <div className="flex gap-1 flex-wrap mt-2">
+                      {s.machines.map(m => (
+                        <span key={m} className="text-[10.5px] px-2 py-0.5 rounded-md bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400 font-medium">
+                          {m}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {s.params && s.params.length > 0 && (
+                    <div className="flex gap-3 flex-wrap mt-1.5">
+                      {s.params.map(p => (
+                        <span key={p} className="text-[10px] text-gray-400 dark:text-gray-500 italic">{p}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+              {i < steps.length - 1 && (
+                <div className="flex justify-center py-0.5">
+                  <ArrowDown size={14} className="text-gray-300 dark:text-white/20" />
+                </div>
+              )}
+            </React.Fragment>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
 
 const Flow: React.FC<{ steps: { label: string; sub?: string; highlight?: boolean }[] }> = ({ steps }) => (
   <div className="flex flex-wrap items-center gap-1.5">
@@ -387,15 +478,48 @@ const Hat3Content: React.FC = () => (
     </section>
 
     <section>
-      <h4 className="text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-3">Proses Akışı</h4>
-      <Flow steps={[
-        { label: 'Besleme & Eleme', sub: 'balya açıcı · trommel' },
-        { label: 'Balistik', sub: 'film–rijit ayrımı' },
-        { label: 'Metal Ayrımı', sub: 'manyetik · eddy current' },
-        { label: 'NIR Tarama', sub: 'reçine tipi tanıma', highlight: true },
-        { label: 'Ejektör', sub: '≤ 10 ms · < %2 hata', highlight: true },
-        { label: 'Renk Sıralayıcı', sub: 'şeffaf / renkli / opak' },
-        { label: 'XRF + Picking', sub: 'PVC · Br kontrolü' },
+      <h4 className="text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-3">Akış Şeması</h4>
+      <ProcessDiagram steps={[
+        {
+          label: 'Besleme & Boyut Eleme', type: 'default',
+          sub: 'Balya açılır veya dökme atık konveyöre verilir. Trommel elekle iri ve ince fraksiyonlar ayrılır. Elek altı (<80 mm) organik artık ve kum içerir — tartılıp kayıt alınmalı; yüksek oran giriş kalitesinin düşük olduğuna işaret eder.',
+          machines: ['Balya açıcı', 'Trommel elek', 'Titreşimli elek'],
+        },
+        {
+          label: 'Balistik Seperasyon', type: 'separation',
+          sub: '"Film uçar, rijit yuvarlanır." Meyilli salınımlı plakalar üzerinde film fraksiyonu düşük açıyla sürüklenir, rijit parçalar yüksek açıyla zıplar. Mevsime ve malzemeye göre ayar güncellenmeli.',
+          machines: ['Balistik seperatör'],
+          params: ['Film → Hat 2\'ye', 'Rijit → NIR\'a'],
+        },
+        {
+          label: 'Metal Ayrımı', type: 'default',
+          sub: 'Önce overband mıknatıs ferromanyetik metalleri (demir, çelik) çeker. Ardından eddy current seperatör alüminyum ve demir dışı metalleri iter. Metal NIR\'dan ÖNCE gelmeli — sensöre zarar verebilir.',
+          machines: ['Overband mıknatıs', 'Eddy current sep. (ECS)'],
+          params: ['Sıra önemli: metal → NIR öncesi'],
+        },
+        {
+          label: 'NIR Sensör Taraması', type: 'quality', highlight: true,
+          sub: 'Her parça saniyeler içinde taranır, reçine tipi 700–2500 nm dalga boyunda belirlenir. PET/PP/PE/PS/PVC/ABS ayırt eder. Siyah plastik tanınamaz (karbon siyahı NIR\'ı emer) — büyük kör nokta.',
+          machines: ['NIR sıralayıcı / optical sorter'],
+          params: ['Tanıma doğruluğu ≥ %95', '⚠️ Siyah plastik kör nokta'],
+        },
+        {
+          label: 'Hava Ejektörü', type: 'quality', highlight: true,
+          sub: 'NIR sinyali ≤ 10 ms\'de ejektörü tetikler; nozzle hava üfleyerek parçayı fraksiyon kanalına yönlendirir. Basınç ayarı ağır ve hafif parçalar için farklı. Yanlış ejeksiyon hedefi: <%2.',
+          machines: ['Ejektör sistemi (nozzle dizilimi 1.200–2.400 mm)'],
+          params: ['Tetikleme: ≤ 10 ms', 'Hata hedefi: < %2'],
+        },
+        {
+          label: 'Renk Sıralayıcı', type: 'quality',
+          sub: 'CCD/RGB kamera + arka aydınlatma ile PET şeffaf–mavi–opak ayrımını yapar. Renk ayrımı satış fiyatını doğrudan etkiler. Kamera kirlenmesi tanımayı bozar; günlük kalibrasyon önerilir. Siyah burada da görünmez.',
+          machines: ['Renk sıralayıcı (colour sorter / RGB)'],
+        },
+        {
+          label: 'XRF Spot Kontrol & Picking Station', type: 'quality',
+          sub: 'El tipi XRF analizörüyle Cl (→ PVC) ve Br (→ bromlu e-atık) aranır. Picking station\'da gözden kaçanlar elle ayıklanır. Food-grade PET fraksiyonu için zorunlu son kontrol noktası.',
+          machines: ['El XRF analizörü', 'Picking station'],
+          params: ['PVC ≤ 10 ppm (food-grade)', 'Br kontrolü (WEEE)'],
+        },
       ]} />
     </section>
 
@@ -548,13 +672,42 @@ const Hat4Content: React.FC = () => {
             <strong>Piroliz ≠ yakma.</strong> Oksijen yoktur; malzeme yanmaz, moleküller kırılır. 350–700 °C, inert atmosfer (N₂ / vakum).
           </Note>
           <h4 className="text-[13px] font-semibold text-gray-700 dark:text-gray-300">Proses Akışı</h4>
-          <Flow steps={[
-            { label: 'Boyut Küçültme', sub: 'shredder' },
-            { label: 'Kurutma', sub: 'nem < %5' },
-            { label: 'PVC Ayrımı', sub: 'XRF kontrolü', highlight: true },
-            { label: 'Reaktör', sub: '350–700 °C', highlight: true },
-            { label: 'Kondansasyon', sub: 'gaz → yağ' },
-            { label: 'Char Boşaltma', sub: 'periyodik' },
+          <ProcessDiagram steps={[
+            {
+              label: 'Ön Hazırlık — Boyut & Nem', type: 'default',
+              sub: 'Shredder\'da boyut küçültme. Kurutma silosunda nem <%5\'e indirilir. Yüksek nem enerji tüketimini dramatik artırır.',
+              machines: ['Shredder', 'Kurutma silosu'],
+              params: ['Nem: < %5'],
+            },
+            {
+              label: 'PVC & Klorür Ayrımı', type: 'quality', highlight: true,
+              sub: 'En kritik adım. PVC ve klorürlü plastik ayrılmadan reaktöre giremez — termik bozunmada HCl gazı üretir, ekipmanı aşındırır ve piroliz yağı kalitesini bozar.',
+              machines: ['XRF analizör'],
+              params: ['Klorür: < 200 ppm', '⚠️ PVC kesinlikle ayrılmalı'],
+            },
+            {
+              label: 'Reaktöre Besleme', type: 'default',
+              sub: 'Kesikli (batch) veya sürekli (continuous) besleme seçilir. Döner fırın sürekli ve iri parçalar için; sabit yatak küçük ölçek için; akışkan yatak katalitik piroliz için uygundur.',
+              machines: ['Döner fırın (rotary kiln)', 'Sabit yataklı reaktör', 'Akışkan yataklı reaktör'],
+            },
+            {
+              label: 'Piroliz Reaktörü', type: 'chemical', highlight: true,
+              sub: 'Oksijensiz ortamda (N₂ / vakum) 350–700 °C\'de polimer zincirleri kırılır. Yanma değil, termokimyasal bozunma. Batch\'te tipik bekleme süresi 30–90 dakika.',
+              machines: ['Piroliz reaktörü'],
+              params: ['350–700 °C', 'Oksijensiz (N₂ / vakum)', '30–90 dk (batch)'],
+            },
+            {
+              label: 'Kondansasyon', type: 'thermal',
+              sub: 'Gaz fazındaki ürünler soğutularak sıvı piroliz yağına dönüştürülür. Hafif fraksiyon (nafta benzeri) + ağır fraksiyon (fuel oil). Verim: %40–70.',
+              machines: ['Kondansasyon ünitesi'],
+              params: ['Piroliz yağı verimi: %40–70'],
+            },
+            {
+              label: 'Gaz Geri Kazanımı & Char Boşaltma', type: 'default',
+              sub: 'Kondansasyon dışı yanıcı gaz (%10–20) proses ısısında kullanılır. Char (%5–30) reaktör tabanından periyodik boşaltılır. Bertaraf planı olmadan tesis içinde birikim oluşur.',
+              machines: ['Char uzaklaştırma sistemi'],
+              params: ['Gaz: %10–20', 'Char: %5–30'],
+            },
           ]} />
           <DataTable
             headers={['Çıktı', 'Oran', 'Kullanım']}
@@ -775,15 +928,49 @@ const Hat1Content: React.FC = () => (
 
     {/* Proses akışı */}
     <section>
-      <h4 className="text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-3">Proses Akışı</h4>
-      <Flow steps={[
-        { label: 'Besleme & Eleme', sub: 'balya açıcı · manyetik' },
-        { label: 'Kırma', sub: 'shredder · granülatör' },
-        { label: 'Yıkama', sub: 'float-sink · friksiyonlu' },
-        { label: 'Kurutma', sub: 'santrifüj · silo / bant' },
-        { label: 'Ekstrüzyon', sub: 'single/twin screw', highlight: true },
-        { label: 'Granülasyon', sub: 'su altı / strand', highlight: true },
-        { label: 'QC & Lot', sub: 'MFI · nem · renk' },
+      <h4 className="text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-3">Akış Şeması</h4>
+      <ProcessDiagram steps={[
+        {
+          label: 'Besleme & Ön Eleme', type: 'default',
+          sub: 'Balya açılır veya dökme atık konveyöre verilir. Manyetik bant demir safsızlıkları çeker; eddy current alüminyumu ayırır. Elek ile iri yabancı maddeler (taş, cam) ayrılır.',
+          machines: ['Balya açıcı', 'Bant konveyör', 'Overband mıknatıs', 'Eddy current sep.'],
+        },
+        {
+          label: 'Kırma & Öğütme', type: 'default',
+          sub: 'İri parçalar shredder\'da 30–80 mm\'ye indirilir. Granülatör 8–20 mm\'ye çeker. Ekstrüzyon için ideal boyut 8–15 mm; iri kırma erime sorununa, çok ince toz kaybına yol açar.',
+          machines: ['Shredder (çift mil)', 'Granülatör / değirmen'],
+          params: ['Çıktı: 8–15 mm', 'Bıçak aşınması → özgül enerji ↑'],
+        },
+        {
+          label: 'Yıkama', type: 'separation',
+          sub: 'Float-sink tankında yoğunluk farkıyla PE/PP yüzer, PET/PVC batar. Friksiyonlu yıkayıcı mekanik sürtünmeyle yüzey kirliliğini söker. Kaustik seçeneği: %1–3 NaOH, 80–90 °C.',
+          machines: ['Float-sink tankı', 'Friksiyonlu yıkayıcı'],
+          params: ['PVC → batar, ayrılır', 'Sıcak su 60–80 °C'],
+        },
+        {
+          label: 'Kurutma', type: 'thermal',
+          sub: 'Santrifüj kurutucu mekanik suyu uzaklaştırır (nem ~%2–5). Silo veya bant kurutucu ısıl kurutmayla ≤%0,1\'e indirir. PET\'te kristalizasyon silosu: 160–180 °C ön kristalizasyon zorunlu.',
+          machines: ['Santrifüj kurutucu', 'Silo / bant kurutucu', 'Kristalizasyon silosu (PET)'],
+          params: ['Nem: ≤ %0,1', 'PET: ≤ %0,02'],
+        },
+        {
+          label: 'Ekstrüzyon', type: 'chemical', highlight: true,
+          sub: 'Kuru malzeme ekstrüderde erir. Screen changer eriyik içi yabancı maddeleri ve karbonlaşmış partikülleri tutar. Filtre tıkandığında eriyik basıncı artar, motor zorlanır — izle!',
+          machines: ['Tek vida ekstrüder (PE/PP/PS)', 'Çift vida ekstrüder (katkılı)', 'Screen changer (filtre paketi)'],
+          params: ['Filtre: 100–500 µm', 'Basınç göstergesi izlenmeli'],
+        },
+        {
+          label: 'Granülasyon', type: 'chemical', highlight: true,
+          sub: 'Eriyik soğutularak kesilir ve pelet oluşturulur. Su altı granülatör yuvarlak, düzgün pelet üretir; strand granülatör daha basit ve düşük kapasite için uygundur.',
+          machines: ['Su altı granülatör', 'Strand granülatör'],
+          params: ['Pelet çap: 3–5 mm'],
+        },
+        {
+          label: 'Kalite Kontrol & Lot Yönetimi', type: 'quality',
+          sub: 'Her partiden MFI numunesi alınır. Nem, renk (CIE Lab) ve kirlilik kontrol edilir. Lot etiketlenir; farklı MFI\'lı partiler aynı siloya düşmemeli — müşteride tutarsızlık şikayeti.',
+          machines: ['MFI test cihazı', 'Nem ölçer', 'Renk ölçer'],
+          params: ['MFI ±%10 tolerans', 'Kirlilik ≤ 200 ppm', 'Lot ayrımı zorunlu'],
+        },
       ]} />
     </section>
 
@@ -943,15 +1130,48 @@ const Hat2Content: React.FC = () => (
 
     {/* Proses akışı */}
     <section>
-      <h4 className="text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-3">Proses Akışı</h4>
-      <Flow steps={[
-        { label: 'Besleme & Eleme', sub: 'balya açıcı · trommel' },
-        { label: 'Ön Kırma', sub: 'wet granülatör' },
-        { label: 'Ön Yıkama', sub: 'çalkantı / skrew' },
-        { label: 'Float-sink', sub: 'yoğunluk ayrımı' },
-        { label: 'Kaustik Yıkama', sub: '80–90 °C · NaOH', highlight: true },
-        { label: 'Durulama', sub: 'pH 6,5–8,0', highlight: true },
-        { label: 'Kurutma', sub: 'santrifüj · bant fırın' },
+      <h4 className="text-[13px] font-semibold text-gray-700 dark:text-gray-300 mb-3">Akış Şeması</h4>
+      <ProcessDiagram steps={[
+        {
+          label: 'Besleme & Ön Eleme', type: 'default',
+          sub: 'Balya forklift/konveyörle açılır. Trommel elek iri yabancı maddeleri ayırır. Balistik seperatör film–rijit ön ayrımı yapar. Manyetik ile demir uzaklaştırılır.',
+          machines: ['Balya açıcı', 'Trommel elek', 'Balistik sep.', 'Manyetik sep.'],
+        },
+        {
+          label: 'Ön Kırma', type: 'default',
+          sub: 'Wet granülatör suyla birlikte kırma yapar — ısı sorunu azalır, toz oluşmaz. PET şişe için özel bıçak geometrisi kullanılır.',
+          machines: ['Wet granülatör'],
+          params: ['Flake boyutu: 10–25 mm'],
+        },
+        {
+          label: 'Ön Yıkama (Soğuk Çalkantı)', type: 'default',
+          sub: 'Çalkantı tankında kaba kir, kum ve taş tutulur. Tank altındaki kum-taş bölmesi düzenli temizlenmeli; tıkanırsa kaustik banyosu hızla kirlenir.',
+          machines: ['Çalkantı tankı', 'Skrew yıkayıcı'],
+        },
+        {
+          label: 'Float-sink (Yoğunluk Ayrımı)', type: 'separation',
+          sub: 'PE/PP yüzer (<1 g/cm³), PET/PVC batar (>1 g/cm³). PVC kontaminasyonu bu adımda engellenmezse ürün bozulur. Gerekirse NaCl ile su yoğunluğu ayarlanır.',
+          machines: ['Float-sink tankı'],
+          params: ['PVC: batar → ayrılır', 'Tuz ile yoğunluk ayarı mümkün'],
+        },
+        {
+          label: 'Sıcak Kaustik Yıkama', type: 'chemical', highlight: true,
+          sub: 'Hattın kalbi. Etiket, yapıştırıcı, yağ ve organik kirlilik bu adımda sökülen. 90 °C\'yi aşarsa PET flake yumuşar (sticking riski). Friksiyonlu yıkayıcı mekanik sürtünme ekler.',
+          machines: ['Kaustik yıkama tankı', 'Yüksek hızlı friksiyonlu yıkayıcı'],
+          params: ['%1–3 NaOH', '80–90 °C', 'Temas: 10–20 dk'],
+        },
+        {
+          label: 'Durulama & Nötralizasyon', type: 'quality',
+          sub: 'Çok aşamalı durulama (2–3 halka). Kaustik kalıntısı kalırsa müşteri işleme sırasında MFI kayması. pH inline ölçüm ile otomasyona bağlanabilir.',
+          machines: ['Durulama halkası (2–3 aşama)'],
+          params: ['pH çıkış: 6,5–8,0'],
+        },
+        {
+          label: 'Mekanik & Isıl Kurutma', type: 'thermal',
+          sub: 'Santrifüj mekanik suyu uzaklaştırır. Hava bıçağı yüzey suyunu üfler. Bant fırın ısıl kurumayı tamamlar. Film hattında compactor devreye girer.',
+          machines: ['Santrifüj kurutucu', 'Hava bıçağı', 'Bant fırın / ısıl silo', 'Compactor (film hattı)'],
+          params: ['Nem: ≤ %1', 'PET food-grade: ≤ %0,02'],
+        },
       ]} />
     </section>
 
