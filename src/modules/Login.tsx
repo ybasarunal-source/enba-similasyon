@@ -1,15 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { supabase } from '../api/supabase';
-import { 
-  LogIn, UserPlus, Mail, Lock, AlertCircle, Building2, 
-  ChevronDown, Check, Eye, EyeOff, Zap 
-} from 'lucide-react';
-
-interface Company {
-  id: string;
-  name: string;
-  status: string;
-}
+import { LogIn, UserPlus, Mail, Lock, AlertCircle, Eye, EyeOff, Zap } from 'lucide-react';
 
 export const Login: React.FC = () => {
   const [mode, setMode] = useState<'login' | 'register' | 'forgot'>('login');
@@ -19,40 +10,12 @@ export const Login: React.FC = () => {
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
-  const [showCompanyList, setShowCompanyList] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    supabase.from('companies')
-      .select('*')
-      .in('status', ['active', 'demo'])
-      .order('name')
-      .then(({ data }) => {
-        const companyData = data || [];
-        setCompanies(companyData);
-        if (companyData.length > 0) setSelectedCompany(companyData[0]);
-      });
-
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setShowCompanyList(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   const handleDemoLogin = async () => {
     const dEmail = 'demo@enba.com';
     const dPass = 'EnbaDemo2024!';
     setEmail(dEmail);
     setPassword(dPass);
-    
-    const demoComp = companies.find(c => c.status === 'demo');
-    if (demoComp) setSelectedCompany(demoComp);
-
     setLoading(true);
     try {
       const { error } = await supabase.auth.signInWithPassword({ email: dEmail, password: dPass });
@@ -67,12 +30,6 @@ export const Login: React.FC = () => {
     e.preventDefault();
     setError('');
     setInfo('');
-
-    if (!selectedCompany) {
-      setError('Lütfen bağlanmak istediğiniz şirketi seçin.');
-      return;
-    }
-
     setLoading(true);
 
     try {
@@ -80,12 +37,10 @@ export const Login: React.FC = () => {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       } else if (mode === 'register') {
-        const { error } = await supabase.auth.signUp({ 
-          email, 
+        const { error } = await supabase.auth.signUp({
+          email,
           password,
-          options: {
-            data: { full_name: email.split('@')[0] }
-          }
+          options: { data: { full_name: email.split('@')[0] } },
         });
         if (error) throw error;
         setInfo('Kayıt başarılı! Lütfen e-postanızı doğrulayın.');
@@ -103,8 +58,8 @@ export const Login: React.FC = () => {
     }
   };
 
-  const titles = { login: 'Giriş Yap', register: 'Yeni Kayıt', forgot: 'Şifremi Unuttum' };
-  const btnLabels = { login: 'Giriş Yap', register: 'Kayıt Ol', forgot: 'Sıfırlama Linki Gönder' };
+  const titles    = { login: 'Giriş Yap', register: 'Yeni Kayıt', forgot: 'Şifremi Unuttum' };
+  const btnLabels = { login: 'Giriş Yap', register: 'Kayıt Ol',   forgot: 'Sıfırlama Linki Gönder' };
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-4 selection:bg-[var(--enba-orange)] selection:text-white">
@@ -115,7 +70,7 @@ export const Login: React.FC = () => {
       </div>
 
       <div className="w-full max-w-[420px] relative z-10">
-        {/* Logo Section */}
+        {/* Logo */}
         <div className="flex flex-col items-center mb-10">
           <div className="w-16 h-16 bg-gradient-to-br from-[var(--enba-orange)] to-orange-600 rounded-[22px] flex items-center justify-center shadow-2xl shadow-orange-500/20 mb-4 group hover:scale-105 transition-transform duration-500">
             <LogIn className="text-white group-hover:rotate-12 transition-transform" size={28} />
@@ -147,84 +102,33 @@ export const Login: React.FC = () => {
           )}
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            {/* Şirket Seçimi */}
-            <div className="relative" ref={dropdownRef} style={{ zIndex: 100 }}>
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[2px] mb-2 ml-1">
-                Bağlanılacak Şirket
-              </label>
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setShowCompanyList(!showCompanyList)}
-                  className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-left flex items-center justify-between hover:bg-white/10 hover:border-white/20 transition-all group"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center text-[var(--enba-orange)] shadow-sm">
-                      <Building2 size={16} />
-                    </div>
-                    <span className={`text-sm font-bold ${selectedCompany ? 'text-white' : 'text-gray-500'}`}>
-                      {selectedCompany ? selectedCompany.name : 'Şirket Seçiniz...'}
-                    </span>
-                  </div>
-                  <ChevronDown size={18} className={`text-gray-500 transition-transform duration-300 ${showCompanyList ? 'rotate-180' : ''}`} />
-                </button>
-
-                {showCompanyList && (
-                  <div 
-                    className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a1a] border border-white/10 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
-                    style={{ zIndex: 9999, maxHeight: '200px', overflowY: 'auto' }}
-                  >
-                    {companies.length > 0 ? (
-                      companies.map((c) => (
-                        <button
-                          key={c.id}
-                          type="button"
-                          onClick={() => {
-                            setSelectedCompany(c);
-                            setShowCompanyList(false);
-                          }}
-                          className={`w-full px-5 py-3.5 text-left text-sm font-bold transition-colors hover:bg-white/5 flex items-center justify-between border-b border-white/5 last:border-0 ${selectedCompany?.id === c.id ? 'bg-white/10 text-[var(--enba-orange)]' : 'text-gray-400'}`}
-                        >
-                          <div className="flex items-center gap-2">
-                            {c.name}
-                            {c.status === 'demo' && (
-                              <span className="text-[8px] bg-indigo-500/20 text-indigo-400 px-1.5 py-0.5 rounded font-black uppercase tracking-tighter">Demo</span>
-                            )}
-                          </div>
-                          {selectedCompany?.id === c.id && <Check size={14} />}
-                        </button>
-                      ))
-                    ) : (
-                      <div className="px-5 py-4 text-xs text-gray-500 italic text-center">
-                        Kayıtlı şirket bulunamadı.
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-
+            {/* E-posta */}
             <div>
               <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-1.5">
                 E-posta
               </label>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder="ornek@enba.com"
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 outline-none focus:border-[var(--enba-orange)] transition-colors"
-                style={{ fontFamily: "'Poppins', sans-serif" }}
-              />
+              <div className="relative">
+                <Mail size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none" />
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="ornek@enba.com"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-gray-600 outline-none focus:border-[var(--enba-orange)] transition-colors"
+                  style={{ fontFamily: "'Poppins', sans-serif" }}
+                />
+              </div>
             </div>
 
+            {/* Şifre */}
             {mode !== 'forgot' && (
               <div>
                 <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-1.5">
                   Şifre
                 </label>
                 <div className="relative">
+                  <Lock size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none" />
                   <input
                     type={showPw ? 'text' : 'password'}
                     required
@@ -232,7 +136,7 @@ export const Login: React.FC = () => {
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     placeholder="En az 6 karakter"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-11 text-sm text-white placeholder-gray-600 outline-none focus:border-[var(--enba-orange)] transition-colors"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-11 py-3 text-sm text-white placeholder-gray-600 outline-none focus:border-[var(--enba-orange)] transition-colors"
                     style={{ fontFamily: "'Poppins', sans-serif" }}
                   />
                   <button
@@ -253,8 +157,7 @@ export const Login: React.FC = () => {
             >
               {loading
                 ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                : mode === 'login' ? <LogIn size={14} /> : <UserPlus size={14} />
-              }
+                : mode === 'login' ? <LogIn size={14} /> : <UserPlus size={14} />}
               {loading ? 'Lütfen bekleyin...' : btnLabels[mode]}
             </button>
           </form>
@@ -278,7 +181,7 @@ export const Login: React.FC = () => {
             )}
           </div>
 
-          {/* Demo Girişi - Hızlı Erişim */}
+          {/* Demo Girişi */}
           {mode === 'login' && (
             <div className="mt-8 pt-6 border-t border-white/5 text-center">
               <p className="text-[10px] text-gray-600 uppercase tracking-widest font-bold mb-3">Sunum & Deneme</p>
@@ -296,7 +199,7 @@ export const Login: React.FC = () => {
                     <div className="text-[9px] text-gray-500 uppercase tracking-tighter">Tek tıkla hızlı giriş</div>
                   </div>
                 </div>
-                <ChevronDown size={14} className="text-gray-600 -rotate-90" />
+                <LogIn size={14} className="text-gray-600 group-hover:text-indigo-400 transition-colors" />
               </button>
             </div>
           )}
