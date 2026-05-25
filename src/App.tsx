@@ -368,14 +368,14 @@ export const App: React.FC = () => {
     { id: 'isplani',   label: 'İş Planı',          icon: Briefcase,     children: ['fastplan', 'planning']                            as string[] },
     { id: 'finans',    label: 'Finans',             icon: Banknote,      children: ['pnl', 'cashflow', 'parasut', 'fixedexpenses', 'varlik'] as string[] },
     { id: 'operasyon', label: 'Operasyon',          icon: Boxes,         children: ['stock', 'production', 'logistics', 'machinery']   as string[] },
-    { id: 'kurumsal',  label: 'Kurumsal',           icon: Building,      children: ['hr', 'licensing', 'archive', 'sektor_not']       as string[] },
+    { id: 'kurumsal',  label: 'Kurumsal',           icon: Building,      children: ['hr', 'licensing', 'archive']                     as string[] },
     { id: 'sistem',    label: 'Sistem',             icon: CircleUser,    children: ['ayarlar', 'settings', 'profile']                 as string[] },
     { id: 'yonetim',   label: 'Yönetim',            icon: ShieldCheck,   children: ['super_admin', 'company_admin']                   as string[] },
   ] as const;
 
   // İki grup: üstte tek navigasyon items, altta tüm sanal parent'lar
   const MENU_GROUPS = [
-    { id: 'g0', title: '', items: ['modules', 'dashboard'] },
+    { id: 'g0', title: '', items: ['modules', 'dashboard', 'sektor_not'] },
     { id: 'g1', title: '', items: ['iletisim', 'isplani', 'finans', 'operasyon', 'kurumsal', 'sistem', 'yonetim'] },
   ];
 
