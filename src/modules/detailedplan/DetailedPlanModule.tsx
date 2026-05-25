@@ -35,6 +35,7 @@ export function DetailedPlanModule({ navigate, setBackOverride }: Props) {
   const [view, setView]               = useState<View>('list');
   const [activePlanId, setActivePlanId] = useState<string | null>(null);
   const [activeCcId, setActiveCcId]     = useState<string | null>(null);
+  const [rightOpen, setRightOpen]       = useState(true);
   // statusFilter artık sidebar'da tutulmuyor — plan listesi gruplara ayrılarak gösteriliyor
   const migratedOnce = useRef(false);
 
@@ -143,6 +144,7 @@ export function DetailedPlanModule({ navigate, setBackOverride }: Props) {
   const openPlan = (plan: DPlan) => {
     setActivePlanId(plan.id);
     setView('shell'); // Wizard sadece kalem (Düzenle) tuşundan açılır
+    setRightOpen(false); // Plan açılınca sidebar gizlenir ama yok olmaz
   };
 
   const openWizardForEdit = (plan: DPlan) => { setActivePlanId(plan.id); setView('wizard'); };
@@ -224,57 +226,82 @@ export function DetailedPlanModule({ navigate, setBackOverride }: Props) {
     );
   }
 
-  /* ── Shell görünümü ── */
-  if (view === 'shell' && activePlan) {
-    return (
-      <DetailedPlanShell
-        plan={activePlan}
-        costCenters={costCenters}
-        onSave={upsertPlan}
-        onBack={() => { setView('list'); setActivePlanId(null); }}
-        onEdit={() => openWizardForEdit(activePlan)}
-        navigate={navigate}
-      />
-    );
-  }
-
-  /* ── Liste görünümü ── */
+  /* ── Liste / Shell görünümü — sağ sidebar her zaman korunur ── */
   return (
     <div className="h-full flex flex-col bg-enba-bg overflow-hidden">
       <SyncBanner status={syncStatus} error={syncError} onRetry={() => kaydet(planlar)} />
 
-      <div className="flex-none border-b border-enba-line bg-enba-panel px-6 h-[60px] flex items-center gap-3">
-        <span className="w-2 h-2 rounded-full bg-enba-orange shadow-[0_0_8px] shadow-enba-orange/60" />
-        <h1 className="text-[15px] font-semibold flex-1">Detaylı İş Planı</h1>
-      </div>
+      {/* Header — sadece liste görünümünde (shell kendi header'ını yönetir) */}
+      {view === 'list' && (
+        <div className="flex-none border-b border-enba-line bg-enba-panel px-6 h-[60px] flex items-center gap-3">
+          <span className="w-2 h-2 rounded-full bg-enba-orange shadow-[0_0_8px] shadow-enba-orange/60" />
+          <h1 className="text-[15px] font-semibold flex-1">Detaylı İş Planı</h1>
+        </div>
+      )}
 
-      {/* İki panel: sol dashboard, sağ plan listesi */}
+      {/* İki panel: sol içerik, sağ plan listesi */}
       <div className="flex-1 flex overflow-hidden min-h-0">
 
-        {/* SOL: Aktif planlar dashboard + gider merkezleri */}
-        <div className="flex-1 overflow-y-auto p-6 min-w-0">
-          <ActiveDashboard
-            plans={planlar}
-            costCenters={costCenters}
-            onOpenPlan={openPlan}
-            onNewCostCenter={() => openCcEditor(null)}
-            onEditCostCenter={openCcEditor}
-            onDeleteCostCenter={deleteCc}
-          />
+        {/* SOL: İçerik alanı */}
+        <div className="flex-1 overflow-hidden min-w-0">
+          {view === 'list' && (
+            <div className="h-full overflow-y-auto p-6">
+              <ActiveDashboard
+                plans={planlar}
+                costCenters={costCenters}
+                onOpenPlan={openPlan}
+                onNewCostCenter={() => openCcEditor(null)}
+                onEditCostCenter={openCcEditor}
+                onDeleteCostCenter={deleteCc}
+              />
+            </div>
+          )}
+          {view === 'shell' && activePlan && (
+            <DetailedPlanShell
+              plan={activePlan}
+              costCenters={costCenters}
+              onSave={upsertPlan}
+              onBack={() => { setView('list'); setActivePlanId(null); setRightOpen(true); }}
+              onEdit={() => openWizardForEdit(activePlan)}
+              navigate={navigate}
+            />
+          )}
         </div>
 
-        {/* SAĞ: Tüm planlar (kompakt liste) */}
-        <div className="flex-none w-[300px] border-l border-enba-line flex flex-col overflow-hidden bg-enba-panel">
-          <PlanListSidebar
-            plans={planlar}
-            costCenters={costCenters}
-            onOpen={openPlan}
-            onEdit={openWizardForEdit}
-            onDelete={handleDelete}
-            onStatusChange={handleStatusChange}
-            onNew={() => { setActivePlanId(null); setView('typeSelect'); }}
-          />
+        {/* SAĞ: Plan listesi sidebar — her zaman render edilir, gizlenebilir */}
+        <div className={cx(
+          'flex-none border-l border-enba-line bg-enba-panel flex flex-col overflow-hidden transition-[width] duration-200',
+          rightOpen ? 'w-[300px]' : 'w-10',
+        )}>
+          {rightOpen ? (
+            <PlanListSidebar
+              plans={planlar}
+              costCenters={costCenters}
+              onOpen={openPlan}
+              onEdit={openWizardForEdit}
+              onDelete={handleDelete}
+              onStatusChange={handleStatusChange}
+              onNew={() => { setActivePlanId(null); setView('typeSelect'); }}
+              activePlanId={activePlanId}
+              onToggle={() => setRightOpen(false)}
+            />
+          ) : (
+            /* Daraltılmış — yalnızca toggle butonu + plan sayısı */
+            <div className="h-full flex flex-col items-center pt-[18px] gap-3">
+              <button
+                onClick={() => setRightOpen(true)}
+                title="Plan listesini aç"
+                className="w-7 h-7 rounded-lg text-enba-dim hover:text-enba-text hover:bg-enba-panel-2 inline-flex items-center justify-center transition-colors"
+              >
+                <I.Chevron size={13} className="rotate-90" />
+              </button>
+              {planlar.length > 0 && (
+                <span className="text-[10px] font-semibold text-enba-dim tabular">{planlar.length}</span>
+              )}
+            </div>
+          )}
         </div>
+
       </div>
     </div>
   );
@@ -1062,7 +1089,7 @@ const SIDEBAR_GROUPS = [
 ];
 
 function PlanListSidebar({
-  plans, costCenters, onOpen, onEdit, onDelete, onStatusChange, onNew,
+  plans, costCenters, onOpen, onEdit, onDelete, onStatusChange, onNew, activePlanId, onToggle,
 }: {
   plans: DPlan[];
   costCenters: CostCenter[];
@@ -1071,12 +1098,21 @@ function PlanListSidebar({
   onDelete: (id: string) => void;
   onStatusChange: (id: string, s: PlanStatus) => void;
   onNew: () => void;
+  activePlanId?: string | null;
+  onToggle: () => void;
 }) {
   return (
     <div className="h-full flex flex-col overflow-hidden">
       {/* Sidebar header */}
-      <div className="flex-none px-4 h-[60px] flex items-center justify-between border-b border-enba-line">
-        <div className="flex items-center gap-2">
+      <div className="flex-none px-3 h-[60px] flex items-center gap-2 border-b border-enba-line">
+        <button
+          onClick={onToggle}
+          title="Listeyi gizle"
+          className="w-7 h-7 rounded-lg text-enba-dim hover:text-enba-text hover:bg-enba-panel-2 inline-flex items-center justify-center flex-none transition-colors"
+        >
+          <I.Chevron size={13} className="-rotate-90" />
+        </button>
+        <div className="flex items-center gap-2 flex-1 min-w-0">
           <span className="text-[12.5px] font-semibold text-enba-text">Tüm Planlar</span>
           {plans.length > 0 && (
             <span className="text-[10.5px] text-enba-dim px-1.5 py-0.5 rounded bg-enba-panel-2 border border-enba-line tabular">
@@ -1115,6 +1151,7 @@ function PlanListSidebar({
                       key={plan.id}
                       // eslint-disable-next-line @typescript-eslint/no-explicit-any
                       plan={migratePlanFormat(plan as any)}
+                      isActive={plan.id === activePlanId}
                       onOpen={() => onOpen(plan)}
                       onEdit={() => onEdit(plan)}
                       onDelete={() => onDelete(plan.id)}
@@ -1134,9 +1171,10 @@ function PlanListSidebar({
 // ─── PlanSidebarRow ───────────────────────────────────────────────────────────
 
 function PlanSidebarRow({
-  plan, onOpen, onEdit, onDelete, onStatusChange,
+  plan, isActive, onOpen, onEdit, onDelete, onStatusChange,
 }: {
   plan: DPlan;
+  isActive?: boolean;
   onOpen: () => void;
   onEdit: () => void;
   onDelete: () => void;
@@ -1149,9 +1187,11 @@ function PlanSidebarRow({
   return (
     <div className={cx(
       'rounded-xl border p-3 transition-colors group cursor-pointer',
-      isPending
-        ? 'border-amber-500/30 bg-amber-500/5 hover:border-amber-500/50'
-        : 'border-enba-line bg-enba-bg/40 hover:border-enba-orange/30 hover:bg-enba-panel-2/40',
+      isActive
+        ? 'border-enba-orange/50 bg-enba-orange/8 ring-1 ring-enba-orange/20'
+        : isPending
+          ? 'border-amber-500/30 bg-amber-500/5 hover:border-amber-500/50'
+          : 'border-enba-line bg-enba-bg/40 hover:border-enba-orange/30 hover:bg-enba-panel-2/40',
     )}>
       {/* Başlık satırı */}
       <div className="flex items-start gap-1.5 mb-2.5" onClick={onOpen}>
