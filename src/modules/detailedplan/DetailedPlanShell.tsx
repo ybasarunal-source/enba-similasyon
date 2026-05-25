@@ -337,7 +337,7 @@ export function DetailedPlanShell({ plan, costCenters = [], onSave, onBack, onEd
             </div>
           </div>
           {/* Anlık Simülasyon — sadece Genel Bakış'ta görünür */}
-          {active === 'overview' && <WhatIfBar scenarioId={scenarioId} />}
+          {active === 'overview' && <WhatIfBar scenarioId={scenarioId} productionModel={plan?.productionModel} />}
         </main>
       </div>
     </div>
