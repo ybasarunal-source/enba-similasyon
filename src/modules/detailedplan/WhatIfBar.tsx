@@ -114,11 +114,11 @@ export function WhatIfBar({ scenarioId }: Props) {
       {/* ── Açılır panel ────────────────────────────────────────────────── */}
       <div className={cx(
         'grid grid-cols-3 divide-x divide-enba-line border-t border-enba-line overflow-hidden transition-[max-height] duration-300',
-        open ? 'max-h-[292px]' : 'max-h-0',
+        open ? 'max-h-[440px]' : 'max-h-0',
       )}>
 
         {/* ── Col 1: Ürün Fiyatları & Hacimler ── */}
-        <div className="overflow-y-auto p-4">
+        <div className="overflow-y-auto p-4" style={{ maskImage: 'linear-gradient(to bottom, black calc(100% - 28px), transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, black calc(100% - 28px), transparent 100%)' }}>
           <p className="text-[9.5px] uppercase tracking-[0.14em] text-enba-muted font-semibold mb-3">
             Ürün Fiyatları &amp; Hacimler
           </p>
@@ -160,7 +160,7 @@ export function WhatIfBar({ scenarioId }: Props) {
         </div>
 
         {/* ── Col 2: Gider Parametreleri ── */}
-        <div className="overflow-y-auto p-4">
+        <div className="overflow-y-auto p-4" style={{ maskImage: 'linear-gradient(to bottom, black calc(100% - 28px), transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, black calc(100% - 28px), transparent 100%)' }}>
           <p className="text-[9.5px] uppercase tracking-[0.14em] text-enba-muted font-semibold mb-3">
             Gider Parametreleri
           </p>
