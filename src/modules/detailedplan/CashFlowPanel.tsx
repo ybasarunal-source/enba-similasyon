@@ -100,9 +100,9 @@ export const CashFlowPanel = ({ scenarioId, periodGranularity }:
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={chartData} margin={{ top: 10, right: 18, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="2 4" stroke={cc.grid} vertical={false}/>
-              <XAxis dataKey="label" tickLine={false} axisLine={false}/>
-              <YAxis yAxisId="left" tickFormatter={(v) => (v/1_000_000).toFixed(1)+'M'} tickLine={false} axisLine={false} width={50}/>
-              <YAxis yAxisId="right" orientation="right" tickFormatter={(v) => (v/1_000_000).toFixed(1)+'M'} tickLine={false} axisLine={false} width={50}/>
+              <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fontSize: 10, fill: cc.muted }}/>
+              <YAxis yAxisId="left" tickFormatter={(v) => (v/1_000_000).toFixed(1)+'M'} tickLine={false} axisLine={false} width={50} tick={{ fontSize: 10, fill: cc.muted }}/>
+              <YAxis yAxisId="right" orientation="right" tickFormatter={(v) => (v/1_000_000).toFixed(1)+'M'} tickLine={false} axisLine={false} width={50} tick={{ fontSize: 10, fill: cc.muted }}/>
               <ReferenceLine y={0} yAxisId="left" stroke={cc.refLine}/>
               <Tooltip formatter={(v: any, k: any) => [fmtTL(v), ({operating:'Faaliyet',investing:'Yatırım',financing:'Finansman',balance:'Bakiye'} as any)[k] || k]}/>
               <Bar yAxisId="left" dataKey="operating" fill="#3DBE7C" stackId="cf"/>

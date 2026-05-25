@@ -128,8 +128,8 @@ export const ScenarioPanel = ({ scenarioId, periodGranularity }:
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={quarterlyCompare} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="2 4" stroke={cc.grid} vertical={false}/>
-                <XAxis dataKey="label" tickLine={false} axisLine={false}/>
-                <YAxis tickFormatter={(v) => (v/1_000_000).toFixed(1)+'M'} tickLine={false} axisLine={false} width={48}/>
+                <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fontSize: 10, fill: cc.muted }}/>
+                <YAxis tickFormatter={(v) => (v/1_000_000).toFixed(1)+'M'} tickLine={false} axisLine={false} width={48} tick={{ fontSize: 10, fill: cc.muted }}/>
                 <Tooltip formatter={(v: any, k: any) => [fmtTL(v), SCENARIOS[k]?.label || k]}/>
                 {Object.values(SCENARIOS).map(s => (
                   <Bar key={s.id} dataKey={s.id} fill={s.color} radius={[3,3,0,0]}/>
@@ -173,8 +173,8 @@ export const ScenarioPanel = ({ scenarioId, periodGranularity }:
               })}
               margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="2 4" stroke={cc.grid} vertical={false}/>
-              <XAxis dataKey="label" tickLine={false} axisLine={false} interval={1}/>
-              <YAxis tickFormatter={(v) => (v/1_000_000).toFixed(0)+'M'} tickLine={false} axisLine={false} width={48}/>
+              <XAxis dataKey="label" tickLine={false} axisLine={false} interval={1} tick={{ fontSize: 10, fill: cc.muted }}/>
+              <YAxis tickFormatter={(v) => (v/1_000_000).toFixed(0)+'M'} tickLine={false} axisLine={false} width={48} tick={{ fontSize: 10, fill: cc.muted }}/>
               <Tooltip formatter={(v: any, k: any) => [fmtTL(v), SCENARIOS[k]?.label || k]}/>
               {Object.values(SCENARIOS).map(s => (
                 <Line key={s.id} type="monotone" dataKey={s.id} stroke={s.color} strokeWidth={2.2} dot={false} name={s.label}/>

@@ -124,10 +124,10 @@ export const OverviewPanel = ({ scenarioId }: { scenarioId: string; periodGranul
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="2 4" stroke={cc.grid} vertical={false}/>
-              <XAxis dataKey="label" tickLine={false} axisLine={false}/>
+              <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fontSize: 10, fill: cc.muted }}/>
               <YAxis tickFormatter={(v) => v >= 1_000_000 ? (v/1_000_000).toFixed(1)+'M' : (v/1000).toFixed(0)+'K'}
-                tickLine={false} axisLine={false} width={48}/>
-              <Tooltip cursor={{ fill: 'rgba(227,82,5,0.05)' }} formatter={(v: any, name: any) => [fmtTL(v), name]}/>
+                tickLine={false} axisLine={false} width={48} tick={{ fontSize: 10, fill: cc.muted }}/>
+              <Tooltip cursor={{ fill: 'rgba(227,82,5,0.05)' }} formatter={(v: any, name: any) => [fmtTL(v), name]} contentStyle={{ fontSize: 11 }}/>
               <Area type="monotone" dataKey="revenue" stroke="#E35205" strokeWidth={2.5} fill="url(#revGrad)" name="Gelir"/>
               <Line type="monotone" dataKey="opex" stroke={cc.muted} strokeWidth={1.8} strokeDasharray="4 3" dot={false} name="Toplam Gider"/>
               <Line type="monotone" dataKey="ebitda" stroke="#3DBE7C" strokeWidth={2} dot={false} name="EBITDA"/>
@@ -156,8 +156,8 @@ export const OverviewPanel = ({ scenarioId }: { scenarioId: string; periodGranul
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="2 4" stroke={cc.grid} vertical={false}/>
-                <XAxis dataKey="label" tickLine={false} axisLine={false} interval={2}/>
-                <YAxis tickFormatter={(v) => (v/1_000_000).toFixed(1)+'M'} tickLine={false} axisLine={false} width={48}/>
+                <XAxis dataKey="label" tickLine={false} axisLine={false} interval={2} tick={{ fontSize: 10, fill: cc.muted }}/>
+                <YAxis tickFormatter={(v) => (v/1_000_000).toFixed(1)+'M'} tickLine={false} axisLine={false} width={48} tick={{ fontSize: 10, fill: cc.muted }}/>
                 <ReferenceLine y={0} stroke={cc.refLine} strokeDasharray="3 3"/>
                 {cashCum.paybackIdx != null && (
                   <ReferenceLine x={(cashCum.points[cashCum.paybackIdx] as any).label}
@@ -234,9 +234,9 @@ export const OverviewPanel = ({ scenarioId }: { scenarioId: string; periodGranul
                 return row;
               })} margin={{ top: 6, right: 12, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="2 4" stroke={cc.grid} vertical={false}/>
-                <XAxis dataKey="label" tickLine={false} axisLine={false}/>
-                <YAxis tickFormatter={(v) => (v/1000).toFixed(0)+'K'} tickLine={false} axisLine={false} width={42}/>
-                <Tooltip formatter={(v: any, k: any) => [fmtTL(v), products.find(p => p.id === k)?.name || k]}/>
+                <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fontSize: 10, fill: cc.muted }}/>
+                <YAxis tickFormatter={(v) => (v/1000).toFixed(0)+'K'} tickLine={false} axisLine={false} width={42} tick={{ fontSize: 10, fill: cc.muted }}/>
+                <Tooltip formatter={(v: any, k: any) => [fmtTL(v), products.find(p => p.id === k)?.name || k]} contentStyle={{ fontSize: 11 }}/>
                 {products.map((p) => (
                   <Bar key={p.id} dataKey={p.id} stackId="rev" fill={p.color}/>
                 ))}

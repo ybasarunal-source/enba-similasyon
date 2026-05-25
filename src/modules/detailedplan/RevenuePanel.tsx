@@ -267,8 +267,8 @@ export const RevenuePanel = ({ scenarioId, periodGranularity }:
                 return row;
               })}>
                 <CartesianGrid strokeDasharray="2 4" stroke={cc.grid} vertical={false}/>
-                <XAxis dataKey="month" tickLine={false} axisLine={false}/>
-                <YAxis domain={[0.6, 1.4]} ticks={[0.7, 1.0, 1.3]} tickLine={false} axisLine={false} width={32}/>
+                <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fontSize: 10, fill: cc.muted }}/>
+                <YAxis domain={[0.6, 1.4]} ticks={[0.7, 1.0, 1.3]} tickLine={false} axisLine={false} width={32} tick={{ fontSize: 10, fill: cc.muted }}/>
                 <ReferenceLine y={1} stroke={cc.refLine} strokeDasharray="3 3"/>
                 <Tooltip formatter={(v: any, k: any) => [(v as number).toFixed(2), allProducts.find(p => p.id === k)?.name || k]}/>
                 {allProducts.map(p => (
