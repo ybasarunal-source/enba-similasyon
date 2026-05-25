@@ -10,6 +10,7 @@ import { ExpensePanel }     from './ExpensePanel';
 import { CashFlowPanel }    from './CashFlowPanel';
 import { ScenarioPanel }    from './ScenarioPanel';
 import { BudgetTrackPanel } from './BudgetTrackPanel';
+import { WhatIfBar }        from './WhatIfBar';
 
 type SectionId = 'overview' | 'revenue' | 'expense' | 'cashflow' | 'scenario' | 'budget';
 
@@ -324,15 +325,19 @@ export function DetailedPlanShell({ plan, costCenters = [], onSave, onBack, onEd
         </div>
 
         {/* Scrollable content */}
-        <main className="flex-1 overflow-y-auto p-5 grid-bg">
-          <div className="max-w-[1380px] mx-auto">
-            {active === 'overview'  && <OverviewPanel    scenarioId={scenarioId} periodGranularity={granularity} />}
-            {active === 'revenue'   && <RevenuePanel     scenarioId={scenarioId} periodGranularity={granularity} />}
-            {active === 'expense'   && <ExpensePanel     scenarioId={scenarioId} periodGranularity={granularity} />}
-            {active === 'cashflow'  && <CashFlowPanel    scenarioId={scenarioId} periodGranularity={granularity} />}
-            {active === 'scenario'  && <ScenarioPanel    scenarioId={scenarioId} periodGranularity={granularity} />}
-            {active === 'budget'    && <BudgetTrackPanel scenarioId={scenarioId} periodGranularity={granularity} />}
+        <main className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto p-5 grid-bg">
+            <div className="max-w-[1380px] mx-auto">
+              {active === 'overview'  && <OverviewPanel    scenarioId={scenarioId} periodGranularity={granularity} />}
+              {active === 'revenue'   && <RevenuePanel     scenarioId={scenarioId} periodGranularity={granularity} />}
+              {active === 'expense'   && <ExpensePanel     scenarioId={scenarioId} periodGranularity={granularity} />}
+              {active === 'cashflow'  && <CashFlowPanel    scenarioId={scenarioId} periodGranularity={granularity} />}
+              {active === 'scenario'  && <ScenarioPanel    scenarioId={scenarioId} periodGranularity={granularity} />}
+              {active === 'budget'    && <BudgetTrackPanel scenarioId={scenarioId} periodGranularity={granularity} />}
+            </div>
           </div>
+          {/* Anlık Simülasyon — sadece Genel Bakış'ta görünür */}
+          {active === 'overview' && <WhatIfBar scenarioId={scenarioId} />}
         </main>
       </div>
     </div>
