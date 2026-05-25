@@ -17,6 +17,7 @@ export const ScenarioPanel = ({ scenarioId, periodGranularity }:
   const cc = useChartColors();
   const { products, fixedExpenses, periods } = usePlanData();
   const [focused, setFocused] = useState(scenarioId);
+  const [metricMode, setMetricMode] = useState<'total' | 'monthly'>('total');
 
   const metrics = useMemo(() => {
     const all: Record<string, any> = {};
@@ -77,11 +78,35 @@ export const ScenarioPanel = ({ scenarioId, periodGranularity }:
         <div className="px-5 py-3 border-b border-enba-line flex items-center justify-between">
           <div className="flex items-center gap-2">
             <h4 className="text-[13px] font-semibold">Senaryo Metrikleri Karşılaştırması</h4>
-            <Badge tone="neutral">24 ay toplam</Badge>
+            {/* Toplam / Aylık toggle */}
+            <div className="flex items-center rounded-lg border border-enba-line overflow-hidden text-[11px] ml-1">
+              <button
+                onClick={() => setMetricMode('total')}
+                className={cx(
+                  'px-3 py-1.5 transition-colors',
+                  metricMode === 'total'
+                    ? 'bg-enba-orange text-white font-semibold'
+                    : 'text-enba-muted hover:text-enba-text hover:bg-enba-panel-2',
+                )}
+              >
+                24 ay toplam
+              </button>
+              <button
+                onClick={() => setMetricMode('monthly')}
+                className={cx(
+                  'px-3 py-1.5 border-l border-enba-line transition-colors',
+                  metricMode === 'monthly'
+                    ? 'bg-enba-orange text-white font-semibold'
+                    : 'text-enba-muted hover:text-enba-text hover:bg-enba-panel-2',
+                )}
+              >
+                aylık ort.
+              </button>
+            </div>
           </div>
           <Btn variant="outline" size="sm" icon={<I.Pdf size={12}/>}>Excel</Btn>
         </div>
-        <ComparisonTable metrics={metrics}/>
+        <ComparisonTable metrics={metrics} mode={metricMode}/>
       </Card>
 
       <div className="grid grid-cols-12 gap-4">
@@ -214,17 +239,21 @@ const ScenarioMetric = ({ label, value, sub, accent }:
   </div>
 );
 
-const ComparisonTable = ({ metrics }: { metrics: Record<string, any> }) => {
+const ComparisonTable = ({ metrics, mode }: { metrics: Record<string, any>; mode: 'total' | 'monthly' }) => {
+  const N   = 24; // projeksiyon süresi (ay)
+  const div = mode === 'monthly' ? N : 1;
+  const lbl = (base: string) => mode === 'monthly' ? `Aylık Ort. ${base}` : `Toplam ${base} (24 ay)`;
+
   const ids = Object.keys(SCENARIOS);
   const baz = metrics.baz;
   const rows = [
-    { label: 'Gelir Çarpanı',  getter: (m: any) => (m.scenario.rev * 100).toFixed(0) + '%', raw: (m: any) => m.scenario.rev },
-    { label: 'Maliyet Çarpanı', getter: (m: any) => (m.scenario.cost * 100).toFixed(0) + '%', raw: (m: any) => m.scenario.cost },
-    { label: 'Toplam Gelir (24 ay)', getter: (m: any) => fmtTL(m.totalRev), raw: (m: any) => m.totalRev, money: true },
-    { label: 'Toplam Gider', getter: (m: any) => fmtTL(m.totalOp), raw: (m: any) => m.totalOp, money: true, inverse: true },
-    { label: 'EBITDA', getter: (m: any) => fmtTL(m.totalEb), raw: (m: any) => m.totalEb, money: true },
-    { label: 'EBITDA Marjı', getter: (m: any) => fmtPct(m.ebMargin, 1), raw: (m: any) => m.ebMargin },
-    { label: 'Net Kâr', getter: (m: any) => fmtTL(m.totalNet), raw: (m: any) => m.totalNet, money: true },
+    { label: 'Gelir Çarpanı',    getter: (m: any) => (m.scenario.rev  * 100).toFixed(0) + '%', raw: (m: any) => m.scenario.rev  },
+    { label: 'Maliyet Çarpanı',  getter: (m: any) => (m.scenario.cost * 100).toFixed(0) + '%', raw: (m: any) => m.scenario.cost },
+    { label: lbl('Gelir'),        getter: (m: any) => fmtTL(m.totalRev  / div), raw: (m: any) => m.totalRev  / div, money: true },
+    { label: lbl('Gider'),        getter: (m: any) => fmtTL(m.totalOp   / div), raw: (m: any) => m.totalOp   / div, money: true, inverse: true },
+    { label: lbl('EBITDA'),       getter: (m: any) => fmtTL(m.totalEb   / div), raw: (m: any) => m.totalEb   / div, money: true },
+    { label: 'EBITDA Marjı',      getter: (m: any) => fmtPct(m.ebMargin, 1),    raw: (m: any) => m.ebMargin },
+    { label: lbl('Net Kâr'),      getter: (m: any) => fmtTL(m.totalNet  / div), raw: (m: any) => m.totalNet  / div, money: true },
     { label: 'Geri Ödeme Süresi', getter: (m: any) => m.payback ? `${m.payback} ay` : '> 24 ay', raw: (m: any) => m.payback ?? 999, inverse: true },
   ];
 
