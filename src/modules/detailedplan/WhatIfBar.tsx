@@ -273,11 +273,12 @@ export function WhatIfBar({ scenarioId, productionModel: pm }: Props) {
         )}
 
         {/* ── 3 sütun ── */}
-        <div className="grid grid-cols-3 divide-x divide-enba-line" style={{ maxHeight: 380 }}>
+        {/* height sabit olmalı (maxHeight değil) + item'larda min-h-0 → overflow-y çalışır */}
+        <div className="grid grid-cols-3 divide-x divide-enba-line" style={{ height: 360 }}>
 
           {/* ── Col 1: Ürün Çıktı Fiyatı & Hacim ── */}
           <div
-            className="overflow-y-scroll p-4 whatif-col-scroll"
+            className="min-h-0 overflow-y-scroll p-4 whatif-col-scroll"
             style={{ maskImage: 'linear-gradient(to bottom, black calc(100% - 28px), transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, black calc(100% - 28px), transparent 100%)' }}
           >
             <p className="text-[9.5px] uppercase tracking-[0.14em] text-enba-muted font-semibold mb-3">
@@ -333,7 +334,7 @@ export function WhatIfBar({ scenarioId, productionModel: pm }: Props) {
 
           {/* ── Col 2: Değişken Gider Birim Fiyatları ── */}
           <div
-            className="overflow-y-scroll p-4 whatif-col-scroll"
+            className="min-h-0 overflow-y-scroll p-4 whatif-col-scroll"
             style={{ maskImage: 'linear-gradient(to bottom, black calc(100% - 28px), transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, black calc(100% - 28px), transparent 100%)' }}
           >
             <p className="text-[9.5px] uppercase tracking-[0.14em] text-enba-muted font-semibold mb-3">
