@@ -15,6 +15,14 @@ export const useChartColors = () => {
   return isDark ? CHART_PALETTE.dark : CHART_PALETTE.light;
 };
 
+/**
+ * XAxis interval hesaplayıcı — veri noktası sayısından max ~5 label görünmesini sağlar.
+ * Recharts interval={n}: her (n+1). tick gösterilir.
+ * Örnek: n=24 → interval=3 → 6 label | n=52 → interval=9 → ~5 label
+ */
+export const xInterval = (dataLen: number, maxLabels = 5): number =>
+  Math.max(0, Math.floor(dataLen / maxLabels) - 1);
+
 // ---- Icons ----
 const Icon = ({ d, size = 18, stroke = 1.6, fill = 'none', children, className = '' }:
   { d?: string; size?: number; stroke?: number; fill?: string; children?: React.ReactNode; className?: string }) => (

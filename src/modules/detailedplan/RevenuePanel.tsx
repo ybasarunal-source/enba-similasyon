@@ -9,7 +9,7 @@ import {
 } from './dpData';
 import {
   cx, Card, SectionTitle, Sparkline, Segmented, Btn, Select,
-  Badge, I, useChartColors,
+  Badge, I, useChartColors, xInterval,
 } from './DPPrimitives';
 
 export const RevenuePanel = ({ scenarioId, periodGranularity }:

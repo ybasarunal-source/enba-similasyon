@@ -8,7 +8,7 @@ import {
   revenueFor, varCostFor, fixedCostFor, facilityShareFor, sumForPeriod,
   Scenario, usePlanData, ActiveProject, FixedExpense, Period,
 } from './dpData';
-import { cx, Card, SectionTitle, Segmented, Badge, useChartColors } from './DPPrimitives';
+import { cx, Card, SectionTitle, Segmented, Badge, useChartColors, xInterval } from './DPPrimitives';
 
 type TabId = 'all' | 'facility' | 'project' | 'variable';
 
@@ -96,7 +96,7 @@ export const ExpensePanel = ({ scenarioId, periodGranularity }:
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={monthlySeries} margin={{ top: 6, right: 12, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="2 4" stroke={cc.grid} vertical={false}/>
-                <XAxis dataKey="label" tickLine={false} axisLine={false} interval={Math.max(0, Math.floor(horizon/8)-1)} tick={{ fontSize: 10, fill: cc.muted }}/>
+                <XAxis dataKey="label" tickLine={false} axisLine={false} interval={xInterval(monthlySeries.length)} tick={{ fontSize: 10, fill: cc.muted }}/>
                 <YAxis tickFormatter={(v) => (v/1000).toFixed(0)+'K'} tickLine={false} axisLine={false} width={42} tick={{ fontSize: 10, fill: cc.muted }}/>
                 <Tooltip formatter={(v: any) => fmtTL(v)}/>
                 <Bar dataKey="tesis"    stackId="x" fill="#E35205"/>
@@ -632,7 +632,7 @@ const ExpenseRatioChart = ({ scen, horizon, cc }: { scen: Scenario; horizon: num
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="2 4" stroke={cc.grid} vertical={false}/>
-            <XAxis dataKey="label" tickLine={false} axisLine={false} interval={Math.max(0, Math.floor(horizon/8)-1)} tick={{ fontSize: 10, fill: cc.muted }}/>
+            <XAxis dataKey="label" tickLine={false} axisLine={false} interval={xInterval(data.length)} tick={{ fontSize: 10, fill: cc.muted }}/>
             <YAxis tickFormatter={(v) => (v*100).toFixed(0)+'%'} tickLine={false} axisLine={false} width={40} domain={[0.5, 1]} tick={{ fontSize: 10, fill: cc.muted }}/>
             <ReferenceLine y={0.7} stroke="#3DBE7C" strokeDasharray="4 3" label={{ value: 'Hedef 70%', position: 'right', fill: '#3DBE7C', fontSize: 10 }}/>
             <Tooltip formatter={(v: any) => fmtPct(v, 1)}/>

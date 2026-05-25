@@ -4,7 +4,7 @@ import {
   CartesianGrid, XAxis, YAxis, Tooltip, ReferenceLine,
 } from 'recharts';
 import {
-  cx, useChartColors, I, Card, SectionTitle, Badge, Btn, Select, Variance,
+  cx, useChartColors, xInterval, I, Card, SectionTitle, Badge, Btn, Select, Variance,
 } from './DPPrimitives';
 import {
   SCENARIOS,
@@ -161,7 +161,7 @@ export function BudgetTrackPanel({ scenarioId }: BudgetTrackPanelProps) {
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="2 4" stroke={cc.grid} vertical={false} />
-              <XAxis dataKey="label" tickLine={false} axisLine={false} interval={1} tick={{ fontSize: 10, fill: cc.muted }} />
+              <XAxis dataKey="label" tickLine={false} axisLine={false} interval={xInterval(periods.length)} tick={{ fontSize: 10, fill: cc.muted }} />
               <YAxis tickFormatter={(v) => (v / 1_000_000).toFixed(1) + 'M'} tickLine={false} axisLine={false} width={48} tick={{ fontSize: 10, fill: cc.muted }} />
               <ReferenceLine
                 x={periods[actualsThrough - 1]?.label}

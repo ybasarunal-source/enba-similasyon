@@ -7,7 +7,7 @@ import {
   SCENARIOS,
   cashFlowFor, fmtTL, Scenario, usePlanData, buildMonths,
 } from './dpData';
-import { cx, Card, Segmented, Btn, Badge, I, useChartColors } from './DPPrimitives';
+import { cx, Card, Segmented, Btn, Badge, I, useChartColors, xInterval } from './DPPrimitives';
 
 export const CashFlowPanel = ({ scenarioId, periodGranularity }:
   { scenarioId: string; periodGranularity: string }) => {
@@ -100,7 +100,7 @@ export const CashFlowPanel = ({ scenarioId, periodGranularity }:
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={chartData} margin={{ top: 10, right: 18, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="2 4" stroke={cc.grid} vertical={false}/>
-              <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fontSize: 10, fill: cc.muted }}/>
+              <XAxis dataKey="label" tickLine={false} axisLine={false} interval={xInterval(monthlyPeriods.length)} tick={{ fontSize: 10, fill: cc.muted }}/>
               <YAxis yAxisId="left" tickFormatter={(v) => (v/1_000_000).toFixed(1)+'M'} tickLine={false} axisLine={false} width={50} tick={{ fontSize: 10, fill: cc.muted }}/>
               <YAxis yAxisId="right" orientation="right" tickFormatter={(v) => (v/1_000_000).toFixed(1)+'M'} tickLine={false} axisLine={false} width={50} tick={{ fontSize: 10, fill: cc.muted }}/>
               <ReferenceLine y={0} yAxisId="left" stroke={cc.refLine}/>

@@ -9,7 +9,7 @@ import {
   Scenario, usePlanData,
 } from './dpData';
 import {
-  cx, Card, SectionTitle, Btn, Badge, I, useChartColors,
+  cx, Card, SectionTitle, Btn, Badge, I, useChartColors, xInterval,
 } from './DPPrimitives';
 
 export const ScenarioPanel = ({ scenarioId, periodGranularity }:
@@ -128,7 +128,7 @@ export const ScenarioPanel = ({ scenarioId, periodGranularity }:
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={quarterlyCompare} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="2 4" stroke={cc.grid} vertical={false}/>
-                <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fontSize: 10, fill: cc.muted }}/>
+                <XAxis dataKey="label" tickLine={false} axisLine={false} interval={xInterval(quarterlyCompare.length)} tick={{ fontSize: 10, fill: cc.muted }}/>
                 <YAxis tickFormatter={(v) => (v/1_000_000).toFixed(1)+'M'} tickLine={false} axisLine={false} width={48} tick={{ fontSize: 10, fill: cc.muted }}/>
                 <Tooltip formatter={(v: any, k: any) => [fmtTL(v), SCENARIOS[k]?.label || k]}/>
                 {Object.values(SCENARIOS).map(s => (
@@ -173,7 +173,7 @@ export const ScenarioPanel = ({ scenarioId, periodGranularity }:
               })}
               margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="2 4" stroke={cc.grid} vertical={false}/>
-              <XAxis dataKey="label" tickLine={false} axisLine={false} interval={1} tick={{ fontSize: 10, fill: cc.muted }}/>
+              <XAxis dataKey="label" tickLine={false} axisLine={false} interval={xInterval(periods.length)} tick={{ fontSize: 10, fill: cc.muted }}/>
               <YAxis tickFormatter={(v) => (v/1_000_000).toFixed(0)+'M'} tickLine={false} axisLine={false} width={48} tick={{ fontSize: 10, fill: cc.muted }}/>
               <Tooltip formatter={(v: any, k: any) => [fmtTL(v), SCENARIOS[k]?.label || k]}/>
               {Object.values(SCENARIOS).map(s => (
