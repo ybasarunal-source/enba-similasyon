@@ -294,7 +294,7 @@ const PageOverview: React.FC = () => (
 
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
       {[
-        { label: 'Üretim Hattı', count: '2', color: 'bg-orange-50 border-orange-200 text-orange-700' },
+        { label: 'Üretim Hattı', count: '5', color: 'bg-orange-50 border-orange-200 text-orange-700' },
         { label: 'Malzeme Türü', count: '5+', color: 'bg-blue-50 border-blue-200 text-blue-700' },
         { label: 'Terim', count: String(WIKI_TERMS.length), color: 'bg-purple-50 border-purple-200 text-purple-700' },
         { label: 'Senaryo', count: '5', color: 'bg-green-50 border-green-200 text-green-700' },
@@ -307,24 +307,75 @@ const PageOverview: React.FC = () => (
     </div>
 
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Hat 1 */}
       <div className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5">
         <div className="flex items-center gap-2 mb-3">
-          <Recycle size={16} className="text-orange-500" />
-          <span className="text-[13px] font-semibold text-gray-800 dark:text-white">Hat 1 — Mekanik Geri Dönüşüm</span>
+          <div className="w-5 h-5 rounded-md bg-orange-100 dark:bg-orange-500/15 flex items-center justify-center flex-shrink-0">
+            <span className="text-[10px] font-black text-orange-600">1</span>
+          </div>
+          <span className="text-[13px] font-semibold text-gray-800 dark:text-white">Mekanik Geri Dönüşüm</span>
+          <span className="text-[10px] text-gray-400 ml-auto">kırma · granülasyon</span>
         </div>
         <Flow steps={[
           { label: 'Besleme' }, { label: 'Kırma' }, { label: 'Yıkama' },
           { label: 'Kurutma' }, { label: 'Ekstrüzyon', highlight: true }, { label: 'Granül', highlight: true },
         ]} />
       </div>
+      {/* Hat 2 */}
       <div className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5">
         <div className="flex items-center gap-2 mb-3">
-          <Factory size={16} className="text-orange-500" />
-          <span className="text-[13px] font-semibold text-gray-800 dark:text-white">Hat 2 — Yıkama Hattı</span>
+          <div className="w-5 h-5 rounded-md bg-blue-100 dark:bg-blue-500/15 flex items-center justify-center flex-shrink-0">
+            <span className="text-[10px] font-black text-blue-600">2</span>
+          </div>
+          <span className="text-[13px] font-semibold text-gray-800 dark:text-white">Yıkama Hattı</span>
+          <span className="text-[10px] text-gray-400 ml-auto">flake · pul</span>
         </div>
         <Flow steps={[
           { label: 'Besleme' }, { label: 'Ön Kırma' }, { label: 'Float-sink' },
           { label: 'Kaustik', highlight: true }, { label: 'Durulama' }, { label: 'Flake', highlight: true },
+        ]} />
+      </div>
+      {/* Hat 3 */}
+      <div className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-5 h-5 rounded-md bg-purple-100 dark:bg-purple-500/15 flex items-center justify-center flex-shrink-0">
+            <span className="text-[10px] font-black text-purple-600">3</span>
+          </div>
+          <span className="text-[13px] font-semibold text-gray-800 dark:text-white">Atık Ayrıştırma</span>
+          <span className="text-[10px] text-gray-400 ml-auto">NIR · separasyon</span>
+        </div>
+        <Flow steps={[
+          { label: 'Besleme' }, { label: 'Balistik' }, { label: 'Metal Ayrımı' },
+          { label: 'NIR', highlight: true }, { label: 'Renk Sıralayıcı' }, { label: 'Fraksiyon', highlight: true },
+        ]} />
+      </div>
+      {/* Hat 4 */}
+      <div className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-5 h-5 rounded-md bg-red-100 dark:bg-red-500/15 flex items-center justify-center flex-shrink-0">
+            <span className="text-[10px] font-black text-red-600">4</span>
+          </div>
+          <span className="text-[13px] font-semibold text-gray-800 dark:text-white">Kimyasal Geri Dönüşüm</span>
+          <span className="text-[10px] text-gray-400 ml-auto">piroliz · depolimerizasyon</span>
+        </div>
+        <Flow steps={[
+          { label: 'Ön Hazırlık' }, { label: 'PVC Ayrımı' }, { label: 'Reaktör', highlight: true },
+          { label: 'Kondansasyon' }, { label: 'Pyoil', highlight: true }, { label: 'Char' },
+        ]} />
+      </div>
+      {/* Hat 5 — tam genişlik */}
+      <div className="md:col-span-2 bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-5 h-5 rounded-md bg-green-100 dark:bg-green-500/15 flex items-center justify-center flex-shrink-0">
+            <span className="text-[10px] font-black text-green-600">5</span>
+          </div>
+          <span className="text-[13px] font-semibold text-gray-800 dark:text-white">Balyalama, Çuvallama & Sevkiyat</span>
+          <span className="text-[10px] text-gray-400 ml-auto">paketleme · lojistik</span>
+        </div>
+        <Flow steps={[
+          { label: 'Akış Ayrımı' },
+          { label: 'Balyalama Presi', highlight: true }, { label: '/ Çuvallama', highlight: true },
+          { label: 'Tartım' }, { label: 'Etiketleme' }, { label: 'Depolama' }, { label: 'Sevkiyat', highlight: true },
         ]} />
       </div>
     </div>
