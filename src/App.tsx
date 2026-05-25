@@ -368,9 +368,9 @@ export const App: React.FC = () => {
     { id: 'isplani',   label: 'İş Planı',          icon: Briefcase,     children: ['fastplan', 'planning']                            as string[] },
     { id: 'finans',    label: 'Finans',             icon: Banknote,      children: ['pnl', 'cashflow', 'parasut', 'fixedexpenses', 'varlik'] as string[] },
     { id: 'operasyon', label: 'Operasyon',          icon: Boxes,         children: ['stock', 'production', 'logistics', 'machinery']   as string[] },
-    { id: 'kurumsal',  label: 'Kurumsal',           icon: Building,      children: ['hr', 'licensing', 'archive']                     as string[] },
+    { id: 'kurumsal',  label: 'Kurumsal',           icon: Building,      children: ['hr', 'licensing', 'archive', 'sektor_not']       as string[] },
     { id: 'sistem',    label: 'Sistem',             icon: CircleUser,    children: ['ayarlar', 'settings', 'profile']                 as string[] },
-    { id: 'yonetim',   label: 'Yönetim',            icon: ShieldCheck,   children: ['super_admin', 'company_admin', 'sektor_not']     as string[] },
+    { id: 'yonetim',   label: 'Yönetim',            icon: ShieldCheck,   children: ['super_admin', 'company_admin']                   as string[] },
   ] as const;
 
   // İki grup: üstte tek navigasyon items, altta tüm sanal parent'lar
@@ -419,13 +419,12 @@ export const App: React.FC = () => {
     try {
       // Demo kullanıcısı her şeyi görür (Sistem Yönetimi hariç)
       if (session?.user?.email === 'demo@enba.com') {
-        return item.id !== 'super_admin' && item.id !== 'sektor_not';
+        return item.id !== 'super_admin';
       }
 
       // Rol bazlı erişim — rol artık profil yüklenmeden önce de bilinebilir
       if (user.role === 'super_admin' || user.role === 'admin') {
         if (item.id === 'super_admin')   return user.role === 'super_admin';
-        if (item.id === 'sektor_not')    return user.role === 'super_admin';
         if (item.id === 'company_admin') return user.role === 'admin';
         return true;
       }
@@ -435,8 +434,8 @@ export const App: React.FC = () => {
         return ['profile', 'dashboard', 'tasks', 'notes', 'calendar', 'modules', 'mail', 'fixedexpenses'].includes(item.id);
       }
       
-      // Core modules
-      if (['profile', 'dashboard', 'tasks', 'notes', 'calendar', 'modules', 'mail', 'fixedexpenses'].includes(item.id)) return true;
+      // Core modules (sektor_not herkese açık — ücretsiz bilgi bankası)
+      if (['profile', 'dashboard', 'tasks', 'notes', 'calendar', 'modules', 'mail', 'fixedexpenses', 'sektor_not'].includes(item.id)) return true;
 
       // Yetki kontrolü
       return userProfile?.permissions?.[item.id] === true;
