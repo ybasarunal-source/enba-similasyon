@@ -882,3 +882,28 @@ grep "^## \[" log.md | tail -5
   - BudgetTrackPanel.tsx: Tam yeniden yazım — 4 sekme modal (Finansal / Üretim / Stok / İK), 3 granülasyon (Aylık / Haftalık / Günlük), operasyonel KPI kartları, haftalık/günlük grid girişi, stok dönem sonu otomatik hesap, İK verimlilik hesabı, "tonajdan finansal hesapla" butonu
 - Etkilenen dosyalar: dpData.ts, DPlanWizard.tsx, DetailedPlanShell.tsx, OverviewPanel.tsx, BudgetTrackPanel.tsx, WhatIfBar.tsx, ScenarioPanel.tsx
 - Bir sonraki: Gerçek üretim/stok verisi test edilecek
+
+## [2026-05-26 15:30] geliştirme | Plan kilitleme + versiyonlama tamamlandı
+- Yapılan:
+  - DPPrimitives.tsx: `I.Lock` + `I.Copy` ikonları eklendi
+  - DetailedPlanShell.tsx: `onCreateVersion?` prop eklendi; aktif planda "Düzenle" yerine "Yeni Versiyon" butonu gösterilir
+  - DetailedPlanModule.tsx PlanCard: aktif planda edit butonu yerine kilit ikonu; "Yeni Versiyon Al" butonu
+  - DetailedPlanModule.tsx PlanSidebarRow: `onCreateVersion` prop, aktif planda Copy ikonu + "Versiyon Al" aksiyon butonu, v{n} rozeti
+  - handleCreateVersion: yeni UUID, status=draft, version++, parentPlanId=root, actuals temizleme, wizard açılır
+  - openWizardForEdit: aktif plan için erken return (double-guard)
+  - commit: 279e258
+- Etkilenen dosyalar: DPPrimitives.tsx, DetailedPlanShell.tsx, DetailedPlanModule.tsx
+- Bir sonraki: BudgetTrack aktüel veri girişi test; Paraşüt → financial_categories eşleştirme modalı
+
+## [2026-05-26 18:00] geliştirme | DetailedPlan tam P&L yeniden tasarımı — Faz 1+2 tamamlandı
+
+- Yapılan:
+  - **dpData.ts**: PlanMCodeEntry / PlanMCodeStatus / PnLRow / PnLRowType tipleri + DPlan.mcodeEntries alanı + createNewPlan/migratePlanFormat güncellendi
+  - **pnlStructure.ts** (YENİ): 12 bölüm × 80+ M-kod P&L hiyerarşisi, buildPnLRows(), PNL_MILESTONE_MCODES, MCODE_CONTROL_LIST, getMcodeLabel()
+  - **DPlanWizard.tsx**: 7→6 adım (Ön Seçim Giriş&Fire'a dahil), WizardState.mcodeEntries, saveDraft/handlePublishClick/confirmPublish ayrıldı, Step5MaliyetKontrol (MCodeRow + AllMCodesAccordion), Step6RampaOzet, LivePnLPreview (sağ kolon, adım 4-5), PublishModal (ön kontrol + N/A + blocker kuralları)
+  - **PnLPanel.tsx** (YENİ): Shell varsayılan sekme, collapsible 12-bölüm P&L, inline edit, N/A toggle, milestone toplamlar, özet metrik kartları
+  - **DetailedPlanShell.tsx**: SectionId'ye 'pnl' eklendi, varsayılan active='pnl', PnLPanel import
+  - **DPPrimitives.tsx**: I.List ikonu eklendi
+  - commit Faz1: 0a61784 | commit Faz2: f8d5337
+- Etkilenen dosyalar: dpData.ts, pnlStructure.ts (yeni), DPlanWizard.tsx, PnLPanel.tsx (yeni), DetailedPlanShell.tsx, DPPrimitives.tsx
+- Bir sonraki: Granül Üretimi planı ile test; Faz 3 (WhatIfBar→PnL simülasyon, PDF export)

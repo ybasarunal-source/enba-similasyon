@@ -359,6 +359,11 @@ Veri kaybı riski olan her adımı kullanıcıya açıkça belirt ve onay al.
 - [x] **McodeCombobox** — portal + arama, TR açıklamalı
 - [x] **Tedarikçi/Müşteri** — nakliye (₺/kg) + kısmi peşin/vade
 
+### Tamamlanan (2026-05-26)
+- [x] **Ramp-Up Faz 1** — `RampUpSchedule`, `getRampScale()`, `buildSeries()` ramp, DPlanWizard 7. adım "Rampa Dönemi", OverviewPanel ReferenceArea + özet kartı
+- [x] **BudgetTrack Faz 2** — 4 sekme modal (Finansal/Üretim/Stok/İK) × 3 granülasyon (Aylık/Haftalık/Günlük), stok dönem sonu otomatik, İK verimlilik, "tonajdan hesapla"
+- [x] **Plan kilitleme + versiyonlama** — `active` plan immutable, `I.Lock`/`I.Copy` ikonları, PlanCard + PlanSidebarRow + Shell header "Yeni Versiyon" butonu, handleCreateVersion (commit 279e258)
+
 ### Tamamlanan (2026-05-23)
 - [x] **DetailedPlan durum yönetimi** — 4 durum (draft/pending/active/archived), filtre sekmeler, PlanCard hızlı geçiş
 - [x] **Granül Üretimi iş planı ingest** — `is_plani_konusma.md` wiki'ye eklendi (Ham-Kaynaklar + Kararlar)
@@ -375,7 +380,7 @@ Veri kaybı riski olan her adımı kullanıcıya açıkça belirt ve onay al.
 - [x] ~~**startOffset/endOffset**~~ → ✅ Çözüldü (2026-05-23)
 - [x] ~~**CashFlow periods uyumsuzluğu**~~ → ✅ Çözüldü (2026-05-23)
 - [ ] **CostCenter allocationWeight** — aynı tesise bağlı çoklu proje paylaşımı doğru mu?
-- [ ] **BudgetTrack + aktüel veri girişi** — panel şu an boş; aktüel giriş formu eklenecek
+- [x] **BudgetTrack + aktüel veri girişi** — 4 sekme modal, 3 granülasyon tamamlandı (2026-05-26)
 - [ ] **CashFlow cashEvents girişi** — yatırım/finansman nakit olayları wizard'da düzenlenemiyor
 - [ ] **PDF export** — shell'de buton var, işlevsiz
 - [x] **Yeni wizard tarayıcı testi** — granül üretimi parametrelerini gir, panel hesaplarını doğrula (2026-05-24 ok)
@@ -385,9 +390,13 @@ Veri kaybı riski olan her adımı kullanıcıya açıkça belirt ve onay al.
 - [x] **Şirket listesi gizliliği** — Paraşüt super_admin dropdown'ında şirket adı yerine UUID prefix (8 karakter) gösteriliyor (commit 3dada9f)
 - [x] **Login'de otomatik şirket eşleşmesi** — Login sayfasındaki şirket dropdown'ı tamamen kaldırıldı; şirket profiles.company_id'den otomatik belirlenir (commit 3dada9f)
 
+### Tamamlanan (2026-05-26 — devam)
+- [x] **DetailedPlan tam P&L yeniden tasarımı Faz 1+2** — 6-adım wizard, Maliyet Kontrol Defteri (Adım 5), LivePnLPreview, Yayınla Ön Kontrol Modalı, PnLPanel (shell varsayılan sekme), 12-bölüm M-kod hiyerarşisi (commitler 0a61784, f8d5337)
+
 ### Bir Sonraki Oturumda İlk Yapılacak
-1. **DetailedPlan — BudgetTrack aktüel veri girişi formu** — panel şu an boş
-2. **Paraşüt → financial_categories** eşleştirme modalı Supabase tablosundan çeksin
+1. **6-adım wizard + P&L paneli tarayıcı testi** — Granül Üretimi planı ile adım adım git, Maliyet Kontrol adımını doldur, Yayınla modal test, P&L panelini doğrula
+2. **BudgetTrack gerçek veri testi** — plan aktive et, BudgetTrack modalını aç, veriler doğru kaydediliyor mu doğrula
+3. **Paraşüt → financial_categories** eşleştirme modalı Supabase tablosundan çeksin
 
 ### Bekleyen Kullanıcı Aksiyonu
 - [x] **Supabase SQL:** `migration_v25b_parasut_superadmin_rls.sql` çalıştırıldı (2026-05-19)
