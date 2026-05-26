@@ -172,6 +172,40 @@ export interface CashEvent {
   months: { idx: number; amount: number }[];
 }
 
+// ─── M-Kod Kayıt Defteri ─────────────────────────────────────────────────────
+
+/** Plan bazlı M-kodu kayıt durumu */
+export type PlanMCodeStatus =
+  | 'calculated'  // wizard'dan otomatik (salt okunur)
+  | 'filled'      // kullanıcı manuel tutar girdi
+  | 'na'          // "bu işletmede yok" işaretlendi — uyarı üretmez
+  | 'empty';      // henüz girilmemiş — sarı uyarı üretir
+
+export interface PlanMCodeEntry {
+  mcode:    string;           // 'M610', 'M509', …
+  status:   PlanMCodeStatus;
+  monthly:  number;           // aylık ₺ (filled → kullanıcı değeri; diğerlerinde 0)
+  growth?:  number;           // yıllık büyüme oranı (0.03 = %3)
+  note?:    string;           // opsiyonel not
+}
+
+// ─── P&L Satır Yapısı ────────────────────────────────────────────────────────
+
+export type PnLRowType = 'item' | 'subtotal' | 'section';
+
+export interface PnLRow {
+  id:        string;          // benzersiz — genellikle mcode, subtotal'larda 'total_xxx'
+  mcode:     string;          // boş string → subtotal/section satırı
+  label:     string;
+  sectionId: string;
+  type:      PnLRowType;
+  level:     0 | 1 | 2;      // 0=bölüm başlığı  1=kalem  2=alt kalem
+  monthly:   number;          // hesaplanan aylık değer (mutlak, eksi gösterim UI'da)
+  status:    PlanMCodeStatus;
+  isExpense: boolean;         // true → P&L'de eksi olarak gösterilir
+  editable:  boolean;         // false → hesaplanan, wizard'dan değiştirilmeli
+}
+
 // ─── Plan veri modeli — tesis giderlerini içermez ────────────────────────────
 export type PlanStatus   = 'draft' | 'pending' | 'active' | 'archived';
 export type PlanCategory = 'buyuk_yatirim' | 'kucuk_yatirim' | 'operasyonel' | 'ticari' | '';
@@ -221,6 +255,12 @@ export interface DPlan {
   productionModel?: ProductionModel;  // yeni wizard — AI'a hazır yapılandırılmış model
   actuals?: PlanActuals;              // bütçe-gerçekleşen karşılaştırma için elle girilmiş veriler
   rampUp?: RampUpSchedule;           // aylık ramp-up takvimi (Faz 1)
+  /** Versiyon numarası — 1'den başlar, her "Yeni Versiyon Al"'da +1 */
+  version?: number;
+  /** Üst plan ID'si — versiyonlanan planın kökü */
+  parentPlanId?: string;
+  /** M-kod kayıt defteri — plan bazlı manuel gider/gelir kalemleri */
+  mcodeEntries?: PlanMCodeEntry[];
 }
 
 export interface SeriesPoint extends Period {
@@ -907,6 +947,7 @@ export const createNewPlan = (title: string, year: number): DPlan => ({
   customers: [],
   projects: [],
   cashEvents: [],
+  mcodeEntries: [],
 });
 
 // ─── Format migrasyonu ────────────────────────────────────────────────────────
@@ -928,10 +969,13 @@ export const migratePlanFormat = (raw: any): DPlan => {
       costCenterId: p.costCenterId ?? p.facilityId ?? '',
       isActive:     p.isActive ?? true,
     })),
-    suppliers:     raw.suppliers ?? [],
-    customers:     raw.customers ?? [],
+    suppliers:     raw.suppliers     ?? [],
+    customers:     raw.customers     ?? [],
     weeklyHorizon: raw.weeklyHorizon ?? 12,
-    rampUp:        raw.rampUp ?? undefined,
+    rampUp:        raw.rampUp        ?? undefined,
+    version:       raw.version       ?? undefined,
+    parentPlanId:  raw.parentPlanId  ?? undefined,
+    mcodeEntries:  raw.mcodeEntries  ?? [],
   } as DPlan;
 };
 

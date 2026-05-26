@@ -6,6 +6,7 @@ import {
   RawMaterial, OutputProduct, OtherVariableCost, InputFraction,
   calcProductionResults, deriveProjectFromModel, fmtTL,
   RampUpSchedule, RampUpMonth,
+  PlanMCodeEntry, PlanMCodeStatus,
 } from './dpData';
 import { fixedAssetsAPI, FixedAsset, FixedAssetForm } from '../../api/varlikTakibi';
 import { supabase } from '../../api/supabase';
@@ -13,6 +14,7 @@ import {
   generateInsights, calcScenariosTable,
   Insight, InsightLevel,
 } from './dpAssistant';
+import { MCODE_CONTROL_LIST, getMcodeLabel, buildPnLRows, PNL_SECTIONS } from './pnlStructure';
 
 // ─── Sabitler ────────────────────────────────────────────────────────────────
 
@@ -26,11 +28,10 @@ const DEFAULT_PARAMS: ProductionParams = {
 const STEP_LABELS = [
   'Plan Bilgisi',
   'Giriş & Fire',
-  'Ön Seçim',
   'Üretim',
-  'Çıktı Ürünleri',
-  'Rampa Dönemi',
-  'Özet',
+  'Çıktı & Gelir',
+  'Maliyet Kontrol',
+  'Rampa & Özet',
 ];
 
 // ─── Wizard durumu ────────────────────────────────────────────────────────────
@@ -55,11 +56,9 @@ interface WizardState {
   altKaliteMode:       'simple' | 'detailed';
   altKaliteSimpleRate: number;     // mod A: toplam alt kalite fire (0-1)
   inputFractions:      InputFraction[];  // mod B
+  sortingEnabled:      boolean;    // ön seçim var mı? (Giriş & Fire'ın son bölümü)
 
-  // Adım 3 — Ön Seçim
-  sortingEnabled: boolean;
-
-  // Adım 4 — Üretim
+  // Adım 3 — Üretim (eski Adım 4)
   params:              ProductionParams;
   machines:            MachineEntry[];
   processWasteRate:    number;
@@ -70,10 +69,13 @@ interface WizardState {
   rawMaterials:        RawMaterial[];
   otherVariableCosts:  OtherVariableCost[];
 
-  // Adım 5 — Çıktı Ürünleri
+  // Adım 4 — Çıktı Ürünleri (eski Adım 5)
   outputProducts: OutputProduct[];
 
-  // Adım 6 — Rampa Dönemi
+  // Adım 5 — Maliyet Kontrol (YENİ)
+  mcodeEntries: PlanMCodeEntry[];
+
+  // Adım 6 — Rampa & Özet (eski Adım 6+7)
   rampUp: RampUpSchedule;
 }
 
@@ -113,6 +115,8 @@ function initState(plan?: DPlan): WizardState {
     otherVariableCosts:  pm?.otherVariableCosts  ?? [],
 
     outputProducts: pm?.outputProducts ?? [],
+
+    mcodeEntries: plan?.mcodeEntries ?? [],
 
     rampUp: plan?.rampUp ?? { enabled: false, months: [], targetMonth: 3 },
   };
@@ -176,6 +180,7 @@ export function DPlanWizard({ initialPlan, costCenters, onDone, onSave, onCancel
   const [step, setStep]               = useState(0);
   const [state, setState]             = useState<WizardState>(() => initState(initialPlan));
   const [saveError, setSaveError]     = useState<string | null>(null);
+  const [showPublishModal, setShowPublishModal] = useState(false);
 
   const set = useCallback(<K extends keyof WizardState>(key: K, val: WizardState[K]) => {
     setState(prev => ({ ...prev, [key]: val }));
@@ -192,18 +197,13 @@ export function DPlanWizard({ initialPlan, costCenters, onDone, onSave, onCancel
   const selectedCC    = costCenters.find(c => c.id === state.costCenterId);
   const fixedCostMonth = selectedCC?.fixedExpenses.reduce((s, e) => s + e.monthly, 0) ?? 0;
 
-  const savePlan = (andClose: boolean) => {
-    if (!state.title.trim()) {
-      setSaveError('Plan başlığı zorunludur. Lütfen "Plan Bilgisi" adımında bir başlık girin.');
-      return;
-    }
-    setSaveError(null);
+  const buildPlan = (targetStatus?: DPlan['status']): DPlan => {
     const pm      = stateToProductionModel(state);
     const derived = deriveProjectFromModel(pm, {
       id:           initialPlan?.projects?.[0]?.id,
       costCenterId: state.costCenterId,
     });
-    const plan: DPlan = {
+    return {
       ...(initialPlan ?? {
         id:             crypto.randomUUID(),
         supabaseId:     undefined,
@@ -215,7 +215,7 @@ export function DPlanWizard({ initialPlan, costCenters, onDone, onSave, onCancel
       }),
       title:           state.title || 'Adsız Plan',
       baslik:          state.title || 'Adsız Plan',
-      status:          initialPlan?.status ?? 'draft',
+      status:          targetStatus ?? initialPlan?.status ?? 'draft',
       category:        state.category,
       description:     state.description,
       year:            state.startYear,
@@ -226,17 +226,44 @@ export function DPlanWizard({ initialPlan, costCenters, onDone, onSave, onCancel
       productionModel: pm,
       projects:        [derived],
       rampUp:          state.rampUp.enabled ? state.rampUp : undefined,
+      mcodeEntries:    state.mcodeEntries,
     };
-    if (andClose) onDone(plan);
-    else          onSave(plan);
+  };
+
+  // Taslak kaydet — validasyon yok, plan durumu korunur
+  const saveDraft = () => {
+    if (!state.title.trim()) {
+      setSaveError('Plan başlığı zorunludur. Lütfen "Plan Bilgisi" adımında bir başlık girin.');
+      return;
+    }
+    setSaveError(null);
+    onSave(buildPlan());
+  };
+
+  // Yayınla — ön kontrol modalı açar (Faz 1: direkt kaydet, modal gelecek)
+  const handlePublishClick = () => {
+    if (!state.title.trim()) {
+      setSaveError('Plan başlığı zorunludur. Lütfen "Plan Bilgisi" adımında bir başlık girin.');
+      return;
+    }
+    setSaveError(null);
+    setShowPublishModal(true);
+  };
+
+  // Modal'da "Yayınla" onaylandı → active olarak kaydet
+  const confirmPublish = () => {
+    setShowPublishModal(false);
+    onDone(buildPlan('active'));
   };
 
   const handleOvertimePlan = useCallback((hoursPerDay: number) => {
     setState(prev => ({ ...prev, params: { ...prev.params, hoursPerDay } }));
   }, []);
 
-  const showAssistant = step >= 3;
-  const isLastStep    = step === STEP_LABELS.length - 1;
+  const showRightPanel = step >= 2;
+  const showAssistant  = step >= 2 && step <= 3;  // Üretim + Çıktı adımlarında asistan
+  const showPnLPreview = step === 4 || step === 5; // Maliyet + Rampa&Özet'te P&L önizleme
+  const isLastStep     = step === STEP_LABELS.length - 1;
 
   return (
     <div className="h-full flex flex-col bg-enba-bg overflow-hidden">
@@ -297,18 +324,25 @@ export function DPlanWizard({ initialPlan, costCenters, onDone, onSave, onCancel
 
       {/* ── Body ── */}
       <div className="flex-1 flex overflow-hidden">
-        <div className={cx('flex-1 overflow-y-auto', showAssistant ? 'md:w-0' : '')}>
+        <div className={cx('flex-1 overflow-y-auto', showRightPanel ? 'md:w-0' : '')}>
           <div className="p-6 max-w-[640px] mx-auto">
             {step === 0 && <Step1PlanInfo     state={state} set={set} costCenters={costCenters} />}
             {step === 1 && <Step2GirisFire    state={state} set={set} calc={calc} />}
-            {step === 2 && <Step3OnSecim      state={state} set={set} calc={calc} />}
-            {step === 3 && <Step4Uretim       state={state} set={set} calc={calc} />}
-            {step === 4 && <Step5CiktiUrunler state={state} set={set} calc={calc} />}
-            {step === 5 && <Step6RampUp       state={state} set={set} />}
-            {step === 6 && <Step7Ozet         state={state} calc={calc} fixedCostMonth={fixedCostMonth} />}
+            {step === 2 && <Step3Uretim       state={state} set={set} calc={calc} />}
+            {step === 3 && <Step4CiktiUrunler state={state} set={set} calc={calc} />}
+            {step === 4 && (
+              <Step5MaliyetKontrol
+                state={state}
+                calc={calc}
+                ccExpenses={selectedCC?.fixedExpenses ?? []}
+                onUpdateEntries={entries => setState(prev => ({ ...prev, mcodeEntries: entries }))}
+              />
+            )}
+            {step === 5 && <Step6RampaOzet state={state} set={set} calc={calc} fixedCostMonth={fixedCostMonth} />}
           </div>
         </div>
 
+        {/* Sağ panel: Adım 2-3 → Asistan, Adım 4-5 → P&L Önizleme */}
         {showAssistant && (
           <div className="hidden md:flex w-[300px] flex-none border-l border-enba-line flex-col overflow-y-auto">
             <AssistantPanel
@@ -321,7 +355,28 @@ export function DPlanWizard({ initialPlan, costCenters, onDone, onSave, onCancel
             />
           </div>
         )}
+        {showPnLPreview && (
+          <div className="hidden md:flex w-[340px] flex-none border-l border-enba-line flex-col overflow-y-auto">
+            <LivePnLPreview
+              calc={calc}
+              mcodeEntries={state.mcodeEntries}
+              ccExpenses={selectedCC?.fixedExpenses ?? []}
+            />
+          </div>
+        )}
       </div>
+
+      {/* Yayınla Ön Kontrol Modalı */}
+      {showPublishModal && (
+        <PublishModal
+          calc={calc}
+          mcodeEntries={state.mcodeEntries}
+          ccExpenses={selectedCC?.fixedExpenses ?? []}
+          onClose={() => setShowPublishModal(false)}
+          onConfirm={confirmPublish}
+          onUpdateEntries={entries => setState(prev => ({ ...prev, mcodeEntries: entries }))}
+        />
+      )}
 
       {/* ── Footer ── */}
       <div className="flex-none bg-enba-panel border-t border-enba-line">
@@ -337,7 +392,10 @@ export function DPlanWizard({ initialPlan, costCenters, onDone, onSave, onCancel
             {step === 0 ? 'İptal' : 'Geri'}
           </Btn>
           <div className="flex items-center gap-2">
-            <Btn variant="outline" size="md" onClick={() => savePlan(false)}>Kaydet</Btn>
+            {/* Taslak Kaydet — her adımda görünür */}
+            <Btn variant="outline" size="md" onClick={saveDraft}>
+              <I.Save size={13} className="mr-1" />Taslak Kaydet
+            </Btn>
             {!isLastStep ? (
               <Btn
                 variant="primary" size="md"
@@ -353,8 +411,8 @@ export function DPlanWizard({ initialPlan, costCenters, onDone, onSave, onCancel
                 Devam
               </Btn>
             ) : (
-              <Btn variant="primary" size="md" onClick={() => savePlan(true)}>
-                Planı Oluştur
+              <Btn variant="primary" size="md" onClick={handlePublishClick}>
+                <I.Lock size={13} className="mr-1" />Yayınla
               </Btn>
             )}
           </div>
@@ -662,112 +720,67 @@ function Step2GirisFire({ state, set, calc }: {
           )}
         </div>
       </ParamSection>
-    </div>
-  );
-}
 
-// ─── Adım 3 — Ön Seçim ───────────────────────────────────────────────────────
-
-function Step3OnSecim({ state, set, calc }: {
-  state: WizardState;
-  set: <K extends keyof WizardState>(k: K, v: WizardState[K]) => void;
-  calc: ReturnType<typeof calcProductionResults>;
-}) {
-  return (
-    <div className="flex flex-col gap-8">
-      <SectionHeader title="Ön Seçim" sub="Malzeme kırma hattına girmeden önce elle ayrıştırma yapılıyor mu?" />
-
-      {/* Toggle */}
-      <div className={cx(
-        'rounded-xl border p-5 flex items-start gap-4 cursor-pointer transition-all',
-        state.sortingEnabled
-          ? 'bg-enba-panel border-enba-orange/40'
-          : 'bg-enba-panel border-enba-line',
-      )} onClick={() => set('sortingEnabled', !state.sortingEnabled)}>
+      {/* Ön Seçim — Giriş & Fire'a dahil */}
+      <ParamSection title="Ön Seçim" icon="🔀">
         <div className={cx(
-          'w-11 h-6 rounded-full flex-none mt-0.5 relative transition-colors',
-          state.sortingEnabled ? 'bg-enba-orange' : 'bg-enba-panel-2 border border-enba-line',
-        )}>
+          'rounded-xl border p-4 flex items-start gap-4 cursor-pointer transition-all -mx-1',
+          state.sortingEnabled
+            ? 'bg-enba-panel border-enba-orange/40'
+            : 'bg-enba-panel-2 border-enba-line',
+        )} onClick={() => set('sortingEnabled', !state.sortingEnabled)}>
           <div className={cx(
-            'absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all',
-            state.sortingEnabled ? 'left-[22px]' : 'left-0.5',
-          )} />
-        </div>
-        <div>
-          <div className="text-[14px] font-semibold text-enba-text mb-1">
-            {state.sortingEnabled ? 'Ön seçim var' : 'Ön seçim yok'}
+            'w-11 h-6 rounded-full flex-none mt-0.5 relative transition-colors',
+            state.sortingEnabled ? 'bg-enba-orange' : 'bg-enba-panel-2 border border-enba-line',
+          )}>
+            <div className={cx(
+              'absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all',
+              state.sortingEnabled ? 'left-[22px]' : 'left-0.5',
+            )} />
           </div>
-          <div className="text-[12px] text-enba-dim">
-            {state.sortingEnabled
-              ? 'Malzeme kırma hattına girmeden önce ayrıştırılıyor. Fraksiyonlar Giriş & Fire adımında tanımladığınız şekilde yönlendirilecek.'
-              : 'Malzeme direkt üretime giriyor. Fraksiyonlar ayrıştırılmadan fire olarak sayılıyor.'}
+          <div>
+            <div className="text-[13px] font-semibold text-enba-text mb-0.5">
+              {state.sortingEnabled ? 'Ön seçim var' : 'Ön seçim yok'}
+            </div>
+            <div className="text-[11px] text-enba-dim">
+              {state.sortingEnabled
+                ? 'Malzeme kırma hattına girmeden önce ayrıştırılıyor. Fraksiyonlar yukarıda tanımlı şekilde yönlendirilecek.'
+                : 'Malzeme direkt üretime giriyor. Fraksiyonlar ayrıştırılmadan fire olarak sayılıyor.'}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Fraksiyon özeti */}
-      {state.sortingEnabled && state.altKaliteMode === 'detailed' && state.inputFractions.length > 0 && (
-        <ParamSection title="Fraksiyon Yönlendirmesi" icon="🔀">
-          <div className="flex flex-col gap-2">
+        {/* Fraksiyon özeti */}
+        {state.sortingEnabled && state.altKaliteMode === 'detailed' && state.inputFractions.length > 0 && (
+          <div className="flex flex-col gap-2 mt-3">
             {state.inputFractions.map(f => {
-              const tons    = calc.grossInputTons * f.percentage;
+              const tons      = calc.grossInputTons * f.percentage;
               const destLabel = f.destination === 'sell'
-                ? `Direkt sat — ${fmtTL((tons * 1000 * (f.unitPrice ?? 0)), { compact: true })}/ay`
-                : f.destination === 'production'
-                ? 'Üretime sok'
-                : 'At (fire)';
+                ? `Direkt sat — ${fmtTL(tons * 1000 * (f.unitPrice ?? 0), { compact: true })}/ay`
+                : f.destination === 'production' ? 'Üretime sok' : 'At (fire)';
               const destColor = f.destination === 'sell'
                 ? 'text-enba-green'
-                : f.destination === 'production'
-                ? 'text-enba-orange'
-                : 'text-enba-dim';
+                : f.destination === 'production' ? 'text-enba-orange' : 'text-enba-dim';
               return (
-                <div key={f.id} className="flex items-center justify-between bg-enba-panel-2 border border-enba-line rounded-lg px-3 py-2.5">
+                <div key={f.id} className="flex items-center justify-between bg-enba-panel-2 border border-enba-line rounded-lg px-3 py-2">
                   <div>
-                    <span className="text-[13px] font-medium text-enba-text">{f.name || '—'}</span>
-                    <span className="text-[11px] text-enba-dim ml-2">{(f.percentage * 100).toFixed(1)}% → {tons.toFixed(1)} ton/ay</span>
+                    <span className="text-[12px] font-medium text-enba-text">{f.name || '—'}</span>
+                    <span className="text-[10.5px] text-enba-dim ml-2">{(f.percentage * 100).toFixed(1)}% → {tons.toFixed(1)} ton/ay</span>
                   </div>
-                  <span className={cx('text-[12px] font-medium', destColor)}>{destLabel}</span>
+                  <span className={cx('text-[11.5px] font-medium', destColor)}>{destLabel}</span>
                 </div>
               );
             })}
           </div>
-          {calc.fractionOutputs.length > 0 && (
-            <div className="mt-3 pt-3 border-t border-enba-line flex justify-between text-[12px]">
-              <span className="text-enba-dim">Fraksiyon satış geliri</span>
-              <span className="font-semibold text-enba-green">
-                {fmtTL(calc.fractionOutputs.reduce((s, f) => s + f.revenue, 0), { compact: true })}/ay
-              </span>
-            </div>
-          )}
-        </ParamSection>
-      )}
-
-      {state.sortingEnabled && state.altKaliteMode === 'simple' && (
-        <div className="bg-enba-panel border border-enba-line rounded-xl p-4 text-[12px] text-enba-dim">
-          Detaylı fraksiyon yönlendirmesi için önceki adımda "Detaylı" modunu seçin.
-        </div>
-      )}
-
-      {/* Akış özeti */}
-      <div className="flex flex-col items-center gap-1 py-2">
-        <FlowBox label={`Giriş: ${calc.grossInputTons.toFixed(1)} ton/ay`} color="blue" />
-        <FlowArrow label={`Fire: ${((1 - calc.afterInputWaste / Math.max(calc.grossInputTons, 0.001)) * 100).toFixed(1)}%`} />
-        {state.sortingEnabled && (
-          <>
-            <FlowBox label="Ön Seçim" color="amber" />
-            <FlowArrow label="fraksiyonlar ayrıştırıldı" />
-          </>
         )}
-        <FlowBox label={`Üretime giren: ${calc.afterInputWaste.toFixed(1)} ton/ay`} color="orange" />
-      </div>
+      </ParamSection>
     </div>
   );
 }
 
-// ─── Adım 4 — Üretim ─────────────────────────────────────────────────────────
+// ─── Adım 3 — Üretim (eski Adım 4) ──────────────────────────────────────────
 
-function Step4Uretim({ state, set, calc }: {
+function Step3Uretim({ state, set, calc }: {
   state: WizardState;
   set: <K extends keyof WizardState>(k: K, v: WizardState[K]) => void;
   calc: ReturnType<typeof calcProductionResults>;
@@ -1090,9 +1103,9 @@ function Step4Uretim({ state, set, calc }: {
   );
 }
 
-// ─── Adım 5 — Çıktı Ürünleri ─────────────────────────────────────────────────
+// ─── Adım 4 — Çıktı & Gelir (eski Adım 5) ───────────────────────────────────
 
-function Step5CiktiUrunler({ state, set, calc }: {
+function Step4CiktiUrunler({ state, set, calc }: {
   state: WizardState;
   set: <K extends keyof WizardState>(k: K, v: WizardState[K]) => void;
   calc: ReturnType<typeof calcProductionResults>;
@@ -1182,11 +1195,13 @@ function Step5CiktiUrunler({ state, set, calc }: {
   );
 }
 
-// ─── Adım 6 — Rampa Dönemi ───────────────────────────────────────────────────
+// ─── Adım 6 — Rampa & Özet (eski Adım 6+7 birleşimi) ────────────────────────
 
-function Step6RampUp({ state, set }: {
+function Step6RampaOzet({ state, set, calc, fixedCostMonth }: {
   state: WizardState;
   set:   <K extends keyof WizardState>(key: K, val: WizardState[K]) => void;
+  calc:  ReturnType<typeof calcProductionResults>;
+  fixedCostMonth: number;
 }) {
   const model        = useMemo(() => stateToProductionModel(state), [state]);
   const baseInputTons = model.monthlyInputTons ?? 0;
@@ -1379,13 +1394,16 @@ function Step6RampUp({ state, set }: {
           )}
         </>
       )}
+
+      {/* ── Özet bölümü ─────────────────────────────────────────────────────────── */}
+      <OzetSection state={state} calc={calc} fixedCostMonth={fixedCostMonth} />
     </div>
   );
 }
 
-// ─── Adım 7 — Özet ───────────────────────────────────────────────────────────
+// ─── Özet Bölümü (Step6RampaOzet içinde kullanılır) ──────────────────────────
 
-function Step7Ozet({ state, calc, fixedCostMonth }: {
+function OzetSection({ state, calc, fixedCostMonth }: {
   state: WizardState;
   calc: ReturnType<typeof calcProductionResults>;
   fixedCostMonth: number;
@@ -1407,26 +1425,26 @@ function Step7Ozet({ state, calc, fixedCostMonth }: {
   const profit    = calc.totalRevenue - totalCost;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 pt-6 mt-6 border-t border-enba-line">
       <SectionHeader title="Özet" sub="Aylık tahmini sonuçlar ve senaryo analizi" />
 
       <div className="grid grid-cols-2 gap-3">
-        <SummaryCard label="Toplam Gelir"     value={fmtTL(calc.totalRevenue, { compact: true })}     color="green" />
-        <SummaryCard label="Değişken Maliyet" value={fmtTL(calc.totalVariableCost, { compact: true })} color="red" />
-        <SummaryCard label="Sabit Maliyet"    value={fmtTL(fixedCostMonth, { compact: true })}         color="neutral" />
-        <SummaryCard label="Net Kâr"          value={fmtTL(profit, { compact: true, sign: true })}     color={profit >= 0 ? 'green' : 'red'} />
+        <SummaryCard label="Toplam Gelir"     value={fmtTL(calc.totalRevenue, { compact: true })}      color="green" />
+        <SummaryCard label="Değişken Maliyet" value={fmtTL(calc.totalVariableCost, { compact: true })}  color="red" />
+        <SummaryCard label="Sabit Maliyet"    value={fmtTL(fixedCostMonth, { compact: true })}          color="neutral" />
+        <SummaryCard label="Net Kâr"          value={fmtTL(profit, { compact: true, sign: true })}      color={profit >= 0 ? 'green' : 'red'} />
       </div>
 
       <div className="bg-enba-panel border border-enba-line rounded-xl p-4">
         <div className="text-[11px] uppercase tracking-wider text-enba-muted mb-3">Maliyet Dağılımı</div>
         <div className="flex flex-col gap-1.5">
           {[
-            { label: 'Hammadde Alışı',      val: calc.inputMaterialCost },
-            { label: 'Yardımcı Malzeme',    val: calc.totalMaterialCost },
-            { label: 'Enerji',              val: calc.totalEnergyCost },
-            { label: 'İşçilik',             val: calc.totalLaborCost },
-            { label: 'Diğer Değişken',      val: calc.totalOtherCost },
-            { label: 'Sabit (Tesis)',        val: fixedCostMonth },
+            { label: 'Hammadde Alışı',   val: calc.inputMaterialCost },
+            { label: 'Yardımcı Malzeme', val: calc.totalMaterialCost },
+            { label: 'Enerji',           val: calc.totalEnergyCost },
+            { label: 'İşçilik',          val: calc.totalLaborCost },
+            { label: 'Diğer Değişken',   val: calc.totalOtherCost },
+            { label: 'Sabit (Tesis)',     val: fixedCostMonth },
           ].filter(r => r.val > 0).map(row => (
             <div key={row.label} className="flex items-center gap-3">
               <span className="text-[12px] text-enba-muted w-[140px]">{row.label}</span>
@@ -1459,7 +1477,7 @@ function Step7Ozet({ state, calc, fixedCostMonth }: {
             </thead>
             <tbody>
               {scenarios.map((row, i) => {
-                const isBase      = row.inputTons === state.monthlyInputAmount;
+                const isBase       = row.inputTons === state.monthlyInputAmount;
                 const totalCostRow = row.variableCost + fixedCostMonth;
                 return (
                   <tr key={i} className={cx('border-b border-enba-line last:border-0', isBase && 'bg-enba-orange/5')}>
@@ -1818,3 +1836,583 @@ function DynamicList<T extends { id: string }>({ items, onChange, renderRow, new
 }
 
 const inputCls = 'w-full bg-enba-panel-2 border border-enba-line rounded-lg px-2.5 py-2 text-[13px] text-enba-text outline-none focus:border-enba-orange/60 transition-colors';
+
+// ─── Adım 5 — Maliyet Kontrol Defteri ────────────────────────────────────────
+
+interface MCodeRowProps {
+  mcode:    string;
+  label:    string;
+  status:   PlanMCodeStatus;
+  monthly:  number;
+  editable: boolean;
+  priority: 'recommended' | 'optional';
+  onUpdate: (e: Partial<PlanMCodeEntry>) => void;
+}
+
+function MCodeRow({ mcode, label, status, monthly, editable, onUpdate }: MCodeRowProps) {
+  const [editing, setEditing] = useState(false);
+  const [draft,   setDraft  ] = useState(monthly);
+
+  useEffect(() => { setDraft(monthly); }, [monthly]);
+
+  const isNA         = status === 'na';
+  const isCalculated = status === 'calculated';
+  const isEmpty      = status === 'empty' && monthly === 0 && !isNA && !isCalculated;
+
+  return (
+    <div className={cx(
+      'flex items-center gap-3 px-3 py-2 rounded-lg border transition-all',
+      isNA         ? 'opacity-40 border-enba-line bg-enba-panel-2' :
+      isEmpty      ? 'border-amber-500/30 bg-amber-500/5' :
+      isCalculated ? 'border-enba-green/25 bg-enba-green/5' :
+                     'border-enba-line bg-enba-panel',
+    )}>
+      {/* M-kodu rozeti */}
+      <span className={cx(
+        'text-[10px] font-mono font-bold px-1.5 py-0.5 rounded flex-none',
+        isCalculated ? 'bg-enba-orange/15 text-enba-orange' : 'bg-enba-panel-2 text-enba-dim',
+      )}>
+        {mcode}
+      </span>
+
+      {/* Etiket */}
+      <span className={cx(
+        'flex-1 text-[12.5px] truncate',
+        isNA ? 'text-enba-dim line-through' : isEmpty ? 'text-amber-300' : 'text-enba-text',
+      )}>
+        {label}
+      </span>
+
+      {/* Durum göstergesi */}
+      {isCalculated && (
+        <span className="text-[11.5px] font-medium text-enba-green flex-none">
+          {fmtTL(monthly, { compact: true })}/ay
+          <span className="text-[10px] text-enba-dim ml-1">otom.</span>
+        </span>
+      )}
+
+      {/* Tutar girişi (düzenlenebilir kodlar için) */}
+      {editable && !isNA && !isCalculated && (
+        editing ? (
+          <div className="flex items-center gap-1 flex-none">
+            <input
+              type="number"
+              autoFocus
+              value={draft || ''}
+              placeholder="0"
+              step={1000}
+              onChange={e => setDraft(Number(e.target.value) || 0)}
+              onBlur={() => { onUpdate({ monthly: draft, status: 'filled' }); setEditing(false); }}
+              onKeyDown={e => {
+                if (e.key === 'Enter') { onUpdate({ monthly: draft, status: 'filled' }); setEditing(false); }
+                if (e.key === 'Escape') setEditing(false);
+              }}
+              className="w-28 px-2 py-1 rounded border border-enba-orange/60 bg-enba-panel text-[12px] text-enba-text outline-none"
+            />
+            <span className="text-[11px] text-enba-dim">₺/ay</span>
+          </div>
+        ) : (
+          <button
+            onClick={() => { setDraft(monthly); setEditing(true); }}
+            className={cx(
+              'text-[11.5px] flex-none px-2 py-0.5 rounded border transition-colors',
+              monthly > 0
+                ? 'border-enba-line text-enba-text hover:border-enba-orange/50'
+                : 'border-dashed border-amber-500/40 text-amber-400 hover:border-amber-500/70',
+            )}
+          >
+            {monthly > 0 ? fmtTL(monthly, { compact: true }) + '/ay' : '+ Tutar gir'}
+          </button>
+        )
+      )}
+
+      {isEmpty && (
+        <span className="text-[10px] text-amber-400 flex-none">⚠ Girilmemiş</span>
+      )}
+
+      {/* N/A toggle */}
+      {editable && !isCalculated && (
+        <button
+          onClick={() => onUpdate({ status: isNA ? 'empty' : 'na', monthly: isNA ? 0 : monthly })}
+          title={isNA ? 'Aktife al' : 'Bu işletmede yok (N/A)'}
+          className={cx(
+            'text-[10px] px-1.5 py-0.5 rounded border transition-colors flex-none',
+            isNA
+              ? 'bg-enba-panel-2 border-enba-line text-enba-dim hover:border-enba-orange/40 hover:text-enba-orange'
+              : 'border-enba-line text-enba-dim hover:border-amber-500/40 hover:text-amber-400',
+          )}
+        >
+          {isNA ? 'N/A ✓' : 'N/A'}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function Step5MaliyetKontrol({ state, calc, ccExpenses, onUpdateEntries }: {
+  state:           WizardState;
+  calc:            ReturnType<typeof calcProductionResults>;
+  ccExpenses:      import('./dpData').FixedExpense[];
+  onUpdateEntries: (entries: PlanMCodeEntry[]) => void;
+}) {
+  const pnlRows = useMemo(
+    () => buildPnLRows(calc, state.mcodeEntries, ccExpenses),
+    [calc, state.mcodeEntries, ccExpenses],
+  );
+
+  const updateEntry = (mcode: string, patch: Partial<PlanMCodeEntry>) => {
+    const existing = state.mcodeEntries.find(e => e.mcode === mcode);
+    if (existing) {
+      onUpdateEntries(state.mcodeEntries.map(e => e.mcode === mcode ? { ...e, ...patch } : e));
+    } else {
+      onUpdateEntries([...state.mcodeEntries, {
+        mcode, status: 'filled', monthly: 0, ...patch,
+      }]);
+    }
+  };
+
+  // pnlRows'tan gerekli satırları grupla
+  const calculatedRows = pnlRows.filter(r => r.type === 'item' && r.status === 'calculated');
+  const controlRows = MCODE_CONTROL_LIST.map(ctrl => {
+    const row = pnlRows.find(r => r.mcode === ctrl.mcode);
+    return row ? { ...row, priority: ctrl.priority } : null;
+  }).filter(Boolean) as (typeof pnlRows[0] & { priority: string })[];
+
+  const recommendedRows = controlRows.filter(r => r.priority === 'recommended');
+  const optionalRows    = controlRows.filter(r => r.priority === 'optional');
+
+  const missingRequired = recommendedRows.filter(r => r.status === 'empty' && r.monthly === 0).length;
+
+  return (
+    <div className="flex flex-col gap-6">
+      <SectionHeader
+        title="Maliyet Kontrol Defteri"
+        sub="Tüm gider kalemleri burada — her satırı kontrol edin, eksik bırakmayın"
+      />
+
+      {missingRequired > 0 && (
+        <div className="flex items-start gap-2 px-3 py-2.5 bg-amber-500/10 border border-amber-500/30 rounded-xl text-[12px] text-amber-300">
+          <span className="flex-none mt-0.5">⚠</span>
+          <span><span className="font-semibold">{missingRequired} kalem</span> henüz girilmemiş. Önerilen kalemleri tamamlayın veya N/A olarak işaretleyin.</span>
+        </div>
+      )}
+
+      {/* Hesaplanan (salt okunur) */}
+      <div>
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-[11px] uppercase tracking-wider text-enba-dim">Otomatik Hesaplanan</span>
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-enba-orange/15 text-enba-orange">wizard'dan</span>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          {calculatedRows.slice(0, 8).map(r => (
+            <MCodeRow key={r.mcode} mcode={r.mcode} label={r.label} status={r.status}
+              monthly={r.monthly} editable={r.editable} priority="recommended"
+              onUpdate={patch => updateEntry(r.mcode, patch)} />
+          ))}
+        </div>
+      </div>
+
+      {/* Önerilen (girilen) */}
+      <div>
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-[11px] uppercase tracking-wider text-enba-dim">Önerilen Kalemler</span>
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400">tamamlayın</span>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          {recommendedRows.map(r => (
+            <MCodeRow key={r.mcode} mcode={r.mcode} label={r.label} status={r.status}
+              monthly={r.monthly} editable={r.editable} priority="recommended"
+              onUpdate={patch => updateEntry(r.mcode, patch)} />
+          ))}
+        </div>
+      </div>
+
+      {/* İsteğe bağlı */}
+      <div>
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-[11px] uppercase tracking-wider text-enba-dim">İsteğe Bağlı</span>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          {optionalRows.map(r => (
+            <MCodeRow key={r.mcode} mcode={r.mcode} label={r.label} status={r.status}
+              monthly={r.monthly} editable={r.editable} priority="optional"
+              onUpdate={patch => updateEntry(r.mcode, patch)} />
+          ))}
+        </div>
+      </div>
+
+      {/* Diğer tüm M-kodları (accordion) */}
+      <AllMCodesAccordion pnlRows={pnlRows} mcodeEntries={state.mcodeEntries} onUpdate={updateEntry} />
+    </div>
+  );
+}
+
+function AllMCodesAccordion({ pnlRows, mcodeEntries, onUpdate }: {
+  pnlRows:      ReturnType<typeof buildPnLRows>;
+  mcodeEntries: PlanMCodeEntry[];
+  onUpdate:     (mcode: string, patch: Partial<PlanMCodeEntry>) => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  // Show only non-control-list, non-calculated items
+  const controlMcodes = new Set(MCODE_CONTROL_LIST.map(c => c.mcode));
+  const extraRows = pnlRows.filter(r =>
+    r.type === 'item' && r.editable && !controlMcodes.has(r.mcode)
+  );
+
+  return (
+    <div className="border border-enba-line rounded-xl overflow-hidden">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-4 py-3 bg-enba-panel-2 hover:bg-enba-panel transition-colors"
+      >
+        <span className="text-[12.5px] font-medium text-enba-text">Diğer M-Kodları ({extraRows.length} kalem)</span>
+        <I.Chevron size={12} className={cx('text-enba-dim transition-transform', open && 'rotate-180')} />
+      </button>
+      {open && (
+        <div className="p-3 flex flex-col gap-1.5">
+          {PNL_SECTIONS.map(section => {
+            const sectionRows = extraRows.filter(r => r.sectionId === section.id);
+            if (sectionRows.length === 0) return null;
+            return (
+              <div key={section.id} className="mb-3">
+                <div className="text-[10.5px] uppercase tracking-wider text-enba-dim mb-1.5 px-1">{section.label}</div>
+                {sectionRows.map(r => {
+                  const entry = mcodeEntries.find(e => e.mcode === r.mcode);
+                  return (
+                    <MCodeRow key={r.mcode} mcode={r.mcode} label={r.label}
+                      status={entry?.status ?? 'empty'} monthly={entry?.monthly ?? 0}
+                      editable={r.editable} priority="optional"
+                      onUpdate={patch => onUpdate(r.mcode, patch)} />
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Canlı P&L Önizleme (Sağ Kolon) ─────────────────────────────────────────
+
+function LivePnLPreview({ calc, mcodeEntries, ccExpenses }: {
+  calc:         ReturnType<typeof calcProductionResults>;
+  mcodeEntries: PlanMCodeEntry[];
+  ccExpenses:   import('./dpData').FixedExpense[];
+}) {
+  const pnlRows = useMemo(
+    () => buildPnLRows(calc, mcodeEntries, ccExpenses),
+    [calc, mcodeEntries, ccExpenses],
+  );
+
+  // Sadece dolu veya hesaplanan ana kalemleri göster (subtotal satırları dahil)
+  const displayRows = pnlRows.filter(r =>
+    r.type === 'section' ||
+    r.type === 'subtotal' ||
+    (r.type === 'item' && (r.monthly !== 0 || r.status === 'empty'))
+  );
+
+  // Toplam hesapları (aylık)
+  const totalRevenue = pnlRows
+    .filter(r => r.type === 'item' && !r.isExpense && r.sectionId === 'hasilat')
+    .reduce((s, r) => s + r.monthly, 0);
+  const totalVarCost = pnlRows
+    .filter(r => r.type === 'item' && r.isExpense && ['malzeme','enerji','personel'].includes(r.sectionId))
+    .reduce((s, r) => s + r.monthly, 0);
+  const totalFixedCost = pnlRows
+    .filter(r => r.type === 'item' && r.isExpense && ['bakim_cevre','genel_gider'].includes(r.sectionId))
+    .reduce((s, r) => s + r.monthly, 0);
+  const ebitda = totalRevenue - totalVarCost - totalFixedCost;
+  const grossMarginPct = totalRevenue > 0 ? ((totalRevenue - totalVarCost) / totalRevenue * 100) : 0;
+
+  return (
+    <div className="flex flex-col h-full overflow-hidden">
+      {/* Başlık */}
+      <div className="flex-none px-4 py-3 border-b border-enba-line bg-enba-panel-2/40">
+        <div className="text-[11px] uppercase tracking-wider text-enba-muted mb-0.5">P&L Önizleme</div>
+        <div className="text-[10.5px] text-enba-dim">Aylık ortalama (tahmini)</div>
+      </div>
+
+      {/* Özet metrik kartları */}
+      <div className="flex-none grid grid-cols-2 gap-px bg-enba-line border-b border-enba-line">
+        {[
+          { label: 'Hasılat',  val: fmtTL(totalRevenue, { compact: true }),  color: 'text-enba-green' },
+          { label: 'Değ.Mal.', val: fmtTL(totalVarCost, { compact: true }),  color: 'text-red-400' },
+          { label: 'Sabit',    val: fmtTL(totalFixedCost, { compact: true }), color: 'text-enba-muted' },
+          { label: 'EBITDA',   val: fmtTL(ebitda, { compact: true, sign: true }),
+            color: ebitda >= 0 ? 'text-enba-orange' : 'text-red-400' },
+        ].map(s => (
+          <div key={s.label} className="bg-enba-panel px-3 py-2">
+            <div className="text-[10px] text-enba-dim">{s.label}</div>
+            <div className={cx('text-[12px] font-semibold', s.color)}>{s.val}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Brüt marj göstergesi */}
+      {totalRevenue > 0 && (
+        <div className="flex-none px-4 py-2 border-b border-enba-line bg-enba-panel-2/20">
+          <div className="flex items-center justify-between text-[11px] mb-1">
+            <span className="text-enba-dim">Brüt Marj</span>
+            <span className={cx('font-semibold', grossMarginPct >= 20 ? 'text-enba-green' : grossMarginPct >= 10 ? 'text-amber-400' : 'text-red-400')}>
+              %{grossMarginPct.toFixed(1)}
+            </span>
+          </div>
+          <div className="h-1.5 bg-enba-panel-2 rounded-full overflow-hidden">
+            <div
+              className={cx('h-full rounded-full', grossMarginPct >= 20 ? 'bg-enba-green' : grossMarginPct >= 10 ? 'bg-amber-400' : 'bg-red-400')}
+              style={{ width: `${Math.min(100, grossMarginPct)}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* P&L satırları */}
+      <div className="flex-1 overflow-y-auto px-3 py-3 flex flex-col gap-0.5">
+        {displayRows.map(row => {
+          if (row.type === 'section') {
+            return (
+              <div key={row.id} className="flex items-center gap-1 mt-3 mb-1 first:mt-0">
+                <span className="text-[9.5px] uppercase tracking-wider text-enba-dim font-semibold">{row.label}</span>
+                <div className="flex-1 h-px bg-enba-line" />
+              </div>
+            );
+          }
+          if (row.type === 'subtotal') {
+            return (
+              <div key={row.id} className="flex items-center justify-between px-2 py-1 bg-enba-panel-2/60 rounded text-[11.5px] font-semibold mt-1">
+                <span className="text-enba-text">{row.label}</span>
+                <span className={row.monthly >= 0 ? 'text-enba-green' : 'text-red-400'}>
+                  {row.monthly !== 0 ? fmtTL(row.monthly, { compact: true }) : '—'}
+                </span>
+              </div>
+            );
+          }
+          const isEmpty = row.status === 'empty' && row.monthly === 0;
+          return (
+            <div key={row.id} className={cx(
+              'flex items-center justify-between px-2 py-0.5 rounded text-[11.5px]',
+              isEmpty ? 'text-amber-400/70' : 'text-enba-muted',
+            )}>
+              <span className={cx('truncate flex-1', 'pl-' + (row.level * 3))}>
+                <span className="text-[9.5px] font-mono text-enba-dim/50 mr-1">{row.mcode}</span>
+                {row.label}
+              </span>
+              <span className={cx('flex-none ml-2 tabular-nums', isEmpty ? 'text-amber-400/50 italic' : row.isExpense ? 'text-red-400/80' : 'text-enba-green/80')}>
+                {isEmpty ? 'girilmemiş' : (row.isExpense ? '- ' : '') + fmtTL(row.monthly, { compact: true })}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─── Yayınla Ön Kontrol Modalı ────────────────────────────────────────────────
+
+interface PublishIssue {
+  id:      string;
+  level:   'error' | 'warning' | 'info';
+  mcode?:  string;
+  title:   string;
+  body:    string;
+  resolved: boolean;
+}
+
+function buildPublishIssues(
+  calc:         ReturnType<typeof calcProductionResults> | null,
+  mcodeEntries: PlanMCodeEntry[],
+  ccExpenses:   import('./dpData').FixedExpense[],
+): PublishIssue[] {
+  const issues: PublishIssue[] = [];
+  const entryFor = (mcode: string) => mcodeEntries.find(e => e.mcode === mcode);
+  const ccHas    = (mcode: string) => ccExpenses.some(e => e.mcode === mcode && e.monthly > 0);
+  const isFilled = (mcode: string) => {
+    const e = entryFor(mcode);
+    return (e && (e.status === 'filled' || e.status === 'na') && e.monthly > 0) || ccHas(mcode);
+  };
+  const isNA = (mcode: string) => entryFor(mcode)?.status === 'na';
+
+  // Makine varsa amortisman zorunlu
+  const hasMachines = calc && calc.machineCapacities.length > 0;
+  if (hasMachines && !isFilled('M775') && !isFilled('M789') && !isNA('M789')) {
+    issues.push({ id: 'missing_amortisman', level: 'error', mcode: 'M789',
+      title: 'Amortisman girilmemiş',
+      body: 'Makine yatırımı var ama amortisman kaydı yok. Makine maliyetini doğru yansıtmak için girin.',
+      resolved: false });
+  }
+  // Bakım-onarım
+  if (!isFilled('M509') && !isNA('M509')) {
+    issues.push({ id: 'missing_bakim', level: 'warning', mcode: 'M509',
+      title: 'Bakım-Onarım girilmemiş',
+      body: 'Periyodik bakım, yedek parça ve onarım giderleri her tesiste oluşur.',
+      resolved: false });
+  }
+  // Sigorta
+  if (!isFilled('M635') && !isNA('M635')) {
+    issues.push({ id: 'missing_sigorta', level: 'warning', mcode: 'M635',
+      title: 'Sigorta girilmemiş',
+      body: 'Tesis ve makine sigortası önerilir. Bu işletmede yoksa N/A olarak işaretleyin.',
+      resolved: false });
+  }
+  // Çevre / atık
+  if (!isFilled('M529') && !isNA('M529')) {
+    issues.push({ id: 'missing_cevre', level: 'warning', mcode: 'M529',
+      title: 'Çevre/Atık/İSG girilmemiş',
+      body: 'Geri dönüşüm tesislerinde çevre ve atık yönetim giderleri zorunlu olabilir.',
+      resolved: false });
+  }
+  // Düşük brüt marj
+  const totalRev  = calc?.totalRevenue ?? 0;
+  const totalVar  = calc?.totalVariableCost ?? 0;
+  const grossMargin = totalRev > 0 ? (totalRev - totalVar) / totalRev : 0;
+  if (totalRev > 0 && grossMargin < 0.15) {
+    issues.push({ id: 'low_gross_margin', level: 'warning',
+      title: `Brüt marj %${(grossMargin * 100).toFixed(1)} — düşük`,
+      body: 'Sabit giderler karşılanamayabilir. Hammadde maliyeti veya satış fiyatlarını gözden geçirin.',
+      resolved: false });
+  }
+  // Gelir tanımlanmamış
+  if (totalRev === 0) {
+    issues.push({ id: 'no_revenue', level: 'error',
+      title: 'Gelir tanımlanmamış',
+      body: 'Çıktı ürünleri ve fiyatları girilmeden plan yayınlanamaz.',
+      resolved: false });
+  }
+
+  return issues;
+}
+
+function PublishModal({ calc, mcodeEntries, ccExpenses, onClose, onConfirm, onUpdateEntries }: {
+  calc:            ReturnType<typeof calcProductionResults>;
+  mcodeEntries:    PlanMCodeEntry[];
+  ccExpenses:      import('./dpData').FixedExpense[];
+  onClose:         () => void;
+  onConfirm:       () => void;
+  onUpdateEntries: (entries: PlanMCodeEntry[]) => void;
+}) {
+  const [issues, setIssues] = useState<PublishIssue[]>(() =>
+    buildPublishIssues(calc, mcodeEntries, ccExpenses)
+  );
+
+  const resolveIssue = (id: string) =>
+    setIssues(prev => prev.map(i => i.id === id ? { ...i, resolved: true } : i));
+
+  const markNA = (id: string, mcode: string) => {
+    const existing = mcodeEntries.find(e => e.mcode === mcode);
+    if (existing) {
+      onUpdateEntries(mcodeEntries.map(e => e.mcode === mcode ? { ...e, status: 'na' } : e));
+    } else {
+      onUpdateEntries([...mcodeEntries, { mcode, status: 'na', monthly: 0 }]);
+    }
+    resolveIssue(id);
+  };
+
+  const hasBlocker = issues.some(i => !i.resolved && (i.level === 'error' || i.level === 'warning'));
+  const LEVEL_ICON: Record<string, string> = { error: '🔴', warning: '🟡', info: 'ℹ️' };
+  const LEVEL_LABEL: Record<string, string> = { error: 'KRİTİK', warning: 'DİKKAT', info: 'BİLGİ' };
+
+  const grouped = {
+    error:   issues.filter(i => i.level === 'error'),
+    warning: issues.filter(i => i.level === 'warning'),
+    info:    issues.filter(i => i.level === 'info'),
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="relative w-full max-w-lg mx-4 bg-enba-panel border border-enba-line rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+        {/* Başlık */}
+        <div className="flex-none px-5 py-4 border-b border-enba-line">
+          <div className="text-[15px] font-semibold text-enba-text mb-0.5">Plan Yayınlanmaya Hazır mı?</div>
+          <div className="text-[12px] text-enba-dim">Aşağıdaki sorunları çözün veya ilgisiz kalemleri N/A olarak işaretleyin.</div>
+        </div>
+
+        {/* İçerik */}
+        <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-4">
+          {issues.length === 0 && (
+            <div className="text-center py-8 text-[13px] text-enba-green">
+              ✅ Tüm kontroller geçti. Plan yayınlanmaya hazır!
+            </div>
+          )}
+
+          {(['error', 'warning', 'info'] as const).map(level => {
+            const group = grouped[level];
+            if (group.length === 0) return null;
+            return (
+              <div key={level}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span>{LEVEL_ICON[level]}</span>
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-enba-muted">{LEVEL_LABEL[level]}</span>
+                  <span className="text-[10.5px] text-enba-dim">({group.length})</span>
+                </div>
+                <div className="flex flex-col gap-2">
+                  {group.map(issue => (
+                    <div key={issue.id} className={cx(
+                      'rounded-xl border p-3 transition-all',
+                      issue.resolved ? 'opacity-40 border-enba-line' :
+                        level === 'error' ? 'border-red-500/30 bg-red-500/5' :
+                        level === 'warning' ? 'border-amber-500/30 bg-amber-500/5' :
+                        'border-enba-line bg-enba-panel-2',
+                    )}>
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <span className={cx(
+                          'text-[12.5px] font-semibold',
+                          issue.resolved ? 'line-through text-enba-dim' :
+                            level === 'error' ? 'text-red-400' :
+                            level === 'warning' ? 'text-amber-300' : 'text-enba-text',
+                        )}>
+                          {issue.mcode && <span className="font-mono text-[10.5px] mr-1 opacity-70">{issue.mcode}</span>}
+                          {issue.title}
+                        </span>
+                        {issue.resolved && <span className="text-[11px] text-enba-green flex-none">✓ Çözüldü</span>}
+                      </div>
+                      {!issue.resolved && (
+                        <>
+                          <p className="text-[11px] text-enba-dim mb-2">{issue.body}</p>
+                          <div className="flex gap-2">
+                            {issue.mcode && (
+                              <button
+                                onClick={() => markNA(issue.id, issue.mcode!)}
+                                className="text-[11px] px-2.5 py-1 rounded border border-enba-line text-enba-dim hover:border-amber-500/40 hover:text-amber-400 transition-colors"
+                              >
+                                Bu planda yok (N/A)
+                              </button>
+                            )}
+                            {!issue.mcode && (
+                              <button
+                                onClick={() => resolveIssue(issue.id)}
+                                className="text-[11px] px-2.5 py-1 rounded border border-enba-line text-enba-dim hover:border-enba-orange/40 hover:text-enba-orange transition-colors"
+                              >
+                                Biliyorum, devam et
+                              </button>
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Footer */}
+        <div className="flex-none px-5 py-4 border-t border-enba-line flex items-center justify-between gap-3">
+          <Btn variant="ghost" size="md" onClick={onClose}>İptal</Btn>
+          <Btn
+            variant="primary" size="md"
+            onClick={onConfirm}
+            disabled={hasBlocker}
+          >
+            {hasBlocker ? 'Sorunları Çözün' : '✓ Yayınla'}
+          </Btn>
+        </div>
+      </div>
+    </div>
+  );
+}
