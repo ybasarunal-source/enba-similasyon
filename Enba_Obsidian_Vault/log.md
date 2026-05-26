@@ -872,3 +872,13 @@ grep "^## \[" log.md | tail -5
 - Sağ panel: Aktif → Onay Bekliyor → Taslak → Arşiv gruplama, kompakt satır, hover'da düzenle/sil, hızlı durum butonları
 - Etkilenen dosyalar: src/modules/detailedplan/DetailedPlanModule.tsx
 - Bir sonraki: Sektör Bilgi Bankası (sektor_not) erişim kısıtlaması gözden geçirilecek
+
+## [2026-05-26 14:00] geliştirme | Ramp-Up Faz 1 + BudgetTrack Faz 2
+- Yapılan:
+  - dpData.ts: `RampUpMonth`, `RampUpSchedule` tipleri, `getRampScale()`, `buildSeries()` ramp parametreli (gelir+değişken maliyet scale, sabit gider sabit)
+  - DPlanWizard.tsx: 7. adım "Rampa Dönemi" — toggle, ay sayısı seçici, per-month ton input, Lineer Doldur, kümülatif gelir kaybı tahmini
+  - DetailedPlanShell.tsx: ctxValue'ya rampUp + baseInputTons; buildSeries çağrıları güncellendi
+  - OverviewPanel.tsx: Ramp özet kartı (amber), grafik ReferenceArea gölgeleme
+  - BudgetTrackPanel.tsx: Tam yeniden yazım — 4 sekme modal (Finansal / Üretim / Stok / İK), 3 granülasyon (Aylık / Haftalık / Günlük), operasyonel KPI kartları, haftalık/günlük grid girişi, stok dönem sonu otomatik hesap, İK verimlilik hesabı, "tonajdan finansal hesapla" butonu
+- Etkilenen dosyalar: dpData.ts, DPlanWizard.tsx, DetailedPlanShell.tsx, OverviewPanel.tsx, BudgetTrackPanel.tsx, WhatIfBar.tsx, ScenarioPanel.tsx
+- Bir sonraki: Gerçek üretim/stok verisi test edilecek

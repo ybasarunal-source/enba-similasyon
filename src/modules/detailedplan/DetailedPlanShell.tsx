@@ -115,6 +115,8 @@ export function DetailedPlanShell({ plan, costCenters = [], onSave, onBack, onEd
       return [...facilityExpenses, hammaddeExpense, ...others];
     })();
 
+    const baseInputTons = plan.productionModel?.monthlyInputTons ?? 0;
+
     return {
       costCenters:      usedCostCenters,
       facilityExpenses,
@@ -131,6 +133,8 @@ export function DetailedPlanShell({ plan, costCenters = [], onSave, onBack, onEd
       startMonth:       plan.startMonth,
       actuals,
       onActualChange,
+      rampUp:           plan.rampUp,
+      baseInputTons,
     };
   }, [plan, costCenters, horizon, granularity, weeklyHorizon, actuals, actualsThrough, onActualChange]);
 

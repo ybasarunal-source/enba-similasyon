@@ -5,6 +5,7 @@ import {
   ProductionModel, ProductionParams, MachineEntry, WorkerGroup,
   RawMaterial, OutputProduct, OtherVariableCost, InputFraction,
   calcProductionResults, deriveProjectFromModel, fmtTL,
+  RampUpSchedule, RampUpMonth,
 } from './dpData';
 import { fixedAssetsAPI, FixedAsset, FixedAssetForm } from '../../api/varlikTakibi';
 import { supabase } from '../../api/supabase';
@@ -28,6 +29,7 @@ const STEP_LABELS = [
   'Ön Seçim',
   'Üretim',
   'Çıktı Ürünleri',
+  'Rampa Dönemi',
   'Özet',
 ];
 
@@ -70,6 +72,9 @@ interface WizardState {
 
   // Adım 5 — Çıktı Ürünleri
   outputProducts: OutputProduct[];
+
+  // Adım 6 — Rampa Dönemi
+  rampUp: RampUpSchedule;
 }
 
 function initState(plan?: DPlan): WizardState {
@@ -108,6 +113,8 @@ function initState(plan?: DPlan): WizardState {
     otherVariableCosts:  pm?.otherVariableCosts  ?? [],
 
     outputProducts: pm?.outputProducts ?? [],
+
+    rampUp: plan?.rampUp ?? { enabled: false, months: [], targetMonth: 3 },
   };
 }
 
@@ -218,6 +225,7 @@ export function DPlanWizard({ initialPlan, costCenters, onDone, onSave, onCancel
       openingCash:     state.openingCash,
       productionModel: pm,
       projects:        [derived],
+      rampUp:          state.rampUp.enabled ? state.rampUp : undefined,
     };
     if (andClose) onDone(plan);
     else          onSave(plan);
@@ -233,21 +241,27 @@ export function DPlanWizard({ initialPlan, costCenters, onDone, onSave, onCancel
   return (
     <div className="h-full flex flex-col bg-enba-bg overflow-hidden">
       {/* ── Header ── */}
-      <div className="flex-none bg-enba-panel border-b border-enba-line h-[60px] flex items-center px-5 gap-4">
-        <button
-          onClick={onCancel}
-          className="w-8 h-8 rounded-lg text-enba-muted hover:text-enba-text hover:bg-enba-panel-2 inline-flex items-center justify-center"
-        >
-          <I.Chevron size={14} className="rotate-90" />
-        </button>
-        <div className="flex-1 min-w-0">
-          <div className="text-[13px] font-semibold text-enba-text">
-            {initialPlan ? 'Planı Düzenle' : 'Yeni İş Planı — Granül Üretimi'}
+      <div className="flex-none bg-enba-panel border-b border-enba-line">
+        {/* Üst satır: geri + başlık */}
+        <div className="h-[52px] flex items-center px-5 gap-4 border-b border-enba-line/60">
+          <button
+            onClick={onCancel}
+            className="w-8 h-8 rounded-lg text-enba-muted hover:text-enba-text hover:bg-enba-panel-2 inline-flex items-center justify-center flex-none"
+          >
+            <I.Chevron size={14} className="rotate-90" />
+          </button>
+          <div className="flex-1 min-w-0">
+            <div className="text-[13px] font-semibold text-enba-text">
+              {initialPlan ? 'Planı Düzenle' : 'Yeni İş Planı — Granül Üretimi'}
+            </div>
+            <div className="text-[10.5px] text-enba-dim">{state.title || 'Başlık girilmemiş'}</div>
           </div>
-          <div className="text-[10.5px] text-enba-dim">{state.title || 'Başlık girilmemiş'}</div>
+          <div className="text-[10.5px] text-enba-muted flex-none">
+            Adım <span className="font-semibold text-enba-text">{step + 1}</span> / {STEP_LABELS.length}
+          </div>
         </div>
-        {/* Adım göstergesi */}
-        <div className="flex items-center gap-1">
+        {/* Alt satır: adım göstergesi — tam genişlik */}
+        <div className="flex items-stretch overflow-x-auto px-5 py-1.5 gap-0.5 scrollbar-none">
           {STEP_LABELS.map((label, i) => (
             <button
               key={i}
@@ -261,7 +275,7 @@ export function DPlanWizard({ initialPlan, costCenters, onDone, onSave, onCancel
                 setStep(i);
               }}
               className={cx(
-                'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all cursor-pointer',
+                'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all cursor-pointer whitespace-nowrap flex-1 justify-center',
                 i === step
                   ? 'bg-enba-orange text-white'
                   : i < step
@@ -270,12 +284,12 @@ export function DPlanWizard({ initialPlan, costCenters, onDone, onSave, onCancel
               )}
             >
               <span className={cx(
-                'w-4 h-4 rounded-full text-[9px] font-bold inline-flex items-center justify-center',
+                'w-4 h-4 rounded-full text-[9px] font-bold inline-flex items-center justify-center flex-none',
                 i === step ? 'bg-white/20' : i < step ? 'bg-enba-orange/20' : 'bg-enba-panel-2',
               )}>
                 {i < step ? '✓' : i + 1}
               </span>
-              <span className="hidden lg:block">{label}</span>
+              <span>{label}</span>
             </button>
           ))}
         </div>
@@ -285,12 +299,13 @@ export function DPlanWizard({ initialPlan, costCenters, onDone, onSave, onCancel
       <div className="flex-1 flex overflow-hidden">
         <div className={cx('flex-1 overflow-y-auto', showAssistant ? 'md:w-0' : '')}>
           <div className="p-6 max-w-[640px] mx-auto">
-            {step === 0 && <Step1PlanInfo    state={state} set={set} costCenters={costCenters} />}
-            {step === 1 && <Step2GirisFire   state={state} set={set} calc={calc} />}
-            {step === 2 && <Step3OnSecim     state={state} set={set} calc={calc} />}
-            {step === 3 && <Step4Uretim      state={state} set={set} calc={calc} />}
+            {step === 0 && <Step1PlanInfo     state={state} set={set} costCenters={costCenters} />}
+            {step === 1 && <Step2GirisFire    state={state} set={set} calc={calc} />}
+            {step === 2 && <Step3OnSecim      state={state} set={set} calc={calc} />}
+            {step === 3 && <Step4Uretim       state={state} set={set} calc={calc} />}
             {step === 4 && <Step5CiktiUrunler state={state} set={set} calc={calc} />}
-            {step === 5 && <Step6Ozet        state={state} calc={calc} fixedCostMonth={fixedCostMonth} />}
+            {step === 5 && <Step6RampUp       state={state} set={set} />}
+            {step === 6 && <Step7Ozet         state={state} calc={calc} fixedCostMonth={fixedCostMonth} />}
           </div>
         </div>
 
@@ -1167,9 +1182,210 @@ function Step5CiktiUrunler({ state, set, calc }: {
   );
 }
 
-// ─── Adım 6 — Özet ───────────────────────────────────────────────────────────
+// ─── Adım 6 — Rampa Dönemi ───────────────────────────────────────────────────
 
-function Step6Ozet({ state, calc, fixedCostMonth }: {
+function Step6RampUp({ state, set }: {
+  state: WizardState;
+  set:   <K extends keyof WizardState>(key: K, val: WizardState[K]) => void;
+}) {
+  const model        = useMemo(() => stateToProductionModel(state), [state]);
+  const baseInputTons = model.monthlyInputTons ?? 0;
+
+  const rampUp     = state.rampUp;
+  const setRampUp  = (r: RampUpSchedule) => set('rampUp', r);
+
+  // Hedef ay sayısı değişince month listesini yeniden oluştur
+  const handleTargetMonthChange = (newTargetMonth: number) => {
+    const existingMap = new Map(rampUp.months.map(m => [m.monthIdx, m.targetTons]));
+    const newMonths: RampUpMonth[] = Array.from({ length: newTargetMonth }, (_, i) => ({
+      monthIdx:   i,
+      targetTons: existingMap.get(i) ?? 0,
+    }));
+    setRampUp({ ...rampUp, targetMonth: newTargetMonth, months: newMonths });
+  };
+
+  // Lineer doldur: eşit artışla hedef kapasiteye böler
+  const fillLinear = () => {
+    const newMonths: RampUpMonth[] = Array.from({ length: rampUp.targetMonth }, (_, i) => ({
+      monthIdx:   i,
+      targetTons: Math.round(baseInputTons * (i + 1) / (rampUp.targetMonth + 1)),
+    }));
+    setRampUp({ ...rampUp, months: newMonths });
+  };
+
+  // Kümülatif gelir kaybı tahmini (basit: fark × ortalama gelir/ton giriş)
+  const cumulativeLoss = (() => {
+    if (!rampUp.enabled || !baseInputTons) return 0;
+    let totalMissTons = 0;
+    rampUp.months.forEach(m => { totalMissTons += Math.max(0, baseInputTons - m.targetTons); });
+    // calcProductionResults'tan net çıktı tonunu al, output ürün fiyatından gelir/ton hesapla
+    const calc2 = calcProductionResults(model);
+    const netOutputPerInputTon = baseInputTons > 0 ? calc2.netOutputTons / baseInputTons : 0;
+    const avgRevPerInputTon = (model.outputProducts ?? []).reduce((s, op) => {
+      // unitPrice TL/kg → TL/ton = × 1000; shareOfNetTons = pay (0-1)
+      return s + op.shareOfNetTons * netOutputPerInputTon * (op.unitPrice * 1000);
+    }, 0);
+    return totalMissTons * avgRevPerInputTon;
+  })();
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-[15px] font-semibold text-enba-text mb-1">Rampa Dönemi</h2>
+        <p className="text-[12.5px] text-enba-muted leading-relaxed">
+          Projenin tam kapasiteye kademeli ulaşmasını modelleyin.
+          Gelir ve değişken maliyetler ramp-up faktörüyle ölçeklenir; sabit giderler etkilenmez.
+        </p>
+      </div>
+
+      {/* Etkin / Devre Dışı toggle */}
+      <div className="flex items-center gap-3 p-4 rounded-xl bg-enba-panel border border-enba-line">
+        <button
+          onClick={() => setRampUp({ ...rampUp, enabled: !rampUp.enabled })}
+          className={cx(
+            'relative w-10 h-5 rounded-full transition-colors flex-none',
+            rampUp.enabled ? 'bg-enba-orange' : 'bg-enba-line',
+          )}
+        >
+          <span className={cx(
+            'absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform',
+            rampUp.enabled ? 'translate-x-5' : 'translate-x-0.5',
+          )} />
+        </button>
+        <div>
+          <div className="text-[13px] font-medium text-enba-text">
+            {rampUp.enabled ? 'Rampa Dönemi Etkin' : 'Rampa Dönemi Devre Dışı'}
+          </div>
+          <div className="text-[11.5px] text-enba-muted">
+            {rampUp.enabled
+              ? 'İlk aylarda düşük kapasite ile başlanır.'
+              : 'Plan boyunca tam kapasitede çalışılır.'}
+          </div>
+        </div>
+      </div>
+
+      {rampUp.enabled && (
+        <>
+          {/* Hedef kapasite göstergesi */}
+          <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-enba-orange/8 border border-enba-orange/20">
+            <span className="text-[11.5px] text-enba-muted">Üretim modelinden hedef kapasite:</span>
+            <span className="text-[13px] font-semibold text-enba-orange">
+              {baseInputTons > 0 ? `${baseInputTons.toLocaleString('tr-TR')} ton/ay` : '—'}
+            </span>
+          </div>
+
+          {/* Kaç ayda tam kapasiteye ulaşılacak */}
+          <div className="space-y-2">
+            <label className="text-[12.5px] font-medium text-enba-text">
+              Tam kapasiteye kaç ayda ulaşılacak?
+            </label>
+            <div className="flex gap-2 flex-wrap">
+              {[1, 2, 3, 4, 6, 9, 12].map(n => (
+                <button
+                  key={n}
+                  onClick={() => handleTargetMonthChange(n)}
+                  className={cx(
+                    'px-3 py-1.5 rounded-lg text-[12px] font-medium border transition-colors',
+                    rampUp.targetMonth === n
+                      ? 'bg-enba-orange text-white border-enba-orange'
+                      : 'bg-enba-panel border-enba-line text-enba-dim hover:text-enba-text hover:border-enba-orange/40',
+                  )}
+                >
+                  {n} ay
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Per-month ton inputs */}
+          {rampUp.targetMonth > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[12.5px] font-medium text-enba-text">Aylık hedef tonajlar</span>
+                <button
+                  onClick={fillLinear}
+                  className="text-[11.5px] text-enba-orange hover:underline font-medium"
+                >
+                  Lineer Doldur
+                </button>
+              </div>
+              <div className="space-y-2">
+                {rampUp.months.map((m, idx) => {
+                  const pct = baseInputTons > 0 ? (m.targetTons / baseInputTons) * 100 : 0;
+                  return (
+                    <div key={m.monthIdx} className="flex items-center gap-3">
+                      <span className="text-[11.5px] text-enba-muted w-10 flex-none">
+                        Ay {idx + 1}
+                      </span>
+                      <input
+                        type="number"
+                        min={0}
+                        max={baseInputTons || undefined}
+                        value={m.targetTons || ''}
+                        placeholder="0"
+                        onChange={e => {
+                          const val = Math.max(0, Number(e.target.value) || 0);
+                          const newMonths = rampUp.months.map((x, xi) =>
+                            xi === idx ? { ...x, targetTons: val } : x,
+                          );
+                          setRampUp({ ...rampUp, months: newMonths });
+                        }}
+                        className="w-24 px-2.5 py-1.5 rounded-lg border border-enba-line bg-enba-panel text-[12.5px] text-enba-text focus:outline-none focus:border-enba-orange"
+                      />
+                      <span className="text-[11px] text-enba-muted w-8">ton</span>
+                      {/* Progress bar */}
+                      <div className="flex-1 h-1.5 rounded-full bg-enba-line overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-enba-orange/70 transition-all"
+                          style={{ width: `${Math.min(100, pct)}%` }}
+                        />
+                      </div>
+                      <span className="text-[11px] text-enba-muted w-10 text-right tabular-nums">
+                        %{pct.toFixed(0)}
+                      </span>
+                    </div>
+                  );
+                })}
+                {/* Full capacity indicator */}
+                <div className="flex items-center gap-3 pt-1 border-t border-enba-line">
+                  <span className="text-[11.5px] text-enba-muted w-10 flex-none">
+                    Ay {rampUp.targetMonth + 1}+
+                  </span>
+                  <span className="text-[12px] text-enba-green font-medium">
+                    Tam Kapasite ({baseInputTons > 0 ? `${baseInputTons} ton` : '—'})
+                  </span>
+                  <div className="flex-1 h-1.5 rounded-full bg-enba-green/25 overflow-hidden">
+                    <div className="h-full rounded-full bg-enba-green/70" style={{ width: '100%' }} />
+                  </div>
+                  <span className="text-[11px] text-enba-green w-10 text-right">%100</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Kümülatif etki */}
+          {cumulativeLoss > 0 && (
+            <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 dark:bg-amber-950/20 dark:border-amber-700/30">
+              <div className="text-[11.5px] text-amber-700 dark:text-amber-400 font-medium mb-1">
+                Tahmini Kümülatif Gelir Kaybı
+              </div>
+              <div className="text-[18px] font-bold text-amber-700 dark:text-amber-400">
+                {fmtTL(cumulativeLoss)}
+              </div>
+              <div className="text-[11px] text-amber-600/70 dark:text-amber-500/60 mt-0.5">
+                Tam kapasiteye göre rampa dönemindeki kümülatif fark
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+// ─── Adım 7 — Özet ───────────────────────────────────────────────────────────
+
+function Step7Ozet({ state, calc, fixedCostMonth }: {
   state: WizardState;
   calc: ReturnType<typeof calcProductionResults>;
   fixedCostMonth: number;

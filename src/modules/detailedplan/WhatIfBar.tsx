@@ -26,7 +26,7 @@ interface Props {
 
 export function WhatIfBar({ scenarioId, productionModel: pm }: Props) {
   const scen = SCENARIOS[scenarioId];
-  const { products, fixedExpenses, periods, weeklyHorizon } = usePlanData();
+  const { products, fixedExpenses, periods, weeklyHorizon, rampUp, baseInputTons: ctxBaseInputTons } = usePlanData();
 
   // ── Temel üretim bilgileri (productionModel'dan) ──────────────────────────
   const baseInputTons    = pm?.monthlyInputTons ?? 0;
@@ -141,14 +141,14 @@ export function WhatIfBar({ scenarioId, productionModel: pm }: Props) {
 
   // ── Seri hesapları ────────────────────────────────────────────────────────
   const baseSeries = useMemo(
-    () => buildSeries(products, fixedExpenses, periods, scen, weeklyHorizon),
+    () => buildSeries(products, fixedExpenses, periods, scen, weeklyHorizon, rampUp, baseInputTons),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [products, fixedExpenses, periods, scenarioId, weeklyHorizon],
+    [products, fixedExpenses, periods, scenarioId, weeklyHorizon, rampUp, baseInputTons],
   );
   const wiSeries = useMemo(
-    () => open ? buildSeries(modProducts, modExpenses, periods, scen, weeklyHorizon) : null,
+    () => open ? buildSeries(modProducts, modExpenses, periods, scen, weeklyHorizon, rampUp, baseInputTons) : null,
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [open, modProducts, modExpenses, periods, scenarioId, weeklyHorizon],
+    [open, modProducts, modExpenses, periods, scenarioId, weeklyHorizon, rampUp, baseInputTons],
   );
 
   const sumSeries = (s: typeof baseSeries) =>

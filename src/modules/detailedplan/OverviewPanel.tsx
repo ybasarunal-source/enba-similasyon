@@ -1,11 +1,11 @@
 import React, { useMemo } from 'react';
 import {
   ResponsiveContainer, ComposedChart, CartesianGrid, XAxis, YAxis, Tooltip,
-  ReferenceLine, Area, Line, AreaChart, Bar, BarChart,
+  ReferenceLine, ReferenceArea, Area, Line, AreaChart, Bar, BarChart,
 } from 'recharts';
 import {
   SCENARIOS, buildSeries, fmtTL, fmtPct,
-  revenueFor, bvaForPeriod, Scenario, usePlanData, Granularity,
+  revenueFor, bvaForPeriod, Scenario, usePlanData, Granularity, getRampScale,
 } from './dpData';
 import { cx, Card, SectionTitle, KpiCard, Sparkline, Variance, I, useChartColors, xInterval } from './DPPrimitives';
 
@@ -19,12 +19,12 @@ const GRAN_LABEL: Record<Granularity, string> = {
 export const OverviewPanel = ({ scenarioId }: { scenarioId: string; periodGranularity: string }) => {
   const scen: Scenario = SCENARIOS[scenarioId];
   const cc = useChartColors();
-  const { products, fixedExpenses, periods, weeklyHorizon, cashEvents, actualsThrough, granularity } = usePlanData();
+  const { products, fixedExpenses, periods, weeklyHorizon, cashEvents, actualsThrough, granularity, rampUp, baseInputTons } = usePlanData();
 
   // weeklyHorizon buildSeries'e aktarılmalı — yoksa haftalık ramp hesaplanmaz
   const series = useMemo(
-    () => buildSeries(products, fixedExpenses, periods, scen, weeklyHorizon),
-    [scenarioId, products, fixedExpenses, periods, weeklyHorizon],
+    () => buildSeries(products, fixedExpenses, periods, scen, weeklyHorizon, rampUp, baseInputTons),
+    [scenarioId, products, fixedExpenses, periods, weeklyHorizon, rampUp, baseInputTons],
   );
 
   const totals = useMemo(() => series.reduce((a, x) => ({
@@ -103,6 +103,43 @@ export const OverviewPanel = ({ scenarioId }: { scenarioId: string; periodGranul
           accent="amber" icon={<I.Calendar size={14}/>}/>
       </div>
 
+      {/* Ramp-Up özet kartı — sadece aktifse göster */}
+      {rampUp?.enabled && rampUp.months.length > 0 && (() => {
+        // Kümülatif kapasite kaybı hesabı
+        const lostTons = rampUp.months.reduce((s, m) => s + Math.max(0, baseInputTons - m.targetTons), 0);
+        // Tam kapasite serisinden aylık gelir ortalaması al
+        const fullSeries  = buildSeries(products, fixedExpenses, periods, scen, weeklyHorizon);
+        const avgRevPerMo = fullSeries.length > 0 ? fullSeries.reduce((s, x) => s + x.revenue, 0) / fullSeries.length : 0;
+        const avgRevPerTon = baseInputTons > 0 ? avgRevPerMo / baseInputTons : 0;
+        const lostRev = lostTons * avgRevPerTon;
+        return (
+          <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 dark:bg-amber-950/20 dark:border-amber-700/30">
+            <div className="w-7 h-7 rounded-lg bg-amber-100 dark:bg-amber-800/30 flex items-center justify-center flex-none mt-0.5">
+              <I.Calendar size={13} className="text-amber-600 dark:text-amber-400"/>
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[11.5px] font-semibold text-amber-700 dark:text-amber-400 mb-1">RAMPA DÖNEMİ</div>
+              <div className="flex flex-wrap gap-x-5 gap-y-1 text-[11.5px] text-amber-600 dark:text-amber-500">
+                <span>Süre: <b>{rampUp.targetMonth} ay</b></span>
+                {rampUp.months.slice(0, 3).map((m, i) => (
+                  <span key={i}>
+                    Ay {i + 1}: <b>{m.targetTons}t</b>
+                    {baseInputTons > 0 && <span className="text-amber-400"> ({Math.round(m.targetTons/baseInputTons*100)}%)</span>}
+                  </span>
+                ))}
+                {rampUp.months.length > 3 && <span>… +{rampUp.months.length - 3} ay</span>}
+              </div>
+              {lostRev > 0 && (
+                <div className="text-[11.5px] text-amber-600/80 dark:text-amber-500/70 mt-1">
+                  Kümülatif gelir etkisi: <b className="text-amber-700 dark:text-amber-400">{fmtTL(lostRev)}</b>
+                  <span className="ml-1">(tam kapasiteye göre)</span>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Revenue / Cost chart */}
       <Card>
         <SectionTitle eyebrow={`${scen.label} senaryo`} title="Gelir & Gider Projeksiyonu"
@@ -131,6 +168,17 @@ export const OverviewPanel = ({ scenarioId }: { scenarioId: string; periodGranul
               <Area type="monotone" dataKey="revenue" stroke="#E35205" strokeWidth={2.5} fill="url(#revGrad)" name="Gelir"/>
               <Line type="monotone" dataKey="opex" stroke={cc.muted} strokeWidth={1.8} strokeDasharray="4 3" dot={false} name="Toplam Gider"/>
               <Line type="monotone" dataKey="ebitda" stroke="#3DBE7C" strokeWidth={2} dot={false} name="EBITDA"/>
+              {/* Ramp-up gölgeleme — aktifse ilk N ayı göster */}
+              {rampUp?.enabled && series.slice(0, rampUp.targetMonth).map((p, i) => (
+                getRampScale(rampUp, (p.monthOffset ?? i), baseInputTons) < 1 && (
+                  <ReferenceArea
+                    key={`ramp-${i}`}
+                    x1={p.label} x2={p.label}
+                    fill="rgba(227,82,5,0.07)"
+                    stroke="none"
+                  />
+                )
+              ))}
             </ComposedChart>
           </ResponsiveContainer>
         </div>
@@ -175,7 +223,7 @@ export const OverviewPanel = ({ scenarioId }: { scenarioId: string; periodGranul
           <SectionTitle eyebrow="Karşılaştırma" title="Senaryo Özeti"/>
           <div className="space-y-2">
             {Object.values(SCENARIOS).map(s => {
-              const ss = buildSeries(products, fixedExpenses, periods, s, weeklyHorizon);
+              const ss = buildSeries(products, fixedExpenses, periods, s, weeklyHorizon, rampUp, baseInputTons);
               const rev = ss.reduce((a, x) => a + x.revenue, 0);
               const eb = ss.reduce((a, x) => a + x.ebitda, 0);
               const margin = eb / rev;

@@ -15,14 +15,14 @@ import {
 export const ScenarioPanel = ({ scenarioId, periodGranularity }:
   { scenarioId: string; periodGranularity: string }) => {
   const cc = useChartColors();
-  const { products, fixedExpenses, periods } = usePlanData();
+  const { products, fixedExpenses, periods, weeklyHorizon, rampUp, baseInputTons } = usePlanData();
   const [focused, setFocused] = useState(scenarioId);
   const [metricMode, setMetricMode] = useState<'total' | 'monthly'>('total');
 
   const metrics = useMemo(() => {
     const all: Record<string, any> = {};
     Object.values(SCENARIOS).forEach(s => {
-      const series = buildSeries(products, fixedExpenses, periods, s);
+      const series = buildSeries(products, fixedExpenses, periods, s, weeklyHorizon, rampUp, baseInputTons);
       const totalRev = series.reduce((a, x) => a + x.revenue, 0);
       const totalOp  = series.reduce((a, x) => a + x.opex, 0);
       const totalEb  = series.reduce((a, x) => a + x.ebitda, 0);
@@ -316,7 +316,7 @@ const SensitivityAnalysis = () => {
   const [volShift, setVolShift]     = useState(0);
   const [costShift, setCostShift]   = useState(0);
 
-  const { products, fixedExpenses, periods } = usePlanData();
+  const { products, fixedExpenses, periods, weeklyHorizon, rampUp, baseInputTons } = usePlanData();
   const baseScen = SCENARIOS.baz;
   const result = useMemo(() => {
     let rev = 0, opex = 0;
@@ -336,11 +336,11 @@ const SensitivityAnalysis = () => {
   }, [priceShift, volShift, costShift]);
 
   const baseMetrics = useMemo(() => {
-    const series = buildSeries(products, fixedExpenses, periods, baseScen);
+    const series = buildSeries(products, fixedExpenses, periods, baseScen, weeklyHorizon, rampUp, baseInputTons);
     const rev = series.reduce((a, x) => a + x.revenue, 0);
     const eb  = series.reduce((a, x) => a + x.ebitda, 0);
     return { rev, eb };
-  }, []);
+  }, [products, fixedExpenses, periods, weeklyHorizon, rampUp, baseInputTons]);
 
   const revDelta = baseMetrics.rev !== 0 ? (result.rev - baseMetrics.rev) / baseMetrics.rev : 0;
   const ebDelta  = baseMetrics.eb  !== 0 ? (result.ebitda - baseMetrics.eb) / baseMetrics.eb  : 0;

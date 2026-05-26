@@ -49,6 +49,36 @@ export const weeklyRampAt = (r: WeeklyRamp, w: number): number =>
     ? r.startValue * Math.pow(1 + r.weeklyGrowthPct / 100, w)
     : Math.max(0, r.startValue + r.weeklyDelta * w);
 
+// ─── Aylık Ramp-Up (Faz 1) ───────────────────────────────────────────────────
+/** Belirli bir ay indeksindeki hedef giriş tonajı */
+export interface RampUpMonth {
+  monthIdx:   number;   // plan başından 0-bazlı ay indeksi
+  targetTons: number;   // bu ay için giriş tonajı (ton)
+}
+
+/** Ramp-up takvimi — tam kapasiteye kademeli ulaşım */
+export interface RampUpSchedule {
+  enabled:     boolean;
+  months:      RampUpMonth[];  // kademeli aylar — tam kapasiteye gelinince biter
+  targetMonth: number;         // bu ay indeksinden itibaren tam kapasite (bu ay dahil değil)
+}
+
+/**
+ * Belirli bir ay indeksinde gelir/değişken maliyet için scale faktörü döner (0.0–1.0+).
+ * Sabit giderler (kira, personel) etkilenmez.
+ */
+export const getRampScale = (
+  rampUp: RampUpSchedule | undefined,
+  monthIdx: number,
+  baseInputTons: number,
+): number => {
+  if (!rampUp?.enabled || !baseInputTons) return 1;
+  if (monthIdx >= rampUp.targetMonth) return 1;
+  const entry = rampUp.months.find(m => m.monthIdx === monthIdx);
+  if (!entry) return 1;
+  return entry.targetTons / baseInputTons;
+};
+
 export type Granularity = 'weekly' | 'monthly' | 'quarterly' | 'annual';
 
 // ─── Müşteri Havuzu — plan içinde yaşar ──────────────────────────────────────
@@ -190,6 +220,7 @@ export interface DPlan {
   cashEvents: CashEvent[];
   productionModel?: ProductionModel;  // yeni wizard — AI'a hazır yapılandırılmış model
   actuals?: PlanActuals;              // bütçe-gerçekleşen karşılaştırma için elle girilmiş veriler
+  rampUp?: RampUpSchedule;           // aylık ramp-up takvimi (Faz 1)
 }
 
 export interface SeriesPoint extends Period {
@@ -317,6 +348,8 @@ export const buildSeries = (
   products: Product[], fixedExpenses: FixedExpense[], periods: Period[],
   scen: Scenario = SCENARIOS.baz,
   weeklyHorizon = 0,
+  rampUp?: RampUpSchedule,
+  baseInputTons = 0,
 ): SeriesPoint[] =>
   periods.map((p, i) => {
     const span   = p.spanMonths ?? 1;
@@ -325,21 +358,24 @@ export const buildSeries = (
     if (span === 0 && p.weekIdx !== undefined) {
       // ── Haftalık dönem ──
       const w = p.weekIdx;
+      const mi = Math.floor(w / WEEKS_PER_MONTH);
+      const rampScale = getRampScale(rampUp, mi, baseInputTons);
       const revenue = products.reduce((s, prod) => {
-        if (prod.weeklyRamp && w < weeklyHorizon)
-          return s + weeklyRampAt(prod.weeklyRamp, w) * prod.price * scen.rev;
-        return s + revenueFor(prod, Math.floor(w / WEEKS_PER_MONTH), scen) / WEEKS_PER_MONTH;
+        const base = prod.weeklyRamp && w < weeklyHorizon
+          ? weeklyRampAt(prod.weeklyRamp, w) * prod.price * scen.rev
+          : revenueFor(prod, mi, scen) / WEEKS_PER_MONTH;
+        return s + base * rampScale;
       }, 0);
       const varCost = products.reduce((s, prod) => {
         const rev = prod.weeklyRamp && w < weeklyHorizon
           ? weeklyRampAt(prod.weeklyRamp, w) * prod.price * scen.rev
-          : revenueFor(prod, Math.floor(w / WEEKS_PER_MONTH), scen) / WEEKS_PER_MONTH;
-        return s + rev * prod.varCostRatio * scen.cost;
+          : revenueFor(prod, mi, scen) / WEEKS_PER_MONTH;
+        return s + rev * prod.varCostRatio * scen.cost * rampScale;
       }, 0);
       const fixCost = fixedExpenses.reduce((s, e) => {
         if (e.weeklyRamp && w < weeklyHorizon)
           return s + weeklyRampAt(e.weeklyRamp, w) * scen.cost;
-        return s + fixedCostFor(e, Math.floor(w / WEEKS_PER_MONTH), scen) / WEEKS_PER_MONTH;
+        return s + fixedCostFor(e, mi, scen) / WEEKS_PER_MONTH;
       }, 0);
       const opex   = varCost + fixCost;
       const ebitda = revenue - opex;
@@ -351,8 +387,9 @@ export const buildSeries = (
     let revenue = 0, varCost = 0, fixCost = 0;
     for (let s = 0; s < span; s++) {
       const mi = offset + s;
-      revenue  += products.reduce((acc, prod) => acc + revenueFor(prod, mi, scen), 0);
-      varCost  += products.reduce((acc, prod) => acc + varCostFor(prod, mi, scen), 0);
+      const rampScale = getRampScale(rampUp, mi, baseInputTons);
+      revenue  += products.reduce((acc, prod) => acc + revenueFor(prod, mi, scen), 0) * rampScale;
+      varCost  += products.reduce((acc, prod) => acc + varCostFor(prod, mi, scen), 0) * rampScale;
       fixCost  += fixedExpenses.reduce((acc, e) => acc + fixedCostFor(e, mi, scen), 0);
     }
     const opex   = varCost + fixCost;
@@ -894,6 +931,7 @@ export const migratePlanFormat = (raw: any): DPlan => {
     suppliers:     raw.suppliers ?? [],
     customers:     raw.customers ?? [],
     weeklyHorizon: raw.weeklyHorizon ?? 12,
+    rampUp:        raw.rampUp ?? undefined,
   } as DPlan;
 };
 
@@ -918,6 +956,10 @@ export interface PlanDataCtxValue {
   actuals:          PlanActuals;
   /** Aktüel veri kaydetme + actualsThrough güncelleme */
   onActualChange:   (actuals: PlanActuals, actualsThrough?: number) => void;
+  /** Aylık ramp-up takvimi (undefined = devre dışı) */
+  rampUp?:          RampUpSchedule;
+  /** Üretim modelindeki hedef aylık giriş tonajı (ramp scale hesabı için) */
+  baseInputTons:    number;
 }
 
 export const PlanCtx = React.createContext<PlanDataCtxValue>({
@@ -936,6 +978,8 @@ export const PlanCtx = React.createContext<PlanDataCtxValue>({
   startMonth:       0,
   actuals:          {},
   onActualChange:   () => {},
+  rampUp:           undefined,
+  baseInputTons:    0,
 });
 
 export const usePlanData = (): PlanDataCtxValue => React.useContext(PlanCtx);
