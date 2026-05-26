@@ -11,8 +11,9 @@ import { CashFlowPanel }    from './CashFlowPanel';
 import { ScenarioPanel }    from './ScenarioPanel';
 import { BudgetTrackPanel } from './BudgetTrackPanel';
 import { WhatIfBar }        from './WhatIfBar';
+import { PnLPanel }         from './PnLPanel';
 
-type SectionId = 'overview' | 'revenue' | 'expense' | 'cashflow' | 'scenario' | 'budget';
+type SectionId = 'pnl' | 'overview' | 'revenue' | 'expense' | 'cashflow' | 'scenario' | 'budget';
 
 interface NavItem {
   id: SectionId;
@@ -21,6 +22,7 @@ interface NavItem {
 }
 
 const NAV: NavItem[] = [
+  { id: 'pnl',      label: 'P&L',         Icon: I.List      },
   { id: 'overview',  label: 'Genel Bakış', Icon: I.Dashboard },
   { id: 'revenue',   label: 'Gelir Planı', Icon: I.Revenue   },
   { id: 'expense',   label: 'Gider Planı', Icon: I.Expense   },
@@ -40,7 +42,7 @@ interface DetailedPlanShellProps {
 }
 
 export function DetailedPlanShell({ plan, costCenters = [], onSave, onBack, onEdit, onCreateVersion, navigate }: DetailedPlanShellProps) {
-  const [active, setActive]           = useState<SectionId>('overview');
+  const [active, setActive]           = useState<SectionId>('pnl');
   const [scenarioId, setScenarioId]   = useState('baz');
   const [granularity, setGranularity] = useState<Granularity>('monthly');
   const [horizon, setHorizon]         = useState(plan?.horizon ?? 24);
@@ -337,6 +339,7 @@ export function DetailedPlanShell({ plan, costCenters = [], onSave, onBack, onEd
         <main className="flex-1 flex flex-col overflow-hidden">
           <div className="flex-1 overflow-y-auto p-5 grid-bg">
             <div className="max-w-[1380px] mx-auto">
+              {active === 'pnl'       && <PnLPanel plan={plan} onSave={onSave} scenarioId={scenarioId} />}
               {active === 'overview'  && <OverviewPanel    scenarioId={scenarioId} periodGranularity={granularity} />}
               {active === 'revenue'   && <RevenuePanel     scenarioId={scenarioId} periodGranularity={granularity} />}
               {active === 'expense'   && <ExpensePanel     scenarioId={scenarioId} periodGranularity={granularity} />}
