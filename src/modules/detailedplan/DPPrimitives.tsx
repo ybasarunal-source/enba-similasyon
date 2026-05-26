@@ -62,6 +62,8 @@ export const I = {
   Check:     (p: IconProps) => <Icon {...p}><path d="M5 12.5l4.5 4.5L19 7"/></Icon>,
   Sun:       (p: IconProps) => <Icon {...p}><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></Icon>,
   Moon:      (p: IconProps) => <Icon {...p}><path d="M21 13.5A8.5 8.5 0 1110.5 3a7 7 0 0010.5 10.5z"/></Icon>,
+  Lock:      (p: IconProps) => <Icon {...p}><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></Icon>,
+  Copy:      (p: IconProps) => <Icon {...p}><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></Icon>,
 };
 
 // ---- Card ----

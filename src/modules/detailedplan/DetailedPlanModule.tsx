@@ -147,7 +147,33 @@ export function DetailedPlanModule({ navigate, setBackOverride }: Props) {
     setRightOpen(false); // Plan açılınca sidebar gizlenir ama yok olmaz
   };
 
-  const openWizardForEdit = (plan: DPlan) => { setActivePlanId(plan.id); setView('wizard'); };
+  // Active plan düzenlenemez — sadece versiyon alınabilir
+  const openWizardForEdit = (plan: DPlan) => {
+    if ((plan.status ?? 'draft') === 'active') return;
+    setActivePlanId(plan.id);
+    setView('wizard');
+  };
+
+  // Onaylı plandan yeni taslak versiyon oluştur
+  const handleCreateVersion = (plan: DPlan) => {
+    const nextVersion = (plan.version ?? 1) + 1;
+    const rootId = plan.parentPlanId ?? plan.id;
+    const newPlan: DPlan = {
+      ...plan,
+      id:           crypto.randomUUID(),
+      supabaseId:   undefined,
+      title:        `${plan.title.replace(/ v\d+$/, '')} v${nextVersion}`,
+      baslik:       `${plan.baslik.replace(/ v\d+$/, '')} v${nextVersion}`,
+      status:       'draft',
+      actualsThrough: 0,
+      actuals:      {},
+      version:      nextVersion,
+      parentPlanId: rootId,
+    };
+    upsertPlan(newPlan);
+    setActivePlanId(newPlan.id);
+    setView('wizard');
+  };
 
   const handleDelete = (id: string) => {
     if (!window.confirm('Bu plan silinecek. Emin misiniz?')) return;
@@ -262,7 +288,8 @@ export function DetailedPlanModule({ navigate, setBackOverride }: Props) {
               costCenters={costCenters}
               onSave={upsertPlan}
               onBack={() => { setView('list'); setActivePlanId(null); setRightOpen(true); }}
-              onEdit={() => openWizardForEdit(activePlan)}
+              onEdit={(activePlan.status ?? 'draft') === 'active' ? undefined : () => openWizardForEdit(activePlan)}
+              onCreateVersion={() => handleCreateVersion(activePlan)}
               navigate={navigate}
             />
           )}
@@ -283,6 +310,7 @@ export function DetailedPlanModule({ navigate, setBackOverride }: Props) {
               onEdit={openWizardForEdit}
               onDelete={handleDelete}
               onStatusChange={handleStatusChange}
+              onCreateVersion={handleCreateVersion}
               onNew={() => { setActivePlanId(null); setView('typeSelect'); }}
               activePlanId={activePlanId}
               onToggle={() => setRightOpen(false)}
@@ -734,15 +762,17 @@ const STATUS_NEXT: Partial<Record<PlanStatus, Array<{ label: string; next: PlanS
   archived: [{ label: 'Geri Al', next: 'draft',    variant: 'ghost' }],
 };
 
-function PlanCard({ plan, costCenters, onOpen, onEdit, onDelete, onStatusChange }: {
+function PlanCard({ plan, costCenters, onOpen, onEdit, onDelete, onStatusChange, onCreateVersion }: {
   plan: DPlan;
   costCenters: CostCenter[];
   onOpen: () => void;
   onEdit: () => void;
   onDelete: () => void;
   onStatusChange: (s: PlanStatus) => void;
+  onCreateVersion: () => void;
 }) {
   const status         = plan.status ?? 'draft';
+  const isLocked       = status === 'active';
   const badge          = STATUS_BADGE[status];
   const nextActions    = STATUS_NEXT[status] ?? [];
   const activeProjects = plan.projects.filter(p => p.isActive).length;
@@ -787,36 +817,52 @@ function PlanCard({ plan, costCenters, onOpen, onEdit, onDelete, onStatusChange 
         <p className="text-[11.5px] text-enba-dim leading-relaxed line-clamp-2 -mt-1">{plan.description}</p>
       )}
 
+      {/* Versiyon bilgisi */}
+      {(plan.version ?? 1) > 1 && (
+        <div className="flex items-center gap-1.5 text-[10.5px] text-enba-muted -mt-1">
+          <span className="px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-400/20 font-medium">
+            v{plan.version}
+          </span>
+          <span className="text-enba-dim">Versiyon {plan.version}</span>
+        </div>
+      )}
+
       {/* Action bar */}
       <div className="flex items-center gap-2 pt-1 border-t border-enba-line">
         <Btn variant="primary" size="sm" onClick={onOpen}>Aç</Btn>
 
-        {/* Quick status transitions */}
-        {nextActions.map(a => (
-          <Btn
-            key={a.next}
-            variant={a.variant ?? 'outline'}
-            size="sm"
-            onClick={() => onStatusChange(a.next)}
-          >
+        {/* Active plan: sadece "Yeni Versiyon Al" */}
+        {isLocked && (
+          <Btn variant="outline" size="sm" icon={<I.Copy size={12}/>} onClick={onCreateVersion}>
+            Yeni Versiyon
+          </Btn>
+        )}
+
+        {/* Diğer durum geçişleri */}
+        {!isLocked && nextActions.map(a => (
+          <Btn key={a.next} variant={a.variant ?? 'outline'} size="sm" onClick={() => onStatusChange(a.next)}>
+            {a.label}
+          </Btn>
+        ))}
+        {isLocked && nextActions.map(a => (
+          <Btn key={a.next} variant={a.variant ?? 'outline'} size="sm" onClick={() => onStatusChange(a.next)}>
             {a.label}
           </Btn>
         ))}
 
         <div className="flex-1" />
 
-        <button
-          onClick={onEdit}
-          className="w-8 h-8 rounded-lg text-enba-dim hover:text-enba-orange hover:bg-enba-orange/10 inline-flex items-center justify-center transition-colors"
-          title="Düzenle"
-        >
-          <I.Edit size={13} />
-        </button>
-        <button
-          onClick={onDelete}
-          className="w-8 h-8 rounded-lg text-enba-dim hover:text-enba-red hover:bg-enba-red/10 inline-flex items-center justify-center transition-colors"
-          title="Sil"
-        >
+        {/* Edit butonu — active'de kilitli */}
+        {isLocked ? (
+          <div className="w-8 h-8 rounded-lg text-enba-dim/40 inline-flex items-center justify-center cursor-not-allowed" title="Onaylı plan değiştirilemez">
+            <I.Lock size={13} />
+          </div>
+        ) : (
+          <button onClick={onEdit} className="w-8 h-8 rounded-lg text-enba-dim hover:text-enba-orange hover:bg-enba-orange/10 inline-flex items-center justify-center transition-colors" title="Düzenle">
+            <I.Edit size={13} />
+          </button>
+        )}
+        <button onClick={onDelete} className="w-8 h-8 rounded-lg text-enba-dim hover:text-enba-red hover:bg-enba-red/10 inline-flex items-center justify-center transition-colors" title="Sil">
           <I.Trash size={13} />
         </button>
       </div>
@@ -1091,7 +1137,7 @@ const SIDEBAR_GROUPS = [
 ];
 
 function PlanListSidebar({
-  plans, costCenters, onOpen, onEdit, onDelete, onStatusChange, onNew, activePlanId, onToggle,
+  plans, costCenters, onOpen, onEdit, onDelete, onStatusChange, onCreateVersion, onNew, activePlanId, onToggle,
 }: {
   plans: DPlan[];
   costCenters: CostCenter[];
@@ -1099,6 +1145,7 @@ function PlanListSidebar({
   onEdit: (p: DPlan) => void;
   onDelete: (id: string) => void;
   onStatusChange: (id: string, s: PlanStatus) => void;
+  onCreateVersion: (p: DPlan) => void;
   onNew: () => void;
   activePlanId?: string | null;
   onToggle: () => void;
@@ -1158,6 +1205,7 @@ function PlanListSidebar({
                       onEdit={() => onEdit(plan)}
                       onDelete={() => onDelete(plan.id)}
                       onStatusChange={(s) => onStatusChange(plan.id, s)}
+                      onCreateVersion={() => onCreateVersion(plan)}
                     />
                   ))}
                 </div>
@@ -1173,7 +1221,7 @@ function PlanListSidebar({
 // ─── PlanSidebarRow ───────────────────────────────────────────────────────────
 
 function PlanSidebarRow({
-  plan, isActive, onOpen, onEdit, onDelete, onStatusChange,
+  plan, isActive, onOpen, onEdit, onDelete, onStatusChange, onCreateVersion,
 }: {
   plan: DPlan;
   isActive?: boolean;
@@ -1181,8 +1229,10 @@ function PlanSidebarRow({
   onEdit: () => void;
   onDelete: () => void;
   onStatusChange: (s: PlanStatus) => void;
+  onCreateVersion: () => void;
 }) {
   const status      = plan.status ?? 'draft';
+  const isLocked    = status === 'active';
   const nextActions = STATUS_NEXT[status] ?? [];
   const isPending   = status === 'pending';
 
@@ -1201,19 +1251,33 @@ function PlanSidebarRow({
           <div className="text-[12.5px] font-semibold text-enba-text truncate group-hover:text-enba-orange transition-colors">
             {plan.title}
           </div>
-          <div className="text-[10.5px] text-enba-dim mt-0.5">
+          <div className="text-[10.5px] text-enba-dim mt-0.5 flex items-center gap-1.5">
+            {isLocked && <I.Lock size={9} className="text-enba-green/70 flex-none" />}
             {plan.startYear} · {plan.horizon} ay · {plan.projects.length} proje
+            {(plan.version ?? 1) > 1 && (
+              <span className="px-1 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-400/20 text-[9px] font-medium">v{plan.version}</span>
+            )}
           </div>
         </div>
         {/* İnce butonlar — hover'da görünür */}
         <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-none">
-          <button
-            onClick={e => { e.stopPropagation(); onEdit(); }}
-            className="w-6 h-6 rounded text-enba-dim hover:text-enba-orange inline-flex items-center justify-center"
-            title="Düzenle"
-          >
-            <I.Edit size={11} />
-          </button>
+          {isLocked ? (
+            <button
+              onClick={e => { e.stopPropagation(); onCreateVersion(); }}
+              className="w-6 h-6 rounded text-enba-dim hover:text-enba-orange inline-flex items-center justify-center"
+              title="Yeni Versiyon Al"
+            >
+              <I.Copy size={11} />
+            </button>
+          ) : (
+            <button
+              onClick={e => { e.stopPropagation(); onEdit(); }}
+              className="w-6 h-6 rounded text-enba-dim hover:text-enba-orange inline-flex items-center justify-center"
+              title="Düzenle"
+            >
+              <I.Edit size={11} />
+            </button>
+          )}
           <button
             onClick={e => { e.stopPropagation(); onDelete(); }}
             className="w-6 h-6 rounded text-enba-dim hover:text-enba-red inline-flex items-center justify-center"
@@ -1227,16 +1291,22 @@ function PlanSidebarRow({
       {/* Aksiyon butonları */}
       <div className="flex items-center gap-1.5 flex-wrap">
         <Btn variant="primary" size="sm" onClick={onOpen}>Aç</Btn>
-        {nextActions.slice(0, 1).map(a => (
-          <Btn
-            key={a.next}
-            variant={a.variant ?? 'outline'}
-            size="sm"
-            onClick={() => onStatusChange(a.next)}
-          >
-            {a.label}
+        {isLocked ? (
+          <Btn variant="outline" size="sm" icon={<I.Copy size={10}/>} onClick={onCreateVersion}>
+            Versiyon Al
           </Btn>
-        ))}
+        ) : (
+          nextActions.slice(0, 1).map(a => (
+            <Btn
+              key={a.next}
+              variant={a.variant ?? 'outline'}
+              size="sm"
+              onClick={() => onStatusChange(a.next)}
+            >
+              {a.label}
+            </Btn>
+          ))
+        )}
       </div>
     </div>
   );

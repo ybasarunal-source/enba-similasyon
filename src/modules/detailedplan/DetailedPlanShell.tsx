@@ -35,10 +35,11 @@ interface DetailedPlanShellProps {
   onSave?: (p: DPlan) => void;
   onBack?: () => void;
   onEdit?: () => void;
+  onCreateVersion?: () => void;
   navigate?: (module: string) => void;
 }
 
-export function DetailedPlanShell({ plan, costCenters = [], onSave, onBack, onEdit, navigate }: DetailedPlanShellProps) {
+export function DetailedPlanShell({ plan, costCenters = [], onSave, onBack, onEdit, onCreateVersion, navigate }: DetailedPlanShellProps) {
   const [active, setActive]           = useState<SectionId>('overview');
   const [scenarioId, setScenarioId]   = useState('baz');
   const [granularity, setGranularity] = useState<Granularity>('monthly');
@@ -264,6 +265,9 @@ export function DetailedPlanShell({ plan, costCenters = [], onSave, onBack, onEd
             <div className="flex items-center gap-2 flex-none">
               {onEdit && (
                 <Btn variant="ghost" size="md" icon={<I.Edit size={14} />} onClick={onEdit}>Düzenle</Btn>
+              )}
+              {!onEdit && onCreateVersion && (
+                <Btn variant="outline" size="md" icon={<I.Copy size={14} />} onClick={onCreateVersion}>Yeni Versiyon</Btn>
               )}
               {onSave && plan && (
                 <Btn variant="ghost" size="md" icon={<I.Save size={14} />} onClick={() => onSave(plan)}>Kaydet</Btn>
