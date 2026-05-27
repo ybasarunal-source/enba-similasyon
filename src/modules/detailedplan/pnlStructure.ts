@@ -236,9 +236,10 @@ export const PNL_SECTIONS: PnLSectionDef[] = [
   },
 
   // ── 12. VERGİ ─────────────────────────────────────────────────────────────────
+  // subtotalMcode='' çünkü M919 = NET KAR (vergi toplamı değil) — milestone satırında gösterilir
   {
     id: 'vergi', label: 'VERGİ', colorCls: 'border-gray-300',
-    subtotalMcode: 'M919',
+    subtotalMcode: '',
     items: [
       // M899 = EBT (grand total, önceki bölümlerden geliyor)
       { mcode: 'M909', isExpense: true, source: 'tax', level: 1 }, // Kurumlar Vergisi %22
