@@ -143,6 +143,7 @@ export function PnLPanel({ plan, onSave, granularity = 'monthly', horizon = 12 }
         if (row.status === 'calculated') continue;           // otomatik — sayma
         const entry = mcodeEntries.find(e => e.mcode === row.mcode);
         if (entry?.status === 'na') continue;               // N/A — sayma
+        if (entry?.status === 'filled') continue;           // kasıtlı dolu (0 bile olsa) — sayma
         const val = computedRows.monthly[row.mcode] ?? 0;
         if (val === 0) emptyCount++;
       }
@@ -309,7 +310,8 @@ export function PnLPanel({ plan, onSave, granularity = 'monthly', horizon = 12 }
                 const val        = getValue(row.mcode);
                 const isNA       = entry?.status === 'na';
                 const isCalc     = row.status === 'calculated';
-                const isEmpty    = !isNA && !isCalc && val === 0;
+                // filled + 0 → kasıtlı sıfır (uyarı verme); status yoksa veya 'empty' ise → gerçekten boş
+                const isEmpty    = !isNA && !isCalc && val === 0 && entry?.status !== 'filled';
                 const isMilestone = PNL_MILESTONE_MCODES.has(row.mcode);
 
                 if (isNA && !showNA) return null;
