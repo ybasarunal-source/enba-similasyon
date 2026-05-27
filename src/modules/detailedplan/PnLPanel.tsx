@@ -74,30 +74,37 @@ export function PnLPanel({ plan, onSave }: PnLPanelProps) {
     }
 
     // Milestone değerleri (EBITDA, EBIT, NET KAR vb.) — birikmeli hesap
-    const m179 = monthly['M179'] ?? 0;  // Net Satışlar
-    const m249 = monthly['M249'] ?? 0;  // Satış Giderleri toplam (negatif)
-    const m299 = m179 + (monthly['M249'] ?? 0); // NET GELİR
+    // ÖNEMLİ: Section subtotal'lar zaten işaretli (giderler negatif, gelirler pozitif).
+    // Doğrudan toplanır — ek çarpma gerekmez.
+    const m179 = monthly['M179'] ?? 0;  // Net Satışlar (pozitif)
+    const m249 = monthly['M249'] ?? 0;  // Satış Giderleri (negatif)
+    const m299 = m179 + m249;           // NET GELİR
     monthly['M299'] = m299;
 
-    const m369 = monthly['M369'] ?? 0;  // Malzeme toplam (negatif)
-    const m399 = m299 + (monthly['M369'] ?? 0); // BRÜT KATKI PAYI
+    const m369 = monthly['M369'] ?? 0;  // Malzeme (negatif)
+    const m399 = m299 + m369;           // BRÜT KATKI PAYI
     monthly['M399'] = m399;
 
-    const m419 = monthly['M419'] ?? 0;
-    const m489 = monthly['M489'] ?? 0;
-    const m689 = monthly['M689'] ?? 0;
-    const m739 = monthly['M739'] ?? 0;
-    const ebitda = m399 + (m419 + m489 + m689) * -1 + m739;
+    // m419, m489, m689 zaten negatif (gider section toplamları) — doğrudan topla
+    const m419 = monthly['M419'] ?? 0;  // Enerji (negatif)
+    const m489 = monthly['M489'] ?? 0;  // Personel (negatif)
+    const m689 = monthly['M689'] ?? 0;  // Genel Gider (negatif)
+    // BAKIM & ÇEVRE: pnlStructure'da subtotalMcode='' olduğu için section toplamına dahil değil
+    // monthly['M509'] ve monthly['M529'] raw pozitif değerler → elle eksi yap
+    const bakimCevre = (monthly['M509'] ?? 0) + (monthly['M529'] ?? 0);
+    const m739 = monthly['M739'] ?? 0;  // Diğer Faaliyet Gelirleri (pozitif)
+    const ebitda = m399 + m419 + m489 + m689 - bakimCevre + m739;
     monthly['M769'] = ebitda;
 
-    const m789 = monthly['M789'] ?? 0;  // Amortisman
-    monthly['M799'] = ebitda - m789;    // EBIT
+    // m789 zaten negatif (amortisman section toplamı) — doğrudan topla
+    const m789 = monthly['M789'] ?? 0;  // Amortisman (negatif)
+    monthly['M799'] = ebitda + m789;    // EBIT = EBITDA − amortisman
 
-    const m869 = monthly['M869'] ?? 0;  // Net Finansman
+    const m869 = monthly['M869'] ?? 0;  // Net Finansman (işaretli)
     const m879 = monthly['M799'] + m869; // Olağan Faaliyet Kârı
     monthly['M879'] = m879;
 
-    const m889 = monthly['M889'] ?? 0;
+    const m889 = monthly['M889'] ?? 0;  // Olağandışı (işaretli)
     const ebt = m879 + m889;
     monthly['M899'] = ebt;
 
@@ -392,7 +399,7 @@ function PnLRow({ mcode, label, level, value, isExpense, isNA, isEmpty, isCalc, 
 
   return (
     <div className={cx(
-      'grid grid-cols-[auto_1fr_160px_120px] gap-0 px-4 items-center transition-colors',
+      'group grid grid-cols-[auto_1fr_160px_120px] gap-0 px-4 items-center transition-colors',
       isNA      ? 'opacity-35 bg-transparent' :
       isEmpty   ? 'bg-amber-500/4 hover:bg-amber-500/8' :
                   'hover:bg-enba-panel-2/40',
