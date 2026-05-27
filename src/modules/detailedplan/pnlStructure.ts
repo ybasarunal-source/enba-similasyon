@@ -135,12 +135,13 @@ export const PNL_SECTIONS: PnLSectionDef[] = [
   },
 
   // ── 6. BAKIM & ÇEVRE ─────────────────────────────────────────────────────────
+  // mcode_entry: kullanıcı plan bazlı girer (cost_center değil — editable olmalı)
   {
     id: 'bakim_cevre', label: 'BAKIM & ÇEVRE', colorCls: 'border-teal-500',
-    subtotalMcode: '',   // ayrı toplam yok, GENEL GİDERLER'e dahil
+    subtotalMcode: '',   // ayrı toplam yok
     items: [
-      { mcode: 'M509', isExpense: true, source: 'cost_center', level: 1 },
-      { mcode: 'M529', isExpense: true, source: 'cost_center', level: 1 },
+      { mcode: 'M509', isExpense: true, source: 'mcode_entry', level: 1 },
+      { mcode: 'M529', isExpense: true, source: 'mcode_entry', level: 1 },
     ],
   },
 
