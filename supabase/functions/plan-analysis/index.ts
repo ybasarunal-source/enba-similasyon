@@ -1,69 +1,79 @@
 /**
  * plan-analysis — Supabase Edge Function
- *
- * Plan özeti alır, Claude Haiku ile Türkçe iş planı analizi döner.
- * Deploy: npx supabase functions deploy plan-analysis
- * Secret: npx supabase secrets set ANTHROPIC_API_KEY=sk-ant-...
+ * hyper-service ile aynı pattern: raw fetch + 'uygulama-notes' secret
  */
-
-import Anthropic from 'npm:@anthropic-ai/sdk';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
-const SYSTEM_PROMPT = `Sen Enba Simulasyon iş planı danışmanısın. Türk geri dönüşüm ve üretim sektörü uzmanısın.
+Deno.serve(async (req: Request) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { status: 200, headers: corsHeaders });
+  }
 
-Sektör kıyaslamaları (geri dönüşüm/plastik):
+  try {
+    const apiKey = Deno.env.get('uygulama-notes');
+    if (!apiKey) {
+      return new Response(JSON.stringify({ error: 'API key missing' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { planSummary } = await req.json();
+
+    const prompt = `Sen Enba Simulasyon iş planı danışmanısın. Türk geri dönüşüm ve üretim sektörü uzmanısın.
+
+Sektör kıyaslamaları (plastik/geri dönüşüm):
 - EBITDA marjı: %15-25 normal, %25+ iyi, %10 altı kritik
 - Hammadde/gelir oranı: %40-60 normal
 - Enerji/gelir oranı: %5-12 normal
 - Personel/gelir oranı: %8-15 normal
 
-Verilen plan özetine bakarak YALNIZCA şu JSON formatını dön (başka hiçbir şey yazma):
-{
-  "insights": ["kısa Türkçe öneri 1", "kısa Türkçe öneri 2"],
-  "action": "en acil aksiyon (tek cümle, somut rakam içerirse daha iyi)"
-}
+Plan verisi:
+${JSON.stringify(planSummary)}
 
-Her insight max 12 kelime. Action max 15 kelime.`;
+SADECE aşağıdaki JSON formatında yanıt ver. Başka hiçbir şey yazma:
+{"insights":["kısa Türkçe öneri 1 (max 12 kelime)","kısa Türkçe öneri 2 (max 12 kelime)"],"action":"en acil aksiyon (max 15 kelime)"}`;
 
-Deno.serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
-
-  try {
-    const { planSummary } = await req.json();
-
-    const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
-    if (!apiKey) {
-      return new Response(
-        JSON.stringify({ error: 'ANTHROPIC_API_KEY secret eksik' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      );
-    }
-
-    const client = new Anthropic({ apiKey });
-
-    const message = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 300,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: JSON.stringify(planSummary) }],
+    const anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 300,
+        messages: [{ role: 'user', content: prompt }],
+      }),
     });
 
-    const text = message.content[0].type === 'text' ? message.content[0].text.trim() : '{}';
+    if (!anthropicRes.ok) {
+      const err = await anthropicRes.json();
+      return new Response(JSON.stringify({ error: err.error?.message ?? 'Anthropic error' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
-    return new Response(
-      JSON.stringify({ result: text }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-    );
+    const data = await anthropicRes.json();
+    const raw = data.content?.[0]?.text ?? '{}';
+    const match = raw.match(/\{[\s\S]*\}/);
+    const result = match ? match[0] : '{"insights":[],"action":""}';
+
+    return new Response(JSON.stringify({ result }), {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   } catch (err) {
-    return new Response(
-      JSON.stringify({ error: String(err) }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-    );
+    return new Response(JSON.stringify({ error: String(err) }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 });
