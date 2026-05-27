@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { cx, I, Badge, Btn, ScenarioChip } from './DPPrimitives';
 import {
   SCENARIOS, DPlan, CostCenter, PlanCtx, Granularity, buildDisplayPeriods, PlanActuals,
@@ -97,8 +97,35 @@ export function DetailedPlanShell({ plan, costCenters = [], onSave, onBack, onEd
     return m;
   }, [pdfCalc, plan?.mcodeEntries, pdfCcExpenses, plan]);
 
-  // ─── AI Analiz ───────────────────────────────────────────────────────────────
-  const aiResult = usePlanAI(plan, pdfMonthly);
+  // ─── AI Analiz + Sohbet ──────────────────────────────────────────────────────
+  const aiResult     = usePlanAI(plan, pdfMonthly);
+  const [chatInput, setChatInput] = useState('');
+  const chatBottomRef = useRef<HTMLDivElement>(null);
+
+  const handleAskQuestion = () => {
+    const q = chatInput.trim();
+    if (!q || aiResult.asking) return;
+    setChatInput('');
+    void aiResult.ask(q);
+  };
+
+  const handleChatKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleAskQuestion();
+    }
+  };
+
+  // Yeni mesaj gelince en alta kaydır
+  useEffect(() => {
+    chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aiResult.messages.length]);
+
+  // Plan değişince chat input sıfırla
+  useEffect(() => {
+    setChatInput('');
+  }, [plan?.id]);
 
   const exportPdf = async () => {
     if (!plan) return;
@@ -276,63 +303,121 @@ export function DetailedPlanShell({ plan, costCenters = [], onSave, onBack, onEd
           )}
         </nav>
 
-        {/* AI Öneri — plan analizi */}
+        {/* AI Danışman — plan analizi + sohbet */}
         {sidebarOpen && (
-          <div className="m-3 p-3 rounded-lg bg-gradient-to-br from-enba-orange/15 to-transparent border border-enba-orange/25">
-            {/* Başlık + Yenile */}
-            <div className="flex items-center justify-between gap-2 mb-2">
+          <div className="mx-3 mb-3 rounded-lg border border-enba-orange/25 overflow-hidden bg-gradient-to-b from-enba-orange/10 to-transparent flex flex-col">
+            {/* Başlık */}
+            <div className="flex items-center justify-between px-3 pt-2.5 pb-1.5 flex-none">
               <div className="flex items-center gap-1.5">
-                <I.Sparkles size={14} className={cx('text-enba-orange', aiResult.loading && 'animate-pulse')} />
-                <span className="text-[11.5px] font-semibold text-enba-orange">AI Öneri</span>
+                <I.Sparkles size={13} className={cx('text-enba-orange', (aiResult.loading || aiResult.asking) && 'animate-pulse')} />
+                <span className="text-[11px] font-semibold text-enba-orange">AI Danışman</span>
               </div>
-              {plan && (
-                <button
-                  onClick={aiResult.refresh}
-                  disabled={aiResult.loading}
-                  title="Yenile"
-                  className="text-[13px] text-enba-dim hover:text-enba-orange disabled:opacity-40 transition-colors leading-none"
-                >
-                  ↻
-                </button>
+              <div className="flex items-center gap-0.5">
+                {plan && aiResult.messages.length > 0 && (
+                  <button
+                    onClick={aiResult.clearChat}
+                    title="Sohbeti temizle"
+                    className="text-[11px] text-enba-dim hover:text-enba-orange transition-colors px-1 leading-none"
+                  >
+                    ✕
+                  </button>
+                )}
+                {plan && (
+                  <button
+                    onClick={aiResult.refresh}
+                    disabled={aiResult.loading}
+                    title="Analizi yenile"
+                    className="text-[13px] text-enba-dim hover:text-enba-orange disabled:opacity-40 transition-colors leading-none px-1"
+                  >
+                    ↻
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* İçerik: Öneriler veya Sohbet */}
+            <div className="px-3 pb-2 overflow-y-auto" style={{ maxHeight: 148 }}>
+              {aiResult.messages.length === 0 ? (
+                /* Otomatik analiz */
+                !plan ? (
+                  <p className="text-[11px] text-enba-dim leading-snug">Plan seçilince otomatik analiz başlar.</p>
+                ) : aiResult.loading ? (
+                  <div className="space-y-1.5 py-0.5">
+                    <div className="h-2 bg-enba-panel-2 rounded animate-pulse w-full" />
+                    <div className="h-2 bg-enba-panel-2 rounded animate-pulse w-4/5" />
+                    <div className="h-2 bg-enba-panel-2 rounded animate-pulse w-3/5 mt-2" />
+                    <div className="h-2 bg-enba-panel-2 rounded animate-pulse w-4/5" />
+                  </div>
+                ) : aiResult.error ? (
+                  <p className="text-[11px] text-enba-dim leading-snug">
+                    Analiz yüklenemedi.{' '}
+                    <button onClick={aiResult.refresh} className="text-enba-orange underline">Tekrar dene</button>
+                  </p>
+                ) : aiResult.result ? (
+                  <>
+                    <ul className="space-y-1.5 mb-2">
+                      {aiResult.result.insights.map((insight, i) => (
+                        <li key={i} className="text-[11px] text-enba-muted leading-snug flex gap-1.5">
+                          <span className="text-enba-orange flex-none mt-px">›</span>
+                          <span>{insight}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    {aiResult.result.action && (
+                      <div className="pt-1.5 border-t border-enba-orange/20">
+                        <p className="text-[10.5px] text-enba-text font-medium leading-snug">⚡ {aiResult.result.action}</p>
+                      </div>
+                    )}
+                  </>
+                ) : null
+              ) : (
+                /* Sohbet mesajları */
+                <div className="space-y-2 py-0.5">
+                  {aiResult.messages.map((msg, i) => (
+                    <div key={i} className={cx('flex', msg.role === 'user' ? 'justify-end' : 'justify-start')}>
+                      <div className={cx(
+                        'text-[11px] rounded-lg px-2.5 py-1.5 leading-snug',
+                        msg.role === 'user'
+                          ? 'bg-enba-orange/20 text-enba-text max-w-[90%]'
+                          : 'bg-enba-panel-2 text-enba-muted max-w-[95%]',
+                      )}>
+                        {msg.text}
+                      </div>
+                    </div>
+                  ))}
+                  {aiResult.asking && (
+                    <div className="flex justify-start">
+                      <div className="text-[10px] text-enba-dim bg-enba-panel-2 rounded-lg px-2.5 py-1 animate-pulse">
+                        Yanıtlanıyor…
+                      </div>
+                    </div>
+                  )}
+                  <div ref={chatBottomRef} />
+                </div>
               )}
             </div>
 
-            {/* İçerik */}
-            {!plan ? (
-              <p className="text-[11px] text-enba-dim leading-snug">
-                Plan seçilince otomatik analiz başlar.
-              </p>
-            ) : aiResult.loading ? (
-              <div className="space-y-1.5 py-0.5">
-                <div className="h-2 bg-enba-panel-2 rounded animate-pulse w-full" />
-                <div className="h-2 bg-enba-panel-2 rounded animate-pulse w-4/5" />
-                <div className="h-2 bg-enba-panel-2 rounded animate-pulse w-3/5 mt-3" />
-                <div className="h-2 bg-enba-panel-2 rounded animate-pulse w-4/5" />
+            {/* Soru girişi */}
+            {plan && (
+              <div className="flex items-center gap-1.5 px-2 pb-2 border-t border-enba-orange/15 pt-1.5 flex-none">
+                <input
+                  type="text"
+                  value={chatInput}
+                  onChange={e => setChatInput(e.target.value)}
+                  onKeyDown={handleChatKeyDown}
+                  placeholder="Soru sor…"
+                  className="flex-1 h-7 px-2 rounded-md text-[11px] bg-enba-panel border border-enba-line focus:outline-none focus:border-enba-orange placeholder:text-enba-dim text-enba-text"
+                />
+                <button
+                  onClick={handleAskQuestion}
+                  disabled={!chatInput.trim() || aiResult.asking}
+                  title="Gönder (Enter)"
+                  className="w-7 h-7 rounded-md bg-enba-orange/80 hover:bg-enba-orange text-white flex items-center justify-center disabled:opacity-40 transition-colors text-base leading-none"
+                >
+                  →
+                </button>
               </div>
-            ) : aiResult.error ? (
-              <p className="text-[11px] text-enba-dim leading-snug">
-                Analiz yüklenemedi.{' '}
-                <button onClick={aiResult.refresh} className="text-enba-orange underline">Tekrar dene</button>
-              </p>
-            ) : aiResult.result ? (
-              <>
-                <ul className="space-y-1.5 mb-2">
-                  {aiResult.result.insights.map((insight, i) => (
-                    <li key={i} className="text-[11px] text-enba-muted leading-snug flex gap-1.5">
-                      <span className="text-enba-orange flex-none mt-px">›</span>
-                      <span>{insight}</span>
-                    </li>
-                  ))}
-                </ul>
-                {aiResult.result.action && (
-                  <div className="mt-2 pt-2 border-t border-enba-orange/20">
-                    <p className="text-[10.5px] text-enba-text font-medium leading-snug">
-                      ⚡ {aiResult.result.action}
-                    </p>
-                  </div>
-                )}
-              </>
-            ) : null}
+            )}
           </div>
         )}
       </aside>

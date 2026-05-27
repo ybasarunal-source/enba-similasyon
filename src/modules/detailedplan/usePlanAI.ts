@@ -1,9 +1,10 @@
 /**
- * usePlanAI — Plan verilerini Claude Haiku ile analiz eder.
+ * usePlanAI — Plan verilerini Claude Haiku ile analiz eder + sohbet desteği.
  *
  * - Plan ID değişince otomatik tetiklenir (farklı plan seçildi)
- * - refresh() ile manuel yenilenebilir
- * - Sonuç in-memory cache'lenir (aynı plan ID için tekrar fetch yok)
+ * - refresh() ile manuel analiz yenilenebilir
+ * - ask(question) ile serbest soru sorulabilir
+ * - Analiz sonucu in-memory cache'lenir (aynı plan ID için tekrar fetch yok)
  */
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/api/supabase';
@@ -14,14 +15,19 @@ export interface PlanAIResult {
   action:   string;
 }
 
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  text: string;
+}
+
 const EDGE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/hyper-service`;
 
 // ─── Plan özetini oluştur ─────────────────────────────────────────────────────
 function buildSummary(plan: DPlan, monthly: Record<string, number>) {
   const rev    = monthly['M179'] ?? 0;
-  const mat    = monthly['M369'] ?? 0;  // negatif
-  const labor  = monthly['M489'] ?? 0;  // negatif
-  const energy = monthly['M419'] ?? 0;  // negatif
+  const mat    = monthly['M369'] ?? 0;
+  const labor  = monthly['M489'] ?? 0;
+  const energy = monthly['M419'] ?? 0;
   const ebitda = monthly['M769'] ?? 0;
   const net    = monthly['M919'] ?? 0;
 
@@ -32,12 +38,12 @@ function buildSummary(plan: DPlan, monthly: Record<string, number>) {
     title:   plan.title ?? 'İsimsiz Plan',
     horizon: plan.horizon ?? 24,
     monthly: {
-      revenueK:  Math.round(rev    / 1000),
-      materialK: Math.round(mat    / 1000),
-      energyK:   Math.round(energy / 1000),
-      laborK:    Math.round(labor  / 1000),
-      ebitdaK:   Math.round(ebitda / 1000),
-      netProfitK:Math.round(net    / 1000),
+      revenueK:   Math.round(rev    / 1000),
+      materialK:  Math.round(mat    / 1000),
+      energyK:    Math.round(energy / 1000),
+      laborK:     Math.round(labor  / 1000),
+      ebitdaK:    Math.round(ebitda / 1000),
+      netProfitK: Math.round(net    / 1000),
     },
     margins: {
       ebitdaPct:   pct(ebitda),
@@ -53,23 +59,33 @@ function buildSummary(plan: DPlan, monthly: Record<string, number>) {
   };
 }
 
+// ─── Auth token yardımcısı ────────────────────────────────────────────────────
+async function getAuthToken(): Promise<string> {
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.access_token ?? (import.meta.env.VITE_SUPABASE_ANON_KEY as string);
+}
+
 // ─── Hook ────────────────────────────────────────────────────────────────────
 export function usePlanAI(
   plan:    DPlan | undefined,
   monthly: Record<string, number>,
 ) {
-  const [result,  setResult]  = useState<PlanAIResult | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error,   setError]   = useState<string | null>(null);
+  const [result,   setResult]   = useState<PlanAIResult | null>(null);
+  const [loading,  setLoading]  = useState(false);
+  const [error,    setError]    = useState<string | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [asking,   setAsking]   = useState(false);
 
-  // Plan ID'ye göre cache: aynı plan için tekrar fetch yok
-  const cacheRef = useRef<Record<string, PlanAIResult>>({});
-  const lastIdRef = useRef<string | null>(null);
+  const cacheRef   = useRef<Record<string, PlanAIResult>>({});
+  const lastIdRef  = useRef<string | null>(null);
+  // Mevcut mesajları ask() içinde okumak için ref
+  const messagesRef = useRef<ChatMessage[]>([]);
+  messagesRef.current = messages;
 
+  // ── Otomatik analiz ─────────────────────────────────────────────────────────
   const analyze = async (force = false) => {
     if (!plan) return;
 
-    // Cache hit
     if (!force && cacheRef.current[plan.id]) {
       setResult(cacheRef.current[plan.id]);
       return;
@@ -79,24 +95,17 @@ export function usePlanAI(
     setError(null);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const authToken = session?.access_token ?? import.meta.env.VITE_SUPABASE_ANON_KEY;
-
+      const authToken = await getAuthToken();
       const res = await fetch(EDGE_URL, {
         method:  'POST',
-        headers: {
-          'Content-Type':  'application/json',
-          'Authorization': `Bearer ${authToken}`,
-        },
-        body: JSON.stringify({ planSummary: buildSummary(plan, monthly) }),
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+        body:    JSON.stringify({ planSummary: buildSummary(plan, monthly) }),
       });
 
       const data = await res.json() as { result?: string; error?: string };
-
       if (data.error) throw new Error(data.error);
       if (!data.result) throw new Error('Boş yanıt');
 
-      // JSON parse — Claude bazen ```json blok``` içinde verebilir, temizle
       const clean = data.result
         .replace(/^```json\s*/i, '')
         .replace(/^```\s*/,       '')
@@ -114,9 +123,50 @@ export function usePlanAI(
     }
   };
 
-  // Plan değişince (farklı plan) otomatik analiz
+  // ── Serbest soru ─────────────────────────────────────────────────────────────
+  const ask = async (question: string) => {
+    if (!plan || !question.trim() || asking) return;
+
+    const userMsg: ChatMessage = { role: 'user', text: question.trim() };
+    setMessages(prev => [...prev, userMsg]);
+    setAsking(true);
+
+    try {
+      const authToken = await getAuthToken();
+      // Son 6 mesajı (3 çift) geçmiş olarak gönder — current ref'te mevcut liste var
+      const history = messagesRef.current.slice(-6);
+
+      const res = await fetch(EDGE_URL, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+        body:    JSON.stringify({
+          planSummary: buildSummary(plan, monthly),
+          question:    userMsg.text,
+          history,
+        }),
+      });
+
+      const data = await res.json() as { answer?: string; error?: string };
+      if (data.error) throw new Error(data.error);
+
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        text: data.answer ?? 'Yanıt alınamadı.',
+      }]);
+    } catch {
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        text: 'Hata oluştu, tekrar dene.',
+      }]);
+    } finally {
+      setAsking(false);
+    }
+  };
+
+  // ── Plan değişince sohbeti sıfırla + yeni analiz ──────────────────────────
   useEffect(() => {
     if (plan && plan.id !== lastIdRef.current) {
+      setMessages([]);
       void analyze();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -126,6 +176,10 @@ export function usePlanAI(
     result,
     loading,
     error,
-    refresh: () => analyze(true),  // zorla yenile
+    refresh: () => analyze(true),
+    messages,
+    asking,
+    ask,
+    clearChat: () => setMessages([]),
   };
 }
