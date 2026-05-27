@@ -31,7 +31,9 @@ interface PnLPanelProps {
 
 export function PnLPanel({ plan, onSave }: PnLPanelProps) {
   const { facilityExpenses, fixedExpenses } = usePlanData();
-  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(
+    () => new Set(PNL_SECTIONS.map(s => s.id))   // başlangıçta hepsi kapalı
+  );
   const [showNA, setShowNA] = useState(false);
 
   // Toplam tesis giderleri (CostCenter'dan gelen)
@@ -118,6 +120,24 @@ export function PnLPanel({ plan, onSave }: PnLPanelProps) {
 
   const getValue = (mcode: string) => computedRows.monthly[mcode] ?? 0;
 
+  // Bölüm başına: kaç kalem girilmemiş (N/A ve hesaplanan hariç)
+  const sectionStats = useMemo(() => {
+    const stats: Record<string, { emptyCount: number }> = {};
+    for (const section of PNL_SECTIONS) {
+      const sectionRows = allRows.filter(r => r.sectionId === section.id && r.type === 'item');
+      let emptyCount = 0;
+      for (const row of sectionRows) {
+        if (row.status === 'calculated') continue;           // otomatik — sayma
+        const entry = mcodeEntries.find(e => e.mcode === row.mcode);
+        if (entry?.status === 'na') continue;               // N/A — sayma
+        const val = computedRows.monthly[row.mcode] ?? 0;
+        if (val === 0) emptyCount++;
+      }
+      stats[section.id] = { emptyCount };
+    }
+    return stats;
+  }, [allRows, mcodeEntries, computedRows]);
+
   const toggleSection = (id: string) => {
     setCollapsedSections(prev => {
       const next = new Set(prev);
@@ -172,26 +192,53 @@ export function PnLPanel({ plan, onSave }: PnLPanelProps) {
       </div>
 
       {/* ── Filtre araç çubuğu ── */}
-      <div className="flex items-center gap-3">
-        <span className="text-[11px] text-enba-dim uppercase tracking-wider">Görünüm</span>
-        <button
-          onClick={() => setShowNA(!showNA)}
-          className={cx(
-            'flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11.5px] font-medium transition-colors',
-            showNA
-              ? 'border-enba-orange/50 bg-enba-orange/10 text-enba-orange'
-              : 'border-enba-line text-enba-muted hover:text-enba-text',
-          )}
-        >
-          N/A göster
-        </button>
-        <div className="flex-1" />
-        <div className="flex items-center gap-2 text-[11px] text-enba-dim">
-          <span className="w-2.5 h-2.5 rounded-full bg-enba-orange/70 inline-block" /> Otomatik
-          <span className="w-2.5 h-2.5 rounded-full bg-enba-panel-2 border border-enba-line inline-block ml-2" /> Manuel
-          <span className="w-2.5 h-2.5 rounded-full bg-amber-500/50 inline-block ml-2" /> Girilmemiş
-        </div>
-      </div>
+      {(() => {
+        const totalEmpty = PNL_SECTIONS.reduce((s, sec) => s + (sectionStats[sec.id]?.emptyCount ?? 0), 0);
+        const allCollapsed = PNL_SECTIONS.every(s => collapsedSections.has(s.id));
+        return (
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Tümünü aç/kapat */}
+            <button
+              onClick={() => setCollapsedSections(
+                allCollapsed
+                  ? new Set()
+                  : new Set(PNL_SECTIONS.map(s => s.id))
+              )}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-enba-line text-[11.5px] font-medium text-enba-muted hover:text-enba-text transition-colors"
+            >
+              <I.Chevron size={10} className={cx('transition-transform', allCollapsed ? '-rotate-90' : '')} />
+              {allCollapsed ? 'Tümünü Aç' : 'Tümünü Kapat'}
+            </button>
+
+            {/* N/A göster */}
+            <button
+              onClick={() => setShowNA(!showNA)}
+              className={cx(
+                'flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11.5px] font-medium transition-colors',
+                showNA
+                  ? 'border-enba-orange/50 bg-enba-orange/10 text-enba-orange'
+                  : 'border-enba-line text-enba-muted hover:text-enba-text',
+              )}
+            >
+              N/A göster
+            </button>
+
+            {/* Toplam eksik sayısı */}
+            {totalEmpty > 0 && (
+              <span className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/25 text-[11.5px] font-medium text-amber-400">
+                ⚠ {totalEmpty} kalem girilmemiş
+              </span>
+            )}
+
+            <div className="flex-1" />
+            <div className="flex items-center gap-2 text-[11px] text-enba-dim">
+              <span className="w-2.5 h-2.5 rounded-full bg-enba-orange/70 inline-block" /> Otomatik
+              <span className="w-2.5 h-2.5 rounded-full bg-enba-panel-2 border border-enba-line inline-block ml-2" /> Manuel
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-500/50 inline-block ml-2" /> Girilmemiş
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── P&L Tablosu ── */}
       <div className="bg-enba-panel border border-enba-line rounded-2xl overflow-hidden">
@@ -206,6 +253,7 @@ export function PnLPanel({ plan, onSave }: PnLPanelProps) {
         {/* Bölümler */}
         {PNL_SECTIONS.map(section => {
           const isCollapsed = collapsedSections.has(section.id);
+          const stats = sectionStats[section.id] ?? { emptyCount: 0 };
           const sectionItems = allRows.filter(r => r.sectionId === section.id && r.type === 'item');
           const visibleItems = showNA ? sectionItems : sectionItems.filter(r => {
             const e = mcodeEntries.find(me => me.mcode === r.mcode);
@@ -223,6 +271,13 @@ export function PnLPanel({ plan, onSave }: PnLPanelProps) {
                 <span className="text-[11.5px] font-semibold text-enba-text uppercase tracking-wide flex-1 text-left">
                   {section.label}
                 </span>
+                {/* Kapalıyken eksik kalem uyarısı */}
+                {isCollapsed && stats.emptyCount > 0 && (
+                  <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-400 font-medium flex-none">
+                    ⚠ {stats.emptyCount} eksik
+                  </span>
+                )}
+                {/* Subtotal her zaman görünür */}
                 {section.subtotalMcode && (
                   <MilestoneValue
                     mcode={section.subtotalMcode}
@@ -469,17 +524,19 @@ function PnLRow({ mcode, label, level, value, isExpense, isNA, isEmpty, isCalc, 
           </span>
         )}
 
-        {/* N/A toggle */}
+        {/* N/A toggle — her zaman görünür */}
         {editable && !isCalc && (
           <button
             onClick={() => onUpdate({ status: isNA ? 'empty' : 'na', monthly: 0 })}
-            title={isNA ? 'Aktife al' : 'Bu planda yok (N/A)'}
+            title={isNA ? 'Aktife al' : 'Bu planda yok (N/A) — pasife al'}
             className={cx(
-              'text-[9.5px] px-1.5 py-0.5 rounded border transition-colors flex-none opacity-0 group-hover:opacity-100',
-              isNA ? 'border-enba-line text-enba-dim' : 'border-enba-line text-enba-dim hover:border-amber-500/40 hover:text-amber-400',
+              'text-[9.5px] px-1.5 py-0.5 rounded border transition-colors flex-none',
+              isNA
+                ? 'border-enba-orange/40 bg-enba-orange/8 text-enba-orange font-medium'
+                : 'border-enba-line/60 text-enba-dim/50 hover:border-amber-500/50 hover:text-amber-400',
             )}
           >
-            {isNA ? '↩' : 'N/A'}
+            {isNA ? 'N/A ✓' : 'N/A'}
           </button>
         )}
       </div>
