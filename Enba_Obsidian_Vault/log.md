@@ -907,3 +907,32 @@ grep "^## \[" log.md | tail -5
   - commit Faz1: 0a61784 | commit Faz2: f8d5337
 - Etkilenen dosyalar: dpData.ts, pnlStructure.ts (yeni), DPlanWizard.tsx, PnLPanel.tsx (yeni), DetailedPlanShell.tsx, DPPrimitives.tsx
 - Bir sonraki: Granül Üretimi planı ile test; Faz 3 (WhatIfBar→PnL simülasyon, PDF export)
+
+## [2026-05-27 10:30] geliştirme | PnLPanel kritik hesap düzeltmeleri
+
+- Yapılan:
+  - EBITDA formülü: `(m419 + m489 + m689) * -1` → `m419 + m489 + m689`
+    (section subtotal'lar zaten negatif, çarpım kaldırıldı)
+  - EBIT formülü: `ebitda - m789` → `ebitda + m789`
+    (m789 zaten negatif amortisman toplamı)
+  - BAKIM & ÇEVRE (M509+M529): subtotalMcode='' olduğu için hiçbir section
+    toplamına dahil değildi — `bakimCevre` değişkeni ile EBITDA'ya elle dahil edildi
+  - PnLRow outer div'e `group` class eklendi (N/A butonu hover'da görünmüyordu)
+  - CostCenter allocationWeight soruşturması: plan içi çoklu proje DOĞRU çalışıyor;
+    planlar arası paylaşım bilinçli tasarım kararı (her plan bağımsız)
+- Etkilenen dosyalar: PnLPanel.tsx (commit 05f8414)
+- Bir sonraki: Tarayıcı testi — granül üretimi ile wizard + P&L panel
+
+## [2026-05-27 11:00] geliştirme | PDF export — DetailedPlan shell
+
+- Yapılan:
+  - PDF butonu artık işlevsel — html2pdf.js dynamic import (FastPlan patterni)
+  - DPPdfContainer bileşeni: A4 portrait, tüm stiller inline (html2canvas uyumlu)
+  - İçerik: plan header, 4 KPI kartı (Net Satışlar/EBITDA/EBIT/Net Kâr + marj%),
+    üretim özeti bloğu (girdi ton, çıktı, enerji, personel), tam P&L tablosu
+    (bölüm başlıkları renkli, sadece dolu satırlar), milestone vurgular, footer
+  - pdfMonthly useMemo: PnLPanel hesap mantığının shell-level kopyası
+  - isPdfGenerating state: buton "Hazırlanıyor…" gösteriyor
+  - Çoklu dil genişletme CLAUDE.md Gelecek Planlar listesine eklendi
+- Etkilenen dosyalar: DetailedPlanShell.tsx (commit 2f9e4a9)
+- Bir sonraki: Tarayıcı testi — wizard + P&L panel + PDF export doğrula
