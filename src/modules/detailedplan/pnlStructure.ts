@@ -152,7 +152,7 @@ export const PNL_SECTIONS: PnLSectionDef[] = [
     items: [
       { mcode: 'M604', isExpense: true, source: 'mcode_entry', level: 1 },
       { mcode: 'M605', isExpense: true, source: 'mcode_entry', level: 1 },
-      { mcode: 'M610', isExpense: true, source: 'cost_center', level: 1 },
+      { mcode: 'M610', isExpense: true, source: 'mcode_entry', level: 1 },
       { mcode: 'M615', isExpense: true, source: 'mcode_entry', level: 1 },
       { mcode: 'M620', isExpense: true, source: 'mcode_entry', level: 1 },
       { mcode: 'M625', isExpense: true, source: 'mcode_entry', level: 1 },
