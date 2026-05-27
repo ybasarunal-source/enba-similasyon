@@ -9,7 +9,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { cx, I, Badge } from './DPPrimitives';
 import {
-  DPlan, FixedExpense,
+  DPlan, FixedExpense, Granularity,
   calcProductionResults,
   fmtTL,
   PlanMCodeEntry, PlanMCodeStatus,
@@ -19,17 +19,30 @@ import {
   buildPnLRows, PNL_SECTIONS, PNL_MILESTONE_MCODES,
 } from './pnlStructure';
 
+// ─── Granülasyon yardımcısı ───────────────────────────────────────────────────
+
+function granularityMeta(g: Granularity, horizon: number): { label: string; multiplier: number } {
+  switch (g) {
+    case 'weekly':    return { label: 'Haftalık',              multiplier: 1 / 4.333 };
+    case 'monthly':   return { label: 'Yıllık',               multiplier: 12 };
+    case 'quarterly': return { label: 'Çeyreklik',            multiplier: 3 };
+    case 'annual':    return { label: `Toplam (${horizon}ay)`, multiplier: horizon };
+  }
+}
+
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface PnLPanelProps {
-  plan?:   DPlan;
-  onSave?: (p: DPlan) => void;
-  scenarioId?: string;
+  plan?:        DPlan;
+  onSave?:      (p: DPlan) => void;
+  scenarioId?:  string;
+  granularity?: Granularity;
+  horizon?:     number;
 }
 
 // ─── Ana bileşen ─────────────────────────────────────────────────────────────
 
-export function PnLPanel({ plan, onSave }: PnLPanelProps) {
+export function PnLPanel({ plan, onSave, granularity = 'monthly', horizon = 12 }: PnLPanelProps) {
   const { facilityExpenses, fixedExpenses } = usePlanData();
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(
     () => new Set(PNL_SECTIONS.map(s => s.id))   // başlangıçta hepsi kapalı
@@ -169,6 +182,10 @@ export function PnLPanel({ plan, onSave }: PnLPanelProps) {
     return { rev, ebitda, ebit, netKar, margin };
   }, [computedRows]);
 
+  // Granülasyon — ikinci sütun etiketi ve çarpanı
+  const gMeta = granularityMeta(granularity, plan?.horizon ?? horizon);
+  const col2Val = (monthly: number) => monthly * gMeta.multiplier;
+
   if (!plan) {
     return (
       <div className="flex items-center justify-center h-full text-enba-dim text-[13px]">
@@ -247,7 +264,7 @@ export function PnLPanel({ plan, onSave }: PnLPanelProps) {
           <span className="text-[10px] uppercase tracking-wider text-enba-dim w-20">M-Kodu</span>
           <span className="text-[10px] uppercase tracking-wider text-enba-dim">Kalem</span>
           <span className="text-[10px] uppercase tracking-wider text-enba-dim text-right">Aylık Ortalama</span>
-          <span className="text-[10px] uppercase tracking-wider text-enba-dim text-right">Yıllık</span>
+          <span className="text-[10px] uppercase tracking-wider text-enba-dim text-right">{gMeta.label}</span>
         </div>
 
         {/* Bölümler */}
@@ -305,6 +322,7 @@ export function PnLPanel({ plan, onSave }: PnLPanelProps) {
                     label={row.label}
                     level={row.level}
                     value={val}
+                    col2={col2Val(val)}
                     isExpense={row.isExpense}
                     isNA={isNA}
                     isEmpty={isEmpty}
@@ -321,6 +339,7 @@ export function PnLPanel({ plan, onSave }: PnLPanelProps) {
                   label={`${section.label} Toplamı`}
                   mcode={section.subtotalMcode}
                   value={getValue(section.subtotalMcode)}
+                  col2={col2Val(getValue(section.subtotalMcode))}
                 />
               )}
             </div>
@@ -361,7 +380,7 @@ export function PnLPanel({ plan, onSave }: PnLPanelProps) {
                   </span>
                   <span className="text-[10.5px] text-enba-dim ml-1">/ay</span>
                   <div className="text-[10px] text-enba-dim">
-                    {fmtTL(val * 12, { compact: true, sign: true })}/yıl
+                    {fmtTL(col2Val(val), { compact: true, sign: true })} · {gMeta.label}
                   </div>
                 </div>
               </div>
@@ -410,31 +429,37 @@ function MilestoneValue({ mcode, value }: { mcode: string; value: number }) {
   );
 }
 
-function SubtotalRow({ label, mcode, value }: { label: string; mcode: string; value: number }) {
+function SubtotalRow({ label, mcode, value, col2 }: { label: string; mcode: string; value: number; col2: number }) {
   return (
-    <div className="flex items-center justify-between px-4 py-1.5 bg-enba-panel-2/30 border-t border-enba-line/50">
-      <div className="flex items-center gap-2">
+    <div className="grid grid-cols-[auto_1fr_160px_120px] gap-0 px-4 py-1.5 bg-enba-panel-2/30 border-t border-enba-line/50 items-center">
+      <div className="w-20 flex-none">
         <span className="text-[9.5px] font-mono text-enba-dim">{mcode}</span>
-        <span className="text-[11.5px] font-semibold text-enba-muted">{label}</span>
       </div>
-      <div className="flex items-center gap-2">
+      <span className="text-[11.5px] font-semibold text-enba-muted pl-4">{label}</span>
+      <div className="text-right flex items-center justify-end gap-1">
         <span className={cx(
           'text-[12px] font-semibold tabular-nums',
           value >= 0 ? 'text-enba-text' : 'text-red-400',
         )}>
           {value !== 0 ? fmtTL(value, { compact: true }) : '—'}
         </span>
-        <span className="text-[10px] text-enba-dim w-8">/ay</span>
+        <span className="text-[10px] text-enba-dim">/ay</span>
+      </div>
+      <div className="text-right">
+        <span className="text-[11.5px] tabular-nums text-enba-dim">
+          {value !== 0 ? fmtTL(Math.abs(col2), { compact: true }) : '—'}
+        </span>
       </div>
     </div>
   );
 }
 
-function PnLRow({ mcode, label, level, value, isExpense, isNA, isEmpty, isCalc, editable, onUpdate }: {
+function PnLRow({ mcode, label, level, value, col2, isExpense, isNA, isEmpty, isCalc, editable, onUpdate }: {
   mcode:     string;
   label:     string;
   level:     0 | 1 | 2;
   value:     number;
+  col2:      number;
   isExpense: boolean;
   isNA:      boolean;
   isEmpty:   boolean;
@@ -541,13 +566,13 @@ function PnLRow({ mcode, label, level, value, isExpense, isNA, isEmpty, isCalc, 
         )}
       </div>
 
-      {/* Yıllık değer */}
+      {/* col2 değer (Haftalık / Yıllık / Çeyreklik / Toplam) */}
       <div className="text-right">
         <span className={cx(
           'text-[11.5px] tabular-nums text-enba-dim',
           isNA || isEmpty ? 'opacity-30' : '',
         )}>
-          {isNA || isEmpty ? '—' : fmtTL(Math.abs(value) * 12, { compact: true })}
+          {isNA || isEmpty ? '—' : fmtTL(Math.abs(col2), { compact: true })}
         </span>
       </div>
     </div>

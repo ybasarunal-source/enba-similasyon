@@ -408,7 +408,7 @@ export function DetailedPlanShell({ plan, costCenters = [], onSave, onBack, onEd
         <main className="flex-1 flex flex-col overflow-hidden">
           <div className="flex-1 overflow-y-auto p-5 grid-bg">
             <div className="max-w-[1380px] mx-auto">
-              {active === 'pnl'       && <PnLPanel plan={plan} onSave={onSave} scenarioId={scenarioId} />}
+              {active === 'pnl'       && <PnLPanel plan={plan} onSave={onSave} scenarioId={scenarioId} granularity={granularity} horizon={horizon} />}
               {active === 'overview'  && <OverviewPanel    scenarioId={scenarioId} periodGranularity={granularity} />}
               {active === 'revenue'   && <RevenuePanel     scenarioId={scenarioId} periodGranularity={granularity} />}
               {active === 'expense'   && <ExpensePanel     scenarioId={scenarioId} periodGranularity={granularity} />}
