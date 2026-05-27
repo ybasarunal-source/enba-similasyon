@@ -14,7 +14,7 @@ export interface PlanAIResult {
   action:   string;
 }
 
-const EDGE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/plan-analysis`;
+const EDGE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/hyper-service`;
 
 // ─── Plan özetini oluştur ─────────────────────────────────────────────────────
 function buildSummary(plan: DPlan, monthly: Record<string, number>) {
