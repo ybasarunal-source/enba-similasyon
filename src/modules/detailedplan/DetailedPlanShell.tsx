@@ -13,6 +13,7 @@ import { ScenarioPanel }    from './ScenarioPanel';
 import { BudgetTrackPanel } from './BudgetTrackPanel';
 import { WhatIfBar }        from './WhatIfBar';
 import { PnLPanel }         from './PnLPanel';
+import { usePlanAI }        from './usePlanAI';
 
 type SectionId = 'pnl' | 'overview' | 'revenue' | 'expense' | 'cashflow' | 'scenario' | 'budget';
 
@@ -95,6 +96,9 @@ export function DetailedPlanShell({ plan, costCenters = [], onSave, onBack, onEd
     m['M999'] = m['M919'];
     return m;
   }, [pdfCalc, plan?.mcodeEntries, pdfCcExpenses, plan]);
+
+  // ─── AI Analiz ───────────────────────────────────────────────────────────────
+  const aiResult = usePlanAI(plan, pdfMonthly);
 
   const exportPdf = async () => {
     if (!plan) return;
@@ -272,19 +276,63 @@ export function DetailedPlanShell({ plan, costCenters = [], onSave, onBack, onEd
           )}
         </nav>
 
-        {/* AI suggestion footer — only when expanded */}
+        {/* AI Öneri — plan analizi */}
         {sidebarOpen && (
           <div className="m-3 p-3 rounded-lg bg-gradient-to-br from-enba-orange/15 to-transparent border border-enba-orange/25">
-            <div className="flex items-center gap-2 mb-2">
-              <I.Sparkles size={14} className="text-enba-orange" />
-              <span className="text-[11.5px] font-semibold text-enba-orange">AI Öneri</span>
+            {/* Başlık + Yenile */}
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <div className="flex items-center gap-1.5">
+                <I.Sparkles size={14} className={cx('text-enba-orange', aiResult.loading && 'animate-pulse')} />
+                <span className="text-[11.5px] font-semibold text-enba-orange">AI Öneri</span>
+              </div>
+              {plan && (
+                <button
+                  onClick={aiResult.refresh}
+                  disabled={aiResult.loading}
+                  title="Yenile"
+                  className="text-[13px] text-enba-dim hover:text-enba-orange disabled:opacity-40 transition-colors leading-none"
+                >
+                  ↻
+                </button>
+              )}
             </div>
-            <p className="text-[11px] text-enba-muted leading-snug">
-              Q3 2025'te PET Granül talebinde mevsimsel artış görülüyor. Hacmi{' '}
-              <span className="text-enba-text font-medium">%8</span> artırarak{' '}
-              <span className="text-enba-text font-medium">₺640K</span> ek gelir.
-            </p>
-            <button className="mt-2 text-[11px] text-enba-orange font-medium hover:underline">İncele →</button>
+
+            {/* İçerik */}
+            {!plan ? (
+              <p className="text-[11px] text-enba-dim leading-snug">
+                Plan seçilince otomatik analiz başlar.
+              </p>
+            ) : aiResult.loading ? (
+              <div className="space-y-1.5 py-0.5">
+                <div className="h-2 bg-enba-panel-2 rounded animate-pulse w-full" />
+                <div className="h-2 bg-enba-panel-2 rounded animate-pulse w-4/5" />
+                <div className="h-2 bg-enba-panel-2 rounded animate-pulse w-3/5 mt-3" />
+                <div className="h-2 bg-enba-panel-2 rounded animate-pulse w-4/5" />
+              </div>
+            ) : aiResult.error ? (
+              <p className="text-[11px] text-enba-dim leading-snug">
+                Analiz yüklenemedi.{' '}
+                <button onClick={aiResult.refresh} className="text-enba-orange underline">Tekrar dene</button>
+              </p>
+            ) : aiResult.result ? (
+              <>
+                <ul className="space-y-1.5 mb-2">
+                  {aiResult.result.insights.map((insight, i) => (
+                    <li key={i} className="text-[11px] text-enba-muted leading-snug flex gap-1.5">
+                      <span className="text-enba-orange flex-none mt-px">›</span>
+                      <span>{insight}</span>
+                    </li>
+                  ))}
+                </ul>
+                {aiResult.result.action && (
+                  <div className="mt-2 pt-2 border-t border-enba-orange/20">
+                    <p className="text-[10.5px] text-enba-text font-medium leading-snug">
+                      ⚡ {aiResult.result.action}
+                    </p>
+                  </div>
+                )}
+              </>
+            ) : null}
           </div>
         )}
       </aside>
