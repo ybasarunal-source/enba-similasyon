@@ -202,7 +202,7 @@ export function PnLPanel({ plan, onSave, granularity = 'monthly', horizon = 12 }
         <MetricCard label="Net Satışlar" value={fmtTL(summary.rev, { compact: true })} sub="M179 / ay" color="green" />
         <MetricCard label="EBITDA" value={fmtTL(summary.ebitda, { compact: true, sign: true })}
           sub={`%${summary.margin.toFixed(1)} marj`}
-          color={summary.ebitda >= 0 ? 'orange' : 'red'} />
+          color={summary.ebitda >= 0 ? 'green' : 'red'} />
         <MetricCard label="EBIT" value={fmtTL(summary.ebit, { compact: true, sign: true })}
           sub="amortisman sonrası" color={summary.ebit >= 0 ? 'blue' : 'red'} />
         <MetricCard label="Net Kâr" value={fmtTL(summary.netKar, { compact: true, sign: true })}
@@ -376,7 +376,7 @@ export function PnLPanel({ plan, onSave, granularity = 'monthly', horizon = 12 }
                 <div className="text-right">
                   <span className={cx(
                     'text-[13px] font-semibold tabular-nums',
-                    val >= 0 ? (mcode === 'M769' ? 'text-enba-orange' : 'text-enba-green') : 'text-red-400',
+                    val >= 0 ? 'text-enba-green' : 'text-red-400',
                   )}>
                     {fmtTL(val, { compact: true, sign: true })}
                   </span>
