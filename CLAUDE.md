@@ -379,10 +379,10 @@ Veri kaybı riski olan her adımı kullanıcıya açıkça belirt ve onay al.
 - [x] ~~**Panel hesapları doğrulanacak**~~ → ✅ Çözüldü (2026-05-23)
 - [x] ~~**startOffset/endOffset**~~ → ✅ Çözüldü (2026-05-23)
 - [x] ~~**CashFlow periods uyumsuzluğu**~~ → ✅ Çözüldü (2026-05-23)
-- [ ] **CostCenter allocationWeight** — aynı tesise bağlı çoklu proje paylaşımı doğru mu?
+- [x] **CostCenter allocationWeight** — incelendi: plan içi çoklu proje DOĞRU; planlar arası bağımsızlık bilinçli tasarım
 - [x] **BudgetTrack + aktüel veri girişi** — 4 sekme modal, 3 granülasyon tamamlandı (2026-05-26)
 - [ ] **CashFlow cashEvents girişi** — yatırım/finansman nakit olayları wizard'da düzenlenemiyor
-- [ ] **PDF export** — shell'de buton var, işlevsiz
+- [x] **PDF export** — tamamlandı (commit 2f9e4a9): KPI + üretim özeti + P&L tablosu, inline styles A4
 - [x] **Yeni wizard tarayıcı testi** — granül üretimi parametrelerini gir, panel hesaplarını doğrula (2026-05-24 ok)
 - Detay: `Moduller/DetailedPlan.md` → Açık Konular bölümü
 
@@ -393,10 +393,17 @@ Veri kaybı riski olan her adımı kullanıcıya açıkça belirt ve onay al.
 ### Tamamlanan (2026-05-26 — devam)
 - [x] **DetailedPlan tam P&L yeniden tasarımı Faz 1+2** — 6-adım wizard, Maliyet Kontrol Defteri (Adım 5), LivePnLPreview, Yayınla Ön Kontrol Modalı, PnLPanel (shell varsayılan sekme), 12-bölüm M-kod hiyerarşisi (commitler 0a61784, f8d5337)
 
+### Tamamlanan (2026-05-27)
+- [x] **PnLPanel EBITDA/EBIT hesap düzeltmeleri** — section subtotal * -1 hatası, BAKIM&ÇEVRE eksikliği, group class (commit 05f8414)
+- [x] **PDF export** — shell'de tam işlevsel: KPI + üretim özeti + P&L tablosu A4 (commit 2f9e4a9)
+
 ### Bir Sonraki Oturumda İlk Yapılacak
-1. **6-adım wizard + P&L paneli tarayıcı testi** — Granül Üretimi planı ile adım adım git, Maliyet Kontrol adımını doldur, Yayınla modal test, P&L panelini doğrula
+1. **Tarayıcı testi** — Granül Üretimi planı ile wizard + P&L panel + PDF export'u doğrula
 2. **BudgetTrack gerçek veri testi** — plan aktive et, BudgetTrack modalını aç, veriler doğru kaydediliyor mu doğrula
-3. **Paraşüt → financial_categories** eşleştirme modalı Supabase tablosundan çeksin
+3. **Paraşüt → financial_categories** — eşleştirme modalı Supabase tablosundan çeksin
+
+### Gelecek Planlar (Öncelikli değil, ileride)
+- [ ] **Çoklu dil genişletme** — mevcut TR/EN çerçevesi var (translations.ts); yeni dil eklemek için: (a) translations.ts'e yeni dil anahtarı ekle, (b) I18nProvider'a seçenek ekle, (c) dil seçici UI genişlet. Şu an talep gelene kadar beklemede.
 
 ### Bekleyen Kullanıcı Aksiyonu
 - [x] **Supabase SQL:** `migration_v25b_parasut_superadmin_rls.sql` çalıştırıldı (2026-05-19)
