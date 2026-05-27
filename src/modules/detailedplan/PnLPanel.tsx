@@ -352,7 +352,7 @@ export function PnLPanel({ plan, onSave, granularity = 'monthly', horizon = 12 }
         <div className="bg-enba-panel-2/30 px-4 py-3 flex flex-col gap-1.5">
           {[
             { mcode: 'M769', label: 'EBITDA' },
-            { mcode: 'M799', label: 'EBIT (Faiz ve Amortisman Öncesi)' },
+            { mcode: 'M799', label: 'EBIT (Faiz Öncesi, Amortisman Sonrası)' },
             { mcode: 'M879', label: 'OLAĞAN FAALİYET KARI' },
             { mcode: 'M899', label: 'VERGİ ÖNCESİ KAR (EBT)' },
             { mcode: 'M919', label: 'NET KAR' },
