@@ -105,10 +105,9 @@ export const kurulumNakitAPI = {
     const CHUNK = 100;
     for (let i = 0; i < toInsert.length; i += CHUNK) {
       const chunk = toInsert.slice(i, i + CHUNK).map(r => ({ ...r, company_id: companyId }));
-      const { error } = await supabase
-        .from('founding_cashflow')
-        .upsert(chunk, { onConflict: 'company_id,parasut_id', ignoreDuplicates: true });
-      if (error) throw new Error(error.message || error.details || JSON.stringify(error));
+      const { error } = await supabase.from('founding_cashflow').insert(chunk);
+      // 23505 = unique_violation — zaten var, güvenle atla
+      if (error && error.code !== '23505') throw new Error(error.message || error.details || JSON.stringify(error));
     }
 
     return { inserted: toInsert.length, skipped };
@@ -137,10 +136,8 @@ export const kurulumNakitAPI = {
     let inserted = 0;
     for (let i = 0; i < toInsert.length; i += chunkSize) {
       const chunk = toInsert.slice(i, i + chunkSize).map(r => ({ ...r, company_id: companyId }));
-      const { error } = await supabase
-        .from('founding_cashflow')
-        .upsert(chunk, { onConflict: 'company_id,parasut_id', ignoreDuplicates: true });
-      if (error) throw new Error(error.message || error.details || JSON.stringify(error));
+      const { error } = await supabase.from('founding_cashflow').insert(chunk);
+      if (error && error.code !== '23505') throw new Error(error.message || error.details || JSON.stringify(error));
       inserted += chunk.length;
       onProgress(inserted);
     }
