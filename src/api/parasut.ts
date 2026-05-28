@@ -342,32 +342,40 @@ export const parasutService = {
   },
 
   async getFinancialAccounts(companyId: string): Promise<ParasutAccount[]> {
-    const [banks, safes] = await Promise.allSettled([
-      this.requestAll(`/${companyId}/bank_accounts`),
-      this.requestAll(`/${companyId}/safes`),
-    ]);
     const result: ParasutAccount[] = [];
-    if (banks.status === 'fulfilled') {
-      for (const d of banks.value.data || []) {
-        result.push({
-          id: d.id,
-          type: 'bank_accounts',
-          name: d.attributes?.name || d.attributes?.label || `Banka ${d.id}`,
-          currency: d.attributes?.currency || 'TRL',
-          balance: parseFloat(d.attributes?.balance || '0'),
-        });
+    const errs: string[] = [];
+
+    const tryEndpoint = async (
+      path: string,
+      type: ParasutAccount['type'],
+      label: string,
+    ) => {
+      try {
+        const raw = await this.requestAll(`/${companyId}/${path}`);
+        for (const d of raw.data || []) {
+          result.push({
+            id: d.id,
+            type,
+            name: d.attributes?.name || d.attributes?.label || `${label} ${d.id}`,
+            currency: d.attributes?.currency || 'TRL',
+            balance: parseFloat(d.attributes?.balance || '0'),
+          });
+        }
+      } catch (e) {
+        errs.push(`${path}: ${e instanceof Error ? e.message.slice(0, 80) : String(e)}`);
       }
-    }
-    if (safes.status === 'fulfilled') {
-      for (const d of safes.value.data || []) {
-        result.push({
-          id: d.id,
-          type: 'safes',
-          name: d.attributes?.name || d.attributes?.label || `Kasa ${d.id}`,
-          currency: d.attributes?.currency || 'TRL',
-          balance: parseFloat(d.attributes?.balance || '0'),
-        });
-      }
+    };
+
+    await tryEndpoint('bank_accounts',  'bank_accounts', 'Banka');
+    await tryEndpoint('safes',          'safes',         'Kasa');
+    await tryEndpoint('safe_accounts',  'safes',         'Kasa');
+
+    if (result.length === 0) {
+      throw new Error(
+        errs.length > 0
+          ? `Hesap endpoint hatası:\n${errs.join('\n')}`
+          : 'Paraşüt\'te kasa/banka hesabı bulunamadı.',
+      );
     }
     return result;
   },
