@@ -402,11 +402,17 @@ Veri kaybı riski olan her adımı kullanıcıya açıkça belirt ve onay al.
 - [x] **PnLPanel 5 hata** — VERGİ bölümü, M509/M529 giriş alanı, M610 Kira, EBITDA renk, 0 geçerli gider, EBIT etiketi
 - [x] **AI Öneri özelliği** — usePlanAI hook, hyper-service planSummary dalı, sidebar otomatik analiz (commitler: e4fb172, f3d4885, db50a4e)
 - [x] **AI Danışman sohbet** — ask(), ChatMessage, clearChat(), sidebar chat UI, hyper-service question dalı deploy ✅ (commit 30b141c)
+- [x] **KurulumNakit modülü** — `founding_cashflow` tablosu (migration_v29), API, 3-sekmeli modül (Kayıtlar CRUD / kümülatif Grafik / Özet + Excel/PDF export), Finans grubuna eklendi
+
+### Bekleyen Kullanıcı Aksiyonu — migration_v29
+- [x] **Supabase SQL:** `migration_v29_founding_cashflow.sql` çalıştırıldı (2026-05-28)
 
 ### Bir Sonraki Oturumda İlk Yapılacak
-1. **AI Danışman tarayıcı testi** — soru-cevap özelliğini canlıda doğrula (plan seç → analiz → soru sor → yanıt)
-2. **BudgetTrack gerçek veri testi** — plan aktive et, BudgetTrack modalını aç, veriler doğru kaydediliyor mu doğrula
-3. **Paraşüt → financial_categories** — eşleştirme modalı Supabase tablosundan çeksin
+1. **migration_v29 çalıştır** — Supabase SQL Editor'de `migration_v29_founding_cashflow.sql` içeriğini çalıştır
+2. **KurulumNakit tarayıcı testi** — kayıt ekle, grafik doğrula, Excel/PDF export test et
+3. **AI Danışman tarayıcı testi** — soru-cevap özelliğini canlıda doğrula (plan seç → analiz → soru sor → yanıt)
+4. **BudgetTrack gerçek veri testi** — plan aktive et, BudgetTrack modalını aç, veriler doğru kaydediliyor mu doğrula
+5. **Paraşüt → financial_categories** — eşleştirme modalı Supabase tablosundan çeksin
 
 ### Gelecek Planlar (Öncelikli değil, ileride)
 - [ ] **Çoklu dil genişletme** — mevcut TR/EN çerçevesi var (translations.ts); yeni dil eklemek için: (a) translations.ts'e yeni dil anahtarı ekle, (b) I18nProvider'a seçenek ekle, (c) dil seçici UI genişlet. Şu an talep gelene kadar beklemede.

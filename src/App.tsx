@@ -49,6 +49,7 @@ const CompanyAdmin      = lazyRetry(() => import('./modules/CompanyAdmin').then(
 const Notes             = lazyRetry(() => import('./modules/Notes').then(m => ({ default: m.Notes })));
 const Ayarlar           = lazyRetry(() => import('./modules/Ayarlar').then(m => ({ default: m.Ayarlar })));
 const VarlikTakibi      = lazyRetry(() => import('./modules/VarlikTakibi').then(m => ({ default: m.VarlikTakibi })));
+const KurulumNakit      = lazyRetry(() => import('./modules/KurulumNakit').then(m => ({ default: m.KurulumNakit })));
 import type { LucideIcon } from 'lucide-react';
 import {
   Home,
@@ -98,7 +99,7 @@ import {
 type ModuleType =
   | 'dashboard' | 'stock' | 'production' | 'logistics' | 'hr'
   | 'archive' | 'cashflow' | 'planning' | 'fastplan' | 'machinery'
-  | 'tasks' | 'calendar' | 'licensing' | 'settings' | 'ayarlar' | 'varlik' | 'pnl' | 'profile' | 'parasut' | 'modules' | 'mail' | 'fixedexpenses' | 'notes' | 'super_admin' | 'company_admin' | 'sektor_not';
+  | 'tasks' | 'calendar' | 'licensing' | 'settings' | 'ayarlar' | 'varlik' | 'kurulusnakit' | 'pnl' | 'profile' | 'parasut' | 'modules' | 'mail' | 'fixedexpenses' | 'notes' | 'super_admin' | 'company_admin' | 'sektor_not';
 
 export const App: React.FC = () => {
   const { t, language, setLanguage, isLoading } = useTranslation();
@@ -285,7 +286,7 @@ export const App: React.FC = () => {
     const ALL_VP = [
       { id: 'iletisim',  children: ['mail', 'tasks', 'notes', 'calendar'] },
       { id: 'isplani',   children: ['fastplan', 'planning'] },
-      { id: 'finans',    children: ['pnl', 'cashflow', 'parasut', 'fixedexpenses', 'varlik'] },
+      { id: 'finans',    children: ['pnl', 'cashflow', 'parasut', 'fixedexpenses', 'varlik', 'kurulusnakit'] },
       { id: 'operasyon', children: ['stock', 'production', 'logistics', 'machinery'] },
       { id: 'kurumsal',  children: ['hr', 'licensing', 'archive'] },
       { id: 'sistem',    children: ['ayarlar', 'settings', 'profile'] },
@@ -366,7 +367,7 @@ export const App: React.FC = () => {
   const VIRTUAL_PARENTS = [
     { id: 'iletisim',  label: 'İletişim & Görev', icon: MessageSquare, children: ['mail', 'tasks', 'notes', 'calendar']              as string[] },
     { id: 'isplani',   label: 'İş Planı',          icon: Briefcase,     children: ['fastplan', 'planning']                            as string[] },
-    { id: 'finans',    label: 'Finans',             icon: Banknote,      children: ['pnl', 'cashflow', 'parasut', 'fixedexpenses', 'varlik'] as string[] },
+    { id: 'finans',    label: 'Finans',             icon: Banknote,      children: ['pnl', 'cashflow', 'parasut', 'fixedexpenses', 'varlik', 'kurulusnakit'] as string[] },
     { id: 'operasyon', label: 'Operasyon',          icon: Boxes,         children: ['stock', 'production', 'logistics', 'machinery']   as string[] },
     { id: 'kurumsal',  label: 'Kurumsal',           icon: Building,      children: ['hr', 'licensing', 'archive']                     as string[] },
     { id: 'sistem',    label: 'Sistem',             icon: CircleUser,    children: ['ayarlar', 'settings', 'profile']                 as string[] },
@@ -396,6 +397,7 @@ export const App: React.FC = () => {
     { id: 'parasut',      label: 'Paraşüt',           icon: Receipt        },
     { id: 'fixedexpenses',label: 'Abonelikler',       icon: CreditCard     },
     { id: 'varlik',       label: 'Varlık Takibi',     icon: Landmark       },
+    { id: 'kurulusnakit', label: 'Kuruluş Nakdi',    icon: Banknote       },
     // Operasyon
     { id: 'stock',        label: 'Stok',              icon: Package        },
     { id: 'production',   label: 'Üretim',            icon: Factory        },
@@ -1096,7 +1098,8 @@ export const App: React.FC = () => {
                 {activeModule === 'planning' && <DetailedPlanModule navigate={navigate} setBackOverride={(fn: (() => boolean) | null) => { backOverrideRef.current = fn; }} />}
                 {activeModule === 'parasut'  && <Parasut profile={userProfile} navigate={navigate} />}
                 {activeModule === 'ayarlar'  && <Ayarlar profile={userProfile} />}
-                {activeModule === 'varlik'   && <VarlikTakibi profile={userProfile} />}
+                {activeModule === 'varlik'       && <VarlikTakibi profile={userProfile} />}
+                {activeModule === 'kurulusnakit' && <KurulumNakit profile={userProfile} />}
               </React.Suspense>
             </ErrorBoundary>
           </div>
