@@ -44,14 +44,22 @@ function rowToFC(r: any): FoundingCashflow {
 
 export const kurulumNakitAPI = {
   async list(companyId: string): Promise<FoundingCashflow[]> {
-    const { data, error } = await supabase
-      .from('founding_cashflow')
-      .select('*')
-      .eq('company_id', companyId)
-      .order('tarih', { ascending: true })
-      .limit(10000);
-    if (error) throw error;
-    return (data ?? []).map(rowToFC);
+    const PAGE = 1000;
+    let all: FoundingCashflow[] = [];
+    let from = 0;
+    while (true) {
+      const { data, error } = await supabase
+        .from('founding_cashflow')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('tarih', { ascending: true })
+        .range(from, from + PAGE - 1);
+      if (error) throw error;
+      all = all.concat((data ?? []).map(rowToFC));
+      if (!data || data.length < PAGE) break;
+      from += PAGE;
+    }
+    return all;
   },
 
   async insert(companyId: string, form: FCForm): Promise<FoundingCashflow> {
@@ -88,14 +96,22 @@ export const kurulumNakitAPI = {
     if (records.length === 0) return { inserted: 0, skipped: 0 };
 
     // Mevcut parasut_id'leri çek
-    const { data: existing } = await supabase
-      .from('founding_cashflow')
-      .select('parasut_id')
-      .eq('company_id', companyId)
-      .not('parasut_id', 'is', null)
-      .limit(10000);
+    // Tüm parasut_id'leri sayfalama ile çek (server max_rows = 1000)
+    let existingRaw: { parasut_id: string | null }[] = [];
+    let ep = 0;
+    while (true) {
+      const { data: pg } = await supabase
+        .from('founding_cashflow')
+        .select('parasut_id')
+        .eq('company_id', companyId)
+        .not('parasut_id', 'is', null)
+        .range(ep, ep + 999);
+      existingRaw = existingRaw.concat(pg ?? []);
+      if (!pg || pg.length < 1000) break;
+      ep += 1000;
+    }
 
-    const existingIds = new Set((existing ?? []).map((r: { parasut_id: string | null }) => r.parasut_id));
+    const existingIds = new Set(existingRaw.map(r => r.parasut_id));
     const toInsert = records.filter(r => !existingIds.has(r.parasut_id));
     const skipped = records.length - toInsert.length;
 
@@ -122,14 +138,22 @@ export const kurulumNakitAPI = {
   ): Promise<{ inserted: number; skipped: number }> {
     if (records.length === 0) return { inserted: 0, skipped: 0 };
 
-    const { data: existing } = await supabase
-      .from('founding_cashflow')
-      .select('parasut_id')
-      .eq('company_id', companyId)
-      .not('parasut_id', 'is', null)
-      .limit(10000);
+    // Tüm parasut_id'leri sayfalama ile çek (server max_rows = 1000)
+    let existingRaw: { parasut_id: string | null }[] = [];
+    let ep = 0;
+    while (true) {
+      const { data: pg } = await supabase
+        .from('founding_cashflow')
+        .select('parasut_id')
+        .eq('company_id', companyId)
+        .not('parasut_id', 'is', null)
+        .range(ep, ep + 999);
+      existingRaw = existingRaw.concat(pg ?? []);
+      if (!pg || pg.length < 1000) break;
+      ep += 1000;
+    }
 
-    const existingIds = new Set((existing ?? []).map((r: { parasut_id: string | null }) => r.parasut_id));
+    const existingIds = new Set(existingRaw.map(r => r.parasut_id));
     const toInsert = records.filter(r => !existingIds.has(r.parasut_id));
     const skipped = records.length - toInsert.length;
 

@@ -108,13 +108,21 @@ const ImportModal: React.FC<ImportModalProps> = ({ companyId, onImported, onClos
 
       const all = [...sales, ...bills, ...exps].map(mapParasutInvoice);
 
-      const { data: existing } = await (await import('../api/supabase')).supabase
-        .from('founding_cashflow')
-        .select('parasut_id')
-        .eq('company_id', companyId)
-        .not('parasut_id', 'is', null)
-        .limit(10000);
-      const existingIds = new Set((existing ?? []).map((r: { parasut_id: string | null }) => r.parasut_id));
+      const sb = (await import('../api/supabase')).supabase;
+      let existingRaw: { parasut_id: string | null }[] = [];
+      let ep = 0;
+      while (true) {
+        const { data: pg } = await sb
+          .from('founding_cashflow')
+          .select('parasut_id')
+          .eq('company_id', companyId)
+          .not('parasut_id', 'is', null)
+          .range(ep, ep + 999);
+        existingRaw = existingRaw.concat(pg ?? []);
+        if (!pg || pg.length < 1000) break;
+        ep += 1000;
+      }
+      const existingIds = new Set(existingRaw.map(r => r.parasut_id));
       const newRecs = all.filter(r => !existingIds.has(r.parasut_id));
 
       setProgress({ label: 'Tamamlandı', pct: 100 });
