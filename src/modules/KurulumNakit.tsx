@@ -96,6 +96,7 @@ const CustomTooltip: React.FC<CTooltipProps> = ({ active, payload, label }) => {
 };
 
 export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
+  const syncingRef = React.useRef(false); // double-click / concurrent sync guard
   const [tab, setTab]               = useState<Tab>('hesaplar');
   const [rows, setRows]             = useState<FoundingCashflow[]>([]);
   const [loading, setLoading]       = useState(true);
@@ -223,7 +224,8 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
   }, [rows]);
 
   async function handleSync() {
-    if (!isParasutConnected || !parasutCompany || !companyId || syncing) return;
+    if (!isParasutConnected || !parasutCompany || !companyId || syncingRef.current) return;
+    syncingRef.current = true;
     setSyncing(true);
     setSyncResult(null);
     setError('');
@@ -248,10 +250,10 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
         const msg = e instanceof Error ? e.message : String(e);
         setError(prev => prev ? `${prev}; ${acc.name}: ${msg}` : `${acc.name}: ${msg}`);
       }
-      if (i < accs.length - 1) await new Promise(r => setTimeout(r, 500));
+      if (i < accs.length - 1) await new Promise(r => setTimeout(r, 1500)); // 429 koruma
     }
 
-    if (allTxns.length === 0) { setSyncing(false); setSyncProgress(null); return; }
+    if (allTxns.length === 0) { syncingRef.current = false; setSyncing(false); setSyncProgress(null); return; }
 
     setSyncProgress({ label: 'Veritabanına yazılıyor…', pct: 75 });
     const mapped = allTxns.map(mapTransaction);
@@ -267,6 +269,7 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Sync hatası');
     } finally {
+      syncingRef.current = false;
       setSyncing(false);
       setTimeout(() => setSyncProgress(null), 4000);
     }

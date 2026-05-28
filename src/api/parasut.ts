@@ -312,7 +312,7 @@ export const parasutService = {
       if (!resp.links?.next) break;
       page++;
       // Rate limit koruması — Paraşüt 429 üretmesin
-      await this._sleep(250);
+      await this._sleep(500);
     }
 
     return { data: allData, included: allIncluded };
