@@ -98,15 +98,13 @@ const ImportModal: React.FC<ImportModalProps> = ({ companyId, onImported, onClos
     setLoading(true); setErr(''); setProgress({ label: 'Satış faturaları alınıyor…', pct: 10 });
     try {
       const sales = await parasutService.getSalesInvoices(parasutCompany.id, fromDate, toDate);
-      setProgress({ label: 'Alış faturaları alınıyor…', pct: 40 });
+      setProgress({ label: 'Ödemeler ve masraflar alınıyor…', pct: 50 });
 
-      const bills = await parasutService.getPurchaseBills(parasutCompany.id, fromDate, toDate);
-      setProgress({ label: 'Masraflar alınıyor…', pct: 65 });
-
+      // purchase_bills çıkarıldı: nakit akışı için sadece gerçek ödemeler (expenditures) kullanılır
       const exps = await parasutService.getExpenditures(parasutCompany.id, fromDate, toDate);
       setProgress({ label: 'Mevcut kayıtlar kontrol ediliyor…', pct: 85 });
 
-      const all = [...sales, ...bills, ...exps].map(mapParasutInvoice);
+      const all = [...sales, ...exps].map(mapParasutInvoice);
 
       const sb = (await import('../api/supabase')).supabase;
       let existingRaw: { parasut_id: string | null }[] = [];
@@ -203,7 +201,7 @@ const ImportModal: React.FC<ImportModalProps> = ({ companyId, onImported, onClos
                 </div>
               </div>
               <p className="text-xs text-[var(--enba-text-muted)]">
-                Satış faturaları, alış faturaları ve masraflar çekilecek. Zaten import edilmiş kayıtlar atlanır.
+                Satış faturaları ve gerçek ödemeler (masraflar) çekilecek. Alış faturaları hariç — çift sayım önlemek için. Zaten import edilmiş kayıtlar atlanır.
               </p>
             </>
           )}
