@@ -443,7 +443,7 @@ const EntryModal: React.FC<ModalProps> = ({ initial, onSave, onClose }) => {
                       : 'bg-[var(--enba-bg)] text-[var(--enba-text-muted)] border border-[var(--enba-border)]'
                   }`}
                 >
-                  {t === 'gider' ? 'Gider' : 'Gelir'}
+                  {t === 'gider' ? 'Çıktı' : 'Girdi'}
                 </button>
               ))}
             </div>
@@ -796,7 +796,7 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
       <div className="grid grid-cols-3 gap-4 px-6 py-4 flex-shrink-0">
         <div className="bg-[var(--enba-surface)] rounded-2xl px-5 py-4 border border-[var(--enba-border)]">
           <div className="flex items-center gap-2 text-xs text-[var(--enba-text-muted)] mb-1">
-            <TrendingUp size={12} className="text-emerald-500" /> Toplam Gelir
+            <TrendingUp size={12} className="text-emerald-500" /> Toplam Girdi
           </div>
           <div className="text-lg font-bold text-emerald-600">{fmtTL(totalGelir)}</div>
           <div className="text-xs text-[var(--enba-text-muted)] mt-0.5">
@@ -805,7 +805,7 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
         </div>
         <div className="bg-[var(--enba-surface)] rounded-2xl px-5 py-4 border border-[var(--enba-border)]">
           <div className="flex items-center gap-2 text-xs text-[var(--enba-text-muted)] mb-1">
-            <TrendingDown size={12} className="text-red-500" /> Toplam Gider
+            <TrendingDown size={12} className="text-red-500" /> Toplam Çıktı
           </div>
           <div className="text-lg font-bold text-red-500">{fmtTL(totalGider)}</div>
           <div className="text-xs text-[var(--enba-text-muted)] mt-0.5">
@@ -863,7 +863,7 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                 {/* Filtre + sıralama */}
                 <div className="flex items-center gap-3">
                   <div className="flex gap-1 bg-[var(--enba-surface)] border border-[var(--enba-border)] rounded-lg p-0.5">
-                    {([['tümü', 'Tümü'], ['gider', 'Gider'], ['gelir', 'Gelir']] as [TipFilter, string][]).map(([id, label]) => (
+                    {([['tümü', 'Tümü'], ['gider', 'Çıktı'], ['gelir', 'Girdi']] as [TipFilter, string][]).map(([id, label]) => (
                       <button
                         key={id}
                         onClick={() => setTipFilter(id)}
@@ -882,7 +882,7 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
 
                 {displayed.length === 0 ? (
                   <div className="text-center py-16 text-[var(--enba-text-muted)] text-sm">
-                    {tipFilter === 'tümü' ? 'Henüz kayıt yok. "Kayıt Ekle" ile başlayın.' : `${tipFilter} kaydı bulunamadı.`}
+                    {tipFilter === 'tümü' ? 'Henüz kayıt yok. "Kayıt Ekle" ile başlayın.' : `${tipFilter === 'gelir' ? 'Girdi' : 'Çıktı'} kaydı bulunamadı.`}
                   </div>
                 ) : (
                   <div className="bg-[var(--enba-surface)] border border-[var(--enba-border)] rounded-2xl overflow-hidden">
@@ -917,13 +917,13 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                             <td className="px-4 py-2.5 text-xs text-[var(--enba-text-muted)] whitespace-nowrap">{fmtDate(r.tarih)}</td>
                             <td className="px-4 py-2.5 text-xs text-[var(--enba-text)]">{r.kategori}</td>
                             <td className={`px-4 py-2.5 text-xs font-semibold text-right whitespace-nowrap ${r.tip === 'gider' ? 'text-red-500' : 'text-emerald-600'}`}>
-                              {r.tip === 'gider' ? '−' : '+'}{fmtTL(r.tutar_tl)}
+                              {r.tip === 'gider' ? '−' : '+'} {fmtTL(r.tutar_tl)}
                             </td>
                             <td className="px-4 py-2.5">
                               <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${
                                 r.tip === 'gider' ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-700'
                               }`}>
-                                {r.tip === 'gider' ? 'Gider' : 'Gelir'}
+                                {r.tip === 'gider' ? 'Çıktı' : 'Girdi'}
                               </span>
                             </td>
                             <td className="px-4 py-2.5 text-xs text-[var(--enba-text-muted)] max-w-[200px] truncate">{r.aciklama}</td>
@@ -1100,8 +1100,8 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                           <YAxis tickFormatter={v => (v / 1000).toFixed(0) + 'K'} tick={{ fontSize: 11, fill: 'var(--enba-text-muted)' }} />
                           <Tooltip content={<CustomTooltip />} />
                           <Legend wrapperStyle={{ fontSize: 11 }} />
-                          <Bar dataKey="gelir" name="Gelir" fill="#10b981" radius={[4, 4, 0, 0]} />
-                          <Bar dataKey="gider" name="Gider" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                          <Bar dataKey="gelir" name="Girdi" fill="#10b981" radius={[4, 4, 0, 0]} />
+                          <Bar dataKey="gider" name="Çıktı" fill="#ef4444" radius={[4, 4, 0, 0]} />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -1124,8 +1124,8 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                 {/* KPI özet */}
                 <div className="grid grid-cols-3 gap-4">
                   {[
-                    { label: 'Toplam Gelir', value: totalGelir, color: 'text-emerald-600' },
-                    { label: 'Toplam Gider', value: totalGider, color: 'text-red-500' },
+                    { label: 'Toplam Girdi', value: totalGelir, color: 'text-emerald-600' },
+                    { label: 'Toplam Çıktı', value: totalGider, color: 'text-red-500' },
                     { label: 'Net Bakiye',   value: bakiye,     color: bakiye >= 0 ? 'text-emerald-600' : 'text-red-500' },
                   ].map(k => (
                     <div key={k.label} className="bg-[var(--enba-surface)] border border-[var(--enba-border)] rounded-2xl px-5 py-4">
@@ -1145,8 +1145,8 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                       <thead>
                         <tr className="border-b border-[var(--enba-border)] text-xs text-[var(--enba-text-muted)]">
                           <th className="px-5 py-3 text-left font-medium">Kategori</th>
-                          <th className="px-5 py-3 text-right font-medium">Gelir</th>
-                          <th className="px-5 py-3 text-right font-medium">Gider</th>
+                          <th className="px-5 py-3 text-right font-medium">Girdi</th>
+                          <th className="px-5 py-3 text-right font-medium">Çıktı</th>
                           <th className="px-5 py-3 text-right font-medium">Net</th>
                           <th className="px-5 py-3 text-right font-medium">Pay %</th>
                         </tr>
@@ -1177,6 +1177,7 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                           <td className="px-5 py-3 text-xs font-bold text-[var(--enba-text)]">TOPLAM</td>
                           <td className="px-5 py-3 text-xs font-bold text-emerald-600 text-right">{fmtTL(totalGelir)}</td>
                           <td className="px-5 py-3 text-xs font-bold text-red-500 text-right">{fmtTL(totalGider)}</td>
+
                           <td className={`px-5 py-3 text-xs font-bold text-right ${bakiye >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>{fmtTL(bakiye)}</td>
                           <td className="px-5 py-3 text-xs font-bold text-[var(--enba-text-muted)] text-right">100%</td>
                         </tr>
