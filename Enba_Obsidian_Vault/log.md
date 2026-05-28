@@ -1083,3 +1083,13 @@ grep "^## \[" log.md | tail -5
   - [[Wiki/Sektor/Yasal-Mevzuat-ve-Atik-Lisanslari|Yasal Mevzuat ve Lisanslar]]: Çevre izin/lisans belgeleri (GFB, TAT, GDT), tehlikesiz atık kodları, devlet kütle denge (KDS) aylık bildirim zorunlulukları ve MoTAT takip entegrasyonu.
 - **Dizin Güncellemesi:** `index.md` dosyasına 3 yeni sektörel sayfa eklendi.
 
+---
+
+## [2026-05-28 13:20] canlıya gönderim | Sektörel Wiki Entegrasyonu Canlıya Dağıtıldı
+
+**Yapılan işlemler:**
+- **Derleme Kontrolü:** `src/modules/SektorNot.tsx` üzerindeki tüm yeni malzeme ve sektörel alt sayfa entegrasyonları için `npm run build` yerel olarak çalıştırıldı ve TypeScript derleme süreçlerinin sıfır hata ile tamamlandığı doğrulandı.
+- **Commit ve Push:** Yapılan tüm geliştirmeler `9b11596` numaralı commit ile `main` dalına push edilerek Vercel canlı dağıtım tetiklendi.
+- **Canlı Kontrolü:** "Malzemeler & Fraksiyonlar" sekmesi ile "Standartlar & Sektörel" sekmesine eklenen 11 yeni sektörel uzmanlık sayfasının canlıda (`uygulama.basarunal.com`) yayına alınması sağlandı.
+
+
