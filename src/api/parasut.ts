@@ -373,44 +373,64 @@ export const parasutService = {
       'filter[date][lteq]': dateTo,
       'sort': 'id',
     });
-    // İlk transaction'ı logla — field adlarını ve değerleri anlamak için
-    if ((raw.data || []).length > 0) {
-      console.log(`[Paraşüt txn] ${account.name} örnek:`, JSON.stringify((raw.data[0] || {}).attributes, null, 2));
-    }
     return (raw.data || []).flatMap((d: any): ParasutTransaction[] => {
       const a = d.attributes || {};
+      const txType: string = (a.transaction_type || '').toLowerCase();
 
-      // Kasalar/bankalar arası transferleri dışla — çift sayım yapar
-      const txType: string = (a.transaction_type || a.type || '').toLowerCase();
-      if (
-        txType.includes('transfer') ||
-        txType.includes('contact_transfer') ||
-        txType.includes('account_transfer')
-      ) return [];
+      // Kasalar/bankalar arası transferler ve açılış bakiyelerini dışla
+      if (txType.includes('transfer') || txType === 'initial_account_balance') return [];
 
-      const debit  = parseFloat(a.debit_amount  || a.amount_debit  || '0');
-      const credit = parseFloat(a.credit_amount || a.amount_credit || '0');
-      const rate   = parseFloat(a.exchange_rate || '1');
+      // Yön: transaction_type'tan belirle
+      // *_credit / sales_invoice_payment / sales_receipt_payment → GİRDİ (+)
+      // *_debit / purchase_* / expense_* / payroll_* / tax_* → ÇIKTI (-)
+      const isGirdi = txType.includes('_credit')
+                   || txType === 'sales_invoice_payment'
+                   || txType === 'sales_receipt_payment';
+      const isCikti = txType.includes('_debit')
+                   || txType.startsWith('purchase_')
+                   || txType.startsWith('expense_')
+                   || txType.startsWith('payroll_')
+                   || txType.startsWith('tax_');
 
-      // Muhasebe kuralı: debit = hesaba GİRİŞ (+), credit = hesaptan ÇIKIŞ (-)
-      const amount = (debit === 0 && credit === 0)
-        ? parseFloat(a.amount || '0')
-        : debit - credit;
+      // TRL tutarı: amount_in_trl öncelikli (EUR hesaplarda da TL karşılığını verir)
+      const trlAmt    = parseFloat(a.amount_in_trl  || '0');
+      const debitAmt  = parseFloat(a.debit_amount   || '0');
+      const creditAmt = parseFloat(a.credit_amount  || '0');
 
-      if (amount === 0) return [];
+      const absAmount = trlAmt > 0
+        ? trlAmt
+        : (a.debit_currency  === 'TRL' && debitAmt  > 0) ? debitAmt
+        : (a.credit_currency === 'TRL' && creditAmt > 0) ? creditAmt
+        : Math.max(debitAmt, creditAmt);
 
-      const amountTL = Math.abs(amount) * rate;
+      if (absAmount === 0) return [];
+
+      let direction: number;
+      if (isGirdi) {
+        direction = 1;
+      } else if (isCikti) {
+        direction = -1;
+      } else {
+        // Bilinmeyen tip: sadece debit → girdi, sadece credit → çıktı
+        if (debitAmt > 0 && creditAmt === 0) direction = 1;
+        else if (creditAmt > 0 && debitAmt === 0) direction = -1;
+        else return [];
+      }
+
+      const amount = direction * absAmount;
       return [{
         id: d.id,
         account_id: account.id,
         account_name: account.name,
         account_type: account.type,
-        date: a.date || a.transaction_date || '',
+        date: a.date || '',
         amount,
-        description: a.description || a.notes || a.note || '—',
-        currency: a.currency || account.currency,
-        exchange_rate: rate,
-        amount_tl: amountTL,
+        description: a.description || a.auto_description || '—',
+        currency: a.debit_currency || a.credit_currency || account.currency,
+        exchange_rate: absAmount > 0 && trlAmt > 0 && (debitAmt > 0 || creditAmt > 0)
+          ? trlAmt / Math.max(debitAmt, creditAmt)
+          : 1,
+        amount_tl: absAmount,
       }];
     });
   },
