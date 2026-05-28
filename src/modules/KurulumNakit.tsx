@@ -272,9 +272,15 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
 
     const allTxns: import('../api/parasut').ParasutTransaction[] = [];
     const today = new Date().toISOString().slice(0, 10);
-    for (let i = 0; i < accs.length; i++) {
-      const acc = accs[i];
-      setSyncProgress({ label: `${acc.name}… (${i + 1}/${accs.length})`, pct: Math.round(5 + (i / accs.length) * 65) });
+    // Yalnızca TRL hesaplar senkronize edilir.
+    // EUR hesaplar (ör. Enes Eşsiz Euro) TRL nakit akışına karıştırılmaz:
+    // TRL→EUR döviz alımı money_transfer olarak dışlanırken EUR harcamalar
+    // TL karşılığıyla gider sayılıyor → büyük yapay negatif bakiye oluşur.
+    // EUR pozisyonu Hesaplar sekmesinde canlı bakiye olarak gösterilir.
+    const trlAccs = accs.filter(a => a.currency === 'TRL' || a.currency === 'TRY');
+    for (let i = 0; i < trlAccs.length; i++) {
+      const acc = trlAccs[i];
+      setSyncProgress({ label: `${acc.name}… (${i + 1}/${trlAccs.length})`, pct: Math.round(5 + (i / trlAccs.length) * 65) });
       try {
         const txns = await parasutService.getAccountTransactions(parasutCompany.id, acc, '2020-01-01', today);
         allTxns.push(...txns);
@@ -282,7 +288,7 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
         const msg = e instanceof Error ? e.message : String(e);
         setError(prev => prev ? `${prev}; ${acc.name}: ${msg}` : `${acc.name}: ${msg}`);
       }
-      if (i < accs.length - 1) await new Promise(r => setTimeout(r, 1500)); // 429 koruma
+      if (i < trlAccs.length - 1) await new Promise(r => setTimeout(r, 1500)); // 429 koruma
     }
 
     if (allTxns.length === 0) { syncingRef.current = false; setSyncing(false); setSyncProgress(null); return; }
@@ -503,8 +509,9 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                   </div>
                 ) : (
                   <>
+                    {/* TRL hesaplar */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {accounts.map(acc => {
+                      {accounts.filter(a => a.currency === 'TRL' || a.currency === 'TRY').map(acc => {
                         const dbRows  = rows.filter(r => r.source_account === acc.name);
                         const dbGelir = dbRows.filter(r => r.tip === 'gelir').reduce((s, r) => s + r.tutar_tl, 0);
                         const dbGider = dbRows.filter(r => r.tip === 'gider').reduce((s, r) => s + r.tutar_tl, 0);
@@ -538,6 +545,30 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                         );
                       })}
                     </div>
+
+                    {/* EUR hesaplar — TRL nakit akışına dahil değil, ayrı gösterilir */}
+                    {accounts.some(a => a.currency !== 'TRL' && a.currency !== 'TRY') && (
+                      <div className="border border-[var(--enba-border)] rounded-2xl overflow-hidden">
+                        <div className="px-4 py-2.5 bg-[var(--enba-bg)] border-b border-[var(--enba-border)] flex items-center gap-2">
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--enba-text-muted)]">Döviz Pozisyonu</span>
+                          <span className="text-[10px] text-[var(--enba-text-muted)]">· TRL nakit akışına dahil değil</span>
+                        </div>
+                        <div className="divide-y divide-[var(--enba-border)]">
+                          {accounts.filter(a => a.currency !== 'TRL' && a.currency !== 'TRY').map(acc => (
+                            <div key={acc.id} className="flex items-center justify-between px-4 py-3">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <Building2 size={13} className="text-blue-500 shrink-0" />
+                                <span className="text-xs font-semibold text-[var(--enba-text)] truncate">{acc.name}</span>
+                                <span className="text-[10px] text-[var(--enba-text-muted)] shrink-0">{acc.currency}</span>
+                              </div>
+                              <span className={`text-sm font-bold flex-shrink-0 ${acc.balance >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                                {fmtAmount(acc.balance, acc.currency)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     {accounts.length === 0 && (
                       <div className="text-center py-12 text-[var(--enba-text-muted)] text-sm">
