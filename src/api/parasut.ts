@@ -32,6 +32,27 @@ export interface ParasutInvoice {
   invoice_no: string;
 }
 
+export interface ParasutAccount {
+  id: string;
+  type: 'bank_accounts' | 'safes';
+  name: string;
+  currency: string;
+  balance: number;
+}
+
+export interface ParasutTransaction {
+  id: string;
+  account_id: string;
+  account_name: string;
+  account_type: 'bank_accounts' | 'safes';
+  date: string;
+  amount: number;        // pozitif = giriş, negatif = çıkış
+  description: string;
+  currency: string;
+  exchange_rate: number;
+  amount_tl: number;
+}
+
 export interface ParasutItem {
   id: string;
   name: string;
@@ -318,6 +339,74 @@ export const parasutService = {
       'sort': '-issue_date',
     });
     return this._mapInvoices(raw, 'expenditures');
+  },
+
+  async getFinancialAccounts(companyId: string): Promise<ParasutAccount[]> {
+    const [banks, safes] = await Promise.allSettled([
+      this.requestAll(`/${companyId}/bank_accounts`),
+      this.requestAll(`/${companyId}/safes`),
+    ]);
+    const result: ParasutAccount[] = [];
+    if (banks.status === 'fulfilled') {
+      for (const d of banks.value.data || []) {
+        result.push({
+          id: d.id,
+          type: 'bank_accounts',
+          name: d.attributes?.name || d.attributes?.label || `Banka ${d.id}`,
+          currency: d.attributes?.currency || 'TRL',
+          balance: parseFloat(d.attributes?.balance || '0'),
+        });
+      }
+    }
+    if (safes.status === 'fulfilled') {
+      for (const d of safes.value.data || []) {
+        result.push({
+          id: d.id,
+          type: 'safes',
+          name: d.attributes?.name || d.attributes?.label || `Kasa ${d.id}`,
+          currency: d.attributes?.currency || 'TRL',
+          balance: parseFloat(d.attributes?.balance || '0'),
+        });
+      }
+    }
+    return result;
+  },
+
+  async getAccountTransactions(
+    companyId: string,
+    account: ParasutAccount,
+    dateFrom: string,
+    dateTo: string,
+  ): Promise<ParasutTransaction[]> {
+    const raw = await this.requestAll(`/${companyId}/${account.type}/${account.id}/transactions`, {
+      'filter[date][gte]': dateFrom,
+      'filter[date][lte]': dateTo,
+      'sort': 'date',
+    });
+    return (raw.data || []).map((d: any): ParasutTransaction => {
+      const a = d.attributes || {};
+      const debit  = parseFloat(a.debit_amount  || a.amount_debit  || '0');
+      const credit = parseFloat(a.credit_amount || a.amount_credit || '0');
+      const rate   = parseFloat(a.exchange_rate || '1');
+      // debit = çıkış (negatif), credit = giriş (pozitif)
+      const amount = credit - debit;
+      const amountRaw = parseFloat(a.amount || '0');
+      // Bazı API'lerde tek amount + direction olabilir
+      const finalAmount = (debit === 0 && credit === 0) ? amountRaw : amount;
+      const amountTL = Math.abs(finalAmount) * rate;
+      return {
+        id: d.id,
+        account_id: account.id,
+        account_name: account.name,
+        account_type: account.type,
+        date: a.date || a.transaction_date || '',
+        amount: finalAmount,
+        description: a.description || a.notes || '—',
+        currency: a.currency || account.currency,
+        exchange_rate: rate,
+        amount_tl: amountTL,
+      };
+    });
   },
 
   async getPaidSalesInvoices(companyId: string, dateFrom: string, dateTo: string): Promise<ParasutInvoice[]> {

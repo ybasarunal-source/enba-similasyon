@@ -10,7 +10,7 @@ import {
   Tooltip, Legend, ResponsiveContainer, ReferenceLine,
 } from 'recharts';
 import { kurulumNakitAPI, type FoundingCashflow, type FCForm, type FCTip, type FCImportRecord } from '../api/kurulumNakit';
-import { parasutService, type ParasutInvoice } from '../api/parasut';
+import { parasutService, type ParasutInvoice, type ParasutAccount } from '../api/parasut';
 import type { UserProfile } from '../api/supabase';
 
 interface KurulumNakitProps {
@@ -74,6 +74,19 @@ function mapParasutInvoice(inv: ParasutInvoice): FCImportRecord {
   };
 }
 
+// ── Paraşüt transaction → FCImportRecord ────────────────────
+function mapTransaction(txn: import('../api/parasut').ParasutTransaction): FCImportRecord {
+  const tip: FCTip = txn.amount >= 0 ? 'gelir' : 'gider';
+  return {
+    tarih:      txn.date,
+    tip,
+    kategori:   txn.account_name.slice(0, 60),
+    tutar_tl:   Math.round(Math.abs(txn.amount_tl) * 100) / 100,
+    aciklama:   txn.description.slice(0, 200),
+    parasut_id: `txn-${txn.account_id}-${txn.id}`,
+  };
+}
+
 // ── ImportModal ──────────────────────────────────────────────
 interface ImportModalProps {
   companyId: string;
@@ -85,45 +98,73 @@ const ImportModal: React.FC<ImportModalProps> = ({ companyId, onImported, onClos
   const parasutCompany = parasutService.getCompany();
   const isConnected    = parasutService.isLoggedIn() && !!parasutCompany;
 
-  const [fromDate,   setFromDate]   = useState('2020-01-01');
-  const [toDate,     setToDate]     = useState(new Date().toISOString().slice(0, 10));
-  const [step,       setStep]       = useState<'config' | 'preview' | 'done'>('config');
-  const [loading,    setLoading]    = useState(false);
-  const [progress,   setProgress]   = useState<{ label: string; pct: number } | null>(null);
-  const [err,        setErr]        = useState('');
-  const [pending,    setPending]    = useState<FCImportRecord[]>([]);
-  const [result,     setResult]     = useState<{ inserted: number; skipped: number } | null>(null);
+  const [fromDate,        setFromDate]        = useState('2020-01-01');
+  const [toDate,          setToDate]          = useState(new Date().toISOString().slice(0, 10));
+  const [step,            setStep]            = useState<'config' | 'preview' | 'done'>('config');
+  const [loading,         setLoading]         = useState(false);
+  const [loadingAccounts, setLoadingAccounts] = useState(false);
+  const [progress,        setProgress]        = useState<{ label: string; pct: number } | null>(null);
+  const [err,             setErr]             = useState('');
+  const [accounts,        setAccounts]        = useState<ParasutAccount[]>([]);
+  const [selectedIds,     setSelectedIds]     = useState<Set<string>>(new Set());
+  const [pending,         setPending]         = useState<FCImportRecord[]>([]);
+  const [result,          setResult]          = useState<{ inserted: number; skipped: number } | null>(null);
+
+  // Hesapları yükle
+  useEffect(() => {
+    if (!isConnected || !parasutCompany) return;
+    setLoadingAccounts(true);
+    parasutService.getFinancialAccounts(parasutCompany.id)
+      .then(accs => {
+        setAccounts(accs);
+        setSelectedIds(new Set(accs.map(a => a.id)));
+      })
+      .catch(e => setErr(e instanceof Error ? e.message : 'Hesaplar alınamadı'))
+      .finally(() => setLoadingAccounts(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function toggleAccount(id: string) {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
 
   async function handleFetch() {
-    if (!parasutCompany) return;
-    setLoading(true); setErr(''); setProgress({ label: 'Tahsil edilmiş faturalar alınıyor…', pct: 10 });
+    if (!parasutCompany || selectedIds.size === 0) return;
+    setLoading(true); setErr('');
+    const selected = accounts.filter(a => selectedIds.has(a.id));
+    const allTxns: import('../api/parasut').ParasutTransaction[] = [];
     try {
-      // Nakit girişi: sadece ödeme_durumu=paid olan satış faturaları (tahsil edilmiş)
-      const sales = await parasutService.getPaidSalesInvoices(parasutCompany.id, fromDate, toDate);
-      setProgress({ label: 'Ödeme kayıtları alınıyor…', pct: 50 });
+      for (let i = 0; i < selected.length; i++) {
+        const acc = selected[i];
+        setProgress({ label: `${acc.name} hareketleri alınıyor…`, pct: Math.round((i / selected.length) * 60) });
+        try {
+          const txns = await parasutService.getAccountTransactions(parasutCompany.id, acc, fromDate, toDate);
+          allTxns.push(...txns);
+        } catch {
+          // Hesap transaction desteklemiyor olabilir — atla
+        }
+      }
 
-      // Nakit çıkışı: tediye belgeleri (gerçek ödemeler)
-      const exps = await parasutService.getExpenditures(parasutCompany.id, fromDate, toDate);
-      setProgress({ label: 'Mevcut kayıtlar kontrol ediliyor…', pct: 85 });
-
-      const all = [...sales, ...exps].map(mapParasutInvoice);
+      setProgress({ label: 'Mevcut kayıtlar kontrol ediliyor…', pct: 70 });
+      const mapped = allTxns.map(mapTransaction);
 
       const sb = (await import('../api/supabase')).supabase;
       let existingRaw: { parasut_id: string | null }[] = [];
       let ep = 0;
       while (true) {
         const { data: pg } = await sb
-          .from('founding_cashflow')
-          .select('parasut_id')
-          .eq('company_id', companyId)
-          .not('parasut_id', 'is', null)
-          .range(ep, ep + 999);
+          .from('founding_cashflow').select('parasut_id')
+          .eq('company_id', companyId).not('parasut_id', 'is', null).range(ep, ep + 999);
         existingRaw = existingRaw.concat(pg ?? []);
         if (!pg || pg.length < 1000) break;
         ep += 1000;
       }
       const existingIds = new Set(existingRaw.map(r => r.parasut_id));
-      const newRecs = all.filter(r => !existingIds.has(r.parasut_id));
+      const newRecs = mapped.filter(r => !existingIds.has(r.parasut_id));
 
       setProgress({ label: 'Tamamlandı', pct: 100 });
       setPending(newRecs);
@@ -139,14 +180,12 @@ const ImportModal: React.FC<ImportModalProps> = ({ companyId, onImported, onClos
   async function handleImport() {
     setLoading(true); setErr('');
     const total = pending.length;
-    const CHUNK = 100;
     setProgress({ label: `0 / ${total} kayıt yazılıyor…`, pct: 0 });
     try {
       const res = await kurulumNakitAPI.batchImportWithProgress(
-        companyId,
-        pending,
+        companyId, pending,
         (done) => setProgress({ label: `${done} / ${total} kayıt yazılıyor…`, pct: Math.round((done / total) * 100) }),
-        CHUNK,
+        100,
       );
       setProgress({ label: 'Tamamlandı', pct: 100 });
       setResult(res);
@@ -161,8 +200,8 @@ const ImportModal: React.FC<ImportModalProps> = ({ companyId, onImported, onClos
     }
   }
 
-  const gelirCount  = pending.filter(r => r.tip === 'gelir').length;
-  const giderCount  = pending.filter(r => r.tip === 'gider').length;
+  const gelirCount = pending.filter(r => r.tip === 'gelir').length;
+  const giderCount = pending.filter(r => r.tip === 'gider').length;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
@@ -183,13 +222,12 @@ const ImportModal: React.FC<ImportModalProps> = ({ companyId, onImported, onClos
             isConnected ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-600 border border-red-200'
           }`}>
             <Link2 size={13} />
-            {isConnected
-              ? `Bağlı: ${parasutCompany!.name || parasutCompany!.id}`
-              : 'Paraşüt bağlı değil — önce Paraşüt modülünden giriş yap'}
+            {isConnected ? `Bağlı: ${parasutCompany!.name || parasutCompany!.id}` : 'Paraşüt bağlı değil — önce Paraşüt modülünden giriş yap'}
           </div>
 
           {isConnected && step === 'config' && !loading && (
             <>
+              {/* Tarih aralığı */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-[var(--enba-text-muted)] mb-1.5">Başlangıç tarihi</label>
@@ -202,13 +240,45 @@ const ImportModal: React.FC<ImportModalProps> = ({ companyId, onImported, onClos
                     className="w-full bg-[var(--enba-bg)] border border-[var(--enba-border)] rounded-xl px-3 py-2 text-sm text-[var(--enba-text)] focus:outline-none focus:ring-2 focus:ring-[var(--enba-orange)]/30" />
                 </div>
               </div>
+
+              {/* Hesap listesi */}
+              <div>
+                <label className="block text-xs font-medium text-[var(--enba-text-muted)] mb-2">Hesaplar</label>
+                {loadingAccounts ? (
+                  <div className="flex items-center gap-2 text-xs text-[var(--enba-text-muted)] py-2">
+                    <Loader2 size={12} className="animate-spin text-[var(--enba-orange)]" /> Hesaplar yükleniyor…
+                  </div>
+                ) : accounts.length === 0 ? (
+                  <p className="text-xs text-[var(--enba-text-muted)]">Kasa/banka hesabı bulunamadı.</p>
+                ) : (
+                  <div className="space-y-1.5 max-h-44 overflow-y-auto pr-1">
+                    {accounts.map(acc => (
+                      <label key={acc.id} className="flex items-center gap-2.5 px-3 py-2 rounded-xl border border-[var(--enba-border)] bg-[var(--enba-bg)] cursor-pointer hover:border-[var(--enba-orange)]/40 transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(acc.id)}
+                          onChange={() => toggleAccount(acc.id)}
+                          className="accent-[var(--enba-orange)]"
+                        />
+                        <span className="flex-1 text-xs text-[var(--enba-text)]">{acc.name}</span>
+                        <span className="text-[10px] text-[var(--enba-text-muted)] bg-[var(--enba-surface)] px-1.5 py-0.5 rounded-md border border-[var(--enba-border)]">
+                          {acc.type === 'bank_accounts' ? 'Banka' : 'Kasa'}
+                        </span>
+                        <span className="text-xs font-semibold text-[var(--enba-text)]">
+                          {acc.balance.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} {acc.currency}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
               <p className="text-xs text-[var(--enba-text-muted)]">
-                Gelir: yalnızca tahsil edilmiş satış faturaları (ödeme_durumu = paid). Gider: tediye belgeleri. Henüz tahsil edilmemiş faturalar dahil edilmez. Zaten import edilmiş kayıtlar atlanır.
+                Seçilen hesapların kasa/banka hareketleri çekilir. Zaten import edilmiş kayıtlar atlanır.
               </p>
             </>
           )}
 
-          {/* İlerleme göstergesi — fetch ve import sırasında */}
+          {/* İlerleme */}
           {loading && progress && (
             <div className="space-y-2 py-1">
               <div className="flex items-center justify-between text-xs">
@@ -219,15 +289,12 @@ const ImportModal: React.FC<ImportModalProps> = ({ companyId, onImported, onClos
                 <span className="font-semibold text-[var(--enba-text)]">{progress.pct}%</span>
               </div>
               <div className="w-full h-2 bg-[var(--enba-bg)] rounded-full overflow-hidden border border-[var(--enba-border)]">
-                <div
-                  className="h-full bg-[var(--enba-orange)] rounded-full transition-all duration-500"
-                  style={{ width: `${progress.pct}%` }}
-                />
+                <div className="h-full bg-[var(--enba-orange)] rounded-full transition-all duration-500" style={{ width: `${progress.pct}%` }} />
               </div>
             </div>
           )}
 
-          {isConnected && step === 'preview' && (
+          {step === 'preview' && (
             <div className="space-y-3">
               <div className="grid grid-cols-3 gap-2 text-center">
                 <div className="bg-[var(--enba-bg)] rounded-xl py-3">
@@ -236,22 +303,17 @@ const ImportModal: React.FC<ImportModalProps> = ({ companyId, onImported, onClos
                 </div>
                 <div className="bg-emerald-50 rounded-xl py-3">
                   <div className="text-lg font-bold text-emerald-600">{gelirCount}</div>
-                  <div className="text-xs text-emerald-600">Gelir</div>
+                  <div className="text-xs text-emerald-600">Giriş</div>
                 </div>
                 <div className="bg-red-50 rounded-xl py-3">
                   <div className="text-lg font-bold text-red-500">{giderCount}</div>
-                  <div className="text-xs text-red-500">Gider</div>
+                  <div className="text-xs text-red-500">Çıkış</div>
                 </div>
               </div>
-              {pending.length === 0 ? (
-                <p className="text-xs text-center text-[var(--enba-text-muted)] py-2">
-                  Seçilen aralıkta tüm kayıtlar zaten aktarılmış.
-                </p>
-              ) : (
-                <p className="text-xs text-[var(--enba-text-muted)]">
-                  {pending.length} kayıt aktarılacak. Zaten var olanlar otomatik atlanır.
-                </p>
-              )}
+              {pending.length === 0
+                ? <p className="text-xs text-center text-[var(--enba-text-muted)] py-2">Seçilen aralıkta tüm kayıtlar zaten aktarılmış.</p>
+                : <p className="text-xs text-[var(--enba-text-muted)]">{pending.length} hareket aktarılacak. Zaten var olanlar otomatik atlanır.</p>
+              }
             </div>
           )}
 
@@ -259,10 +321,8 @@ const ImportModal: React.FC<ImportModalProps> = ({ companyId, onImported, onClos
             <div className="flex flex-col items-center gap-3 py-4">
               <CheckCircle2 size={36} className="text-emerald-500" />
               <div className="text-center">
-                <div className="font-semibold text-[var(--enba-text)]">{result.inserted} kayıt aktarıldı</div>
-                {result.skipped > 0 && (
-                  <div className="text-xs text-[var(--enba-text-muted)] mt-1">{result.skipped} kayıt zaten vardı, atlandı</div>
-                )}
+                <div className="font-semibold text-[var(--enba-text)]">{result.inserted} hareket aktarıldı</div>
+                {result.skipped > 0 && <div className="text-xs text-[var(--enba-text-muted)] mt-1">{result.skipped} kayıt zaten vardı, atlandı</div>}
               </div>
             </div>
           )}
@@ -276,34 +336,26 @@ const ImportModal: React.FC<ImportModalProps> = ({ companyId, onImported, onClos
 
         <div className="px-6 py-4 flex justify-end gap-2 border-t border-[var(--enba-border)]">
           {step === 'done' ? (
-            <button onClick={onClose} className="px-5 py-2 text-sm font-semibold text-white rounded-xl bg-[var(--enba-orange)] hover:bg-[var(--enba-orange-hover)] transition-all">
-              Kapat
-            </button>
+            <button onClick={onClose} className="px-5 py-2 text-sm font-semibold text-white rounded-xl bg-[var(--enba-orange)] hover:bg-[var(--enba-orange-hover)] transition-all">Kapat</button>
           ) : loading ? (
-            /* Yükleme sırasında sadece iptal butonu — işlem devam ediyor mesajı progress bar'da */
             <span className="text-xs text-[var(--enba-text-muted)] mr-auto">İşlem devam ediyor, lütfen bekleyin…</span>
           ) : (
             <>
-              <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-[var(--enba-text-muted)] hover:text-[var(--enba-text)] rounded-xl transition-colors">
-                İptal
-              </button>
-              {isConnected && step === 'config' && (
-                <button onClick={handleFetch}
-                  className="px-5 py-2 text-sm font-semibold text-white rounded-xl bg-[var(--enba-orange)] hover:bg-[var(--enba-orange-hover)] transition-all">
+              <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-[var(--enba-text-muted)] hover:text-[var(--enba-text)] rounded-xl transition-colors">İptal</button>
+              {step === 'config' && (
+                <button onClick={handleFetch} disabled={selectedIds.size === 0 || loadingAccounts}
+                  className="px-5 py-2 text-sm font-semibold text-white rounded-xl bg-[var(--enba-orange)] hover:bg-[var(--enba-orange-hover)] disabled:opacity-50 transition-all">
                   Verileri Getir
                 </button>
               )}
-              {isConnected && step === 'preview' && pending.length > 0 && (
-                <button onClick={handleImport} disabled={loading}
-                  className="px-5 py-2 text-sm font-semibold text-white rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 transition-all flex items-center gap-2">
-                  {loading && <Loader2 size={14} className="animate-spin" />}
+              {step === 'preview' && pending.length > 0 && (
+                <button onClick={handleImport}
+                  className="px-5 py-2 text-sm font-semibold text-white rounded-xl bg-emerald-600 hover:bg-emerald-700 transition-all flex items-center gap-2">
                   {pending.length} Kaydı Aktar
                 </button>
               )}
-              {isConnected && step === 'preview' && pending.length === 0 && (
-                <button onClick={onClose} className="px-5 py-2 text-sm font-semibold text-white rounded-xl bg-[var(--enba-orange)] transition-all">
-                  Tamam
-                </button>
+              {step === 'preview' && pending.length === 0 && (
+                <button onClick={onClose} className="px-5 py-2 text-sm font-semibold text-white rounded-xl bg-[var(--enba-orange)] transition-all">Tamam</button>
               )}
             </>
           )}
