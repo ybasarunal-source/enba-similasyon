@@ -424,6 +424,8 @@ export const parasutService = {
                    || txType === 'sales_receipt_payment';
       const isCikti = txType === 'contact_debit'
                    || txType === 'account_credit'
+                   || txType === 'employee_debit'    // Çalışana Ödeme
+                   || txType === 'bank_fee_payment'  // Banka masrafı (EFT, dekont vb.)
                    || txType.startsWith('purchase_')
                    || txType.startsWith('expense_')
                    || txType.startsWith('payroll_')
@@ -448,8 +450,14 @@ export const parasutService = {
         direction = 1;
       } else if (isCikti) {
         direction = -1;
+      } else if (txType === 'money_transfer') {
+        // Para Transferi: debit > credit → para geldi (GİRDİ), aksi → ÇIKTI
+        if (debitAmt > creditAmt) direction = 1;
+        else if (creditAmt > debitAmt) direction = -1;
+        else if (debitAmt > 0) direction = 1;  // eşitse debit'i tercih et
+        else return [];
       } else {
-        // Bilinmeyen tip: sadece debit → girdi, sadece credit → çıktı
+        // Diğer bilinmeyen tipler: sadece debit → girdi, sadece credit → çıktı
         if (debitAmt > 0 && creditAmt === 0) direction = 1;
         else if (creditAmt > 0 && debitAmt === 0) direction = -1;
         else return [];
