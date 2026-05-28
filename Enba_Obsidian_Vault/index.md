@@ -82,6 +82,9 @@
 | [[Wiki/Hatlar/Hat5-Balyalama-Sevkiyat\|Hat 5 - Balyalama ve Sevkiyat]] | Ambalaj seçimi, tartım kalibrasyonları, lot izlenebilirliği (GRS) ve outfeed lojistik | 2026-05-28 |
 | [[Wiki/Sektor/EN643-Kagit-Standartlari\|EN 643 Kağıt Standartları]] | Avrupa standart grades listesi, kirlilik ve nem kabul tolerans limitleri | 2026-05-28 |
 | [[Wiki/Sektor/GRS-ve-Gida-Mevzuatlari\|GRS ve Gıda Mevzuatları]] | Global Recycled Standard kütle dengesi izlenebilirliği, EFSA/FDA challenge testleri | 2026-05-28 |
+| [[Wiki/Malzemeler/PET-Capak-Dinamikleri\|PET Çapak Dinamikleri]] | PET çapak kalite sınıfları, PVC kontaminasyon limitleri, IV değerleri ve SSP reaktör katsayıları | 2026-05-28 |
+| [[Wiki/Malzemeler/LDPE-Film-ve-Geri-Donusum-Zorluklari\|LDPE Film ve Geri Dönüşüm]] | LDPE film esnekliği, yüksek nem tutma sorunu, aglomerasyon ve eriyik filtreleme dinamikleri | 2026-05-28 |
+
 
 ---
 

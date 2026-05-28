@@ -994,4 +994,15 @@ grep "^## \[" log.md | tail -5
 **Etkilenen dosyalar:** `Enba_Obsidian_Vault/index.md`, `Enba_Obsidian_Vault/Wiki/Sektor-Rehberi.md` (yeni), `Enba_Obsidian_Vault/Wiki/Sektor/EN643-Kagit-Standartlari.md` (yeni), `Enba_Obsidian_Vault/Wiki/Sektor/GRS-ve-Gida-Mevzuatlari.md` (yeni), `Enba_Obsidian_Vault/Wiki/Hatlar/Hat1..5` (yeni)
 **Bir sonraki:** Kök dizindeki eski `hat*.md` dosyalarının silinip silinmeyeceği teyit edilecek, build doğrulaması izlenecek.
 
+---
 
+## [2026-05-28 12:40] geliştirme / ingesting | Sektörel Wiki Canlı Dağıtımı ve Yeni Malzemeler
+
+**Yapılan işlemler:**
+- **Derleme Engellerinin Çözülmesi:** Detaylı plan modülünde yerel olarak geliştirilen ancak tamamlanmamış (`ScenarioModal` eksikliği) senaryo dosyaları stashed yapılarak projenin `npm run build` ile sorunsuz derlenmesi sağlandı.
+- **Canlıya Gönderim:** `src/modules/SektorNot.tsx` güncellenerek Vercel üzerinden canlı yayına alındı. Canlı sürümde "Standartlar & GRS" sekmesi eklendi.
+- **Yerel Geliştirmenin Geri Yüklenmesi:** Dağıtım sonrası `git stash pop` ile yerel senaryo çalışmaları kayıpsız olarak geri yüklendi.
+- **Yeni Malzeme Sayfaları:** Bilgi havuzuna yeni bir modül eklemek üzere `Wiki/Malzemeler` klasörü açıldı ve iki kritik geri dönüşüm malzemesi detaylandırıldı:
+  - [[Wiki/Malzemeler/PET-Capak-Dinamikleri|PET Çapak Dinamikleri]]: PVC limitleri, IV değerleri ve SSP reaktör katsayıları.
+  - [[Wiki/Malzemeler/LDPE-Film-ve-Geri-Donusum-Zorluklari|LDPE Film ve Geri Dönüşüm]]: Aglomerasyon, hydrocyclone ayrıştırma ve nem sıkıştırma zorlukları.
+- **Dizin Güncellemesi:** `index.md` dosyasına yeni malzeme sayfaları eklendi.
