@@ -109,4 +109,35 @@ export const kurulumNakitAPI = {
 
     return { inserted: toInsert.length, skipped };
   },
+
+  // Progress callback'li versiyon — UI progress bar için
+  async batchImportWithProgress(
+    companyId: string,
+    records: FCImportRecord[],
+    onProgress: (inserted: number) => void,
+    chunkSize = 100,
+  ): Promise<{ inserted: number; skipped: number }> {
+    if (records.length === 0) return { inserted: 0, skipped: 0 };
+
+    const { data: existing } = await supabase
+      .from('founding_cashflow')
+      .select('parasut_id')
+      .eq('company_id', companyId)
+      .not('parasut_id', 'is', null);
+
+    const existingIds = new Set((existing ?? []).map((r: { parasut_id: string | null }) => r.parasut_id));
+    const toInsert = records.filter(r => !existingIds.has(r.parasut_id));
+    const skipped = records.length - toInsert.length;
+
+    let inserted = 0;
+    for (let i = 0; i < toInsert.length; i += chunkSize) {
+      const chunk = toInsert.slice(i, i + chunkSize).map(r => ({ ...r, company_id: companyId }));
+      const { error } = await supabase.from('founding_cashflow').insert(chunk);
+      if (error) throw new Error(error.message || error.details || JSON.stringify(error));
+      inserted += chunk.length;
+      onProgress(inserted);
+    }
+
+    return { inserted, skipped };
+  },
 };

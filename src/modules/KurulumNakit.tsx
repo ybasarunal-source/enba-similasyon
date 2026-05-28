@@ -83,26 +83,30 @@ const ImportModal: React.FC<ImportModalProps> = ({ companyId, onImported, onClos
   const parasutCompany = parasutService.getCompany();
   const isConnected    = parasutService.isLoggedIn() && !!parasutCompany;
 
-  const [fromDate, setFromDate] = useState('2020-01-01');
-  const [toDate,   setToDate]   = useState(new Date().toISOString().slice(0, 10));
-  const [step,     setStep]     = useState<'config' | 'preview' | 'done'>('config');
-  const [loading,  setLoading]  = useState(false);
-  const [err,      setErr]      = useState('');
-  const [pending,  setPending]  = useState<FCImportRecord[]>([]);
-  const [result,   setResult]   = useState<{ inserted: number; skipped: number } | null>(null);
+  const [fromDate,   setFromDate]   = useState('2020-01-01');
+  const [toDate,     setToDate]     = useState(new Date().toISOString().slice(0, 10));
+  const [step,       setStep]       = useState<'config' | 'preview' | 'done'>('config');
+  const [loading,    setLoading]    = useState(false);
+  const [progress,   setProgress]   = useState<{ label: string; pct: number } | null>(null);
+  const [err,        setErr]        = useState('');
+  const [pending,    setPending]    = useState<FCImportRecord[]>([]);
+  const [result,     setResult]     = useState<{ inserted: number; skipped: number } | null>(null);
 
   async function handleFetch() {
     if (!parasutCompany) return;
-    setLoading(true); setErr('');
+    setLoading(true); setErr(''); setProgress({ label: 'Satış faturaları alınıyor…', pct: 10 });
     try {
-      const [sales, bills, exps] = await Promise.all([
-        parasutService.getSalesInvoices(parasutCompany.id, fromDate, toDate),
-        parasutService.getPurchaseBills(parasutCompany.id, fromDate, toDate),
-        parasutService.getExpenditures(parasutCompany.id, fromDate, toDate),
-      ]);
+      const sales = await parasutService.getSalesInvoices(parasutCompany.id, fromDate, toDate);
+      setProgress({ label: 'Alış faturaları alınıyor…', pct: 40 });
+
+      const bills = await parasutService.getPurchaseBills(parasutCompany.id, fromDate, toDate);
+      setProgress({ label: 'Masraflar alınıyor…', pct: 65 });
+
+      const exps = await parasutService.getExpenditures(parasutCompany.id, fromDate, toDate);
+      setProgress({ label: 'Mevcut kayıtlar kontrol ediliyor…', pct: 85 });
+
       const all = [...sales, ...bills, ...exps].map(mapParasutInvoice);
 
-      // Mevcut parasut_id'leri client-side filtrele (preview için)
       const { data: existing } = await (await import('../api/supabase')).supabase
         .from('founding_cashflow')
         .select('parasut_id')
@@ -111,22 +115,32 @@ const ImportModal: React.FC<ImportModalProps> = ({ companyId, onImported, onClos
       const existingIds = new Set((existing ?? []).map((r: { parasut_id: string | null }) => r.parasut_id));
       const newRecs = all.filter(r => !existingIds.has(r.parasut_id));
 
+      setProgress({ label: 'Tamamlandı', pct: 100 });
       setPending(newRecs);
       setStep('preview');
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : 'Paraşüt verisi alınamadı');
     } finally {
       setLoading(false);
+      setProgress(null);
     }
   }
 
   async function handleImport() {
     setLoading(true); setErr('');
+    const total = pending.length;
+    const CHUNK = 100;
+    setProgress({ label: `0 / ${total} kayıt yazılıyor…`, pct: 0 });
     try {
-      const res = await kurulumNakitAPI.batchImport(companyId, pending);
+      const res = await kurulumNakitAPI.batchImportWithProgress(
+        companyId,
+        pending,
+        (done) => setProgress({ label: `${done} / ${total} kayıt yazılıyor…`, pct: Math.round((done / total) * 100) }),
+        CHUNK,
+      );
+      setProgress({ label: 'Tamamlandı', pct: 100 });
       setResult(res);
       setStep('done');
-      // Yeni kayıtları üst bileşene bildir
       const { data } = await (await import('../api/supabase')).supabase
         .from('founding_cashflow')
         .select('*')
@@ -149,6 +163,7 @@ const ImportModal: React.FC<ImportModalProps> = ({ companyId, onImported, onClos
       setErr(msg || 'Import hatası');
     } finally {
       setLoading(false);
+      setProgress(null);
     }
   }
 
@@ -179,7 +194,7 @@ const ImportModal: React.FC<ImportModalProps> = ({ companyId, onImported, onClos
               : 'Paraşüt bağlı değil — önce Paraşüt modülünden giriş yap'}
           </div>
 
-          {isConnected && step === 'config' && (
+          {isConnected && step === 'config' && !loading && (
             <>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -197,6 +212,25 @@ const ImportModal: React.FC<ImportModalProps> = ({ companyId, onImported, onClos
                 Satış faturaları, alış faturaları ve masraflar çekilecek. Zaten import edilmiş kayıtlar atlanır.
               </p>
             </>
+          )}
+
+          {/* İlerleme göstergesi — fetch ve import sırasında */}
+          {loading && progress && (
+            <div className="space-y-2 py-1">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-[var(--enba-text-muted)] flex items-center gap-1.5">
+                  <Loader2 size={12} className="animate-spin text-[var(--enba-orange)]" />
+                  {progress.label}
+                </span>
+                <span className="font-semibold text-[var(--enba-text)]">{progress.pct}%</span>
+              </div>
+              <div className="w-full h-2 bg-[var(--enba-bg)] rounded-full overflow-hidden border border-[var(--enba-border)]">
+                <div
+                  className="h-full bg-[var(--enba-orange)] rounded-full transition-all duration-500"
+                  style={{ width: `${progress.pct}%` }}
+                />
+              </div>
+            </div>
           )}
 
           {isConnected && step === 'preview' && (
@@ -251,15 +285,17 @@ const ImportModal: React.FC<ImportModalProps> = ({ companyId, onImported, onClos
             <button onClick={onClose} className="px-5 py-2 text-sm font-semibold text-white rounded-xl bg-[var(--enba-orange)] hover:bg-[var(--enba-orange-hover)] transition-all">
               Kapat
             </button>
+          ) : loading ? (
+            /* Yükleme sırasında sadece iptal butonu — işlem devam ediyor mesajı progress bar'da */
+            <span className="text-xs text-[var(--enba-text-muted)] mr-auto">İşlem devam ediyor, lütfen bekleyin…</span>
           ) : (
             <>
               <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-[var(--enba-text-muted)] hover:text-[var(--enba-text)] rounded-xl transition-colors">
                 İptal
               </button>
               {isConnected && step === 'config' && (
-                <button onClick={handleFetch} disabled={loading}
-                  className="px-5 py-2 text-sm font-semibold text-white rounded-xl bg-[var(--enba-orange)] hover:bg-[var(--enba-orange-hover)] disabled:opacity-50 transition-all flex items-center gap-2">
-                  {loading && <Loader2 size={14} className="animate-spin" />}
+                <button onClick={handleFetch}
+                  className="px-5 py-2 text-sm font-semibold text-white rounded-xl bg-[var(--enba-orange)] hover:bg-[var(--enba-orange-hover)] transition-all">
                   Verileri Getir
                 </button>
               )}
