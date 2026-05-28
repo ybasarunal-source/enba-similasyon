@@ -85,6 +85,10 @@
 | [[Wiki/Sektor/Kirleticiler-ve-Kalite-Kontrol-Taksonomisi\|Kirleticiler ve Kalite Kontrol]] | Geri dönüşüm kirletici taksonomisi (PVC, stickies, nem), tolerans limitleri, kalite testleri | 2026-05-28 |
 | [[Wiki/Sektor/Enerji-Yonetimi-ve-Karbon-Ayak-Izi\|Enerji ve Karbon Ayak İzi]] | Proses spesifik elektrik/ısı tüketimleri, r-Polimer karbon tasarruf modelleri (Scope 1/2/3) | 2026-05-28 |
 | [[Wiki/Sektor/Kimyasal-Geri-Donusum-Detay\|Kimyasal Geri Dönüşüm]] | Piroliz yağı klor engeli, solvoliz/depolimerizasyon teknolojileri, reaktör CAPEX/OPEX simülasyonu | 2026-05-28 |
+| [[Wiki/Sektor/Lojistik-ve-Tedarik-Zinciri\|Lojistik ve Tedarik Zinciri]] | Geri dönüşüm lojistiği, balyalanmış vs gevşek tır navlun oranları, tedarikçi puanlama | 2026-05-28 |
+| [[Wiki/Sektor/Dairesel-Ekonomi-ve-EPR\|Dairesel Ekonomi ve EPR]] | Genişletilmiş Üretici Sorumluluğu kuralları, GEKAP çevre vergisi, Depozito İade Sistemi (DİS) | 2026-05-28 |
+| [[Wiki/Sektor/Tesis-Bakim-ve-Asinma-Dinamikleri\|Tesis Bakım ve Aşınma]] | Önleyici bakım duruşları (OEE), kırıcı bıçak ve ekstrüder vida aşınmaları, elektrik/toz maliyet etkisi | 2026-05-28 |
+
 
 | [[Wiki/Malzemeler/PET-Capak-Dinamikleri\|PET Çapak Dinamikleri]] | PET çapak kalite sınıfları, PVC kontaminasyon limitleri, IV değerleri ve SSP reaktör katsayıları | 2026-05-28 |
 | [[Wiki/Malzemeler/LDPE-Film-ve-Geri-Donusum-Zorluklari\|LDPE Film ve Geri Dönüşüm]] | LDPE film esnekliği, yüksek nem tutma sorunu, aglomerasyon ve eriyik filtreleme dinamikleri | 2026-05-28 |

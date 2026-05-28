@@ -1037,3 +1037,13 @@ grep "^## \[" log.md | tail -5
   - [[Wiki/Sektor/Kimyasal-Geri-Donusum-Detay|Kimyasal Geri Dönüşüm]]: Piroliz fırınlarının kütle dengesi (yağ/gaz/karbon), kraker enjeksiyon klor limitleri, solvoliz/depolimerizasyon reaksiyonları ve kimyasal geri dönüşüm tesislerinin CAPEX ve OPEX simülasyon dinamikleri.
 - **Dizin Güncellemesi:** `index.md` dosyasına 3 yeni sektörel sayfa eklendi.
 
+---
+
+## [2026-05-28 13:00] ingesting | Lojistik, EPR/GEKAP ve Tesis Bakım Sayfaları Eklendi
+
+**Yapılan işlemler:**
+- **Wiki Genişletme:** `Wiki/Sektor` klasörüne 3 yeni sektörel uzmanlık sayfası eklendi:
+  - [[Wiki/Sektor/Lojistik-ve-Tedarik-Zinciri|Lojistik ve Tedarik Zinciri]]: Dökme yoğunluğu (bulk density) ve tır navlun verimliliği analizi (gevşek vs balyalanmış), tersine lojistik konteyner ağları, tedarikçi kalite puanlama (grading) ve DetailedPlan kapıya teslim maliyet (landed cost) entegrasyonu.
+  - [[Wiki/Sektor/Dairesel-Ekonomi-ve-EPR|Dairesel Ekonomi ve EPR]]: Genişletilmiş Üretici Sorumluluğu (EPR), GEKAP çevre vergisi muafiyetleri ve teşvikleri, Depozito İade Sistemi (DİS) ile fire oranlarında %30'dan %5'e düşüş verimleri.
+  - [[Wiki/Sektor/Tesis-Bakim-ve-Asinma-Dinamikleri|Tesis Bakım ve Aşınma]]: Kırıcı bıçakları, ekstrüder bimetalik vidaları, lazer filtre elekleri aşınma periyotları, kör bıçakların elektrik tüketimine (+%15-30 SEC) ve toz çapak firesine etkisi ve DetailedPlan OEE/Opex duruş entegrasyonu.
+- **Dizin Güncellemesi:** `index.md` dosyasına 3 yeni sektörel sayfa eklendi.
