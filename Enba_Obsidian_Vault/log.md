@@ -1106,5 +1106,16 @@ grep "^## \[" log.md | tail -5
 - **Arayüz Entegrasyonu:** `src/modules/SektorNot.tsx` modülünde yeni sekmeler oluşturuldu, veri tabloları ve tip tanımları güncellendi.
 - **Doğrulama ve Deploy:** `npm run build` ile TypeScript/Vite derleme testleri sıfır hata ile tamamlandı. Kod `e9486fd` numaralı commit ile pushlanarak Vercel canlı dağıtımı güncellendi.
 
+---
+
+## [2026-05-28 13:40] geliştirme / canlıya gönderim | Plastik Ayırma Teknolojileri Wiki & UI Entegrasyonu
+
+**Yapılan işlemler:**
+- **Wiki Genişletme:** `Wiki/Sektor/Plastik-Ayirma-Teknolojileri.md` sayfası oluşturuldu (Float-sink yoğunluk limitleri, NIR optik, triboelektrik ve lazer flake seperatörleri, false reject oranları ve kompresör enerji katsayıları detaylandırıldı).
+- **Dizin Güncellemesi:** `index.md` dosyası yeni sayfa linki ile güncellendi.
+- **React Arayüz Entegrasyonu:** `src/modules/SektorNot.tsx` modülündeki `PageStandartlar` bileşenine "Ayırma Teknolojileri" sekmesi (`ayirma_teknolojileri`) eklendi, veri tablosu ve not kartları JSX yapısıyla TSX uzantılı dosyaya entegre edildi.
+- **Doğrulama ve Deploy:** `npm run build` yerel testi sıfır hata ile tamamlandı ve kodlar `b6da3f6` commit koduyla pushlanarak canlı yayına alındı.
+
+
 
 
