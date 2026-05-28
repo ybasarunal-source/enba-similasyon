@@ -1025,3 +1025,15 @@ grep "^## \[" log.md | tail -5
 - **Wiki Genişletme:** `Wiki/Malzemeler` klasörüne kağıt/karton geri dönüşümü için yeni bir sayfa eklendi:
   - [[Wiki/Malzemeler/OCC-ve-Kagit-Geri-Donusum-Prosesleri|OCC ve Kağıt Geri Dönüşüm]]: Sulu süspansiyon (pulper) teknolojisi, stickies (koli bandı tutkalları) yapışkan krizleri, selüloz lifi kısalması (maks 5-7 geri dönüşüm ömrü) ve orijinal lif karışım katsayıları detaylandırıldı.
 - **Dizin Güncellemesi:** `index.md` dosyasına yeni malzeme sayfası eklendi.
+
+---
+
+## [2026-05-28 12:55] ingesting | Kirleticiler, Enerji ve Kimyasal Geri Dönüşüm Sayfaları Eklendi
+
+**Yapılan işlemler:**
+- **Wiki Genişletme:** `Wiki/Sektor` klasörüne 3 yeni sektörel kılavuz eklendi:
+  - [[Wiki/Sektor/Kirleticiler-ve-Kalite-Kontrol-Taksonomisi|Kirleticiler ve Kalite Kontrol]]: PVC, yapışkanlar (stickies), nem, PP/PE karışımı tolerans limitleri, FTIR/Nem analizi kalite testleri ve satın alma iskonto/fire katsayıları entegrasyonu.
+  - [[Wiki/Sektor/Enerji-Yonetimi-ve-Karbon-Ayak-Izi|Enerji Yönetimi ve Karbon]]: Kırma, yıkama, aglomerasyon, ekstrüzyon adımlarının spesifik enerji tüketimleri (SEC - kWh/ton), yeşil enerji, orijinal vs r-Polimer CO2 emisyon farkları (Scope 1/2/3) ve DetailedPlan CO2 offset raporlaması.
+  - [[Wiki/Sektor/Kimyasal-Geri-Donusum-Detay|Kimyasal Geri Dönüşüm]]: Piroliz fırınlarının kütle dengesi (yağ/gaz/karbon), kraker enjeksiyon klor limitleri, solvoliz/depolimerizasyon reaksiyonları ve kimyasal geri dönüşüm tesislerinin CAPEX ve OPEX simülasyon dinamikleri.
+- **Dizin Güncellemesi:** `index.md` dosyasına 3 yeni sektörel sayfa eklendi.
+

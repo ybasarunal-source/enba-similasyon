@@ -82,6 +82,10 @@
 | [[Wiki/Hatlar/Hat5-Balyalama-Sevkiyat\|Hat 5 - Balyalama ve Sevkiyat]] | Ambalaj seçimi, tartım kalibrasyonları, lot izlenebilirliği (GRS) ve outfeed lojistik | 2026-05-28 |
 | [[Wiki/Sektor/EN643-Kagit-Standartlari\|EN 643 Kağıt Standartları]] | Avrupa standart grades listesi, kirlilik ve nem kabul tolerans limitleri | 2026-05-28 |
 | [[Wiki/Sektor/GRS-ve-Gida-Mevzuatlari\|GRS ve Gıda Mevzuatları]] | Global Recycled Standard kütle dengesi izlenebilirliği, EFSA/FDA challenge testleri | 2026-05-28 |
+| [[Wiki/Sektor/Kirleticiler-ve-Kalite-Kontrol-Taksonomisi\|Kirleticiler ve Kalite Kontrol]] | Geri dönüşüm kirletici taksonomisi (PVC, stickies, nem), tolerans limitleri, kalite testleri | 2026-05-28 |
+| [[Wiki/Sektor/Enerji-Yonetimi-ve-Karbon-Ayak-Izi\|Enerji ve Karbon Ayak İzi]] | Proses spesifik elektrik/ısı tüketimleri, r-Polimer karbon tasarruf modelleri (Scope 1/2/3) | 2026-05-28 |
+| [[Wiki/Sektor/Kimyasal-Geri-Donusum-Detay\|Kimyasal Geri Dönüşüm]] | Piroliz yağı klor engeli, solvoliz/depolimerizasyon teknolojileri, reaktör CAPEX/OPEX simülasyonu | 2026-05-28 |
+
 | [[Wiki/Malzemeler/PET-Capak-Dinamikleri\|PET Çapak Dinamikleri]] | PET çapak kalite sınıfları, PVC kontaminasyon limitleri, IV değerleri ve SSP reaktör katsayıları | 2026-05-28 |
 | [[Wiki/Malzemeler/LDPE-Film-ve-Geri-Donusum-Zorluklari\|LDPE Film ve Geri Dönüşüm]] | LDPE film esnekliği, yüksek nem tutma sorunu, aglomerasyon ve eriyik filtreleme dinamikleri | 2026-05-28 |
 | [[Wiki/Malzemeler/PP-Polipropilen-ve-Koku-Sorunu\|PP Polipropilen ve Koku Sorunu]] | PP enjeksiyon/ekstrüzyon özellikleri, koku emme problemi ve koku giderme (deodorization) teknolojileri | 2026-05-28 |
