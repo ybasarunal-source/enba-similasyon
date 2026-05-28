@@ -371,6 +371,10 @@ export const parasutService = {
       'filter[date][lteq]': dateTo,
       'sort': 'id',
     });
+    // İlk transaction'ı logla — field adlarını ve değerleri anlamak için
+    if ((raw.data || []).length > 0) {
+      console.log(`[Paraşüt txn] ${account.name} örnek:`, JSON.stringify((raw.data[0] || {}).attributes, null, 2));
+    }
     return (raw.data || []).flatMap((d: any): ParasutTransaction[] => {
       const a = d.attributes || {};
 
