@@ -342,45 +342,21 @@ export const parasutService = {
   },
 
   async getFinancialAccounts(companyId: string): Promise<ParasutAccount[]> {
-    const result: ParasutAccount[] = [];
-    const errs: string[] = [];
-
-    const tryEndpoint = async (
-      path: string,
-      type: ParasutAccount['type'],
-      label: string,
-    ) => {
-      try {
-        const raw = await this.requestAll(`/${companyId}/${path}`);
-        for (const d of raw.data || []) {
-          result.push({
-            id: d.id,
-            type,
-            name: d.attributes?.name || d.attributes?.label || `${label} ${d.id}`,
-            currency: d.attributes?.currency || 'TRL',
-            balance: parseFloat(d.attributes?.balance || '0'),
-          });
-        }
-      } catch (e) {
-        errs.push(`${path}: ${e instanceof Error ? e.message.slice(0, 80) : String(e)}`);
-      }
-    };
-
-    await tryEndpoint('bank_accounts',      'bank_accounts', 'Banka');
-    await tryEndpoint('safes',              'safes',         'Kasa');
-    await tryEndpoint('safe_accounts',      'safes',         'Kasa');
-    await tryEndpoint('accounts',           'bank_accounts', 'Hesap');
-    await tryEndpoint('financial_accounts', 'bank_accounts', 'Hesap');
-    await tryEndpoint('cash_accounts',      'safes',         'Kasa');
-
-    if (result.length === 0) {
-      throw new Error(
-        errs.length > 0
-          ? `Denenen endpoint'ler:\n${errs.join('\n')}`
-          : 'Paraşüt\'te kasa/banka hesabı bulunamadı.',
-      );
-    }
-    return result;
+    // Paraşüt v4: kasa + banka hepsi /accounts altında (route: account.index)
+    const raw = await this.requestAll(`/${companyId}/accounts`);
+    return (raw.data || []).map((d: any): ParasutAccount => {
+      const a = d.attributes || {};
+      // account_type: 'safe' → kasa, diğerleri → banka
+      const isSafe = (a.account_type || a.type || '').toLowerCase().includes('safe')
+                  || (a.account_type || a.type || '').toLowerCase().includes('cash');
+      return {
+        id: d.id,
+        type: isSafe ? 'safes' : 'bank_accounts',
+        name: a.name || a.label || `Hesap ${d.id}`,
+        currency: a.currency || 'TRL',
+        balance: parseFloat(a.balance || '0'),
+      };
+    });
   },
 
   async getAccountTransactions(
@@ -389,7 +365,8 @@ export const parasutService = {
     dateFrom: string,
     dateTo: string,
   ): Promise<ParasutTransaction[]> {
-    const raw = await this.requestAll(`/${companyId}/${account.type}/${account.id}/transactions`, {
+    // Paraşüt v4: /accounts/{id}/transactions (route: transaction.show)
+    const raw = await this.requestAll(`/${companyId}/accounts/${account.id}/transactions`, {
       'filter[date][gte]': dateFrom,
       'filter[date][lte]': dateTo,
       'sort': 'date',
@@ -399,20 +376,19 @@ export const parasutService = {
       const debit  = parseFloat(a.debit_amount  || a.amount_debit  || '0');
       const credit = parseFloat(a.credit_amount || a.amount_credit || '0');
       const rate   = parseFloat(a.exchange_rate || '1');
-      // debit = çıkış (negatif), credit = giriş (pozitif)
-      const amount = credit - debit;
-      const amountRaw = parseFloat(a.amount || '0');
-      // Bazı API'lerde tek amount + direction olabilir
-      const finalAmount = (debit === 0 && credit === 0) ? amountRaw : amount;
-      const amountTL = Math.abs(finalAmount) * rate;
+      // credit = hesaba giriş (pozitif), debit = hesaptan çıkış (negatif)
+      const amount     = (debit === 0 && credit === 0)
+        ? parseFloat(a.amount || '0')
+        : credit - debit;
+      const amountTL = Math.abs(amount) * rate;
       return {
         id: d.id,
         account_id: account.id,
         account_name: account.name,
         account_type: account.type,
         date: a.date || a.transaction_date || '',
-        amount: finalAmount,
-        description: a.description || a.notes || '—',
+        amount,
+        description: a.description || a.notes || a.note || '—',
         currency: a.currency || account.currency,
         exchange_rate: rate,
         amount_tl: amountTL,
