@@ -382,20 +382,22 @@ export const parasutService = {
       const isBankSynced = !!(a.bank_sync_datetime || a.bank_sync_bank_transaction_id);
 
       // Açılış bakiyesi: bank-sync'li hesaplarda (IBAN) çift sayım yapar → dışla
-      // Açılış bakiyesi: tüm hesaplarda dahil et.
-      // isBankSynced kontrolü YANLIŞ — bank-sync başlamadan önceki bakiye
-      // ayrı bir manuel giriş olup gerçek işlemlerle çakışmaz.
+      // Açılış bakiyesi:
+      // - Bank-sync'li hesaplarda (IBAN + bağlantı aktif) DIŞLA:
+      //   Aynı fiziksel hesap "geçmiş işlemler" adıyla ayrı bir manuel hesapta
+      //   da bulunabilir. İkisi aynı IBAN'a sahipte. Bank-sync'li hesabın
+      //   açılış bakiyesi = geçmiş işlemler hesabının kapanış bakiyesi → çift sayım.
+      // - Bank-sync'siz hesaplarda DAHIL ET: gerçek sermaye girişi.
       if (txType === 'initial_account_balance') {
+        if (isBankSynced) return [];
         const debitAmt  = parseFloat(a.debit_amount  || '0');
         const creditAmt = parseFloat(a.credit_amount || '0');
         const trlAmt    = parseFloat(a.amount_in_trl || '0');
 
         if (debitAmt <= 0 && creditAmt <= 0) return [];
 
-        // Hangi yön? debit > credit → para VAR (GİRDİ), credit > debit → borç (ÇIKTI)
         const isCredit  = creditAmt > debitAmt;
         const rawAmt    = isCredit ? creditAmt : debitAmt;
-        // TL karşılığı: amount_in_trl varsa kullan (EUR hesaplar için kritik)
         const absAmount = trlAmt > 0 ? trlAmt : rawAmt;
         if (absAmount <= 0) return [];
 
