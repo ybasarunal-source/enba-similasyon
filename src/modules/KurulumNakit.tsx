@@ -76,7 +76,7 @@ function mapParasutInvoice(inv: ParasutInvoice): FCImportRecord {
 // ── ImportModal ──────────────────────────────────────────────
 interface ImportModalProps {
   companyId: string;
-  onImported: (records: FoundingCashflow[]) => void;
+  onImported: () => void;
   onClose: () => void;
 }
 
@@ -143,24 +143,7 @@ const ImportModal: React.FC<ImportModalProps> = ({ companyId, onImported, onClos
       setProgress({ label: 'Tamamlandı', pct: 100 });
       setResult(res);
       setStep('done');
-      const { data } = await (await import('../api/supabase')).supabase
-        .from('founding_cashflow')
-        .select('*')
-        .eq('company_id', companyId)
-        .order('tarih', { ascending: true })
-        .limit(10000);
-      onImported((data ?? []).map((r: Record<string, unknown>) => ({
-        id: String(r.id ?? ''),
-        company_id: String(r.company_id ?? ''),
-        tarih: String(r.tarih ?? ''),
-        tip: (r.tip ?? 'gider') as FCTip,
-        kategori: String(r.kategori ?? ''),
-        tutar_tl: Number(r.tutar_tl ?? 0),
-        aciklama: String(r.aciklama ?? ''),
-        parasut_id: r.parasut_id ? String(r.parasut_id) : null,
-        created_at: String(r.created_at ?? ''),
-        updated_at: String(r.updated_at ?? ''),
-      })));
+      onImported();
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : (e as { message?: string })?.message ?? JSON.stringify(e);
       setErr(msg || 'Import hatası');
@@ -1007,7 +990,7 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
       {importOpen && companyId && (
         <ImportModal
           companyId={companyId}
-          onImported={newRows => { setRows(newRows); setImportOpen(false); }}
+          onImported={() => { load(); setImportOpen(false); }}
           onClose={() => setImportOpen(false)}
         />
       )}
