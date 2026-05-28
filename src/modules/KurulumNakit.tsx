@@ -145,7 +145,8 @@ const ImportModal: React.FC<ImportModalProps> = ({ companyId, onImported, onClos
         updated_at: String(r.updated_at ?? ''),
       })));
     } catch (e: unknown) {
-      setErr(e instanceof Error ? e.message : 'Import hatası');
+      const msg = e instanceof Error ? e.message : (e as { message?: string })?.message ?? JSON.stringify(e);
+      setErr(msg || 'Import hatası');
     } finally {
       setLoading(false);
     }

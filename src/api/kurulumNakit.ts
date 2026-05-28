@@ -82,7 +82,7 @@ export const kurulumNakitAPI = {
     if (error) throw error;
   },
 
-  // Paraşüt'ten toplu import — zaten var olanları atlar (parasut_id unique index)
+  // Paraşüt'ten toplu import — zaten var olanları atlar, 100'lük chunk'larla insert
   async batchImport(companyId: string, records: FCImportRecord[]): Promise<{ inserted: number; skipped: number }> {
     if (records.length === 0) return { inserted: 0, skipped: 0 };
 
@@ -99,10 +99,13 @@ export const kurulumNakitAPI = {
 
     if (toInsert.length === 0) return { inserted: 0, skipped };
 
-    const { error } = await supabase
-      .from('founding_cashflow')
-      .insert(toInsert.map(r => ({ ...r, company_id: companyId })));
-    if (error) throw error;
+    // 100'lük chunk'larla insert (Supabase payload limiti için)
+    const CHUNK = 100;
+    for (let i = 0; i < toInsert.length; i += CHUNK) {
+      const chunk = toInsert.slice(i, i + CHUNK).map(r => ({ ...r, company_id: companyId }));
+      const { error } = await supabase.from('founding_cashflow').insert(chunk);
+      if (error) throw new Error(error.message || error.details || JSON.stringify(error));
+    }
 
     return { inserted: toInsert.length, skipped };
   },
