@@ -1143,3 +1143,16 @@ grep "^## \[" log.md | tail -5
 
 
 
+
+## [2026-05-28 20:30] geliştirme | KurulumNakit tam yeniden yazım — canlı hesap takibi + sync
+
+- Yapılan:
+  - `KurulumNakit.tsx` tamamen yeniden yazıldı: 4 sekme (Hesaplar / Hareketler / Grafik / Özet)
+  - Hesaplar sekmesi: Paraşüt'ten canlı bakiye, her kasa/banka kartı, tıklayınca Hareketler'e filtreli geçiş
+  - ImportModal ve EntryModal kaldırıldı; veri girişi sadece Paraşüt senkronizasyonu ile
+  - Inline `handleSync()`: header'da "Paraşüt'ten Güncelle" butonu + progress bar, tüm hesapları tarar
+  - `mapTransaction` → `source_account: txn.account_name` eklendi (migration_v30 gerektirir)
+  - Hareketler sekmesi: hesap filtresi dropdown + tip filtresi, read-only tablo
+  - `tsc --noEmit` temiz
+- Etkilenen dosyalar: `src/modules/KurulumNakit.tsx`
+- Bir sonraki: migration_v30 SQL çalıştır (`source_account TEXT` kolonu), mevcut Paraşüt verilerini temizle + yeniden sync et
