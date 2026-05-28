@@ -112,7 +112,8 @@ const ImportModal: React.FC<ImportModalProps> = ({ companyId, onImported, onClos
         .from('founding_cashflow')
         .select('parasut_id')
         .eq('company_id', companyId)
-        .not('parasut_id', 'is', null);
+        .not('parasut_id', 'is', null)
+        .limit(10000);
       const existingIds = new Set((existing ?? []).map((r: { parasut_id: string | null }) => r.parasut_id));
       const newRecs = all.filter(r => !existingIds.has(r.parasut_id));
 
