@@ -381,9 +381,6 @@ export const parasutService = {
       const txType: string = (a.transaction_type || '').toLowerCase();
       const isBankSynced = !!(a.bank_sync_datetime || a.bank_sync_bank_transaction_id);
 
-      // Kasalar/bankalar arası transferleri dışla — çift sayım yapar
-      if (txType.includes('transfer')) return [];
-
       // Açılış bakiyesi: bank-sync'li hesaplarda (IBAN) çift sayım yapar → dışla
       // Bank-sync'siz hesaplarda (manuel/kasa) gerçek sermaye girişi → dahil et
       if (txType === 'initial_account_balance') {

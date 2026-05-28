@@ -43,6 +43,7 @@ function txnKategori(txType: string, tip: FCTip, description: string): string {
   }
   const t = txType.toLowerCase();
   if (t === 'initial_account_balance') return 'Açılış Bakiyesi';
+  if (t.includes('transfer')) return 'Hesaplar Arası Transfer';
   if (tip === 'gelir') {
     if (t === 'contact_credit')  return 'Tahsilat';
     if (t.includes('sales'))     return 'Satış Tahsilatı';
