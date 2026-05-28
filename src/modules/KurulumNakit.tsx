@@ -5,7 +5,8 @@ import {
   RefreshCw, CheckCircle2, Link2,
 } from 'lucide-react';
 import {
-  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  LineChart, Line, BarChart, Bar, AreaChart, Area,
+  XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer, ReferenceLine,
 } from 'recharts';
 import { kurulumNakitAPI, type FoundingCashflow, type FCForm, type FCTip, type FCImportRecord } from '../api/kurulumNakit';
@@ -517,6 +518,8 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
   const [tipFilter, setTipFilter] = useState<TipFilter>('tümü');
   const [sortKey, setSortKey]     = useState<SortKey>('tarih');
   const [sortDir, setSortDir]     = useState<SortDir>('desc');
+  const [chartFrom, setChartFrom] = useState('');
+  const [chartTo,   setChartTo]   = useState(() => new Date().toISOString().slice(0, 10));
 
   function toggleSort(key: SortKey) {
     if (sortKey === key) setSortDir(p => p === 'asc' ? 'desc' : 'asc');
@@ -582,6 +585,35 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
       };
     });
   }, [rows]);
+
+  // Gün gün kasa bakiyesi
+  const dailyData = useMemo(() => {
+    if (rows.length === 0) return [];
+    const sorted = [...rows].sort((a, b) => a.tarih.localeCompare(b.tarih));
+
+    // Tarihe göre grupla
+    const byDate: Record<string, { gelir: number; gider: number }> = {};
+    for (const r of sorted) {
+      if (!byDate[r.tarih]) byDate[r.tarih] = { gelir: 0, gider: 0 };
+      if (r.tip === 'gelir') byDate[r.tarih].gelir += r.tutar_tl;
+      else byDate[r.tarih].gider += r.tutar_tl;
+    }
+
+    // Kümülatif bakiye hesapla
+    let cum = 0;
+    const all = Object.entries(byDate)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, v]) => {
+        cum += v.gelir - v.gider;
+        const [y, m, d] = date.split('-');
+        return { date, label: `${d}.${m}.${y.slice(2)}`, bakiye: cum, net: v.gelir - v.gider };
+      });
+
+    // Tarih aralığı filtresi
+    const from = chartFrom || (all[0]?.date ?? '');
+    const to   = chartTo   || new Date().toISOString().slice(0, 10);
+    return all.filter(p => p.date >= from && p.date <= to);
+  }, [rows, chartFrom, chartTo]);
 
   // Kategori özet verisi
   const kategoriOzet = useMemo(() => {
@@ -873,6 +905,122 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                   <div className="text-center py-16 text-[var(--enba-text-muted)] text-sm">Grafik için veri yok.</div>
                 ) : (
                   <>
+                    {/* Kasa Bakiyesi — gün gün */}
+                    <div className="bg-[var(--enba-surface)] border border-[var(--enba-border)] rounded-2xl p-5">
+                      <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+                        <div>
+                          <h3 className="text-sm font-semibold text-[var(--enba-text)]">Gün Gün Kasa Bakiyesi</h3>
+                          {dailyData.length > 0 && (
+                            <div className="flex items-center gap-4 mt-1">
+                              <span className="text-xs text-[var(--enba-text-muted)]">
+                                Başlangıç:&nbsp;
+                                <span className={`font-semibold ${dailyData[0].bakiye >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                                  {fmtTL(dailyData[0].bakiye)}
+                                </span>
+                              </span>
+                              <span className="text-xs text-[var(--enba-text-muted)]">
+                                Son:&nbsp;
+                                <span className={`font-semibold ${dailyData[dailyData.length - 1].bakiye >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                                  {fmtTL(dailyData[dailyData.length - 1].bakiye)}
+                                </span>
+                              </span>
+                              <span className="text-xs text-[var(--enba-text-muted)]">
+                                Min:&nbsp;
+                                <span className="font-semibold text-red-500">
+                                  {fmtTL(Math.min(...dailyData.map(d => d.bakiye)))}
+                                </span>
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5">
+                            <label className="text-xs text-[var(--enba-text-muted)]">Başlangıç</label>
+                            <input
+                              type="date"
+                              value={chartFrom}
+                              onChange={e => setChartFrom(e.target.value)}
+                              className="bg-[var(--enba-bg)] border border-[var(--enba-border)] rounded-lg px-2 py-1 text-xs text-[var(--enba-text)] focus:outline-none focus:ring-2 focus:ring-[var(--enba-orange)]/30"
+                            />
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <label className="text-xs text-[var(--enba-text-muted)]">Bitiş</label>
+                            <input
+                              type="date"
+                              value={chartTo}
+                              onChange={e => setChartTo(e.target.value)}
+                              className="bg-[var(--enba-bg)] border border-[var(--enba-border)] rounded-lg px-2 py-1 text-xs text-[var(--enba-text)] focus:outline-none focus:ring-2 focus:ring-[var(--enba-orange)]/30"
+                            />
+                          </div>
+                          {chartFrom && (
+                            <button
+                              onClick={() => setChartFrom('')}
+                              className="text-xs text-[var(--enba-text-muted)] hover:text-[var(--enba-text)] transition-colors"
+                              title="Tüm tarihler"
+                            >
+                              <X size={13} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      {dailyData.length === 0 ? (
+                        <div className="text-center py-8 text-[var(--enba-text-muted)] text-xs">Seçilen aralıkta veri yok.</div>
+                      ) : (
+                        <ResponsiveContainer width="100%" height={260}>
+                          <AreaChart data={dailyData} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
+                            <defs>
+                              <linearGradient id="kasaGrad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#E35205" stopOpacity={0.25} />
+                                <stop offset="95%" stopColor="#E35205" stopOpacity={0} />
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--enba-border)" />
+                            <XAxis
+                              dataKey="label"
+                              tick={{ fontSize: 10, fill: 'var(--enba-text-muted)' }}
+                              interval={Math.max(0, Math.floor(dailyData.length / 12) - 1)}
+                              angle={dailyData.length > 30 ? -35 : 0}
+                              textAnchor={dailyData.length > 30 ? 'end' : 'middle'}
+                              height={dailyData.length > 30 ? 40 : 20}
+                            />
+                            <YAxis
+                              tickFormatter={v => {
+                                const abs = Math.abs(v);
+                                if (abs >= 1_000_000) return (v / 1_000_000).toFixed(1) + 'M';
+                                return (v / 1000).toFixed(0) + 'K';
+                              }}
+                              tick={{ fontSize: 10, fill: 'var(--enba-text-muted)' }}
+                            />
+                            <Tooltip
+                              content={({ active, payload, label }) => {
+                                if (!active || !payload?.length) return null;
+                                const b = (payload[0]?.value as number) ?? 0;
+                                return (
+                                  <div className="bg-[var(--enba-surface)] border border-[var(--enba-border)] rounded-xl px-3 py-2 shadow-lg text-xs">
+                                    <div className="font-semibold text-[var(--enba-text)] mb-1">{label}</div>
+                                    <div className={`font-bold text-sm ${b >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                                      {fmtTL(b)}
+                                    </div>
+                                  </div>
+                                );
+                              }}
+                            />
+                            <ReferenceLine y={0} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} />
+                            <Area
+                              type="monotone"
+                              dataKey="bakiye"
+                              name="Kasa Bakiyesi"
+                              stroke="#E35205"
+                              strokeWidth={2}
+                              fill="url(#kasaGrad)"
+                              dot={dailyData.length <= 60 ? { r: 2.5, fill: '#E35205', strokeWidth: 0 } : false}
+                              activeDot={{ r: 5, fill: '#E35205' }}
+                            />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      )}
+                    </div>
+
                     {/* Kümülatif Bakiye */}
                     <div className="bg-[var(--enba-surface)] border border-[var(--enba-border)] rounded-2xl p-5">
                       <h3 className="text-sm font-semibold text-[var(--enba-text)] mb-4">Kümülatif Nakit Bakiyesi</h3>
