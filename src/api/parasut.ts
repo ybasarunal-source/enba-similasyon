@@ -381,41 +381,38 @@ export const parasutService = {
       const txType: string = (a.transaction_type || '').toLowerCase();
       const isBankSynced = !!(a.bank_sync_datetime || a.bank_sync_bank_transaction_id);
 
-      // Açılış bakiyesi: bank-sync'li hesaplarda (IBAN) çift sayım yapar → dışla
-      // Açılış bakiyesi:
-      // - Bank-sync'li hesaplarda (IBAN + bağlantı aktif) DIŞLA:
-      //   Aynı fiziksel hesap "geçmiş işlemler" adıyla ayrı bir manuel hesapta
-      //   da bulunabilir. İkisi aynı IBAN'a sahipte. Bank-sync'li hesabın
-      //   açılış bakiyesi = geçmiş işlemler hesabının kapanış bakiyesi → çift sayım.
-      // - Bank-sync'siz hesaplarda DAHIL ET: gerçek sermaye girişi.
-      if (txType === 'initial_account_balance') {
-        if (isBankSynced) return [];
-        const debitAmt  = parseFloat(a.debit_amount  || '0');
-        const creditAmt = parseFloat(a.credit_amount || '0');
-        const trlAmt    = parseFloat(a.amount_in_trl || '0');
+      // Açılış bakiyesi ve mutabakat kayıtları: nakit akışı değil, dışla
+      if (txType === 'initial_account_balance' || txType === 'balance_adjustment') {
+        return [];
+      }
 
-        if (debitAmt <= 0 && creditAmt <= 0) return [];
+      // Açıklama bazlı iç transfer tespiti
+      // Kaynak: 28.05.2026_masaustu_parasut_nakit_analizi.md (Python analizi)
+      // account_debit/credit işlemlerin büyük kısmı Paraşüt içi havaleler —
+      // açıklamaya bakarak ayırt edilebilir.
+      const rawDesc = (a.description || a.auto_description || '').toUpperCase();
+      const accName  = account.name.toUpperCase();
 
-        const isCredit  = creditAmt > debitAmt;
-        const rawAmt    = isCredit ? creditAmt : debitAmt;
-        const absAmount = trlAmt > 0 ? trlAmt : rawAmt;
-        if (absAmount <= 0) return [];
+      if (txType === 'account_debit') {
+        // Döviz konversiyon = gerçek nakit çıkışı değil
+        if (rawDesc.includes('DÖVİZ') || rawDesc.includes('İNTERNET DÖVİZ')) return [];
+        // Şirket içi kişi hesaplarına gelen havale
+        if (rawDesc.includes('ENES EŞSİZ') || rawDesc.includes('MÜCAHİD ENES')) return [];
+        if (rawDesc.includes('BAŞAR ÜNAL') || rawDesc.includes('YILDIRIM BAŞAR')) return [];
+        if (rawDesc.includes('ENBA RECYCLING')) return [];
+        // İstisna: gerçek satış tahsilatı
+        if (rawDesc.includes('KIRICI') || rawDesc.includes('HAVUZ')) { /* devam et, gerçek gelir */ }
+        // Başar Ünal şahıs hesabı: account_debit = müşteri tahsilatı veya harici gelir
+        else if (accName.includes('BAŞAR ÜNAL') || accName.includes('YILDIRIM BAŞAR')) { /* devam et */ }
+        // Diğer tüm account_debit = Enes / iç transfer → dışla
+        else return [];
+      }
 
-        return [{
-          id: d.id,
-          account_id: account.id,
-          account_name: account.name,
-          account_type: account.type,
-          date: a.date || '',
-          amount: isCredit ? -absAmount : absAmount,
-          description: 'Açılış Bakiyesi',
-          transaction_type: 'initial_account_balance',
-          currency: isCredit
-            ? (a.credit_currency || account.currency)
-            : (a.debit_currency  || account.currency),
-          exchange_rate: trlAmt > 0 && rawAmt > 0 ? trlAmt / rawAmt : 1,
-          amount_tl: absAmount,
-        }];
+      if (txType === 'account_credit') {
+        // Başar Ünal şahıs hesabı: account_credit = gerçek harcama (avans)
+        if (accName.includes('BAŞAR ÜNAL') || accName.includes('YILDIRIM BAŞAR')) { /* devam et, gider */ }
+        // Diğer hesaplardaki account_credit = iç muhasebe hareketi → dışla
+        else return [];
       }
 
       // Yön: transaction_type'tan belirle
