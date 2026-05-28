@@ -152,9 +152,12 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const totalGider = useMemo(() => rows.filter(r => r.tip === 'gider').reduce((s, r) => s + r.tutar_tl, 0), [rows]);
-  const totalGelir = useMemo(() => rows.filter(r => r.tip === 'gelir').reduce((s, r) => s + r.tutar_tl, 0), [rows]);
-  const bakiye     = totalGelir - totalGider;
+  // Hesaplar arası transferler konsolide toplamlardan hariç tutulur (çift sayımı önler)
+  const nonTransfer = useMemo(() => rows.filter(r => r.kategori !== 'Hesaplar Arası Transfer'), [rows]);
+  const totalGider  = useMemo(() => nonTransfer.filter(r => r.tip === 'gider').reduce((s, r) => s + r.tutar_tl, 0), [nonTransfer]);
+  const totalGelir  = useMemo(() => nonTransfer.filter(r => r.tip === 'gelir').reduce((s, r) => s + r.tutar_tl, 0), [nonTransfer]);
+  const bakiye      = totalGelir - totalGider;
+  const totalTransfer = useMemo(() => rows.filter(r => r.kategori === 'Hesaplar Arası Transfer').reduce((s, r) => s + r.tutar_tl, 0), [rows]);
 
   const allAccountNames = useMemo(() => {
     const names = new Set(rows.map(r => r.source_account).filter(Boolean) as string[]);
@@ -176,7 +179,7 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
   }, [rows, tipFilter, accountFilter, sortKey, sortDir]);
 
   const cumulativeData = useMemo(() => {
-    const sorted = [...rows].sort((a, b) => a.tarih.localeCompare(b.tarih));
+    const sorted = [...nonTransfer].sort((a, b) => a.tarih.localeCompare(b.tarih));
     let cumulative = 0;
     const byMonth: Record<string, { gelir: number; gider: number }> = {};
     for (const r of sorted) {
@@ -193,9 +196,9 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
   }, [rows]);
 
   const dailyData = useMemo(() => {
-    if (rows.length === 0) return [];
+    if (nonTransfer.length === 0) return [];
     const byDate: Record<string, { gelir: number; gider: number }> = {};
-    for (const r of rows) {
+    for (const r of nonTransfer) {
       if (!byDate[r.tarih]) byDate[r.tarih] = { gelir: 0, gider: 0 };
       if (r.tip === 'gelir') byDate[r.tarih].gelir += r.tutar_tl;
       else byDate[r.tarih].gider += r.tutar_tl;
@@ -215,7 +218,7 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
 
   const kategoriOzet = useMemo(() => {
     const map: Record<string, { gelir: number; gider: number }> = {};
-    for (const r of rows) {
+    for (const r of nonTransfer) {
       if (!map[r.kategori]) map[r.kategori] = { gelir: 0, gider: 0 };
       if (r.tip === 'gelir') map[r.kategori].gelir += r.tutar_tl;
       else map[r.kategori].gider += r.tutar_tl;
@@ -401,7 +404,9 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
         <div className={`bg-[var(--enba-surface)] rounded-2xl px-5 py-4 border ${bakiye >= 0 ? 'border-emerald-200' : 'border-red-200'}`}>
           <div className="flex items-center gap-2 text-xs text-[var(--enba-text-muted)] mb-1">Net Bakiye</div>
           <div className={`text-lg font-bold ${bakiye >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>{fmtTL(bakiye)}</div>
-          <div className="text-xs text-[var(--enba-text-muted)] mt-0.5">{rows.length} toplam kayıt</div>
+          <div className="text-xs text-[var(--enba-text-muted)] mt-0.5">
+            {nonTransfer.length} kayıt · {rows.filter(r => r.kategori === 'Hesaplar Arası Transfer').length} transfer hariç
+          </div>
         </div>
       </div>
 
