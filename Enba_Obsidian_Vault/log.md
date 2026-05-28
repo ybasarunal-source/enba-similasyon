@@ -1156,3 +1156,34 @@ grep "^## \[" log.md | tail -5
   - `tsc --noEmit` temiz
 - Etkilenen dosyalar: `src/modules/KurulumNakit.tsx`
 - Bir sonraki: migration_v30 SQL çalıştır (`source_account TEXT` kolonu), mevcut Paraşüt verilerini temizle + yeniden sync et
+
+## [2026-05-28 22:00] geliştirme | KurulumNakit — Paraşüt tip tespiti + transfer çift sayım
+
+- Yapılan:
+  - Debug log: tüm hesaplarda transaction_type dağılımı tespit edildi
+  - Eksik tipler eklendi: `money_transfer`, `employee_debit`, `bank_fee_payment`
+  - money_transfer yön mantığı: debit > credit → GIRDI, credit > debit → ÇIKTI
+  - Concurrent sync önlemi: useRef guard + hesap arası 1500ms delay
+  - Transferler konsolide KPI'dan hariç tutuldu (nonTransfer filtresi)
+- Açık sorun: **Net Bakiye hâlâ yanlış** — kök neden tespit edilemedi
+  - Hipotez 1: money_transfer debit == credit durumu → her zaman GIRDI → şişme
+  - Hipotez 2: EUR hesap TL dönüşümü tutarsız
+  - Hipotez 3: Vakıfbank Ana Hesap initial_account_balance çift sayım
+  - Hipotez 4: Bazı account_credit/debit transferleri hâlâ sayılıyor
+- Etkilenen dosyalar: `src/api/parasut.ts`, `src/modules/KurulumNakit.tsx`
+- Bir sonraki:
+  1. debug console.log'ları sil (parasut.ts satır ~382-389)
+  2. Net Bakiye için alternatif: Paraşüt canlı bakiyeleri toplamını kullan (Hesaplar sekmesindeki veriden)
+  3. money_transfer eşit tutar durumu için test et
+  4. migration_v30 çalıştırıldı mı? → doğrula
+
+## [2026-05-28 23:30] geliştirme | KurulumNakit — txnKategori bug fix + canlı bakiye + yeniden senkronize
+- Yapılan:
+  1. **txnKategori bug fix**: description kontrolü money_transfer/initial_account_balance/bank_fee_payment tiplerinden SONRA gelecek şekilde düzeltildi. Eski davranış: açıklaması olan transfer işlemleri "Hesaplar Arası Transfer" etiketini almıyordu → nonTransfer filtresini geçiyordu → Toplam Girdi ve Toplam Çıktı şişiyordu.
+  2. **Paraşüt canlı bakiye (TRL)**: parasutNetTRL useMemo eklendi. TRL/TRY hesapların Paraşüt canlı bakiye toplamı Net Bakiye KPI'da gösteriliyor (Paraşüt bağlıysa).
+  3. **Yeniden Senkronize Et butonu**: tüm kayıtları sil + yeniden çek. Eski yanlış kategorili kayıtlar temizlenir.
+  4. **Debug console.log temizliği**: parasut.ts satır 379-386 kaldırıldı.
+  5. **KPI kayıt sayısı düzeltmesi**: Toplam Girdi/Çıktı kayıt sayıları artık nonTransfer'dan (transfer hariç).
+  6. **kurulumNakit.ts clearAll()**: company_id bazlı toplu silme fonksiyonu.
+- Etkilenen dosyalar: src/api/parasut.ts, src/api/kurulumNakit.ts, src/modules/KurulumNakit.tsx
+- Bir sonraki: "Yeniden Senkronize Et" ile mevcut kayıtları temizle → doğru kategorilerle yeniden çek → Net Bakiye doğruluğunu Paraşüt ile karşılaştır

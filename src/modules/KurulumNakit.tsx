@@ -38,14 +38,15 @@ function fmtDate(d: string) {
 }
 
 function txnKategori(txType: string, tip: FCTip, description: string): string {
+  const t = txType.toLowerCase();
+  // Tip bazlı kategoriler her zaman description'dan önce gelir (transfer çift sayımını önler)
+  if (t === 'initial_account_balance') return 'Açılış Bakiyesi';
+  if (t === 'money_transfer')          return 'Hesaplar Arası Transfer';
+  if (t === 'bank_fee_payment')        return 'Banka Masrafı';
+  if (t === 'employee_debit')          return tip === 'gelir' ? 'Personel Tahsilatı' : 'Personel Ödemesi';
   if (description && description !== '—' && description.trim().length > 1) {
     return description.slice(0, 60);
   }
-  const t = txType.toLowerCase();
-  if (t === 'initial_account_balance') return 'Açılış Bakiyesi';
-  if (t === 'money_transfer')      return 'Hesaplar Arası Transfer';
-  if (t === 'bank_fee_payment')    return 'Banka Masrafı';
-  if (t === 'employee_debit')      return tip === 'gelir' ? 'Personel Tahsilatı' : 'Personel Ödemesi';
   if (tip === 'gelir') {
     if (t === 'contact_credit')  return 'Tahsilat';
     if (t.includes('sales'))     return 'Satış Tahsilatı';
@@ -153,11 +154,19 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
   }, []);
 
   // Hesaplar arası transferler konsolide toplamlardan hariç tutulur (çift sayımı önler)
-  const nonTransfer = useMemo(() => rows.filter(r => r.kategori !== 'Hesaplar Arası Transfer'), [rows]);
-  const totalGider  = useMemo(() => nonTransfer.filter(r => r.tip === 'gider').reduce((s, r) => s + r.tutar_tl, 0), [nonTransfer]);
-  const totalGelir  = useMemo(() => nonTransfer.filter(r => r.tip === 'gelir').reduce((s, r) => s + r.tutar_tl, 0), [nonTransfer]);
-  const bakiye      = totalGelir - totalGider;
-  const totalTransfer = useMemo(() => rows.filter(r => r.kategori === 'Hesaplar Arası Transfer').reduce((s, r) => s + r.tutar_tl, 0), [rows]);
+  const nonTransfer   = useMemo(() => rows.filter(r => r.kategori !== 'Hesaplar Arası Transfer'), [rows]);
+  const totalGider    = useMemo(() => nonTransfer.filter(r => r.tip === 'gider').reduce((s, r) => s + r.tutar_tl, 0), [nonTransfer]);
+  const totalGelir    = useMemo(() => nonTransfer.filter(r => r.tip === 'gelir').reduce((s, r) => s + r.tutar_tl, 0), [nonTransfer]);
+  const bakiye        = totalGelir - totalGider;
+  const transferCount = useMemo(() => rows.filter(r => r.kategori === 'Hesaplar Arası Transfer').length, [rows]);
+
+  // Paraşüt canlı bakiyesi (TRL hesaplar toplamı) — DB hesabından daha güvenilir
+  const parasutNetTRL = useMemo(() => {
+    if (accounts.length === 0) return null;
+    const trlAccs = accounts.filter(a => a.currency === 'TRL' || a.currency === 'TRY');
+    if (trlAccs.length === 0) return null;
+    return trlAccs.reduce((s, a) => s + a.balance, 0);
+  }, [accounts]);
 
   const allAccountNames = useMemo(() => {
     const names = new Set(rows.map(r => r.source_account).filter(Boolean) as string[]);
@@ -227,6 +236,24 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
       .map(([k, v]) => ({ kategori: k, ...v, net: v.gelir - v.gider }))
       .sort((a, b) => Math.abs(b.net) - Math.abs(a.net));
   }, [rows]);
+
+  async function handleFullResync() {
+    if (!isParasutConnected || !parasutCompany || !companyId || syncingRef.current) return;
+    if (!window.confirm('Tüm mevcut nakit akışı kayıtları silinecek ve Paraşüt\'ten yeniden çekilecek. Devam edilsin mi?')) return;
+    setSyncing(true);
+    setSyncResult(null);
+    setError('');
+    setSyncProgress({ label: 'Mevcut kayıtlar temizleniyor…', pct: 2 });
+    try {
+      await kurulumNakitAPI.clearAll(companyId);
+      setRows([]);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Temizleme hatası');
+      setSyncing(false);
+      return;
+    }
+    await handleSync();
+  }
 
   async function handleSync() {
     if (!isParasutConnected || !parasutCompany || !companyId || syncingRef.current) return;
@@ -344,14 +371,25 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
             </span>
           )}
           {isParasutConnected && (
-            <button
-              onClick={handleSync}
-              disabled={syncing}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-[var(--enba-orange)]/40 text-[var(--enba-orange)] hover:bg-[var(--enba-orange)]/5 disabled:opacity-50 transition-colors"
-            >
-              <RefreshCw size={13} className={syncing ? 'animate-spin' : ''} />
-              {syncing ? 'Senkronize ediliyor…' : 'Paraşüt\'ten Güncelle'}
-            </button>
+            <>
+              <button
+                onClick={handleSync}
+                disabled={syncing}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-[var(--enba-orange)]/40 text-[var(--enba-orange)] hover:bg-[var(--enba-orange)]/5 disabled:opacity-50 transition-colors"
+              >
+                <RefreshCw size={13} className={syncing ? 'animate-spin' : ''} />
+                {syncing ? 'Senkronize ediliyor…' : 'Güncelle'}
+              </button>
+              <button
+                onClick={handleFullResync}
+                disabled={syncing}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-[var(--enba-border)] text-[var(--enba-text-muted)] hover:text-orange-600 hover:border-orange-300 disabled:opacity-50 transition-colors"
+                title="Tüm kayıtları sil ve Paraşüt'ten yeniden çek"
+              >
+                <RefreshCw size={13} />
+                Yeniden Senkronize Et
+              </button>
+            </>
           )}
           <button onClick={exportExcel}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-[var(--enba-border)] text-[var(--enba-text-muted)] hover:text-emerald-600 hover:border-emerald-300 transition-colors">
@@ -392,20 +430,24 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
             <TrendingUp size={12} className="text-emerald-500" /> Toplam Girdi
           </div>
           <div className="text-lg font-bold text-emerald-600">{fmtTL(totalGelir)}</div>
-          <div className="text-xs text-[var(--enba-text-muted)] mt-0.5">{rows.filter(r => r.tip === 'gelir').length} kayıt</div>
+          <div className="text-xs text-[var(--enba-text-muted)] mt-0.5">{nonTransfer.filter(r => r.tip === 'gelir').length} kayıt</div>
         </div>
         <div className="bg-[var(--enba-surface)] rounded-2xl px-5 py-4 border border-[var(--enba-border)]">
           <div className="flex items-center gap-2 text-xs text-[var(--enba-text-muted)] mb-1">
             <TrendingDown size={12} className="text-red-500" /> Toplam Çıktı
           </div>
           <div className="text-lg font-bold text-red-500">{fmtTL(totalGider)}</div>
-          <div className="text-xs text-[var(--enba-text-muted)] mt-0.5">{rows.filter(r => r.tip === 'gider').length} kayıt</div>
+          <div className="text-xs text-[var(--enba-text-muted)] mt-0.5">{nonTransfer.filter(r => r.tip === 'gider').length} kayıt</div>
         </div>
-        <div className={`bg-[var(--enba-surface)] rounded-2xl px-5 py-4 border ${bakiye >= 0 ? 'border-emerald-200' : 'border-red-200'}`}>
+        <div className={`bg-[var(--enba-surface)] rounded-2xl px-5 py-4 border ${(parasutNetTRL ?? bakiye) >= 0 ? 'border-emerald-200' : 'border-red-200'}`}>
           <div className="flex items-center gap-2 text-xs text-[var(--enba-text-muted)] mb-1">Net Bakiye</div>
-          <div className={`text-lg font-bold ${bakiye >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>{fmtTL(bakiye)}</div>
+          <div className={`text-lg font-bold ${(parasutNetTRL ?? bakiye) >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+            {fmtTL(parasutNetTRL ?? bakiye)}
+          </div>
           <div className="text-xs text-[var(--enba-text-muted)] mt-0.5">
-            {nonTransfer.length} kayıt · {rows.filter(r => r.kategori === 'Hesaplar Arası Transfer').length} transfer hariç
+            {parasutNetTRL !== null
+              ? 'Paraşüt canlı (TL hesaplar)'
+              : `${nonTransfer.length} kayıt · ${transferCount} transfer hariç`}
           </div>
         </div>
       </div>
@@ -507,13 +549,17 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                       <div className="bg-[var(--enba-surface)] border border-[var(--enba-border)] rounded-2xl px-5 py-4">
                         <div className="flex items-center justify-between">
                           <div>
-                            <div className="text-xs font-semibold text-[var(--enba-text)]">Konsolide Net Bakiye</div>
+                            <div className="text-xs font-semibold text-[var(--enba-text)]">
+                              {parasutNetTRL !== null ? 'Canlı TL Bakiyesi (Paraşüt)' : 'Konsolide Net Bakiye'}
+                            </div>
                             <div className="text-[10px] text-[var(--enba-text-muted)] mt-0.5">
-                              Veritabanındaki hareketlerden · {rows.length} kayıt
+                              {parasutNetTRL !== null
+                                ? `${accounts.filter(a => a.currency === 'TRL' || a.currency === 'TRY').length} TL hesap · DB hareket bazlı: ${fmtTL(bakiye)}`
+                                : `Veritabanındaki hareketlerden · ${rows.length} kayıt`}
                             </div>
                           </div>
-                          <div className={`text-xl font-bold ${bakiye >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
-                            {fmtTL(bakiye)}
+                          <div className={`text-xl font-bold ${(parasutNetTRL ?? bakiye) >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                            {fmtTL(parasutNetTRL ?? bakiye)}
                           </div>
                         </div>
                       </div>

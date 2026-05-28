@@ -102,4 +102,12 @@ export const kurulumNakitAPI = {
 
     return { inserted, skipped };
   },
+
+  async clearAll(companyId: string): Promise<void> {
+    const { error } = await supabase
+      .from('founding_cashflow')
+      .delete()
+      .eq('company_id', companyId);
+    if (error) throw error;
+  },
 };

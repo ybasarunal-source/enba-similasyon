@@ -376,15 +376,6 @@ export const parasutService = {
       'filter[date][lteq]': dateTo,
       'sort': 'id',
     });
-    const rawCount = (raw.data || []).length;
-    console.log(`[parasut] ${account.name}: ${rawCount} ham kayıt`);
-    const typeCounts: Record<string, number> = {};
-    (raw.data || []).forEach((d: any) => {
-      const t = (d.attributes?.transaction_type || 'unknown').toLowerCase();
-      typeCounts[t] = (typeCounts[t] || 0) + 1;
-    });
-    console.log(`[parasut] ${account.name} tipleri:`, typeCounts);
-
     return (raw.data || []).flatMap((d: any): ParasutTransaction[] => {
       const a = d.attributes || {};
       const txType: string = (a.transaction_type || '').toLowerCase();
