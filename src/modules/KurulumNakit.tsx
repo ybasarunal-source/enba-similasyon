@@ -67,13 +67,14 @@ function txnKategori(txType: string, tip: FCTip, description: string): string {
 function mapTransaction(txn: import('../api/parasut').ParasutTransaction): FCImportRecord {
   const tip: FCTip = txn.amount >= 0 ? 'gelir' : 'gider';
   return {
-    tarih:          txn.date,
+    tarih:            txn.date,
     tip,
-    kategori:       txnKategori(txn.transaction_type || '', tip, txn.description),
-    tutar_tl:       Math.round(Math.abs(txn.amount_tl) * 100) / 100,
-    aciklama:       `[${txn.account_name}] ${txn.description}`.slice(0, 200),
-    parasut_id:     `txn-${txn.account_id}-${txn.id}`,
-    source_account: txn.account_name,
+    kategori:         txnKategori(txn.transaction_type || '', tip, txn.description),
+    tutar_tl:         Math.round(Math.abs(txn.amount_tl) * 100) / 100,
+    aciklama:         `[${txn.account_name}] ${txn.description}`.slice(0, 200),
+    parasut_id:       `txn-${txn.account_id}-${txn.id}`,
+    source_account:   txn.account_name,
+    transaction_type: txn.transaction_type || '',
   };
 }
 
@@ -170,11 +171,28 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Hesaplar arası transferler konsolide toplamlardan hariç tutulur (çift sayımı önler)
+  // Satış tipi işlemler: gerçek gelir kaynakları
+  const SATIS_TYPES = ['contact_credit', 'sales_invoice_payment', 'sales_receipt_payment', 'account_debit'];
+
+  // Hesaplar arası transferler görsel listede gösterilir ama KPI'dan hariç (chart/ozet için)
   const nonTransfer   = useMemo(() => rows.filter(r => r.kategori !== 'Hesaplar Arası Transfer'), [rows]);
-  const totalGider    = useMemo(() => nonTransfer.filter(r => r.tip === 'gider').reduce((s, r) => s + r.tutar_tl, 0), [nonTransfer]);
-  const totalGelir    = useMemo(() => nonTransfer.filter(r => r.tip === 'gelir').reduce((s, r) => s + r.tutar_tl, 0), [nonTransfer]);
-  const bakiye        = totalGelir - totalGider;
+
+  // KPI 1: Satış Tahsilatı — contact_credit, sales_* tipler
+  const totalSatisGeliri = useMemo(() =>
+    rows.filter(r => r.tip === 'gelir' && SATIS_TYPES.includes(r.transaction_type ?? '')).reduce((s, r) => s + r.tutar_tl, 0),
+  [rows]);
+
+  // KPI 2: Diğer Girdi — money_transfer girdi (sermaye/borç) ve diğerleri
+  const totalDigerGelir = useMemo(() =>
+    rows.filter(r => r.tip === 'gelir' && !SATIS_TYPES.includes(r.transaction_type ?? '')).reduce((s, r) => s + r.tutar_tl, 0),
+  [rows]);
+
+  // KPI 3: Toplam Gider — tüm çıkışlar (transferler dahil, gerçek harcama)
+  const totalGider = useMemo(() => rows.filter(r => r.tip === 'gider').reduce((s, r) => s + r.tutar_tl, 0), [rows]);
+
+  // Eskiyle uyumluluk
+  const totalGelir = totalSatisGeliri + totalDigerGelir;
+  const bakiye     = totalGelir - totalGider;
   const transferCount = useMemo(() => rows.filter(r => r.kategori === 'Hesaplar Arası Transfer').length, [rows]);
 
   // Paraşüt canlı bakiyesi (TRL hesaplar toplamı) — DB hesabından daha güvenilir
@@ -454,30 +472,39 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
       )}
 
       {/* ── KPI row ── */}
-      <div className="grid grid-cols-3 gap-4 px-6 py-4 flex-shrink-0">
-        <div className="bg-[var(--enba-surface)] rounded-2xl px-5 py-4 border border-[var(--enba-border)]">
-          <div className="flex items-center gap-2 text-xs text-[var(--enba-text-muted)] mb-1">
-            <TrendingUp size={12} className="text-emerald-500" /> Toplam Girdi
+      <div className="grid grid-cols-4 gap-3 px-6 py-4 flex-shrink-0">
+        <div className="bg-[var(--enba-surface)] rounded-2xl px-4 py-3 border border-[var(--enba-border)]">
+          <div className="flex items-center gap-1.5 text-xs text-[var(--enba-text-muted)] mb-1">
+            <TrendingUp size={11} className="text-emerald-500" /> Satış Tahsilatı
           </div>
-          <div className="text-lg font-bold text-emerald-600">{fmtTL(totalGelir)}</div>
-          <div className="text-xs text-[var(--enba-text-muted)] mt-0.5">{nonTransfer.filter(r => r.tip === 'gelir').length} kayıt</div>
-        </div>
-        <div className="bg-[var(--enba-surface)] rounded-2xl px-5 py-4 border border-[var(--enba-border)]">
-          <div className="flex items-center gap-2 text-xs text-[var(--enba-text-muted)] mb-1">
-            <TrendingDown size={12} className="text-red-500" /> Toplam Çıktı
+          <div className="text-base font-bold text-emerald-600">{fmtTL(totalSatisGeliri)}</div>
+          <div className="text-[10px] text-[var(--enba-text-muted)] mt-0.5">
+            {rows.filter(r => r.tip === 'gelir' && SATIS_TYPES.includes(r.transaction_type ?? '')).length} kayıt
           </div>
-          <div className="text-lg font-bold text-red-500">{fmtTL(totalGider)}</div>
-          <div className="text-xs text-[var(--enba-text-muted)] mt-0.5">{nonTransfer.filter(r => r.tip === 'gider').length} kayıt</div>
         </div>
-        <div className={`bg-[var(--enba-surface)] rounded-2xl px-5 py-4 border ${(parasutNetTRL ?? bakiye) >= 0 ? 'border-emerald-200' : 'border-red-200'}`}>
-          <div className="flex items-center gap-2 text-xs text-[var(--enba-text-muted)] mb-1">Net Bakiye</div>
-          <div className={`text-lg font-bold ${(parasutNetTRL ?? bakiye) >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+        <div className="bg-[var(--enba-surface)] rounded-2xl px-4 py-3 border border-[var(--enba-border)]">
+          <div className="flex items-center gap-1.5 text-xs text-[var(--enba-text-muted)] mb-1">
+            <TrendingUp size={11} className="text-blue-400" /> Diğer Girdi
+          </div>
+          <div className="text-base font-bold text-blue-500">{fmtTL(totalDigerGelir)}</div>
+          <div className="text-[10px] text-[var(--enba-text-muted)] mt-0.5">sermaye / transfer</div>
+        </div>
+        <div className="bg-[var(--enba-surface)] rounded-2xl px-4 py-3 border border-[var(--enba-border)]">
+          <div className="flex items-center gap-1.5 text-xs text-[var(--enba-text-muted)] mb-1">
+            <TrendingDown size={11} className="text-red-500" /> Toplam Çıktı
+          </div>
+          <div className="text-base font-bold text-red-500">{fmtTL(totalGider)}</div>
+          <div className="text-[10px] text-[var(--enba-text-muted)] mt-0.5">
+            {rows.filter(r => r.tip === 'gider').length} kayıt
+          </div>
+        </div>
+        <div className={`bg-[var(--enba-surface)] rounded-2xl px-4 py-3 border ${(parasutNetTRL ?? bakiye) >= 0 ? 'border-emerald-200' : 'border-red-200'}`}>
+          <div className="text-xs text-[var(--enba-text-muted)] mb-1">Net Bakiye</div>
+          <div className={`text-base font-bold ${(parasutNetTRL ?? bakiye) >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
             {fmtTL(parasutNetTRL ?? bakiye)}
           </div>
-          <div className="text-xs text-[var(--enba-text-muted)] mt-0.5">
-            {parasutNetTRL !== null
-              ? 'Paraşüt canlı (TL hesaplar)'
-              : `${nonTransfer.length} kayıt · ${transferCount} transfer hariç`}
+          <div className="text-[10px] text-[var(--enba-text-muted)] mt-0.5">
+            {parasutNetTRL !== null ? 'Paraşüt canlı' : `net: ${fmtTL(bakiye)}`}
           </div>
         </div>
       </div>
@@ -857,15 +884,16 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                   </p>
                 </div>
 
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {[
-                    { label: 'Toplam Girdi', value: totalGelir, color: 'text-emerald-600' },
-                    { label: 'Toplam Çıktı', value: totalGider, color: 'text-red-500' },
-                    { label: 'Net Bakiye',   value: bakiye,     color: bakiye >= 0 ? 'text-emerald-600' : 'text-red-500' },
+                    { label: 'Satış Tahsilatı', value: totalSatisGeliri, color: 'text-emerald-600' },
+                    { label: 'Diğer Girdi',     value: totalDigerGelir,  color: 'text-blue-500' },
+                    { label: 'Toplam Çıktı',    value: totalGider,       color: 'text-red-500' },
+                    { label: 'Net Bakiye',       value: parasutNetTRL ?? bakiye, color: (parasutNetTRL ?? bakiye) >= 0 ? 'text-emerald-600' : 'text-red-500' },
                   ].map(k => (
-                    <div key={k.label} className="bg-[var(--enba-surface)] border border-[var(--enba-border)] rounded-2xl px-5 py-4">
+                    <div key={k.label} className="bg-[var(--enba-surface)] border border-[var(--enba-border)] rounded-2xl px-4 py-3">
                       <div className="text-xs text-[var(--enba-text-muted)] mb-1">{k.label}</div>
-                      <div className={`text-xl font-bold ${k.color}`}>{fmtTL(k.value)}</div>
+                      <div className={`text-lg font-bold ${k.color}`}>{fmtTL(k.value)}</div>
                     </div>
                   ))}
                 </div>

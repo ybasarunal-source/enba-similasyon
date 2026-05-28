@@ -3,45 +3,48 @@ import { supabase } from './supabase';
 export type FCTip = 'gelir' | 'gider';
 
 export interface FoundingCashflow {
-  id:             string;
-  company_id:     string;
-  tarih:          string;
-  tip:            FCTip;
-  kategori:       string;
-  tutar_tl:       number;
-  aciklama:       string;
-  parasut_id?:    string | null;
-  source_account?: string | null;
-  created_at:     string;
-  updated_at:     string;
+  id:               string;
+  company_id:       string;
+  tarih:            string;
+  tip:              FCTip;
+  kategori:         string;
+  tutar_tl:         number;
+  aciklama:         string;
+  parasut_id?:      string | null;
+  source_account?:  string | null;
+  transaction_type?: string | null;
+  created_at:       string;
+  updated_at:       string;
 }
 
 export type FCForm = Omit<FoundingCashflow, 'id' | 'company_id' | 'created_at' | 'updated_at'>;
 
 export interface FCImportRecord {
-  tarih:          string;
-  tip:            FCTip;
-  kategori:       string;
-  tutar_tl:       number;
-  aciklama:       string;
-  parasut_id:     string;
-  source_account?: string;
+  tarih:            string;
+  tip:              FCTip;
+  kategori:         string;
+  tutar_tl:         number;
+  aciklama:         string;
+  parasut_id:       string;
+  source_account?:  string;
+  transaction_type: string;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function rowToFC(r: any): FoundingCashflow {
   return {
-    id:             r.id,
-    company_id:     r.company_id,
-    tarih:          r.tarih          ?? '',
-    tip:            (r.tip           ?? 'gider') as FCTip,
-    kategori:       r.kategori       ?? '',
-    tutar_tl:       Number(r.tutar_tl ?? 0),
-    aciklama:       r.aciklama       ?? '',
-    parasut_id:     r.parasut_id     ?? null,
-    source_account: r.source_account ?? null,
-    created_at:     r.created_at     ?? '',
-    updated_at:     r.updated_at     ?? '',
+    id:               r.id,
+    company_id:       r.company_id,
+    tarih:            r.tarih            ?? '',
+    tip:              (r.tip             ?? 'gider') as FCTip,
+    kategori:         r.kategori         ?? '',
+    tutar_tl:         Number(r.tutar_tl  ?? 0),
+    aciklama:         r.aciklama         ?? '',
+    parasut_id:       r.parasut_id       ?? null,
+    source_account:   r.source_account   ?? null,
+    transaction_type: r.transaction_type ?? null,
+    created_at:       r.created_at       ?? '',
+    updated_at:       r.updated_at       ?? '',
   };
 }
 
