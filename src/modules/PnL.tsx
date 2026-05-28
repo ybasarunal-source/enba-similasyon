@@ -73,12 +73,25 @@ export const PnL: React.FC = () => {
     const [rowDetayAcik, setRowDetayAcik] = useState<Record<string, boolean>>({});
     const [insightAcik, setInsightAcik] = useState(false);
     const [sectionAcik, setSectionAcik] = useState<Record<string, boolean>>({
-        "I. HASILAT": true,
-        "II. MAL MALİYETLERİ": true,
-        "III. ENERJİ MALİYETLERİ": true,
-        "IV. PERSONEL MALİYETLERİ": true,
-        "V. DİĞER GİDERLER": true,
-        "SONUÇ": true
+        "HASILAT": true,
+        "SATIŞ GİDERLERİ": true,
+        "NET GELİR": true,
+        "MALZEME GİDERLERİ": true,
+        "BRÜT KATKI PAYI": true,
+        "ENERJİ TÜKETİMİ": true,
+        "PERSONEL GİDERLERİ": true,
+        "BAKIM & ÇEVRE": true,
+        "GENEL GİDERLER": true,
+        "DİĞER FAALİYET GELİRLERİ": true,
+        "EBITDA": true,
+        "AMORTİSMAN": true,
+        "EBIT": true,
+        "FİNANSMAN": true,
+        "OLAĞAN FAALİYET KARI": true,
+        "OLAĞANDIŞI": true,
+        "VERGİ ÖNCESİ KAR": true,
+        "VERGİ": true,
+        "NET KAR": true,
     });
 
     const toggleGrup = (grupAd: string) => {
@@ -727,12 +740,25 @@ export const PnL: React.FC = () => {
                                       </td>
                                       {(() => {
                                            const summaryIdMap: Record<string, string> = {
-                                               "I. HASILAT": "M299",
-                                               "II. MAL MALİYETLERİ": "M339",
-                                               "III. ENERJİ MALİYETLERİ": "M419",
-                                               "IV. PERSONEL MALİYETLERİ": "M489",
-                                               "V. DİĞER GİDERLER": "M689",
-                                               "SONUÇ": "M769"
+                                               "HASILAT": "M179",
+                                               "SATIŞ GİDERLERİ": "M249",
+                                               "NET GELİR": "M299",
+                                               "MALZEME GİDERLERİ": "M369",
+                                               "BRÜT KATKI PAYI": "M399",
+                                               "ENERJİ TÜKETİMİ": "M419",
+                                               "PERSONEL GİDERLERİ": "M489",
+                                               "BAKIM & ÇEVRE": "",
+                                               "GENEL GİDERLER": "M689",
+                                               "DİĞER FAALİYET GELİRLERİ": "M739",
+                                               "EBITDA": "M769",
+                                               "AMORTİSMAN": "M789",
+                                               "EBIT": "M799",
+                                               "FİNANSMAN": "M869",
+                                               "OLAĞAN FAALİYET KARI": "M879",
+                                               "OLAĞANDIŞI": "M889",
+                                               "VERGİ ÖNCESİ KAR": "M899",
+                                               "VERGİ": "",
+                                               "NET KAR": "M919",
                                            };
                                            const summaryId = summaryIdMap[section.section] || "";
 
