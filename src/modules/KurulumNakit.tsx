@@ -316,13 +316,13 @@ const ImportModal: React.FC<ImportModalProps> = ({ companyId, onImported, onClos
                 )}
               </div>
               {ibanConflicts.length > 0 && (
-                <div className="flex items-start gap-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-700 dark:text-amber-400">
+                <div className="flex items-start gap-2 p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/30 text-xs text-blue-700 dark:text-blue-400">
                   <AlertCircle size={13} className="mt-0.5 shrink-0" />
                   <div>
-                    <p className="font-semibold">Çakışan hesap uyarısı</p>
+                    <p className="font-semibold">Aynı IBAN — ardışık dönemler</p>
                     {ibanConflicts.map((group, i) => (
                       <p key={i} className="mt-0.5 text-[10px]">
-                        {group.map(a => a.name).join(' + ')} — aynı IBAN, <strong>sadece birini seçin</strong>
+                        {group.map(a => a.name).join(' + ')} — biri geçmiş, biri banka entegrasyonu. <strong>İkisini de seçin</strong>, çift sayım olmaz.
                       </p>
                     ))}
                   </div>
