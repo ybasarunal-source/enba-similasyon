@@ -1028,6 +1028,18 @@ grep "^## \[" log.md | tail -5
 
 ---
 
+## [2026-05-28 13:05] ingesting | Su Yönetimi, Katkılar/Kompaund ve Finansal Metrikler Sayfaları Eklendi
+
+**Yapılan işlemler:**
+- **Wiki Genişletme:** `Wiki/Sektor` klasörüne 3 yeni sektörel uzmanlık sayfası eklendi:
+  - [[Wiki/Sektor/Su-Yonetimi-ve-Aritma|Su Yönetimi ve Arıtma]]: Yıkama sularının sirkülasyonu, DAF (Çözünmüş Hava Flotasyonu), filtrepres plakalarında çamur susuzlaştırma, ters osmoz (RO), antifoam/flokülant kimyasal OPEX ve çamur bertaraf bütçelemesi.
+  - [[Wiki/Sektor/Katki-Maddeleri-ve-Kompozitler|Katkı Maddeleri ve Kompozitler]]: Kalsit (CaCO3), darbe dayanımı artırıcılar, antioksidanlar, UV stabilizatörleri, masterbatch boyaları, reçete maliyetine ve satış fiyatına etkisi ve çift vidalı kompaund ekstrüzyon gereksinimleri.
+  - [[Wiki/Sektor/Finansal-Metrikler-ve-ROI|Finansal Metrikler ve ROI]]: Ton başına EBITDA (€150-250/ton standardı), OEE verimlilik faktörleri, hammadde makası (spread), peşin tedarik vs vadeli satış nakit akış açığı (working capital gap) ve DetailedPlan fizibilite CAPEX amortisman ömrü (5-7 yıl) hesaplamaları.
+- **Dizin Güncellemesi:** `index.md` dosyasına 3 yeni sektörel sayfa eklendi.
+
+
+---
+
 ## [2026-05-28 12:55] ingesting | Kirleticiler, Enerji ve Kimyasal Geri Dönüşüm Sayfaları Eklendi
 
 **Yapılan işlemler:**

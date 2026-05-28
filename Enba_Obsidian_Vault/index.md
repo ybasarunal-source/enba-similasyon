@@ -88,6 +88,10 @@
 | [[Wiki/Sektor/Lojistik-ve-Tedarik-Zinciri\|Lojistik ve Tedarik Zinciri]] | Geri dönüşüm lojistiği, balyalanmış vs gevşek tır navlun oranları, tedarikçi puanlama | 2026-05-28 |
 | [[Wiki/Sektor/Dairesel-Ekonomi-ve-EPR\|Dairesel Ekonomi ve EPR]] | Genişletilmiş Üretici Sorumluluğu kuralları, GEKAP çevre vergisi, Depozito İade Sistemi (DİS) | 2026-05-28 |
 | [[Wiki/Sektor/Tesis-Bakim-ve-Asinma-Dinamikleri\|Tesis Bakım ve Aşınma]] | Önleyici bakım duruşları (OEE), kırıcı bıçak ve ekstrüder vida aşınmaları, elektrik/toz maliyet etkisi | 2026-05-28 |
+| [[Wiki/Sektor/Su-Yonetimi-ve-Aritma\|Su Yönetimi ve Arıtma]] | Yıkama atık sularının kapalı devre geri kazanımı (DAF, filtrepres), kimyasal giderler | 2026-05-28 |
+| [[Wiki/Sektor/Katki-Maddeleri-ve-Kompozitler\|Katkı Maddeleri ve Kompozitler]] | Reçetede kalsit, darbe dayanımı artırıcılar, boyalar (masterbatch) kullanımı ve maliyet etkisi | 2026-05-28 |
+| [[Wiki/Sektor/Finansal-Metrikler-ve-ROI\|Finansal Metrikler ve ROI]] | Ton başına EBITDA, OEE verimlilik faktörleri, vadelerden kaynaklı işletme sermayesi açığı | 2026-05-28 |
+
 
 
 | [[Wiki/Malzemeler/PET-Capak-Dinamikleri\|PET Çapak Dinamikleri]] | PET çapak kalite sınıfları, PVC kontaminasyon limitleri, IV değerleri ve SSP reaktör katsayıları | 2026-05-28 |
