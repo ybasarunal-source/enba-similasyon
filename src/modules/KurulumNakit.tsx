@@ -42,6 +42,7 @@ const GELIR_KATEGORILER = [
 type Tab = 'kayitlar' | 'grafik' | 'ozet';
 type TipFilter = 'tümü' | FCTip;
 type SortDir = 'asc' | 'desc';
+type SortKey = 'tarih' | 'kategori' | 'tutar_tl';
 
 function fmtTL(n: number) {
   return n.toLocaleString('tr-TR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + ' ₺';
@@ -524,7 +525,13 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
   const [importOpen, setImportOpen] = useState(false);
   const [delId, setDelId]         = useState<string | null>(null);
   const [tipFilter, setTipFilter] = useState<TipFilter>('tümü');
-  const [sortDir, setSortDir]     = useState<SortDir>('asc');
+  const [sortKey, setSortKey]     = useState<SortKey>('tarih');
+  const [sortDir, setSortDir]     = useState<SortDir>('desc');
+
+  function toggleSort(key: SortKey) {
+    if (sortKey === key) setSortDir(p => p === 'asc' ? 'desc' : 'asc');
+    else { setSortKey(key); setSortDir('desc'); }
+  }
   const [exportMsg, setExportMsg] = useState('');
 
   const companyId = profile?.company_id ?? null;
@@ -554,11 +561,14 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
   const displayed = useMemo(() => {
     let list = tipFilter === 'tümü' ? rows : rows.filter(r => r.tip === tipFilter);
     list = [...list].sort((a, b) => {
-      const d = a.tarih.localeCompare(b.tarih);
+      let d = 0;
+      if (sortKey === 'tarih')    d = a.tarih.localeCompare(b.tarih);
+      else if (sortKey === 'kategori') d = a.kategori.localeCompare(b.kategori, 'tr');
+      else if (sortKey === 'tutar_tl') d = a.tutar_tl - b.tutar_tl;
       return sortDir === 'asc' ? d : -d;
     });
     return list;
-  }, [rows, tipFilter, sortDir]);
+  }, [rows, tipFilter, sortKey, sortDir]);
 
   // Kümülatif grafik verisi (aylık gruplandırma)
   const cumulativeData = useMemo(() => {
@@ -791,13 +801,6 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                       </button>
                     ))}
                   </div>
-                  <button
-                    onClick={() => setSortDir(p => p === 'asc' ? 'desc' : 'asc')}
-                    className="flex items-center gap-1 text-xs text-[var(--enba-text-muted)] hover:text-[var(--enba-text)] transition-colors"
-                  >
-                    {sortDir === 'asc' ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-                    {sortDir === 'asc' ? 'Eskiden yeniye' : 'Yeniden eskiye'}
-                  </button>
                   <span className="ml-auto text-xs text-[var(--enba-text-muted)]">{displayed.length} kayıt</span>
                 </div>
 
@@ -810,10 +813,21 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-[var(--enba-border)] text-xs text-[var(--enba-text-muted)]">
-                          <th className="px-4 py-3 text-left font-medium">Tarih</th>
+                          {([['tarih','Tarih','left'],['kategori','Kategori','left'],['tutar_tl','Tutar','right']] as [SortKey,string,string][]).map(([key, label, align]) => (
+                            <th key={key} onClick={() => toggleSort(key)}
+                              className={`px-4 py-3 text-${align} font-medium cursor-pointer select-none hover:text-[var(--enba-text)] transition-colors group`}>
+                              <span className="inline-flex items-center gap-1">
+                                {label}
+                                <span className="opacity-0 group-hover:opacity-60 transition-opacity">
+                                  {sortKey === key
+                                    ? (sortDir === 'asc' ? <ChevronUp size={11}/> : <ChevronDown size={11}/>)
+                                    : <ChevronDown size={11}/>}
+                                </span>
+                                {sortKey === key && <span className="opacity-80">{sortDir === 'asc' ? <ChevronUp size={11}/> : <ChevronDown size={11}/>}</span>}
+                              </span>
+                            </th>
+                          ))}
                           <th className="px-4 py-3 text-left font-medium">Tip</th>
-                          <th className="px-4 py-3 text-left font-medium">Kategori</th>
-                          <th className="px-4 py-3 text-right font-medium">Tutar</th>
                           <th className="px-4 py-3 text-left font-medium">Açıklama</th>
                           <th className="px-2 py-3" />
                         </tr>
@@ -825,16 +839,16 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                             className={`border-b border-[var(--enba-border)] last:border-0 hover:bg-[var(--enba-bg)] transition-colors ${i % 2 === 1 ? 'bg-[var(--enba-bg)]/30' : ''}`}
                           >
                             <td className="px-4 py-2.5 text-xs text-[var(--enba-text-muted)] whitespace-nowrap">{fmtDate(r.tarih)}</td>
+                            <td className="px-4 py-2.5 text-xs text-[var(--enba-text)]">{r.kategori}</td>
+                            <td className={`px-4 py-2.5 text-xs font-semibold text-right whitespace-nowrap ${r.tip === 'gider' ? 'text-red-500' : 'text-emerald-600'}`}>
+                              {r.tip === 'gider' ? '−' : '+'}{fmtTL(r.tutar_tl)}
+                            </td>
                             <td className="px-4 py-2.5">
                               <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${
                                 r.tip === 'gider' ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-700'
                               }`}>
                                 {r.tip === 'gider' ? 'Gider' : 'Gelir'}
                               </span>
-                            </td>
-                            <td className="px-4 py-2.5 text-xs text-[var(--enba-text)]">{r.kategori}</td>
-                            <td className={`px-4 py-2.5 text-xs font-semibold text-right whitespace-nowrap ${r.tip === 'gider' ? 'text-red-500' : 'text-emerald-600'}`}>
-                              {r.tip === 'gider' ? '−' : '+'}{fmtTL(r.tutar_tl)}
                             </td>
                             <td className="px-4 py-2.5 text-xs text-[var(--enba-text-muted)] max-w-[200px] truncate">{r.aciklama}</td>
                             <td className="px-2 py-2.5">
