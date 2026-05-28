@@ -366,14 +366,17 @@ export const parasutService = {
       }
     };
 
-    await tryEndpoint('bank_accounts',  'bank_accounts', 'Banka');
-    await tryEndpoint('safes',          'safes',         'Kasa');
-    await tryEndpoint('safe_accounts',  'safes',         'Kasa');
+    await tryEndpoint('bank_accounts',      'bank_accounts', 'Banka');
+    await tryEndpoint('safes',              'safes',         'Kasa');
+    await tryEndpoint('safe_accounts',      'safes',         'Kasa');
+    await tryEndpoint('accounts',           'bank_accounts', 'Hesap');
+    await tryEndpoint('financial_accounts', 'bank_accounts', 'Hesap');
+    await tryEndpoint('cash_accounts',      'safes',         'Kasa');
 
     if (result.length === 0) {
       throw new Error(
         errs.length > 0
-          ? `Hesap endpoint hatası:\n${errs.join('\n')}`
+          ? `Denenen endpoint'ler:\n${errs.join('\n')}`
           : 'Paraşüt\'te kasa/banka hesabı bulunamadı.',
       );
     }
