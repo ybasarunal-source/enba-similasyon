@@ -74,15 +74,40 @@ function mapParasutInvoice(inv: ParasutInvoice): FCImportRecord {
   };
 }
 
+// ── Paraşüt transaction_type → Türkçe kategori ──────────────
+function txnKategori(txType: string, tip: FCTip, description: string): string {
+  // Açıklama varsa onu kullan (en anlamlı)
+  if (description && description !== '—' && description.trim().length > 1) {
+    return description.slice(0, 60);
+  }
+  const t = txType.toLowerCase();
+  if (t === 'initial_account_balance') return 'Açılış Bakiyesi';
+  if (tip === 'gelir') {
+    if (t === 'contact_credit')           return 'Tahsilat';
+    if (t.includes('sales'))              return 'Satış Tahsilatı';
+    if (t.includes('_credit'))            return 'Tahsilat';
+    return 'Diğer Gelir';
+  } else {
+    if (t === 'purchase_bill_payment')    return 'Fatura Ödemesi';
+    if (t.startsWith('purchase_'))        return 'Fatura Ödemesi';
+    if (t === 'contact_debit')            return 'Ödeme';
+    if (t.startsWith('expense_'))         return 'Gider Ödemesi';
+    if (t.startsWith('payroll_') || t.startsWith('salary_')) return 'Personel Ödemesi';
+    if (t.startsWith('tax_'))             return 'Vergi Ödemesi';
+    if (t.includes('_debit'))             return 'Ödeme';
+    return 'Diğer Gider';
+  }
+}
+
 // ── Paraşüt transaction → FCImportRecord ────────────────────
 function mapTransaction(txn: import('../api/parasut').ParasutTransaction): FCImportRecord {
   const tip: FCTip = txn.amount >= 0 ? 'gelir' : 'gider';
   return {
     tarih:      txn.date,
     tip,
-    kategori:   txn.account_name.slice(0, 60),
+    kategori:   txnKategori(txn.transaction_type || '', tip, txn.description),
     tutar_tl:   Math.round(Math.abs(txn.amount_tl) * 100) / 100,
-    aciklama:   txn.description.slice(0, 200),
+    aciklama:   `[${txn.account_name}] ${txn.description}`.slice(0, 200),
     parasut_id: `txn-${txn.account_id}-${txn.id}`,
   };
 }
@@ -109,6 +134,21 @@ const ImportModal: React.FC<ImportModalProps> = ({ companyId, onImported, onClos
   const [selectedIds,     setSelectedIds]     = useState<Set<string>>(new Set());
   const [pending,         setPending]         = useState<FCImportRecord[]>([]);
   const [result,          setResult]          = useState<{ inserted: number; skipped: number } | null>(null);
+
+  // Çakışan IBAN hesaplarını tespit et (e.g. Vakıfbank geçmiş + IBAN)
+  const ibanConflicts = useMemo(() => {
+    const ibanMap = new Map<string, ParasutAccount[]>();
+    accounts.forEach(a => {
+      if (a.iban) {
+        const normalized = a.iban.replace(/\s/g, '');
+        if (!ibanMap.has(normalized)) ibanMap.set(normalized, []);
+        ibanMap.get(normalized)!.push(a);
+      }
+    });
+    const conflicts: ParasutAccount[][] = [];
+    ibanMap.forEach(group => { if (group.length > 1) conflicts.push(group); });
+    return conflicts;
+  }, [accounts]);
 
   // Hesapları yükle
   useEffect(() => {
@@ -275,6 +315,19 @@ const ImportModal: React.FC<ImportModalProps> = ({ companyId, onImported, onClos
                   </div>
                 )}
               </div>
+              {ibanConflicts.length > 0 && (
+                <div className="flex items-start gap-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-700 dark:text-amber-400">
+                  <AlertCircle size={13} className="mt-0.5 shrink-0" />
+                  <div>
+                    <p className="font-semibold">Çakışan hesap uyarısı</p>
+                    {ibanConflicts.map((group, i) => (
+                      <p key={i} className="mt-0.5 text-[10px]">
+                        {group.map(a => a.name).join(' + ')} — aynı IBAN, <strong>sadece birini seçin</strong>
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              )}
               <p className="text-xs text-[var(--enba-text-muted)]">
                 Seçilen hesapların kasa/banka hareketleri çekilir. Zaten import edilmiş kayıtlar atlanır.
               </p>

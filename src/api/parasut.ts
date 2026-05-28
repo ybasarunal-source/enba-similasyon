@@ -38,6 +38,7 @@ export interface ParasutAccount {
   name: string;
   currency: string;
   balance: number;
+  iban?: string;
 }
 
 export interface ParasutTransaction {
@@ -48,6 +49,7 @@ export interface ParasutTransaction {
   date: string;
   amount: number;        // pozitif = giriş, negatif = çıkış
   description: string;
+  transaction_type: string;
   currency: string;
   exchange_rate: number;
   amount_tl: number;
@@ -357,6 +359,7 @@ export const parasutService = {
         name: a.name || a.label || `Hesap ${d.id}`,
         currency: a.currency || 'TRL',
         balance: parseFloat(a.balance || '0'),
+        iban: a.iban || a.bank_account_no || undefined,
       };
     });
   },
@@ -376,9 +379,31 @@ export const parasutService = {
     return (raw.data || []).flatMap((d: any): ParasutTransaction[] => {
       const a = d.attributes || {};
       const txType: string = (a.transaction_type || '').toLowerCase();
+      const isBankSynced = !!(a.bank_sync_datetime || a.bank_sync_bank_transaction_id);
 
-      // Kasalar/bankalar arası transferler ve açılış bakiyelerini dışla
-      if (txType.includes('transfer') || txType === 'initial_account_balance') return [];
+      // Kasalar/bankalar arası transferleri dışla — çift sayım yapar
+      if (txType.includes('transfer')) return [];
+
+      // Açılış bakiyesi: bank-sync'li hesaplarda (IBAN) çift sayım yapar → dışla
+      // Bank-sync'siz hesaplarda (manuel/kasa) gerçek sermaye girişi → dahil et
+      if (txType === 'initial_account_balance') {
+        if (isBankSynced) return [];
+        const debitAmt = parseFloat(a.debit_amount || '0');
+        if (debitAmt <= 0) return [];
+        return [{
+          id: d.id,
+          account_id: account.id,
+          account_name: account.name,
+          account_type: account.type,
+          date: a.date || '',
+          amount: debitAmt,
+          description: 'Açılış Bakiyesi',
+          transaction_type: 'initial_account_balance',
+          currency: a.debit_currency || account.currency,
+          exchange_rate: 1,
+          amount_tl: debitAmt,
+        }];
+      }
 
       // Yön: transaction_type'tan belirle
       // *_credit / sales_invoice_payment / sales_receipt_payment → GİRDİ (+)
@@ -426,8 +451,9 @@ export const parasutService = {
         date: a.date || '',
         amount,
         description: a.description || a.auto_description || '—',
+        transaction_type: txType,
         currency: a.debit_currency || a.credit_currency || account.currency,
-        exchange_rate: absAmount > 0 && trlAmt > 0 && (debitAmt > 0 || creditAmt > 0)
+        exchange_rate: trlAmt > 0 && Math.max(debitAmt, creditAmt) > 0
           ? trlAmt / Math.max(debitAmt, creditAmt)
           : 1,
         amount_tl: absAmount,
