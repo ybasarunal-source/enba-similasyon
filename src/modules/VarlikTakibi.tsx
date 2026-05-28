@@ -88,6 +88,32 @@ const Field: React.FC<{ label: string; children: React.ReactNode; hint?: string 
 const inputCls = "w-full text-sm border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--enba-orange)]/20 focus:border-[var(--enba-orange)]/40";
 const selectCls = inputCls + " bg-white cursor-pointer";
 
+// TCMB EUR/TL kuru — hafta sonu / tatil için en fazla 7 gün geriye gider
+async function fetchTCMBRate(dateStr: string, currencyCode = 'EUR'): Promise<number | null> {
+  for (let offset = 0; offset <= 7; offset++) {
+    const d = new Date(dateStr);
+    d.setDate(d.getDate() - offset);
+    if (isNaN(d.getTime())) return null;
+    const yyyy = d.getFullYear();
+    const mm   = String(d.getMonth() + 1).padStart(2, '0');
+    const dd   = String(d.getDate()).padStart(2, '0');
+    const url  = `https://www.tcmb.gov.tr/kurlar/${yyyy}${mm}/${dd}${mm}${yyyy}.xml`;
+    try {
+      const res = await fetch(url, { cache: 'force-cache' });
+      if (!res.ok) continue;
+      const text = await res.text();
+      const xml  = new DOMParser().parseFromString(text, 'text/xml');
+      for (const node of Array.from(xml.querySelectorAll('Currency'))) {
+        if (node.getAttribute('CurrencyCode') === currencyCode) {
+          const rate = parseFloat(node.querySelector('ForexBuying')?.textContent?.trim() ?? '0');
+          if (rate > 0) return Math.round(rate * 100) / 100;
+        }
+      }
+    } catch { continue; }
+  }
+  return null;
+}
+
 // ── Summary card ─────────────────────────────────────────────
 const SumCard: React.FC<{ label: string; value: string; sub?: string; icon: React.ReactNode; color: string }> = ({ label, value, sub, icon, color }) => (
   <div className={`rounded-2xl border p-4 flex items-center gap-4 ${color}`}>
@@ -123,6 +149,21 @@ export const VarlikTakibi: React.FC<VarlikTakibiProps> = ({ profile }) => {
   const [editingDeposit, setEditingDeposit] = useState<AssetDeposit | null>(null);
   const [assetForm, setAssetForm] = useState<AssetForm>(emptyAsset());
   const [depositForm, setDepositForm] = useState<DepositForm>(emptyDeposit());
+  const [kurFetching, setKurFetching] = useState(false);
+  const [kurSource, setKurSource] = useState<string>('');
+
+  const handlePurchaseDateChange = useCallback(async (date: string) => {
+    setAssetForm(p => ({ ...p, purchase_date: date }));
+    if (!date) return;
+    setKurFetching(true);
+    setKurSource('');
+    const rate = await fetchTCMBRate(date, 'EUR');
+    if (rate) {
+      setAssetForm(p => ({ ...p, exchange_rate: rate }));
+      setKurSource(`TCMB ${date}`);
+    }
+    setKurFetching(false);
+  }, []);
 
   const load = useCallback(async () => {
     if (!companyId) return;
@@ -565,13 +606,36 @@ export const VarlikTakibi: React.FC<VarlikTakibiProps> = ({ profile }) => {
                     </select>
                   </Field>
                   <Field label="Alış Tarihi">
-                    <input type="date" className={inputCls} value={assetForm.purchase_date} onChange={e => setAssetForm(p => ({ ...p, purchase_date: e.target.value }))} />
+                    <input
+                      type="date"
+                      className={inputCls}
+                      value={assetForm.purchase_date}
+                      onChange={e => handlePurchaseDateChange(e.target.value)}
+                    />
                   </Field>
                   <Field label="Alış Tutarı (₺)">
                     <input type="number" min="0" className={inputCls} value={assetForm.purchase_amount_tl || ''} onChange={e => setAssetForm(p => ({ ...p, purchase_amount_tl: parseFloat(e.target.value) || 0 }))} placeholder="0" />
                   </Field>
-                  <Field label="Kur (₺/€)" hint={`EUR değeri: ${assetForm.exchange_rate > 0 ? (assetForm.purchase_amount_tl / assetForm.exchange_rate).toLocaleString('tr-TR', { maximumFractionDigits: 0 }) : '—'} €`}>
-                    <input type="number" min="0" step="0.01" className={inputCls} value={assetForm.exchange_rate || ''} onChange={e => setAssetForm(p => ({ ...p, exchange_rate: parseFloat(e.target.value) || 1 }))} placeholder="40" />
+                  <Field
+                    label="Kur (₺/€)"
+                    hint={kurFetching
+                      ? 'TCMB\'den çekiliyor…'
+                      : kurSource
+                        ? `${kurSource} · EUR: ${assetForm.exchange_rate > 0 ? (assetForm.purchase_amount_tl / assetForm.exchange_rate).toLocaleString('tr-TR', { maximumFractionDigits: 0 }) : '—'} €`
+                        : `EUR değeri: ${assetForm.exchange_rate > 0 ? (assetForm.purchase_amount_tl / assetForm.exchange_rate).toLocaleString('tr-TR', { maximumFractionDigits: 0 }) : '—'} €`}
+                  >
+                    <div className="relative">
+                      <input
+                        type="number" min="0" step="0.01"
+                        className={inputCls}
+                        value={assetForm.exchange_rate || ''}
+                        onChange={e => { setAssetForm(p => ({ ...p, exchange_rate: parseFloat(e.target.value) || 1 })); setKurSource(''); }}
+                        placeholder="40"
+                      />
+                      {kurFetching && (
+                        <Loader2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-[var(--enba-orange)]" />
+                      )}
+                    </div>
                   </Field>
                   <Field label="Kullanım Ömrü (Yıl)">
                     <input type="number" min="1" max="50" className={inputCls} value={assetForm.useful_life_years || ''} onChange={e => setAssetForm(p => ({ ...p, useful_life_years: parseInt(e.target.value) || 1 }))} placeholder="5" />
