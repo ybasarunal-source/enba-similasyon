@@ -639,9 +639,9 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
       {/* ── Header ── */}
       <div className="flex items-center justify-between px-6 py-4 bg-[var(--enba-surface)] border-b border-[var(--enba-border)] flex-shrink-0">
         <div>
-          <h1 className="text-base font-semibold text-[var(--enba-text)]">Kuruluş Nakit Akışı</h1>
+          <h1 className="text-base font-semibold text-[var(--enba-text)]">Nakit Akışı</h1>
           <p className="text-xs text-[var(--enba-text-muted)] mt-0.5">
-            Şirket kuruluşundan itibaren tüm sermaye hareketleri
+            Şirket kuruluşundan itibaren tüm gelir ve gider hareketleri
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -871,7 +871,7 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
               <div id="kn-pdf-content" className="space-y-6">
                 {/* Başlık (PDF için) */}
                 <div className="pdf-only hidden">
-                  <h2 style={{ fontFamily: 'Arial', fontSize: 18, marginBottom: 4 }}>Kuruluş Nakit Akışı</h2>
+                  <h2 style={{ fontFamily: 'Arial', fontSize: 18, marginBottom: 4 }}>Nakit Akışı</h2>
                   <p style={{ fontFamily: 'Arial', fontSize: 11, color: '#666' }}>
                     Rapor tarihi: {new Date().toLocaleDateString('tr-TR')}
                   </p>

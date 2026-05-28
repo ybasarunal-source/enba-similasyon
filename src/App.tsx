@@ -393,11 +393,11 @@ export const App: React.FC = () => {
     { id: 'planning',     label: 'Detaylı Plan',      icon: LineChart      },
     // Finans
     { id: 'pnl',          label: 'P&L Analizi',       icon: TrendingUp     },
-    { id: 'cashflow',     label: 'Nakit Akışı',       icon: Coins          },
+    { id: 'cashflow',     label: 'Nakit Planlama',    icon: Coins          },
     { id: 'parasut',      label: 'Paraşüt',           icon: Receipt        },
     { id: 'fixedexpenses',label: 'Abonelikler',       icon: CreditCard     },
     { id: 'varlik',       label: 'Varlık Takibi',     icon: Landmark       },
-    { id: 'kurulusnakit', label: 'Kuruluş Nakdi',    icon: Banknote       },
+    { id: 'kurulusnakit', label: 'Nakit Akışı',       icon: Banknote       },
     // Operasyon
     { id: 'stock',        label: 'Stok',              icon: Package        },
     { id: 'production',   label: 'Üretim',            icon: Factory        },

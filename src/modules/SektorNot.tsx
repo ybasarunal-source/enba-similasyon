@@ -2191,7 +2191,7 @@ const PageStandartlar: React.FC = () => {
               ))}
             </select>
           </div>
-          <div className="hidden md:flex flex-col gap-1 p-1 bg-gray-50 dark:bg-white/3 rounded-xl border border-gray-200/60 dark:border-white/5">
+          <div className="hidden md:flex flex-col gap-1 p-1 bg-gray-50 dark:bg-white/3 rounded-xl border border-gray-200/60 dark:border-white/5 max-h-[70vh] overflow-y-auto">
             {subTabs.map(t => (
               <button
                 key={t.id}
