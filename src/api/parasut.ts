@@ -406,15 +406,22 @@ export const parasutService = {
       }
 
       // Yön: transaction_type'tan belirle
-      // *_credit / sales_invoice_payment / sales_receipt_payment → GİRDİ (+)
-      // *_debit / purchase_* / expense_* / payroll_* / tax_* → ÇIKTI (-)
-      const isGirdi = txType.includes('_credit')
+      //
+      // UYARI: "account_*" ve "contact_*" ZIT anlam taşır!
+      //   account_credit  = hesap ALACAKlandı = bakiye AZALDI = ÇIKTI
+      //   account_debit   = hesap BORÇLANDIRILDI = bakiye ARTTI = GİRDİ
+      //   contact_credit  = kontak ALACAKlandı (bize ödedi) = GİRDİ
+      //   contact_debit   = kontak BORÇLANDIRILDI (biz ödedik) = ÇIKTI
+      const isGirdi = txType === 'contact_credit'
+                   || txType === 'account_debit'
                    || txType === 'sales_invoice_payment'
                    || txType === 'sales_receipt_payment';
-      const isCikti = txType.includes('_debit')
+      const isCikti = txType === 'contact_debit'
+                   || txType === 'account_credit'
                    || txType.startsWith('purchase_')
                    || txType.startsWith('expense_')
                    || txType.startsWith('payroll_')
+                   || txType.startsWith('salary_')
                    || txType.startsWith('tax_');
 
       // TRL tutarı: amount_in_trl öncelikli (EUR hesaplarda da TL karşılığını verir)
