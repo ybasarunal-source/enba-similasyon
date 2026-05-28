@@ -204,36 +204,53 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
     return list;
   }, [rows, tipFilter, accountFilter, sortKey, sortDir]);
 
+  // Grafik bakiye çizgisi: TÜM işlemler (transferler dahil)
+  // İç transferler (+X ve -X) birbirini götürür, net sıfır.
+  // Enes/Başar gibi dışarıdan gelen transferler doğru şekilde +girdi olarak sayılır.
+  // Böylece grafik gerçek kasa pozisyonunu gösterir, sahte -2M dip olmaz.
+  //
+  // Bar grafik (aylık gelir/gider): transfer hariç operasyonel akışlar.
   const cumulativeData = useMemo(() => {
-    const sorted = [...nonTransfer].sort((a, b) => a.tarih.localeCompare(b.tarih));
-    let cumulative = 0;
-    const byMonth: Record<string, { gelir: number; gider: number }> = {};
-    for (const r of sorted) {
+    // Bakiye: tüm rows
+    const allByMonth: Record<string, number> = {};
+    for (const r of rows) {
       const month = r.tarih.slice(0, 7);
-      if (!byMonth[month]) byMonth[month] = { gelir: 0, gider: 0 };
-      if (r.tip === 'gelir') byMonth[month].gelir += r.tutar_tl;
-      else byMonth[month].gider += r.tutar_tl;
+      allByMonth[month] = (allByMonth[month] ?? 0) + (r.tip === 'gelir' ? r.tutar_tl : -r.tutar_tl);
     }
-    return Object.entries(byMonth).map(([month, v]) => {
-      cumulative += v.gelir - v.gider;
+    // Operasyonel gelir/gider: transfer hariç
+    const opByMonth: Record<string, { gelir: number; gider: number }> = {};
+    for (const r of nonTransfer) {
+      const month = r.tarih.slice(0, 7);
+      if (!opByMonth[month]) opByMonth[month] = { gelir: 0, gider: 0 };
+      if (r.tip === 'gelir') opByMonth[month].gelir += r.tutar_tl;
+      else opByMonth[month].gider += r.tutar_tl;
+    }
+    const months = [...new Set([...Object.keys(allByMonth), ...Object.keys(opByMonth)])].sort();
+    let cumulative = 0;
+    return months.map(month => {
+      cumulative += allByMonth[month] ?? 0;
       const [y, m] = month.split('-');
-      return { label: `${m}/${y.slice(2)}`, gelir: v.gelir, gider: v.gider, bakiye: cumulative };
+      return {
+        label: `${m}/${y.slice(2)}`,
+        gelir:  opByMonth[month]?.gelir ?? 0,
+        gider:  opByMonth[month]?.gider ?? 0,
+        bakiye: cumulative,
+      };
     });
-  }, [rows]);
+  }, [rows, nonTransfer]);
 
   const dailyData = useMemo(() => {
-    if (nonTransfer.length === 0) return [];
-    const byDate: Record<string, { gelir: number; gider: number }> = {};
-    for (const r of nonTransfer) {
-      if (!byDate[r.tarih]) byDate[r.tarih] = { gelir: 0, gider: 0 };
-      if (r.tip === 'gelir') byDate[r.tarih].gelir += r.tutar_tl;
-      else byDate[r.tarih].gider += r.tutar_tl;
+    if (rows.length === 0) return [];
+    // Tüm rows kullanılır — transferler dahil, gerçek kasa pozisyonu
+    const byDate: Record<string, number> = {};
+    for (const r of rows) {
+      byDate[r.tarih] = (byDate[r.tarih] ?? 0) + (r.tip === 'gelir' ? r.tutar_tl : -r.tutar_tl);
     }
     let cum = 0;
     const all = Object.entries(byDate)
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([date, v]) => {
-        cum += v.gelir - v.gider;
+      .map(([date, net]) => {
+        cum += net;
         const [y, m, d] = date.split('-');
         return { date, label: `${d}.${m}.${y.slice(2)}`, bakiye: cum };
       });
