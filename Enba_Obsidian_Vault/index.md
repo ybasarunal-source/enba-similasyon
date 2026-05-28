@@ -97,6 +97,8 @@
 | [[Wiki/Sektor/AI-ve-Robotik-Ayiklama-Sistemleri\|AI ve Robotik Ayıklama]] | Yapay zeka destekli robot kollar (Delta Picker), bilgisayarlı görü ve manuel ayıklama ROI karşılaştırması | 2026-05-28 |
 | [[Wiki/Sektor/Endustri-4.0-ve-SCADA-Entegrasyonu\|Endüstri 4.0 ve SCADA]] | IoT sensörleri, akış/enerji analizörleri, SCADA OEE takibi ve kestirimci bakım modülü | 2026-05-28 |
 | [[Wiki/Sektor/Sinirda-Karbon-Duzenleme-Mekanizmasi\|Sınırda Karbon Vergisi (SKDM)]] | AB Yeşil Mutabakatı CBAM kuralları, r-Polimer karbon tasarrufları (Scope 1/2/3) ve sertifikasyon | 2026-05-28 |
+| [[Wiki/Sektor/Plastik-Ayirma-Teknolojileri\|Plastik Ayırma Teknolojileri]] | Yüzdürme-batırma (float-sink), NIR optik ayıklama, elektrostatik ve balistik ayırma yöntemleri | 2026-05-28 |
+
 
 
 | [[Wiki/Malzemeler/PET-Capak-Dinamikleri\|PET Çapak Dinamikleri]] | PET çapak kalite sınıfları, PVC kontaminasyon limitleri, IV değerleri ve SSP reaktör katsayıları | 2026-05-28 |

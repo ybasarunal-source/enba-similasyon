@@ -1681,7 +1681,7 @@ const PageEkonomi: React.FC = () => (
 
 const PageStandartlar: React.FC = () => {
   const [activeSubTab, setActiveSubTab] = useState<
-    'en643' | 'grs' | 'kirleticiler' | 'enerji' | 'kimyasal' | 'lojistik' | 'epr' | 'bakim' | 'optik' | 'laboratuvar' | 'lisans' | 'ai_sorting' | 'scada' | 'cbam'
+    'en643' | 'grs' | 'kirleticiler' | 'enerji' | 'kimyasal' | 'lojistik' | 'epr' | 'bakim' | 'optik' | 'laboratuvar' | 'lisans' | 'ai_sorting' | 'scada' | 'cbam' | 'ayirma_teknolojileri'
   >('en643');
 
   const subTabs = [
@@ -1699,6 +1699,7 @@ const PageStandartlar: React.FC = () => {
     { id: 'ai_sorting', label: 'AI & Robotik Ayıklama', icon: <Cpu size={13} /> },
     { id: 'scada', label: 'Endüstri 4.0 & SCADA', icon: <BarChart2 size={13} /> },
     { id: 'cbam', label: 'Karbon Vergisi (SKDM)', icon: <ShieldCheck size={13} /> },
+    { id: 'ayirma_teknolojileri', label: 'Ayırma Teknolojileri', icon: <Recycle size={13} /> },
   ];
 
   const renderSubContent = () => {
@@ -2105,6 +2106,32 @@ const PageStandartlar: React.FC = () => {
             </section>
             <Note type="tip">
               <strong>İhracatta Karbon Primi (Green Premium):</strong> ISCC Plus ve GRS onaylı karbon ayak izi sertifikasına sahip geri dönüşüm tesisleri, r-Polimer granüllerini standart piyasaya göre ton başına <strong>50 € - 120 € arası primle</strong> satabilirler.
+            </Note>
+          </div>
+        );
+      case 'ayirma_teknolojileri':
+        return (
+          <div className="space-y-5">
+            <section className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5 space-y-3">
+              <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white">Plastik Ayırma Teknolojileri</h4>
+              <p className="text-[12.5px] text-gray-600 dark:text-gray-400 leading-relaxed">
+                Karışık ambalaj atıklarının polimer türlerine göre ayrıştırılması, geri kazanılan hammaddelerin kalitesini doğrudan belirler. Tesislerde fiziksel, optik ve elektrostatik ayrıştırma teknolojileri entegre olarak çalışır.
+              </p>
+            </section>
+            <section className="space-y-3">
+              <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white">Ayırma Yöntemlerinin Karşılaştırılması</h4>
+              <DataTable
+                headers={['Yöntem', 'Doğruluk (%)', 'Kapasite', 'Tipik Kullanım Alanı']}
+                rows={[
+                  ['Yüzdürme-Batırma (Float-Sink)', '%92 - %96', '1.0 - 3.0 ton/saat', 'PE/PP yüzenlerin, PET/PVC batanlardan su yoğunluğu ile ayrımı.'],
+                  ['Kızılötesi (NIR) Optik Seperatör', '%96 - %99', '2.0 - 5.0 ton/saat', 'Polimerlerin spektral parmak izi ile bant üzerinden hava jetiyle ayrımı.'],
+                  ['Triboelektrik (Elektrostatik)', '%90 - %95', '0.5 - 1.5 ton/saat', 'Yoğunlukları çakışan kuru PP ve PE çapaklarının statik yükle ayrımı.'],
+                  ['Lazer Çapak Seperatörü (Flake)', '%98 - %99.9', '0.8 - 2.0 ton/saat', 'Kırılmış rPET içindeki milimetrik PVC ve metal partikül ayıklama.'],
+                ]}
+              />
+            </section>
+            <Note type="tip">
+              <strong>Simülasyon Katsayıları (DetailedPlan):</strong> Optik ve AI ayıklama ünitelerinin kullandığı yüksek basınçlı hava kompresörleri, ton başına ek <strong>15 - 25 kWh</strong> elektrik tüketimi oluşturur. Hatalı üfleme firesi (false reject) ise varsayılan olarak <strong>%1.5 - %3.0</strong> arasında bütçelenir.
             </Note>
           </div>
         );
