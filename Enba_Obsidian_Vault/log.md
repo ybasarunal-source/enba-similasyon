@@ -963,3 +963,35 @@ grep "^## \[" log.md | tail -5
 - Etkilenen dosyalar: `DPlanWizard.tsx`
 - TypeScript: tsc --noEmit temiz
 - Bir sonraki: Active plan edit kilidi (PnLPanel inline edit engeli)
+
+---
+
+## [2026-05-28] geliştirme | PnLPanel bütçelenmiş plan edit kilidi + "Aktif"→"Bütçelenmiş" etiket
+
+**Yapılan:**
+1. `PnLPanel.tsx:332` — `editable` koşuluna `plan.status !== 'active'` guard'ı eklendi; bütçelenmiş planda satır düzenleme ve N/A toggle devre dışı
+2. `dpData.ts`, `DetailedPlanModule.tsx`, `DetailedPlanShell.tsx` — 8 noktada "Aktif" → "Bütçelenmiş" etiket değişikliği (kod değerleri korundu)
+- Etkilenen dosyalar: `PnLPanel.tsx`, `dpData.ts`, `DetailedPlanModule.tsx`, `DetailedPlanShell.tsx`
+- TypeScript: tsc --noEmit temiz
+- Commit: 5a4a80b
+
+---
+
+## [2026-05-28 12:00] sorgu | Piyasaya çıkış ve Go-to-Market (GTM) stratejileri
+- Soru: Program yavaş yavaş olgunlaşıyor, piyasaya çıkmak için stratejilere ihtiyacım var.
+- Detay: B2B SaaS modeli, hedef kitle (Türkiye'deki 5.000-20.000 geri dönüşüm tesisi), fiyatlandırma katmanları (Starter, Pro, Enterprise), lansman fazları ve pilot müşteri edinme planlandı.
+- Cevap kaydedildi mi: Evet, [[Wiki/Piyasaya-Cikis-Stratejisi|Piyasaya Çıkış Stratejisi]] wiki sayfası oluşturuldu ve `index.md` güncellendi.
+
+---
+
+## [2026-05-28 12:15] geliştirme | Sektörel wiki ve alan bilgisi güçlendirildi
+**Yapılan:**
+- Kök dizindeki 5 adet loose `hat*.md` dosyası, Obsidian Vault içinde `Enba_Obsidian_Vault/Wiki/Hatlar/` altına taşınarak düzenlendi.
+- `Wiki/Sektor-Rehberi.md` hub sayfası oluşturularak hatlar arası malzeme akışları (mermaid diyagramı ile) modellendi.
+- `EN643-2014-E.pdf` belgesi analiz edilerek `Wiki/Sektor/EN643-Kagit-Standartlari.md` sayfası açıldı (5 kağıt grubu, kirlilik ve nem toleransları detaylandırıldı).
+- GRS kütle dengesi (mass balance) izlenebilirliği, EFSA/FDA food-grade challenge test süreçleri için `Wiki/Sektor/GRS-ve-Gida-Mevzuatlari.md` rehberi oluşturuldu.
+- `index.md` dosyası tüm yeni sayfalarla güncellendi.
+**Etkilenen dosyalar:** `Enba_Obsidian_Vault/index.md`, `Enba_Obsidian_Vault/Wiki/Sektor-Rehberi.md` (yeni), `Enba_Obsidian_Vault/Wiki/Sektor/EN643-Kagit-Standartlari.md` (yeni), `Enba_Obsidian_Vault/Wiki/Sektor/GRS-ve-Gida-Mevzuatlari.md` (yeni), `Enba_Obsidian_Vault/Wiki/Hatlar/Hat1..5` (yeni)
+**Bir sonraki:** Kök dizindeki eski `hat*.md` dosyalarının silinip silinmeyeceği teyit edilecek, build doğrulaması izlenecek.
+
+

@@ -329,7 +329,7 @@ export function PnLPanel({ plan, onSave, granularity = 'monthly', horizon = 12 }
                     isNA={isNA}
                     isEmpty={isEmpty}
                     isCalc={isCalc}
-                    editable={row.editable && !!onSave}
+                    editable={row.editable && !!onSave && plan.status !== 'active'}
                     onUpdate={patch => updateEntry(row.mcode, patch)}
                   />
                 );

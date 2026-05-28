@@ -73,6 +73,15 @@
 | [[Wiki/Is-Modeli\|İş Modeli & Hedefler]] | Kendi şirket ERP'i + SaaS demo/pazarlama, multi-tenancy kritik, SQL öncelikleri | 2026-05-04 |
 | [[Wiki/Geri-Donusum-Proses-Bilgisi\|Geri Dönüşüm Proses Bilgisi]] | Malzeme akışı, fire tipleri, hat uyumluluğu, wizard adımları — granül + ilerideki prosesler | 2026-05-24 |
 | [[Kararlar/2026-05-Mobil-Modul-Kararlari\|Mobil Modül Kararları]] | Hangi modüller mobil, hibrit teknik yaklaşım (C), mail inbox odaklı not | 2026-05-24 |
+| [[Wiki/Piyasaya-Cikis-Stratejisi\|Piyasaya Çıkış Stratejisi]] | Enba Similasyon SaaS lansmanı, konumlandırma, fiyatlandırma ve kanal stratejileri | 2026-05-28 |
+| [[Wiki/Sektor-Rehberi\|Geri Dönüşüm Sektör Rehberi]] | 5 geri dönüşüm hattının ve lojistik akışının entegrasyon hub sayfası | 2026-05-28 |
+| [[Wiki/Hatlar/Hat1-Mekanik-Geri-Donusum\|Hat 1 - Mekanik Geri Dönüşüm]] | Mekanik geri dönüşüm prosesi, makine listesi, kalite kriterleri ve Enba entegrasyonu | 2026-05-28 |
+| [[Wiki/Hatlar/Hat2-Yikama-Hatti\|Hat 2 - Yıkama Hattı]] | rPET, HDPE/PP ve film yıkama prosesleri, kaustik banyosu ve parametreleri | 2026-05-28 |
+| [[Wiki/Hatlar/Hat3-Atik-Ayristirma-Hatti\|Hat 3 - Atık Ayrıştırma Hattı]] | Trommel, balistik, eddy current ve NIR optik ayrıştırma istasyonu ve verimleri | 2026-05-28 |
+| [[Wiki/Hatlar/Hat4-Kimyasal-Geri-Donusum\|Hat 4 - Kimyasal Geri Dönüşüm]] | Piroliz yağı, depolimerizasyon (glikoliz/metanoliz/hidroliz) ve solvent saflaştırma | 2026-05-28 |
+| [[Wiki/Hatlar/Hat5-Balyalama-Sevkiyat\|Hat 5 - Balyalama ve Sevkiyat]] | Ambalaj seçimi, tartım kalibrasyonları, lot izlenebilirliği (GRS) ve outfeed lojistik | 2026-05-28 |
+| [[Wiki/Sektor/EN643-Kagit-Standartlari\|EN 643 Kağıt Standartları]] | Avrupa standart grades listesi, kirlilik ve nem kabul tolerans limitleri | 2026-05-28 |
+| [[Wiki/Sektor/GRS-ve-Gida-Mevzuatlari\|GRS ve Gıda Mevzuatları]] | Global Recycled Standard kütle dengesi izlenebilirliği, EFSA/FDA challenge testleri | 2026-05-28 |
 
 ---
 
