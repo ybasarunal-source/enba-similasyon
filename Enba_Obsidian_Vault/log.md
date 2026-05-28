@@ -1092,4 +1092,19 @@ grep "^## \[" log.md | tail -5
 - **Commit ve Push:** Yapılan tüm geliştirmeler `9b11596` numaralı commit ile `main` dalına push edilerek Vercel canlı dağıtım tetiklendi.
 - **Canlı Kontrolü:** "Malzemeler & Fraksiyonlar" sekmesi ile "Standartlar & Sektörel" sekmesine eklenen 11 yeni sektörel uzmanlık sayfasının canlıda (`uygulama.basarunal.com`) yayına alınması sağlandı.
 
+---
+
+## [2026-05-28 13:30] geliştirme / canlıya gönderim | Wiki Genişletme Faz 2 (PVC, PS, AI, SCADA, CBAM)
+
+**Yapılan işlemler:**
+- **Yeni Sayfaların Eklenmesi:**
+  - `Wiki/Malzemeler/PVC-ve-Kontaminasyon-Yonetimi.md` (PET kontaminasyon limitleri, asit korozyon etkileri)
+  - `Wiki/Malzemeler/PS-Polistiren-ve-EPS-Teknolojileri.md` (Strafor briketleme, GPPS darbe katkıları)
+  - `Wiki/Sektor/AI-ve-Robotik-Ayiklama-Sistemleri.md` (Delta Picker, multispektrel kameralar, ROI modelleri)
+  - `Wiki/Sektor/Endustri-4.0-ve-SCADA-Entegrasyonu.md` (Modbus analizörler, kestirimci bakım, OEE takibi)
+  - `Wiki/Sektor/Sinirda-Karbon-Duzenleme-Mekanizmasi.md` (AB SKDM/CBAM kuralları, polimer karbon tasarrufları)
+- **Arayüz Entegrasyonu:** `src/modules/SektorNot.tsx` modülünde yeni sekmeler oluşturuldu, veri tabloları ve tip tanımları güncellendi.
+- **Doğrulama ve Deploy:** `npm run build` ile TypeScript/Vite derleme testleri sıfır hata ile tamamlandı. Kod `e9486fd` numaralı commit ile pushlanarak Vercel canlı dağıtımı güncellendi.
+
+
 
