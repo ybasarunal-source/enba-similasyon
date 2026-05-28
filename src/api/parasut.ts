@@ -369,7 +369,7 @@ export const parasutService = {
     const raw = await this.requestAll(`/${companyId}/accounts/${account.id}/transactions`, {
       'filter[date][gteq]': dateFrom,
       'filter[date][lteq]': dateTo,
-      'sort': 'date',
+      'sort': 'id',
     });
     return (raw.data || []).map((d: any): ParasutTransaction => {
       const a = d.attributes || {};
