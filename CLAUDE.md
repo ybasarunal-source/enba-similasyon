@@ -397,8 +397,14 @@ Veri kaybı riski olan her adımı kullanıcıya açıkça belirt ve onay al.
 - [x] **PnLPanel EBITDA/EBIT hesap düzeltmeleri** — section subtotal * -1 hatası, BAKIM&ÇEVRE eksikliği, group class (commit 05f8414)
 - [x] **PDF export** — shell'de tam işlevsel: KPI + üretim özeti + P&L tablosu A4 (commit 2f9e4a9)
 
+### Tamamlanan (2026-05-28)
+- [x] **PnLPanel granülarite bağlantısı** — Haftalık/Aylık/Çeyreklik/Yıllık + horizon dropdown P&L 2. kolonu etkiliyor (commitler: f14b422 serisi)
+- [x] **PnLPanel 5 hata** — VERGİ bölümü, M509/M529 giriş alanı, M610 Kira, EBITDA renk, 0 geçerli gider, EBIT etiketi
+- [x] **AI Öneri özelliği** — usePlanAI hook, hyper-service planSummary dalı, sidebar otomatik analiz (commitler: e4fb172, f3d4885, db50a4e)
+- [x] **AI Danışman sohbet** — ask(), ChatMessage, clearChat(), sidebar chat UI, hyper-service question dalı deploy ✅ (commit 30b141c)
+
 ### Bir Sonraki Oturumda İlk Yapılacak
-1. **Tarayıcı testi** — Granül Üretimi planı ile wizard + P&L panel + PDF export'u doğrula
+1. **AI Danışman tarayıcı testi** — soru-cevap özelliğini canlıda doğrula (plan seç → analiz → soru sor → yanıt)
 2. **BudgetTrack gerçek veri testi** — plan aktive et, BudgetTrack modalını aç, veriler doğru kaydediliyor mu doğrula
 3. **Paraşüt → financial_categories** — eşleştirme modalı Supabase tablosundan çeksin
 

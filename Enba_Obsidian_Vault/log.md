@@ -936,3 +936,30 @@ grep "^## \[" log.md | tail -5
   - Çoklu dil genişletme CLAUDE.md Gelecek Planlar listesine eklendi
 - Etkilenen dosyalar: DetailedPlanShell.tsx (commit 2f9e4a9)
 - Bir sonraki: Tarayıcı testi — wizard + P&L panel + PDF export doğrula
+
+---
+
+## [2026-05-28] geliştirme | PnLPanel tam düzeltmeleri + AI Danışman özelliği
+
+**Yapılan:**
+1. **PnLPanel granülarite bağlantısı** — Haftalık/Aylık/Çeyreklik/Yıllık + horizon dropdown artık P&L 2. kolonu etkiliyor; `granularityMeta()` fonksiyonu, `col2` prop'u PnLRow + SubtotalRow'a eklendi
+2. **PnLPanel 5 hata düzeltmesi** — VERGİ bölümü (M919 subtotalMcode=''), M509/M529 giriş alanı (source: mcode_entry), M610 Kira girilmemiş sorunu, EBITDA pozitif→yeşil, EBIT etiketi ("Faiz Öncesi, Amortisman Sonrası"), 0 geçerli gider değeri
+3. **AI Öneri** — `usePlanAI` hook (plan bazlı cache, otomatik analiz), `hyper-service` Edge Function planSummary dalı, sidebar otomatik içgörü + aksiyon
+4. **AI Danışman sohbet** — `ChatMessage` tipi, `ask()`, `clearChat()`, sidebar chat UI (balonlar, input, gönder), `hyper-service` question dalı deploy edildi
+- Etkilenen dosyalar: `PnLPanel.tsx`, `pnlStructure.ts`, `DetailedPlanShell.tsx`, `usePlanAI.ts`, `supabase/functions/plan-analysis/index.ts`
+- Commitler: `f14b422`, `e4fb172`, `f3d4885`, `db50a4e`, `30b141c`
+- Bir sonraki: AI Danışman tarayıcı testi + BudgetTrack gerçek veri testi
+
+---
+
+## [2026-05-28] geliştirme | DPlanWizard otomatik kayıt (autosave)
+
+**Yapılan:**
+1. `buildPlan` fonksiyonu `useCallback` + `buildPlanRef` ile ref üzerinden erişilebilir hale getirildi
+2. 30 saniyelik debounce autosave: son değişiklikten 30s sonra taslak otomatik kaydedilir (başlık varsa)
+3. Header'a `autoSaveStatus` göstergesi eklendi: "Kaydediliyor…" (pulse) / "✓ Kaydedildi" (yeşil)
+4. `handleCancel` → X butonu ve "İptal" footer butonu artık kapatmadan önce taslak kaydeder
+5. `useRef` import'a eklendi (eksikti)
+- Etkilenen dosyalar: `DPlanWizard.tsx`
+- TypeScript: tsc --noEmit temiz
+- Bir sonraki: Active plan edit kilidi (PnLPanel inline edit engeli)

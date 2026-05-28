@@ -449,7 +449,7 @@ export function DetailedPlanShell({ plan, costCenters = [], onSave, onBack, onEd
                   {plan?.title ?? 'Detaylı İş Planı'}
                 </h1>
                 <Badge tone={plan?.status === 'active' ? 'green' : plan?.status === 'archived' ? 'neutral' : 'amber'}>
-                  {plan?.status === 'active' ? 'Aktif' : plan?.status === 'archived' ? 'Arşiv' : 'Taslak'}
+                  {plan?.status === 'active' ? 'Bütçelenmiş' : plan?.status === 'archived' ? 'Arşiv' : 'Taslak'}
                 </Badge>
               </div>
               <div className="text-[10.5px] text-enba-dim mt-0.5 flex items-center gap-2">
@@ -636,7 +636,7 @@ function DPPdfContainer({
     { mcode: 'M919', label: 'NET KAR',                main: true,  accent: '#059669' },
   ];
 
-  const statusLabel = plan.status === 'active' ? 'Aktif' : plan.status === 'archived' ? 'Arşiv' : 'Taslak';
+  const statusLabel = plan.status === 'active' ? 'Bütçelenmiş' : plan.status === 'archived' ? 'Arşiv' : 'Taslak';
   const today = new Date().toLocaleDateString('tr-TR', { day: '2-digit', month: 'long', year: 'numeric' });
 
   return (

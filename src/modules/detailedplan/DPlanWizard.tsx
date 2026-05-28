@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { cx, I, Btn, Badge } from './DPPrimitives';
 import {
   DPlan, CostCenter, PlanCategory, PLAN_CATEGORY_LABEL,
@@ -181,6 +181,9 @@ export function DPlanWizard({ initialPlan, costCenters, onDone, onSave, onCancel
   const [state, setState]             = useState<WizardState>(() => initState(initialPlan));
   const [saveError, setSaveError]     = useState<string | null>(null);
   const [showPublishModal, setShowPublishModal] = useState(false);
+  const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const autoSaveTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isFirstRender  = useRef(true);
 
   const set = useCallback(<K extends keyof WizardState>(key: K, val: WizardState[K]) => {
     setState(prev => ({ ...prev, [key]: val }));
@@ -197,7 +200,7 @@ export function DPlanWizard({ initialPlan, costCenters, onDone, onSave, onCancel
   const selectedCC    = costCenters.find(c => c.id === state.costCenterId);
   const fixedCostMonth = selectedCC?.fixedExpenses.reduce((s, e) => s + e.monthly, 0) ?? 0;
 
-  const buildPlan = (targetStatus?: DPlan['status']): DPlan => {
+  const buildPlan = useCallback((targetStatus?: DPlan['status']): DPlan => {
     const pm      = stateToProductionModel(state);
     const derived = deriveProjectFromModel(pm, {
       id:           initialPlan?.projects?.[0]?.id,
@@ -228,7 +231,35 @@ export function DPlanWizard({ initialPlan, costCenters, onDone, onSave, onCancel
       rampUp:          state.rampUp.enabled ? state.rampUp : undefined,
       mcodeEntries:    state.mcodeEntries,
     };
-  };
+  }, [state, initialPlan]);
+
+  // buildPlanRef: timer callback'inin her zaman en güncel buildPlan'ı çağırması için
+  const buildPlanRef = useRef(buildPlan);
+  useEffect(() => { buildPlanRef.current = buildPlan; }, [buildPlan]);
+
+  // Otomatik kayıt — başlık varsa son değişiklikten 30s sonra taslak olarak kaydeder
+  useEffect(() => {
+    if (isFirstRender.current) { isFirstRender.current = false; return; }
+    if (!state.title.trim()) return;
+
+    setAutoSaveStatus('idle');
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+
+    autoSaveTimer.current = setTimeout(() => {
+      setAutoSaveStatus('saving');
+      onSave(buildPlanRef.current());
+      setAutoSaveStatus('saved');
+      autoSaveTimer.current = null;
+    }, 30_000);
+
+    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
+  }, [state]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // İptal/geri: başlık varsa kapatmadan önce taslak kaydet
+  const handleCancel = useCallback(() => {
+    if (state.title.trim()) onSave(buildPlanRef.current());
+    onCancel();
+  }, [state.title, onSave, onCancel]);
 
   // Taslak kaydet — validasyon yok, plan durumu korunur
   const saveDraft = () => {
@@ -272,7 +303,7 @@ export function DPlanWizard({ initialPlan, costCenters, onDone, onSave, onCancel
         {/* Üst satır: geri + başlık */}
         <div className="h-[52px] flex items-center px-5 gap-4 border-b border-enba-line/60">
           <button
-            onClick={onCancel}
+            onClick={handleCancel}
             className="w-8 h-8 rounded-lg text-enba-muted hover:text-enba-text hover:bg-enba-panel-2 inline-flex items-center justify-center flex-none"
           >
             <I.Chevron size={14} className="rotate-90" />
@@ -283,8 +314,18 @@ export function DPlanWizard({ initialPlan, costCenters, onDone, onSave, onCancel
             </div>
             <div className="text-[10.5px] text-enba-dim">{state.title || 'Başlık girilmemiş'}</div>
           </div>
-          <div className="text-[10.5px] text-enba-muted flex-none">
-            Adım <span className="font-semibold text-enba-text">{step + 1}</span> / {STEP_LABELS.length}
+          <div className="flex items-center gap-3 flex-none">
+            {autoSaveStatus === 'saving' && (
+              <span className="text-[10.5px] text-enba-muted animate-pulse">Kaydediliyor…</span>
+            )}
+            {autoSaveStatus === 'saved' && (
+              <span className="text-[10.5px] text-green-500 flex items-center gap-1">
+                <I.Check size={11} />Kaydedildi
+              </span>
+            )}
+            <span className="text-[10.5px] text-enba-muted">
+              Adım <span className="font-semibold text-enba-text">{step + 1}</span> / {STEP_LABELS.length}
+            </span>
           </div>
         </div>
         {/* Alt satır: adım göstergesi — tam genişlik */}
@@ -388,7 +429,7 @@ export function DPlanWizard({ initialPlan, costCenters, onDone, onSave, onCancel
           </div>
         )}
         <div className="px-5 h-[56px] flex items-center justify-between gap-3">
-          <Btn variant="ghost" size="md" onClick={() => step > 0 ? setStep(step - 1) : onCancel()}>
+          <Btn variant="ghost" size="md" onClick={() => step > 0 ? setStep(step - 1) : handleCancel()}>
             {step === 0 ? 'İptal' : 'Geri'}
           </Btn>
           <div className="flex items-center gap-2">

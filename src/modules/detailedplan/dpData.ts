@@ -213,7 +213,7 @@ export type PlanCategory = 'buyuk_yatirim' | 'kucuk_yatirim' | 'operasyonel' | '
 export const PLAN_STATUS_LABEL: Record<PlanStatus, string> = {
   draft:    'Taslak',
   pending:  'Onay Bekliyor',
-  active:   'Aktif',
+  active:   'Bütçelenmiş',
   archived: 'Arşiv',
 };
 

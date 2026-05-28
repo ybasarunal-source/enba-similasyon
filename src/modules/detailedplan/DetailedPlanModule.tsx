@@ -744,7 +744,7 @@ function ExpenseEditRow({ form, onChange, onCommit, onCancel }: {
 const STATUS_BADGE: Record<PlanStatus, { tone: 'green' | 'amber' | 'neutral' | 'blue'; label: string }> = {
   draft:    { tone: 'neutral', label: 'Taslak' },
   pending:  { tone: 'amber',   label: 'Onay Bekliyor' },
-  active:   { tone: 'green',   label: 'Aktif' },
+  active:   { tone: 'green',   label: 'Bütçelenmiş' },
   archived: { tone: 'neutral', label: 'Arşiv' },
 };
 
@@ -949,7 +949,7 @@ function ActiveDashboard({
       <div className="grid grid-cols-4 gap-3">
         {[
           {
-            label: 'Aktif Plan', value: String(activePlans.length),
+            label: 'Bütçelenmiş Plan', value: String(activePlans.length),
             icon: <I.Check size={15} />, accent: activePlans.length > 0 ? 'green' : 'neutral',
           },
           {
@@ -984,11 +984,11 @@ function ActiveDashboard({
         ))}
       </div>
 
-      {/* Aktif Planlar */}
+      {/* Bütçelenmiş Planlar */}
       <section>
         <div className="mb-3">
           <div className="text-[11px] uppercase tracking-[0.14em] text-enba-muted mb-0.5">Canlı Takip</div>
-          <h2 className="text-[14px] font-semibold text-enba-text">Aktif Planlar</h2>
+          <h2 className="text-[14px] font-semibold text-enba-text">Bütçelenmiş Planlar</h2>
         </div>
 
         {activePlans.length === 0 ? (
@@ -996,9 +996,9 @@ function ActiveDashboard({
             <div className="w-10 h-10 rounded-xl bg-enba-panel-2 border border-enba-line flex items-center justify-center mx-auto mb-3">
               <I.Check size={18} className="text-enba-dim" />
             </div>
-            <div className="text-[13px] font-semibold text-enba-text mb-1">Aktif plan yok</div>
+            <div className="text-[13px] font-semibold text-enba-text mb-1">Bütçelenmiş plan yok</div>
             <div className="text-[12px] text-enba-dim">
-              Sağ paneldeki bir planı <span className="text-enba-orange">"Onayla"</span> ile aktifleştirin.
+              Sağ paneldeki bir planı <span className="text-enba-orange">"Onayla"</span> ile bütçelendirin.
             </div>
           </div>
         ) : (
@@ -1130,7 +1130,7 @@ function ActivePlanDashCard({
 // ─── PlanListSidebar — Sağ panel ──────────────────────────────────────────────
 
 const SIDEBAR_GROUPS = [
-  { key: 'active'   as PlanStatus, label: 'Aktif',        dot: 'bg-enba-green' },
+  { key: 'active'   as PlanStatus, label: 'Bütçelenmiş',  dot: 'bg-enba-green' },
   { key: 'pending'  as PlanStatus, label: 'Onay Bekliyor', dot: 'bg-amber-400'  },
   { key: 'draft'    as PlanStatus, label: 'Taslak',        dot: 'bg-enba-muted' },
   { key: 'archived' as PlanStatus, label: 'Arşiv',         dot: 'bg-gray-500'   },
