@@ -300,9 +300,9 @@ export const parasutService = {
     let allData: any[] = [];
     let allIncluded: any[] = [];
     let page = 1;
-    const pageSize = '100';
+    const pageSize = '25';
 
-    while (page <= 50) { // Safety limit: max 5000 records (50 pages * 100)
+    while (page <= 200) { // Safety limit: max 5000 records (200 pages * 25)
       const resp = await this.request(path, { ...params, 'page[size]': pageSize, 'page[number]': String(page) });
       allData = [...allData, ...(resp.data || [])];
       allIncluded = [...allIncluded, ...(resp.included || [])];
