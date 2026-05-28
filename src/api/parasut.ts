@@ -320,13 +320,14 @@ export const parasutService = {
     return this._mapInvoices(raw, 'expenditures');
   },
 
-  async getReceipts(companyId: string, dateFrom: string, dateTo: string): Promise<ParasutInvoice[]> {
-    const raw = await this.requestAll(`/${companyId}/receipts`, {
+  async getPaidSalesInvoices(companyId: string, dateFrom: string, dateTo: string): Promise<ParasutInvoice[]> {
+    const raw = await this.requestAll(`/${companyId}/sales_invoices`, {
       'filter[issue_date][gteq]': dateFrom,
       'filter[issue_date][lteq]': dateTo,
+      'filter[payment_status]': 'paid',
       'sort': '-issue_date',
     });
-    return this._mapInvoices(raw, 'receipts');
+    return this._mapInvoices(raw, 'sales_invoices');
   },
 
   async getSalaries(companyId: string, dateFrom: string, dateTo: string): Promise<ParasutInvoice[]> {

@@ -57,9 +57,9 @@ function fmtDate(d: string) {
 
 // ── Paraşüt → FCImportRecord dönüşümü ───────────────────────
 function mapParasutInvoice(inv: ParasutInvoice): FCImportRecord {
-  const tip: FCTip = inv.type === 'receipts' ? 'gelir' : 'gider';
+  const tip: FCTip = inv.type === 'sales_invoices' ? 'gelir' : 'gider';
   const cat = inv.category_name?.replace(/^\d+\s*/, '').trim() || (
-    inv.type === 'receipts'       ? 'Tahsilat'         :
+    inv.type === 'sales_invoices' ? 'Satış Tahsilatı'  :
     inv.type === 'expenditures'   ? 'Ödeme'            :
     'Diğer Gider'
   );
@@ -96,17 +96,17 @@ const ImportModal: React.FC<ImportModalProps> = ({ companyId, onImported, onClos
 
   async function handleFetch() {
     if (!parasutCompany) return;
-    setLoading(true); setErr(''); setProgress({ label: 'Tahsilat kayıtları alınıyor…', pct: 10 });
+    setLoading(true); setErr(''); setProgress({ label: 'Tahsil edilmiş faturalar alınıyor…', pct: 10 });
     try {
-      // Gerçek nakit girişi: receipts (tahsilat belgesi)
-      const receipts = await parasutService.getReceipts(parasutCompany.id, fromDate, toDate);
+      // Nakit girişi: sadece ödeme_durumu=paid olan satış faturaları (tahsil edilmiş)
+      const sales = await parasutService.getPaidSalesInvoices(parasutCompany.id, fromDate, toDate);
       setProgress({ label: 'Ödeme kayıtları alınıyor…', pct: 50 });
 
-      // Gerçek nakit çıkışı: expenditures (tediye belgesi)
+      // Nakit çıkışı: tediye belgeleri (gerçek ödemeler)
       const exps = await parasutService.getExpenditures(parasutCompany.id, fromDate, toDate);
       setProgress({ label: 'Mevcut kayıtlar kontrol ediliyor…', pct: 85 });
 
-      const all = [...receipts, ...exps].map(mapParasutInvoice);
+      const all = [...sales, ...exps].map(mapParasutInvoice);
 
       const sb = (await import('../api/supabase')).supabase;
       let existingRaw: { parasut_id: string | null }[] = [];
@@ -203,7 +203,7 @@ const ImportModal: React.FC<ImportModalProps> = ({ companyId, onImported, onClos
                 </div>
               </div>
               <p className="text-xs text-[var(--enba-text-muted)]">
-                Yalnızca gerçek banka hareketleri: tahsilat belgeleri (gelir) ve tediye belgeleri (gider). Kesilmiş/gelen faturalar dahil edilmez. Zaten import edilmiş kayıtlar atlanır.
+                Gelir: yalnızca tahsil edilmiş satış faturaları (ödeme_durumu = paid). Gider: tediye belgeleri. Henüz tahsil edilmemiş faturalar dahil edilmez. Zaten import edilmiş kayıtlar atlanır.
               </p>
             </>
           )}
