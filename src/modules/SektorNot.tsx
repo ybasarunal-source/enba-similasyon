@@ -1681,7 +1681,7 @@ const PageEkonomi: React.FC = () => (
 
 const PageStandartlar: React.FC = () => {
   const [activeSubTab, setActiveSubTab] = useState<
-    'en643' | 'grs' | 'kirleticiler' | 'enerji' | 'kimyasal' | 'lojistik' | 'epr' | 'bakim' | 'optik' | 'laboratuvar' | 'lisans' | 'ai_sorting' | 'scada' | 'cbam' | 'ayirma_teknolojileri'
+    'en643' | 'grs' | 'kirleticiler' | 'enerji' | 'kimyasal' | 'lojistik' | 'epr' | 'bakim' | 'optik' | 'laboratuvar' | 'lisans' | 'ai_sorting' | 'scada' | 'cbam' | 'ayirma_teknolojileri' | 'basit_tanimlama'
   >('en643');
 
   const subTabs = [
@@ -1700,6 +1700,7 @@ const PageStandartlar: React.FC = () => {
     { id: 'scada', label: 'Endüstri 4.0 & SCADA', icon: <BarChart2 size={13} /> },
     { id: 'cbam', label: 'Karbon Vergisi (SKDM)', icon: <ShieldCheck size={13} /> },
     { id: 'ayirma_teknolojileri', label: 'Ayırma Teknolojileri', icon: <Recycle size={13} /> },
+    { id: 'basit_tanimlama', label: 'Basit Tanımlama Testleri', icon: <Search size={13} /> },
   ];
 
   const renderSubContent = () => {
@@ -2132,6 +2133,33 @@ const PageStandartlar: React.FC = () => {
             </section>
             <Note type="tip">
               <strong>Simülasyon Katsayıları (DetailedPlan):</strong> Optik ve AI ayıklama ünitelerinin kullandığı yüksek basınçlı hava kompresörleri, ton başına ek <strong>15 - 25 kWh</strong> elektrik tüketimi oluşturur. Hatalı üfleme firesi (false reject) ise varsayılan olarak <strong>%1.5 - %3.0</strong> arasında bütçelenir.
+            </Note>
+          </div>
+        );
+      case 'basit_tanimlama':
+        return (
+          <div className="space-y-5">
+            <section className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5 space-y-3">
+              <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white">Basit Plastik Tanımlama Testleri</h4>
+              <p className="text-[12.5px] text-gray-600 dark:text-gray-400 leading-relaxed">
+                Pahalı optik spektroskopi cihazlarının bulunmadığı durumlarda veya saha doğrulaması için operatörler tarafından uygulanan pratik fiziksel ve kimyasal teşhis yöntemleridir.
+              </p>
+            </section>
+            <section className="space-y-3">
+              <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white">Polimer Karakteristik Teşhis Matrisi</h4>
+              <DataTable
+                headers={['Polimer', 'Su Yüzme Testi', 'Alev Rengi & Davranışı', 'Söndükten Sonra Duman Kokusu']}
+                rows={[
+                  ['PET', '❌ Batar', 'Yavaş yanar, sarı/mavi alev, siyah kurum', 'Tatlı, meyvemsi koku'],
+                  ['HDPE / LDPE', '✅ Yüzer', 'Eriyerek damlar, mavi alev ve sarı uç', 'Parafin / mum kokusu'],
+                  ['PVC', '❌ Batar', 'Zor yanar, alevden çekince söner, sarı/yeşil alev', 'Keskin, asidik, klor kokusu'],
+                  ['PP', '✅ Yüzer', 'Eriyerek damlar, parlak alev', 'Acımtırak, dizel/asfalt kokusu'],
+                  ['PS', '❌ Batar', 'Hızla yanar, siyah kurum parçaları uçuşur', 'Tatlı kömür gazı / çiçek kokusu'],
+                ]}
+              />
+            </section>
+            <Note type="warn">
+              <strong>İSG ve Güvenlik Uyarısı:</strong> Özellikle PVC yandığında son derece toksik olan klor gazı (HCl) ve dioksin üretir. Yakma testleri kesinlikle çeker ocak altında veya açık havada yapılmalıdır. Numuneler elle doğrudan koklanmamalı, duman el yardımıyla buruna doğru yönlendirilmelidir.
             </Note>
           </div>
         );

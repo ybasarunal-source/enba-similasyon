@@ -1116,6 +1116,18 @@ grep "^## \[" log.md | tail -5
 - **React Arayüz Entegrasyonu:** `src/modules/SektorNot.tsx` modülündeki `PageStandartlar` bileşenine "Ayırma Teknolojileri" sekmesi (`ayirma_teknolojileri`) eklendi, veri tablosu ve not kartları JSX yapısıyla TSX uzantılı dosyaya entegre edildi.
 - **Doğrulama ve Deploy:** `npm run build` yerel testi sıfır hata ile tamamlandı ve kodlar `b6da3f6` commit koduyla pushlanarak canlı yayına alındı.
 
+---
+
+## [2026-05-28 18:00] geliştirme | KurulumNakit modülü — yeni modül eklendi
+- Yapılan: Şirket kuruluşundan itibaren gelir ve gider takibi için yeni modül oluşturuldu
+  - `supabase/migrations/migration_v29_founding_cashflow.sql` — yeni tablo, RLS, indeks
+  - `src/api/kurulumNakit.ts` — CRUD API (list/insert/update/delete)
+  - `src/modules/KurulumNakit.tsx` — 3 sekme: Kayıtlar (CRUD tablo) / Grafik (kümülatif bakiye + aylık bar) / Özet (kategori bazlı tablo)
+  - `src/App.tsx` — ModuleType, lazy import, Finans grubu, render
+- Migration henüz çalıştırılmadı — Supabase SQL Editor'de çalıştırılması gerekiyor
+- Etkilenen dosyalar: `migration_v29_founding_cashflow.sql`, `src/api/kurulumNakit.ts`, `src/modules/KurulumNakit.tsx`, `src/App.tsx`
+- Bir sonraki: migration_v29 SQL Editor'de çalıştır, modülü tarayıcıda test et
+
 
 
 
