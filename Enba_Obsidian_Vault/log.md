@@ -1071,3 +1071,15 @@ grep "^## \[" log.md | tail -5
 - Etkilenen dosyalar: DPPrimitives.tsx, DPlanWizard.tsx, DetailedPlanShell.tsx, ScenarioPanel.tsx, PnLPanel.tsx, dpData.ts
 - Commit: 6800274
 - Bir sonraki: #8 P&L çift formül veya #9 BudgetTrack modal veri kaybı
+
+---
+
+## [2026-05-28 13:10] ingesting | Optik Ayıklama, Laboratuvar Testleri ve Yasal Mevzuat Sayfaları Eklendi
+
+**Yapılan işlemler:**
+- **Wiki Genişletme:** `Wiki/Sektor` klasörüne 3 yeni sektörel uzmanlık sayfası eklendi:
+  - [[Wiki/Sektor/Optik-Ayiklama-Teknolojileri|Optik Ayıklama Teknolojileri]]: NIR polimer teşhisi, VIS renk ayıklama, AI şekil tanıma kameraları, ejektör jet valf çözünürlükleri, kompresör ek güç tüketimleri (+15-25 kWh/ton) ve hatalı üfleme firesi (false reject) modellendi.
+  - [[Wiki/Sektor/Laboratuvar-Testleri-ve-Akreditasyon|Laboratuvar Testleri ve TDS]]: ISO 1133 (MFI), ISO 179/180 (Darbe dayanımı), ISO 527 (Çekme mukavemeti) test yöntemleri, ISO 17025 laboratuvar akreditasyonu ve Supabase test lot veri şeması entegrasyonu.
+  - [[Wiki/Sektor/Yasal-Mevzuat-ve-Atik-Lisanslari|Yasal Mevzuat ve Lisanslar]]: Çevre izin/lisans belgeleri (GFB, TAT, GDT), tehlikesiz atık kodları, devlet kütle denge (KDS) aylık bildirim zorunlulukları ve MoTAT takip entegrasyonu.
+- **Dizin Güncellemesi:** `index.md` dosyasına 3 yeni sektörel sayfa eklendi.
+

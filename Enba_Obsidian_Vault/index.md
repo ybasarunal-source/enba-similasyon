@@ -91,6 +91,10 @@
 | [[Wiki/Sektor/Su-Yonetimi-ve-Aritma\|Su Yönetimi ve Arıtma]] | Yıkama atık sularının kapalı devre geri kazanımı (DAF, filtrepres), kimyasal giderler | 2026-05-28 |
 | [[Wiki/Sektor/Katki-Maddeleri-ve-Kompozitler\|Katkı Maddeleri ve Kompozitler]] | Reçetede kalsit, darbe dayanımı artırıcılar, boyalar (masterbatch) kullanımı ve maliyet etkisi | 2026-05-28 |
 | [[Wiki/Sektor/Finansal-Metrikler-ve-ROI\|Finansal Metrikler ve ROI]] | Ton başına EBITDA, OEE verimlilik faktörleri, vadelerden kaynaklı işletme sermayesi açığı | 2026-05-28 |
+| [[Wiki/Sektor/Optik-Ayiklama-Teknolojileri\|Optik Ayıklama Teknolojileri]] | NIR spektroskopisi, renk ayıklama, AI kameralar, ejektör valfleri ve kompresör maliyetleri | 2026-05-28 |
+| [[Wiki/Sektor/Laboratuvar-Testleri-ve-Akreditasyon\|Laboratuvar Testleri ve TDS]] | ISO 1133 (MFI), ISO 179/180 (Darbe), ISO 527 (Mukavemet), ISO 17025 laboratuvar akreditasyonu | 2026-05-28 |
+| [[Wiki/Sektor/Yasal-Mevzuat-ve-Atik-Lisanslari\|Yasal Mevzuat ve Lisanslar]] | TAT ve GDT çevre lisansları, MoTAT atık takip sistemi, devlet kütle denge (KDS) raporlaması | 2026-05-28 |
+
 
 
 
