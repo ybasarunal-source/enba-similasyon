@@ -382,23 +382,37 @@ export const parasutService = {
       const isBankSynced = !!(a.bank_sync_datetime || a.bank_sync_bank_transaction_id);
 
       // Açılış bakiyesi: bank-sync'li hesaplarda (IBAN) çift sayım yapar → dışla
-      // Bank-sync'siz hesaplarda (manuel/kasa) gerçek sermaye girişi → dahil et
+      // Açılış bakiyesi: tüm hesaplarda dahil et.
+      // isBankSynced kontrolü YANLIŞ — bank-sync başlamadan önceki bakiye
+      // ayrı bir manuel giriş olup gerçek işlemlerle çakışmaz.
       if (txType === 'initial_account_balance') {
-        if (isBankSynced) return [];
-        const debitAmt = parseFloat(a.debit_amount || '0');
-        if (debitAmt <= 0) return [];
+        const debitAmt  = parseFloat(a.debit_amount  || '0');
+        const creditAmt = parseFloat(a.credit_amount || '0');
+        const trlAmt    = parseFloat(a.amount_in_trl || '0');
+
+        if (debitAmt <= 0 && creditAmt <= 0) return [];
+
+        // Hangi yön? debit > credit → para VAR (GİRDİ), credit > debit → borç (ÇIKTI)
+        const isCredit  = creditAmt > debitAmt;
+        const rawAmt    = isCredit ? creditAmt : debitAmt;
+        // TL karşılığı: amount_in_trl varsa kullan (EUR hesaplar için kritik)
+        const absAmount = trlAmt > 0 ? trlAmt : rawAmt;
+        if (absAmount <= 0) return [];
+
         return [{
           id: d.id,
           account_id: account.id,
           account_name: account.name,
           account_type: account.type,
           date: a.date || '',
-          amount: debitAmt,
+          amount: isCredit ? -absAmount : absAmount,
           description: 'Açılış Bakiyesi',
           transaction_type: 'initial_account_balance',
-          currency: a.debit_currency || account.currency,
-          exchange_rate: 1,
-          amount_tl: debitAmt,
+          currency: isCredit
+            ? (a.credit_currency || account.currency)
+            : (a.debit_currency  || account.currency),
+          exchange_rate: trlAmt > 0 && rawAmt > 0 ? trlAmt / rawAmt : 1,
+          amount_tl: absAmount,
         }];
       }
 
