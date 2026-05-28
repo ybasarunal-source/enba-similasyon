@@ -2,12 +2,14 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Plus, Pencil, Trash2, X, AlertCircle, TrendingUp, TrendingDown,
   FileSpreadsheet, FileText, Loader2, ChevronDown, ChevronUp,
+  RefreshCw, CheckCircle2, Link2,
 } from 'lucide-react';
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer, ReferenceLine,
 } from 'recharts';
-import { kurulumNakitAPI, type FoundingCashflow, type FCForm, type FCTip } from '../api/kurulumNakit';
+import { kurulumNakitAPI, type FoundingCashflow, type FCForm, type FCTip, type FCImportRecord } from '../api/kurulumNakit';
+import { parasutService, type ParasutInvoice } from '../api/parasut';
 import type { UserProfile } from '../api/supabase';
 
 interface KurulumNakitProps {
@@ -50,6 +52,235 @@ function fmtDate(d: string) {
   const [y, m, day] = d.split('-');
   return `${day}.${m}.${y}`;
 }
+
+// ── Paraşüt → FCImportRecord dönüşümü ───────────────────────
+function mapParasutInvoice(inv: ParasutInvoice): FCImportRecord {
+  const tip: FCTip = inv.type === 'sales_invoices' ? 'gelir' : 'gider';
+  const cat = inv.category_name?.replace(/^\d+\s*/, '').trim() || (
+    inv.type === 'sales_invoices'    ? 'Satış Geliri'     :
+    inv.type === 'purchase_bills'    ? 'Alış Gideri'      :
+    'Diğer Gider'
+  );
+  const parts = [inv.description, inv.contact_name !== '—' ? inv.contact_name : ''].filter(Boolean);
+  return {
+    tarih:      inv.issue_date,
+    tip,
+    kategori:   cat.slice(0, 60),
+    tutar_tl:   Math.round(inv.net_total * 100) / 100,
+    aciklama:   parts.join(' / ').slice(0, 200),
+    parasut_id: `${inv.type}-${inv.id}`,
+  };
+}
+
+// ── ImportModal ──────────────────────────────────────────────
+interface ImportModalProps {
+  companyId: string;
+  onImported: (records: FoundingCashflow[]) => void;
+  onClose: () => void;
+}
+
+const ImportModal: React.FC<ImportModalProps> = ({ companyId, onImported, onClose }) => {
+  const parasutCompany = parasutService.getCompany();
+  const isConnected    = parasutService.isLoggedIn() && !!parasutCompany;
+
+  const [fromDate, setFromDate] = useState('2020-01-01');
+  const [toDate,   setToDate]   = useState(new Date().toISOString().slice(0, 10));
+  const [step,     setStep]     = useState<'config' | 'preview' | 'done'>('config');
+  const [loading,  setLoading]  = useState(false);
+  const [err,      setErr]      = useState('');
+  const [pending,  setPending]  = useState<FCImportRecord[]>([]);
+  const [result,   setResult]   = useState<{ inserted: number; skipped: number } | null>(null);
+
+  async function handleFetch() {
+    if (!parasutCompany) return;
+    setLoading(true); setErr('');
+    try {
+      const [sales, bills, exps] = await Promise.all([
+        parasutService.getSalesInvoices(parasutCompany.id, fromDate, toDate),
+        parasutService.getPurchaseBills(parasutCompany.id, fromDate, toDate),
+        parasutService.getExpenditures(parasutCompany.id, fromDate, toDate),
+      ]);
+      const all = [...sales, ...bills, ...exps].map(mapParasutInvoice);
+
+      // Mevcut parasut_id'leri client-side filtrele (preview için)
+      const { data: existing } = await (await import('../api/supabase')).supabase
+        .from('founding_cashflow')
+        .select('parasut_id')
+        .eq('company_id', companyId)
+        .not('parasut_id', 'is', null);
+      const existingIds = new Set((existing ?? []).map((r: { parasut_id: string | null }) => r.parasut_id));
+      const newRecs = all.filter(r => !existingIds.has(r.parasut_id));
+
+      setPending(newRecs);
+      setStep('preview');
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : 'Paraşüt verisi alınamadı');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleImport() {
+    setLoading(true); setErr('');
+    try {
+      const res = await kurulumNakitAPI.batchImport(companyId, pending);
+      setResult(res);
+      setStep('done');
+      // Yeni kayıtları üst bileşene bildir
+      const { data } = await (await import('../api/supabase')).supabase
+        .from('founding_cashflow')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('tarih', { ascending: true });
+      onImported((data ?? []).map((r: Record<string, unknown>) => ({
+        id: String(r.id ?? ''),
+        company_id: String(r.company_id ?? ''),
+        tarih: String(r.tarih ?? ''),
+        tip: (r.tip ?? 'gider') as FCTip,
+        kategori: String(r.kategori ?? ''),
+        tutar_tl: Number(r.tutar_tl ?? 0),
+        aciklama: String(r.aciklama ?? ''),
+        parasut_id: r.parasut_id ? String(r.parasut_id) : null,
+        created_at: String(r.created_at ?? ''),
+        updated_at: String(r.updated_at ?? ''),
+      })));
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : 'Import hatası');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const gelirCount  = pending.filter(r => r.tip === 'gelir').length;
+  const giderCount  = pending.filter(r => r.tip === 'gider').length;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="bg-[var(--enba-surface)] rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--enba-border)]">
+          <div className="flex items-center gap-2">
+            <RefreshCw size={15} className="text-[var(--enba-orange)]" />
+            <span className="font-semibold text-[var(--enba-text)]">Paraşüt'ten İçe Aktar</span>
+          </div>
+          <button onClick={onClose} className="text-[var(--enba-text-muted)] hover:text-[var(--enba-text)] transition-colors">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="px-6 py-5 space-y-4">
+          {/* Bağlantı durumu */}
+          <div className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium ${
+            isConnected ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-600 border border-red-200'
+          }`}>
+            <Link2 size={13} />
+            {isConnected
+              ? `Bağlı: ${parasutCompany!.name || parasutCompany!.id}`
+              : 'Paraşüt bağlı değil — önce Paraşüt modülünden giriş yap'}
+          </div>
+
+          {isConnected && step === 'config' && (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-[var(--enba-text-muted)] mb-1.5">Başlangıç tarihi</label>
+                  <input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)}
+                    className="w-full bg-[var(--enba-bg)] border border-[var(--enba-border)] rounded-xl px-3 py-2 text-sm text-[var(--enba-text)] focus:outline-none focus:ring-2 focus:ring-[var(--enba-orange)]/30" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-[var(--enba-text-muted)] mb-1.5">Bitiş tarihi</label>
+                  <input type="date" value={toDate} onChange={e => setToDate(e.target.value)}
+                    className="w-full bg-[var(--enba-bg)] border border-[var(--enba-border)] rounded-xl px-3 py-2 text-sm text-[var(--enba-text)] focus:outline-none focus:ring-2 focus:ring-[var(--enba-orange)]/30" />
+                </div>
+              </div>
+              <p className="text-xs text-[var(--enba-text-muted)]">
+                Satış faturaları, alış faturaları ve masraflar çekilecek. Zaten import edilmiş kayıtlar atlanır.
+              </p>
+            </>
+          )}
+
+          {isConnected && step === 'preview' && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="bg-[var(--enba-bg)] rounded-xl py-3">
+                  <div className="text-lg font-bold text-[var(--enba-text)]">{pending.length}</div>
+                  <div className="text-xs text-[var(--enba-text-muted)]">Yeni kayıt</div>
+                </div>
+                <div className="bg-emerald-50 rounded-xl py-3">
+                  <div className="text-lg font-bold text-emerald-600">{gelirCount}</div>
+                  <div className="text-xs text-emerald-600">Gelir</div>
+                </div>
+                <div className="bg-red-50 rounded-xl py-3">
+                  <div className="text-lg font-bold text-red-500">{giderCount}</div>
+                  <div className="text-xs text-red-500">Gider</div>
+                </div>
+              </div>
+              {pending.length === 0 ? (
+                <p className="text-xs text-center text-[var(--enba-text-muted)] py-2">
+                  Seçilen aralıkta tüm kayıtlar zaten aktarılmış.
+                </p>
+              ) : (
+                <p className="text-xs text-[var(--enba-text-muted)]">
+                  {pending.length} kayıt aktarılacak. Zaten var olanlar otomatik atlanır.
+                </p>
+              )}
+            </div>
+          )}
+
+          {step === 'done' && result && (
+            <div className="flex flex-col items-center gap-3 py-4">
+              <CheckCircle2 size={36} className="text-emerald-500" />
+              <div className="text-center">
+                <div className="font-semibold text-[var(--enba-text)]">{result.inserted} kayıt aktarıldı</div>
+                {result.skipped > 0 && (
+                  <div className="text-xs text-[var(--enba-text-muted)] mt-1">{result.skipped} kayıt zaten vardı, atlandı</div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {err && (
+            <div className="flex items-center gap-2 text-red-500 text-xs bg-red-50 border border-red-200 rounded-xl px-3 py-2">
+              <AlertCircle size={13} /> {err}
+            </div>
+          )}
+        </div>
+
+        <div className="px-6 py-4 flex justify-end gap-2 border-t border-[var(--enba-border)]">
+          {step === 'done' ? (
+            <button onClick={onClose} className="px-5 py-2 text-sm font-semibold text-white rounded-xl bg-[var(--enba-orange)] hover:bg-[var(--enba-orange-hover)] transition-all">
+              Kapat
+            </button>
+          ) : (
+            <>
+              <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-[var(--enba-text-muted)] hover:text-[var(--enba-text)] rounded-xl transition-colors">
+                İptal
+              </button>
+              {isConnected && step === 'config' && (
+                <button onClick={handleFetch} disabled={loading}
+                  className="px-5 py-2 text-sm font-semibold text-white rounded-xl bg-[var(--enba-orange)] hover:bg-[var(--enba-orange-hover)] disabled:opacity-50 transition-all flex items-center gap-2">
+                  {loading && <Loader2 size={14} className="animate-spin" />}
+                  Verileri Getir
+                </button>
+              )}
+              {isConnected && step === 'preview' && pending.length > 0 && (
+                <button onClick={handleImport} disabled={loading}
+                  className="px-5 py-2 text-sm font-semibold text-white rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 transition-all flex items-center gap-2">
+                  {loading && <Loader2 size={14} className="animate-spin" />}
+                  {pending.length} Kaydı Aktar
+                </button>
+              )}
+              {isConnected && step === 'preview' && pending.length === 0 && (
+                <button onClick={onClose} className="px-5 py-2 text-sm font-semibold text-white rounded-xl bg-[var(--enba-orange)] transition-all">
+                  Tamam
+                </button>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // ── Empty form ───────────────────────────────────────────────
 const emptyForm = (): FCForm => ({
@@ -252,6 +483,7 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState('');
   const [modal, setModal]         = useState<'add' | FoundingCashflow | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
   const [delId, setDelId]         = useState<string | null>(null);
   const [tipFilter, setTipFilter] = useState<TipFilter>('tümü');
   const [sortDir, setSortDir]     = useState<SortDir>('asc');
@@ -415,6 +647,11 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
         <div className="flex items-center gap-2">
           {exportMsg && (
             <span className="text-xs text-emerald-600 font-medium animate-fade-in">{exportMsg}</span>
+          )}
+          {parasutService.isLoggedIn() && parasutService.getCompany() && (
+            <button onClick={() => setImportOpen(true)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-[var(--enba-border)] text-[var(--enba-text-muted)] hover:text-[var(--enba-orange)] hover:border-[var(--enba-orange)]/40 transition-colors">
+              <RefreshCw size={13} /> Paraşüt'ten Aktar
+            </button>
           )}
           <button onClick={exportExcel} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-[var(--enba-border)] text-[var(--enba-text-muted)] hover:text-emerald-600 hover:border-emerald-300 transition-colors">
             <FileSpreadsheet size={13} /> Excel
@@ -714,6 +951,14 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
       </div>
 
       {/* ── Modaller ── */}
+      {importOpen && companyId && (
+        <ImportModal
+          companyId={companyId}
+          onImported={newRows => { setRows(newRows); setImportOpen(false); }}
+          onClose={() => setImportOpen(false)}
+        />
+      )}
+
       {modal !== null && (
         <EntryModal
           initial={modal === 'add' ? null : { tarih: modal.tarih, tip: modal.tip, kategori: modal.kategori, tutar_tl: modal.tutar_tl, aciklama: modal.aciklama }}

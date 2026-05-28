@@ -3,31 +3,42 @@ import { supabase } from './supabase';
 export type FCTip = 'gelir' | 'gider';
 
 export interface FoundingCashflow {
-  id:         string;
-  company_id: string;
+  id:          string;
+  company_id:  string;
+  tarih:       string;
+  tip:         FCTip;
+  kategori:    string;
+  tutar_tl:    number;
+  aciklama:    string;
+  parasut_id?: string | null;
+  created_at:  string;
+  updated_at:  string;
+}
+
+export type FCForm = Omit<FoundingCashflow, 'id' | 'company_id' | 'created_at' | 'updated_at'>;
+
+export interface FCImportRecord {
   tarih:      string;
   tip:        FCTip;
   kategori:   string;
   tutar_tl:   number;
   aciklama:   string;
-  created_at: string;
-  updated_at: string;
+  parasut_id: string;
 }
-
-export type FCForm = Omit<FoundingCashflow, 'id' | 'company_id' | 'created_at' | 'updated_at'>;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function rowToFC(r: any): FoundingCashflow {
   return {
-    id:         r.id,
-    company_id: r.company_id,
-    tarih:      r.tarih      ?? '',
-    tip:        (r.tip       ?? 'gider') as FCTip,
-    kategori:   r.kategori   ?? '',
-    tutar_tl:   Number(r.tutar_tl ?? 0),
-    aciklama:   r.aciklama   ?? '',
-    created_at: r.created_at ?? '',
-    updated_at: r.updated_at ?? '',
+    id:          r.id,
+    company_id:  r.company_id,
+    tarih:       r.tarih       ?? '',
+    tip:         (r.tip        ?? 'gider') as FCTip,
+    kategori:    r.kategori    ?? '',
+    tutar_tl:    Number(r.tutar_tl ?? 0),
+    aciklama:    r.aciklama    ?? '',
+    parasut_id:  r.parasut_id  ?? null,
+    created_at:  r.created_at  ?? '',
+    updated_at:  r.updated_at  ?? '',
   };
 }
 
@@ -69,5 +80,30 @@ export const kurulumNakitAPI = {
       .delete()
       .eq('id', id);
     if (error) throw error;
+  },
+
+  // Paraşüt'ten toplu import — zaten var olanları atlar (parasut_id unique index)
+  async batchImport(companyId: string, records: FCImportRecord[]): Promise<{ inserted: number; skipped: number }> {
+    if (records.length === 0) return { inserted: 0, skipped: 0 };
+
+    // Mevcut parasut_id'leri çek
+    const { data: existing } = await supabase
+      .from('founding_cashflow')
+      .select('parasut_id')
+      .eq('company_id', companyId)
+      .not('parasut_id', 'is', null);
+
+    const existingIds = new Set((existing ?? []).map((r: { parasut_id: string | null }) => r.parasut_id));
+    const toInsert = records.filter(r => !existingIds.has(r.parasut_id));
+    const skipped = records.length - toInsert.length;
+
+    if (toInsert.length === 0) return { inserted: 0, skipped };
+
+    const { error } = await supabase
+      .from('founding_cashflow')
+      .insert(toInsert.map(r => ({ ...r, company_id: companyId })));
+    if (error) throw error;
+
+    return { inserted: toInsert.length, skipped };
   },
 };

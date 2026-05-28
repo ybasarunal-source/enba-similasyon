@@ -1128,6 +1128,18 @@ grep "^## \[" log.md | tail -5
 - Etkilenen dosyalar: `migration_v29_founding_cashflow.sql`, `src/api/kurulumNakit.ts`, `src/modules/KurulumNakit.tsx`, `src/App.tsx`
 - Bir sonraki: migration_v29 SQL Editor'de çalıştır, modülü tarayıcıda test et
 
+---
+
+## [2026-05-28 18:30] geliştirme | KurulumNakit — Paraşüt import entegrasyonu
+- Yapılan: founding_cashflow'a parasut_id kolonu + Paraşüt import modal
+  - `migration_v29b_founding_cashflow_parasut.sql` — parasut_id kolonu + unique index (dedup)
+  - `src/api/kurulumNakit.ts` — FCImportRecord tipi + batchImport() (mevcut parasut_id'leri kontrol eder, yalnızca yenileri ekler)
+  - `src/modules/KurulumNakit.tsx` — mapParasutInvoice(), ImportModal bileşeni (3-adım: config→preview→done), header'da "Paraşüt'ten Aktar" butonu (sadece Paraşüt bağlıysa görünür)
+- Import mantığı: satış faturası→gelir, alış/masraf→gider; tekrar import'ta duplicate oluşmaz
+- migration_v29b henüz çalıştırılmadı
+- Etkilenen dosyalar: `migration_v29b_founding_cashflow_parasut.sql`, `src/api/kurulumNakit.ts`, `src/modules/KurulumNakit.tsx`
+- Bir sonraki: migration_v29b SQL Editor'de çalıştır, Paraşüt bağlıyken import test et
+
 
 
 

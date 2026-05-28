@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS public.founding_cashflow (
   kategori    text        NOT NULL DEFAULT '',
   tutar_tl    numeric     NOT NULL DEFAULT 0,
   aciklama    text        NOT NULL DEFAULT '',
+  parasut_id  text        NULL,          -- Paraşüt'ten import edilen kayıtlar için harici ID
   created_at  timestamptz NOT NULL DEFAULT now(),
   updated_at  timestamptz NOT NULL DEFAULT now()
 );
@@ -79,3 +80,8 @@ CREATE TRIGGER fc_updated_at
 -- İndeks
 CREATE INDEX IF NOT EXISTS idx_fc_company_tarih
   ON public.founding_cashflow (company_id, tarih DESC);
+
+-- Paraşüt ID benzersizlik koruması (aynı kayıt iki kez import edilmesin)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_fc_parasut_id
+  ON public.founding_cashflow (company_id, parasut_id)
+  WHERE parasut_id IS NOT NULL;
