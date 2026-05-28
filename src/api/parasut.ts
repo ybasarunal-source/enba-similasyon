@@ -371,17 +371,30 @@ export const parasutService = {
       'filter[date][lteq]': dateTo,
       'sort': 'id',
     });
-    return (raw.data || []).map((d: any): ParasutTransaction => {
+    return (raw.data || []).flatMap((d: any): ParasutTransaction[] => {
       const a = d.attributes || {};
+
+      // Kasalar/bankalar arası transferleri dışla — çift sayım yapar
+      const txType: string = (a.transaction_type || a.type || '').toLowerCase();
+      if (
+        txType.includes('transfer') ||
+        txType.includes('contact_transfer') ||
+        txType.includes('account_transfer')
+      ) return [];
+
       const debit  = parseFloat(a.debit_amount  || a.amount_debit  || '0');
       const credit = parseFloat(a.credit_amount || a.amount_credit || '0');
       const rate   = parseFloat(a.exchange_rate || '1');
-      // credit = hesaba giriş (pozitif), debit = hesaptan çıkış (negatif)
-      const amount     = (debit === 0 && credit === 0)
+
+      // Muhasebe kuralı: debit = hesaba GİRİŞ (+), credit = hesaptan ÇIKIŞ (-)
+      const amount = (debit === 0 && credit === 0)
         ? parseFloat(a.amount || '0')
-        : credit - debit;
+        : debit - credit;
+
+      if (amount === 0) return [];
+
       const amountTL = Math.abs(amount) * rate;
-      return {
+      return [{
         id: d.id,
         account_id: account.id,
         account_name: account.name,
@@ -392,7 +405,7 @@ export const parasutService = {
         currency: a.currency || account.currency,
         exchange_rate: rate,
         amount_tl: amountTL,
-      };
+      }];
     });
   },
 
