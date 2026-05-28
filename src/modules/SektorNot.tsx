@@ -3,7 +3,9 @@ import {
   BookOpen, Recycle, Zap, Layers, ArrowRight, AlertTriangle,
   ChevronDown, ChevronRight, FlaskConical, Cpu, Package,
   Search, Tag as TagIcon, Hash, ChevronLeft, Factory, ArrowDown,
+  Truck, Droplet, Wrench, Eye, ShieldCheck, BarChart2
 } from 'lucide-react';
+
 
 // ─── Primitives ──────────────────────────────────────────────────────────────
 
@@ -176,7 +178,8 @@ const Flow: React.FC<{ steps: { label: string; sub?: string; highlight?: boolean
 
 // ─── Sayfa tipleri ────────────────────────────────────────────────────────────
 
-type PageId = 'overview' | 'proses' | 'hatlar' | 'makine' | 'ekonomi' | 'sozluk' | 'standartlar';
+type PageId = 'overview' | 'proses' | 'hatlar' | 'standartlar' | 'malzemeler' | 'makine' | 'ekonomi' | 'sozluk';
+
 
 interface NavItem {
   id: PageId;
@@ -1674,143 +1677,605 @@ const PageEkonomi: React.FC = () => (
   </div>
 );
 
-// ─── Standartlar ve GRS Sayfası ────────────────────────────────────────────────
+// ─── Standartlar ve Sektörel Sayfası ───────────────────────────────────────────
 
 const PageStandartlar: React.FC = () => {
-  const [activeSubTab, setActiveSubTab] = useState<'en643' | 'grs'>('en643');
+  const [activeSubTab, setActiveSubTab] = useState<
+    'en643' | 'grs' | 'kirleticiler' | 'enerji' | 'kimyasal' | 'lojistik' | 'epr' | 'bakim' | 'optik' | 'laboratuvar' | 'lisans'
+  >('en643');
+
+  const subTabs = [
+    { id: 'en643', label: 'EN 643 Kağıt', icon: <Layers size={13} /> },
+    { id: 'grs', label: 'GRS & Gıda Temas', icon: <FlaskConical size={13} /> },
+    { id: 'kirleticiler', label: 'Kirleticiler & Kalite', icon: <AlertTriangle size={13} /> },
+    { id: 'enerji', label: 'Enerji & Karbon', icon: <Zap size={13} /> },
+    { id: 'kimyasal', label: 'Kimyasal Geri Dönüşüm', icon: <Recycle size={13} /> },
+    { id: 'lojistik', label: 'Lojistik & Tedarik', icon: <Truck size={13} /> },
+    { id: 'epr', label: 'Dairesel Ekonomi & EPR', icon: <BookOpen size={13} /> },
+    { id: 'bakim', label: 'Tesis Bakım & Aşınma', icon: <Wrench size={13} /> },
+    { id: 'optik', label: 'Optik Ayıklama', icon: <Eye size={13} /> },
+    { id: 'laboratuvar', label: 'Laboratuvar & TDS', icon: <BarChart2 size={13} /> },
+    { id: 'lisans', label: 'Yasal Mevzuat & Lisans', icon: <ShieldCheck size={13} /> },
+  ];
+
+  const renderSubContent = () => {
+    switch (activeSubTab) {
+      case 'en643':
+        return (
+          <div className="space-y-5">
+            <section className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5">
+              <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white mb-2">EN 643 Nedir?</h4>
+              <p className="text-[12.5px] text-gray-600 dark:text-gray-400 leading-relaxed">
+                Avrupa standart geri kazanılmış kağıt ve karton kaliteleri listesidir. Tesis girişindeki kabul limitlerini ve ticari toleransları belirler.
+              </p>
+            </section>
+            <section className="space-y-3">
+              <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white">5 Standart Kağıt Grubu</h4>
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-2 text-[11px]">
+                {[
+                  { title: '1. Grup: Sıradan', desc: 'OCC (Koli), mixed kağıt ve dergi kaliteleri.', non: '%1,5', unw: '%2,5 - %3' },
+                  { title: '2. Grup: Orta', desc: 'Ofis yazıcı kağıtları ve gazete atıkları.', non: '%0,5 - %1', unw: '%1 - %2' },
+                  { title: '3. Grup: Yüksek', desc: 'Baskısız beyaz yazı kağıtları ve matbaa talaşı.', non: '%0,25', unw: '%0,5 - %1' },
+                  { title: '4. Grup: Kraft', desc: 'Kraft çuvallar ve kullanılmamış kutular.', non: '%0,25 - %1', unw: '%0,5 - %2,5' },
+                  { title: '5. Grup: Özel', desc: 'Tetrapak, ıslak etiket ve kağıt bardaklar.', non: '%0,5 - %3', unw: '%1 - %3' },
+                ].map(g => (
+                  <div key={g.title} className="p-3 rounded-xl border border-gray-100 dark:border-white/8 bg-gray-50/50 dark:bg-white/3 flex flex-col justify-between">
+                    <div>
+                      <div className="font-bold text-gray-800 dark:text-white">{g.title}</div>
+                      <p className="text-gray-400 mt-1 leading-normal">{g.desc}</p>
+                    </div>
+                    <div className="mt-3 pt-2 border-t border-gray-200/50 dark:border-white/5 text-[9.5px] text-gray-400">
+                      <div>Kağıt Dışı: <span className="font-semibold text-orange-500">{g.non}</span></div>
+                      <div>İstenmeyen: <span className="font-semibold text-gray-500">{g.unw}</span></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+            <section className="space-y-3">
+              <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white">Kritik Kalite Kriterleri</h4>
+              <DataTable
+                headers={['Kod', 'Kalite Adı', 'Açıklama', 'Max Kağıt Dışı %', 'Max İstenmeyen %']}
+                rows={[
+                  ['1.01.00', 'Karışık Kağıt/Karton', 'Çeşitli kağıt ve karton kalitelerinin karışımı.', '%1,50', '%3,00'],
+                  ['1.04.00', 'Oluplu Mukavva (OCC)', 'Kullanılmış kutu ambalajları, min %70 oluklu mukavva.', '%1,50', '%3,00'],
+                  ['2.05.01', 'Ofis Kağıtları', 'Ofislerden toplanan beyaz yazıcı kağıtları.', '%1,00', '%2,00'],
+                  ['3.05.01', 'Baskısız Beyaz', 'Baskısız ve tutkalsız birinci kalite beyaz kağıt kırpıntısı.', '%0,50', '%1,00'],
+                  ['4.04.00', 'Kullanılmış Kraft Torba', 'Çimento veya un içermeyen temiz kraft çuvalları.', '%1,00', '%2,00'],
+                  ['5.03.00', 'Tetrapak (Sıvı Ambalaj)', 'Plastik/alüminyum katmanlı içecek kutuları.', '%3,00', '%3,00'],
+                ]}
+              />
+            </section>
+            <Note type="warn">
+              <strong>Nem Toleransı:</strong> EN 643 referans nem oranı <strong>%10</strong>'dur. %12 ve üzerindeki nem oranları tonaj iskontosu veya balya reddi gerekçesidir.
+            </Note>
+          </div>
+        );
+      case 'grs':
+        return (
+          <div className="space-y-5">
+            <section className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5">
+              <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white mb-2">GRS (Global Recycled Standard)</h4>
+              <p className="text-[12.5px] text-gray-600 dark:text-gray-400 leading-relaxed mb-3">
+                Üründeki geri dönüştürülmüş malzemenin kaynağını kanıtlayan ve çevresel/sosyal uyumluluğu denetleyen uluslararası standarttır.
+              </p>
+              <DataTable
+                headers={['Kriter', 'Gereklilik', 'Enba Similasyon Rolü']}
+                rows={[
+                  ['Geri Dönüştürülmüş Oranı', 'Etiketleme için min %20, logo hakkı için min %50 PCR.', 'Lot çıkışlarında PCR oranını hesaplayıp etikete yazar.'],
+                  ['Kütle Dengesi (Mass Balance)', 'Giren balya tonajı ile çıkan ürün arasındaki fireler izlenmelidir.', 'DetailedPlan fire ve verim motoru ile kütlesel çevrimi belgeler.'],
+                  ['İzlenebilirlik (Traceability)', 'Lot numarasının hammadde tedarikçisine kadar izlenmesi zorunludur.', 'Balyalama / Sevkiyat modülünde lot kartlarına GRS TC no bağlar.'],
+                ]}
+              />
+            </section>
+            <section className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5 space-y-4">
+              <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white flex items-center gap-1.5">
+                <FlaskConical size={16} className="text-blue-500" /> Gıda Temaslı Geri Dönüşüm (EFSA & FDA)
+              </h4>
+              <p className="text-[12.5px] text-gray-600 dark:text-gray-400 leading-relaxed">
+                PET şişelerin gıda ambalajında yeniden kullanılabilmesi için en katı gıda güvenliği sınırları uygulanır:
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-[11.5px]">
+                <div className="p-3 bg-blue-50/50 dark:bg-blue-500/5 rounded-xl border border-blue-100 dark:border-blue-500/10">
+                  <div className="font-bold text-blue-700 dark:text-blue-400">Challenge Test</div>
+                  <div className="mt-1 text-gray-600 dark:text-gray-400 leading-snug">Hattın kontaminasyon sökme gücünü kanıtlayan kirlilik temizleme testidir. Denetimde raporlanmalıdır.</div>
+                </div>
+                <div className="p-3 bg-blue-50/50 dark:bg-blue-500/5 rounded-xl border border-blue-100 dark:border-blue-500/10">
+                  <div className="font-bold text-blue-700 dark:text-blue-400">≤ 50 ppm Sınırı</div>
+                  <div className="mt-1 text-gray-600 dark:text-gray-400 leading-snug">Gıda temaslı pet pullarda (flake) veya peletlerde izin verilen maksimum toplam kontaminasyon limitidir.</div>
+                </div>
+                <div className="p-3 bg-blue-50/50 dark:bg-blue-500/5 rounded-xl border border-blue-100 dark:border-blue-500/10">
+                  <div className="font-bold text-blue-700 dark:text-blue-400">SSP Reaktörü & IV</div>
+                  <div className="mt-1 text-gray-600 dark:text-gray-400 leading-snug">PET viskozitesini (IV) gıda kalitesine yükseltmek için vakum altında ön kristalizasyon uygulanmasıdır.</div>
+                </div>
+              </div>
+            </section>
+            <Note type="tip">
+              <strong>Tesis Denetim Listesi:</strong> GRS veya Food-grade denetiminden geçebilmek için: Tedarikçi GRS TC (Transaction Certificate) kayıtları, Kaustik pH logları, Kütle Çevrim Raporları ve kalite laboratuvar test lot kartları sistemde tam tutulmalıdır.
+            </Note>
+          </div>
+        );
+      case 'kirleticiler':
+        return (
+          <div className="space-y-5">
+            <section className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5">
+              <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white mb-2">Kritik Kirletici Sınırları</h4>
+              <DataTable
+                headers={['Kirletici Adı', 'Etkilediği Malzeme', 'Neden Zararlı?', 'Maksimum Tolerans']}
+                rows={[
+                  ['PVC (Polivinil Klorür)', 'PET / Polyester', '200°C\'de HCl asit salgılar, makineleri çürütür, lifleri bozar.', '< 20 - 50 ppm (Gıda için < 10 ppm)'],
+                  ['Stickies (Yapışkanlar)', 'Kağıt / Karton', 'Kurutma silindirlerine yapışır, kağıdın kopmasına yol açar.', '%1.0 - %1.5 (Ağırlıkça)'],
+                  ['PP / PE Karışımı', 'PE / PP (Sert Plastik)', 'Birbirleriyle karışmazlar. Mekanik darbe dayanımını düşürür.', '< %3.0 - %5.0'],
+                  ['Nem (Moisture)', 'Tüm Malzemeler', 'Plastikte gaz kabarcığı ve gözenek yapar. Kağıtta tonaj hilesi.', 'Plastikte < %1.0, Kağıtta %10.0'],
+                  ['Metaller ve Cam', 'Tüm Prosesler', 'Kırıcı bıçaklarını köreltir, ekstrüder vidalarını çizer.', '%0.0 (Tolerans yok)'],
+                ]}
+              />
+            </section>
+            <section className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5 space-y-3">
+              <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white">Giriş Kalite Kontrol Testleri</h4>
+              <ul className="list-disc pl-5 text-[12.5px] text-gray-600 dark:text-gray-400 space-y-2">
+                <li><strong>FTIR Spektroskopisi (Kızılötesi Analiz):</strong> Polimer türünü ve saflık derecesini saniyeler içinde belirlemek için kullanılır.</li>
+                <li><strong>Yoğunluk (Yüzdürme) Testi:</strong> Malzemenin su (yoğunluk 1.0) veya alkol/tuzlu su karışımları içindeki yüzme/batma davranışına göre sınıf ayrımı yapılması.</li>
+                <li><strong>Nem Tayin Cihazı (Moisture Analyzer):</strong> Balyalardan alınan numunelerin yüksek ısı altında kurutularak nem kaybının hassas tartılması.</li>
+                <li><strong>Kül Testi (Ash Test):</strong> Plastiğin fırında 600°C'de yakılarak içindeki kalsit dolgu maddelerinin oranının bulunması.</li>
+              </ul>
+            </section>
+            <Note type="warn">
+              <strong>Yazılım Entegrasyonu (DetailedPlan):</strong> Giriş hammaddesindeki nem veya kalsit oranı referans değerin üzerindeyse, satın alma faturasından ağırlık iskontosu düşülür ve fire katsayısı simülasyonda otomatik artırılır.
+            </Note>
+          </div>
+        );
+      case 'enerji':
+        return (
+          <div className="space-y-5">
+            <section className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5">
+              <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white mb-2">Proses Bazında Spesifik Elektrik Tüketimi (SEC)</h4>
+              <DataTable
+                headers={['Proses İstasyonu', 'Ortalama Elektrik (kWh/ton)', 'Kritik Tüketim Elemanları']}
+                rows={[
+                  ['Kırma & Yıkama', '120 - 180 kWh', 'Kırma motorları, friksiyon yıkayıcılar, santrifüj kurutucular'],
+                  ['Sıkma & Aglomer', '100 - 200 kWh', 'Sıkma presi hidrolikleri, aglomer bıçak motorları (sürtünme ısısı)'],
+                  ['Ekstrüzyon (Granül)', '250 - 350 kWh', 'Vida tahrik motoru, kovan rezistans ısıtıcıları, vakum pompaları'],
+                  ['Koku Giderme Siloları', '80 - 120 kWh', 'Sıcak hava üfleme fanları, rezistanslı hava ısıtıcıları'],
+                  ['Atıksu Arıtma', '10 - 25 kWh', 'Çamur pompaları, havalandırma blowerları, kimyasal pompaları'],
+                ]}
+              />
+            </section>
+            <section className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5 space-y-3">
+              <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white">Karbon Ayak İzi ve CO₂ Tasarrufu (Sınırda Karbon - CBAM)</h4>
+              <p className="text-[12.5px] text-gray-600 dark:text-gray-400 leading-relaxed">
+                Geri dönüştürülmüş polimer üretimi, orijinal polimer üretimine kıyasla ciddi bir emisyon avantajı sağlar:
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[12px] text-center">
+                <div className="p-4 bg-gray-50 dark:bg-white/3 rounded-xl border border-gray-100 dark:border-white/8">
+                  <div className="text-gray-500">PET Emisyon Tasarrufu</div>
+                  <div className="text-xl font-bold text-green-600 mt-1">%79 Azalma</div>
+                  <div className="text-[11px] text-gray-400 mt-1">Virgin: 2.15 kg CO2 ↔ rPET: 0.45 kg CO2</div>
+                </div>
+                <div className="p-4 bg-gray-50 dark:bg-white/3 rounded-xl border border-gray-100 dark:border-white/8">
+                  <div className="text-gray-500">HDPE Emisyon Tasarrufu</div>
+                  <div className="text-xl font-bold text-green-600 mt-1">%80 Tasarruf</div>
+                  <div className="text-[11px] text-gray-400 mt-1">Virgin: 1.80 kg CO2 ↔ rHDPE: 0.35 kg CO2</div>
+                </div>
+              </div>
+            </section>
+            <Note type="tip">
+              <strong>DetailedPlan Raporu:</strong> Bütçelenen üretim planlarına paralel olarak otomatik bir <strong>Karbon Tasarrufu ve Enerji Raporu</strong> üretilir. Tesislerin engellediği CO2 salınımı ton cinsinden hesaplanarak yeşil mutabakat uyumu belgelenir.
+            </Note>
+          </div>
+        );
+      case 'kimyasal':
+        return (
+          <div className="space-y-5">
+            <section className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5 space-y-3">
+              <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white">Kimyasal Geri Dönüşüm Teknolojileri</h4>
+              <div className="space-y-3 text-[12.5px] text-gray-600 dark:text-gray-400">
+                <div>
+                  <h5 className="font-bold text-gray-800 dark:text-white mb-1">A. Piroliz (Pyrolysis - Isıl Bozundurma)</h5>
+                  <p className="leading-relaxed">Poliolefinlerin (PE, PP) oksijensiz ortamda (400-550°C) parçalanarak <strong>Piroliz Yağı (Tacoil)</strong> elde edilmesidir. Sıvı ürün verimi %70-75 arasındadır. Yağdaki klor (PVC kaynaklı) miktarı krakerler için <strong>&lt; 5-10 ppm</strong> olmalıdır.</p>
+                </div>
+                <div>
+                  <h5 className="font-bold text-gray-800 dark:text-white mb-1">B. Depolimerizasyon (Solvoliz)</h5>
+                  <p className="leading-relaxed">Condensation polimerlerinin (PET, Naylon) solvent ve katalizör eşliğinde monomerlerine (BHET, DMT) çözülmesi. rPET bu sayede kalitesini yitirmeden sonsuz kez geri dönüştürülebilir.</p>
+                </div>
+                <div>
+                  <h5 className="font-bold text-gray-800 dark:text-white mb-1">C. Solvent Çözündürme (Purification)</h5>
+                  <p className="leading-relaxed">Polimer zincirini bozmadan sadece solvent içinde eritip filtreleme yöntemiyle boya ve kalsitten arındırma ve geri çöktürme işlemidir.</p>
+                </div>
+              </div>
+            </section>
+            <Note type="warn">
+              <strong>Yatırım Dinamikleri (CAPEX/OPEX):</strong> Kimyasal geri dönüşüm reaktörlerinin kurulum maliyeti mekanik hatlara göre 10-30 kat daha yüksektir. DetailedPlan modellerinde faiz, amortisman ömrü ve katalizör maliyetleri hassas takip edilmelidir.
+            </Note>
+          </div>
+        );
+      case 'lojistik':
+        return (
+          <div className="space-y-5">
+            <section className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5">
+              <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white mb-2">Hacimsel Lojistik Çıkmazı (Dökme Yoğunluğu)</h4>
+              <p className="text-[12.5px] text-gray-600 dark:text-gray-400 leading-relaxed mb-3">
+                Geri dönüşüm hammaddelerinin dökme yoğunluklarının düşük olması, nakliyeyi yüksek hacimli ama düşük tonajlı hale getirerek kar marjını tehdit eder:
+              </p>
+              <DataTable
+                headers={['Malzeme Durumu', 'Dökme Yoğunluğu (kg/m³)', 'Tır Başına Taşıma Tonajı', 'Lojistik Verimlilik']}
+                rows={[
+                  ['Gevşek PET Şişe / Poşet', '20 - 35 kg/m²', '1.6 - 2.8 Ton', 'Çok Yüksek Maliyetli (Hacim sınırlı)'],
+                  ['Kırılmış Çapak (Flake)', '250 - 350 kg/m²', '20 - 24 Ton', 'Normal / Optimal'],
+                  ['Balyalanmış Atık', '300 - 450 kg/m²', '24 Ton (Tam Kapasite)', 'Optimal (Tır sınırında)'],
+                  ['Granül (Pelet)', '550 - 650 kg/m²', '24 Ton (Tam Kapasite)', 'En Düşük Birim Nakliye'],
+                ]}
+              />
+            </section>
+            <Note type="warn">
+              <strong>Tersine Lojistik ve Mesafe Limiti:</strong> Balyalanmamış (gevşek) hurda poşet veya şişeyi 100 km'den uzak mesafeden taşımak navlunu hammadde değerinin üzerine çıkarır. Gevşek alım yarıçapı maks 50-70 km ile sınırlandırılmalıdır.
+            </Note>
+          </div>
+        );
+      case 'epr':
+        return (
+          <div className="space-y-5">
+            <section className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5 space-y-3">
+              <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white">Extended Producer Responsibility (EPR) ve GEKAP</h4>
+              <p className="text-[12.5px] text-gray-600 dark:text-gray-400 leading-relaxed">
+                Yasal düzenlemeler r-Polimerlerin piyasa talebini belirleyen bir numaralı motordur:
+              </p>
+              <div className="space-y-3 text-[12px] text-gray-600 dark:text-gray-400">
+                <div>
+                  <h5 className="font-bold text-gray-800 dark:text-white">AB Regülasyonları (PPWR):</h5>
+                  <p>2030 yılına kadar tüm plastik ambalajların ağırlıkça en az <strong>%30 geri dönüştürülmüş plastik (PCR)</strong> içermesi zorunludur. Bu durum, kurumsal markaların (FMCG) r-plastik talebini garantiler.</p>
+                </div>
+                <div>
+                  <h5 className="font-bold text-gray-800 dark:text-white">Türkiye GEKAP Uygulaması:</h5>
+                  <p>Piyasaya sürülen ambalajlar için tahsil edilen çevre vergisidir. Ambalajlarında belgelenmiş geri dönüştürülmüş hammadde (GRS sertifikalı) kullanan üreticiler, GEKAP yükümlülüklerinde indirim veya muafiyet kazanır.</p>
+                </div>
+              </div>
+            </section>
+            <Note type="tip">
+              <strong>Depozito İade Sistemi (DİS):</strong> İçecek şişelerinin RVM (Reverse Vending Machine) otomatlarıyla toplanmasıdır. Evsel çöp bulaşmadığı için DİS şişelerini işleyen tesislerde kırma/yıkama firesi %30'dan %5'in altına iner ve doğrudan gıda kalitesi (superclean) elde edilebilir.
+            </Note>
+          </div>
+        );
+      case 'bakim':
+        return (
+          <div className="space-y-5">
+            <section className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5">
+              <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white mb-2">Kritik Aşınma Ömürleri</h4>
+              <DataTable
+                headers={['Ekipman / Eleman', 'Aşınma Nedeni', 'Bileme / Bakım Sıklığı', 'Değişim Ömrü']}
+                rows={[
+                  ['Kırıcı Bıçakları (Granulator)', 'Atık içindeki kum, çakıl, metaller bıçakları köreltir.', 'Her 40 - 80 saatte (Bileme)', '300 - 500 saat (Değişim)'],
+                  ['Ekstrüder Vida & Kovan', 'Yüksek kalsit (CaCO3) dolgusu ve metal parçacıkları.', 'Yılda 1 kez aşınma ölçümü', '8.000 - 15.000 saat (Bimetalik)'],
+                  ['Eriyik Filtresi Elekleri', 'Erimeyen kağıt lifleri, folyo ve kirleticiler.', 'Manuel filtrede her 4-8 saatte bir.', '8 - 24 saat (Manuel elek)'],
+                  ['Friksiyon Yıkayıcı Kanatları', 'Yüksek devirli sürtünme ve kum erozyonu.', 'Her 3 ayda kaynak dolgu kontrolü', '3.000 - 5.000 saat'],
+                ]}
+              />
+            </section>
+            <section className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5 space-y-3">
+              <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white">Bakımın Gecikme Maliyetleri</h4>
+              <ul className="list-disc pl-5 text-[12.5px] text-gray-600 dark:text-gray-400 space-y-1.5">
+                <li><strong>Artan Elektrik Tüketimi:</strong> Kör bıçaklar kesmek yerine ezdiği için motor amperini dolayısıyla elektrik tüketimini <strong>%15 - %30</strong> artırır.</li>
+                <li><strong>Toz Çapak Firesi (Fines):</strong> Ezerek kırma sonucu toz oranı artar. Sulu yıkama esnasında bu tozlar suyla sürüklenerek <strong>%3 - %5 ek malzeme firesine</strong> yol açar.</li>
+              </ul>
+            </section>
+            <Note type="warn">
+              <strong>OEE Simülasyonu:</strong> DetailedPlan modelinde, planlı önleyici bakımlar için haftalık 4 saatlik duruş kapasiteden düşülür. Bakımın kapatılması durumunda elektrik faturası katsayısı %15 artırılır.
+            </Note>
+          </div>
+        );
+      case 'optik':
+        return (
+          <div className="space-y-5">
+            <section className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5 space-y-3">
+              <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white">Optik Sensör Çeşitleri</h4>
+              <div className="space-y-3 text-[12.5px] text-gray-600 dark:text-gray-400">
+                <div>
+                  <h5 className="font-bold text-gray-800 dark:text-white">NIR (Near-Infrared - Yakın Kızılötesi)</h5>
+                  <p>Her polimerin kızılötesi ışığı yansıtma spektrumu farklıdır. NIR sensörler, banttan geçen atıkların kimyasal moleküler kodunu (PET, PP, HDPE, PVC vb.) milisaniyede algılar. Karbon siyahı (siyah plastikler) NIR tarafından algılanamaz.</p>
+                </div>
+                <div>
+                  <h5 className="font-bold text-gray-800 dark:text-white">VIS (Görünür Kamera)</h5>
+                  <p>RGB kameralar ile çapakların rengini tarar. Naturel (şeffaf) PET pulların arasına karışan mavi/yeşil pulları ayırmak için kullanılır.</p>
+                </div>
+                <div>
+                  <h5 className="font-bold text-gray-800 dark:text-white">AI / Şekil Algılama Kameraları</h5>
+                  <p>Malzemenin sadece kimyasını değil, geometrik şeklini de analiz ederek gıda tepsilerini, içecek şişelerinden ayırır.</p>
+                </div>
+              </div>
+            </section>
+            <Note type="tip">
+              <strong>Basınçlı Hava OPEX Yükü:</strong> Ayıklanan malzemeler yüksek hızlı solenoid valflerle (ejektör hava jetleri) üflenir. Bu ejektörlerin hava tüketimi nedeniyle tesise 37-75 kW gücünde ek hava kompresörü gerekir, bu da ton başına <strong>+15-25 kWh</strong> elektrik gideri ekler. Saflık verimi tek geçişte %95-97 iken çift geçişte (double pass) %99.5+ seviyesine çıkar.
+            </Note>
+          </div>
+        );
+      case 'laboratuvar':
+        return (
+          <div className="space-y-5">
+            <section className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5">
+              <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white mb-2">Standart Test Metotları ve ISO Standartları</h4>
+              <DataTable
+                headers={['Test Adı', 'ISO Standardı', 'Ölçülen Değer', 'TDS Önemi']}
+                rows={[
+                  ['Eriyik Akış Hızı (MFI)', 'ISO 1133', 'Gram / 10 dk (Akışkanlık)', 'Şişirme (<1.0) veya Enjeksiyon (>4) ayrımı.'],
+                  ['Izod / Charpy Darbe Dayanımı', 'ISO 179 / 180', 'kJ / m² (Darbe emilimi)', 'Kırılganlığı ve darbe artırıcı elastomer oranını belirler.'],
+                  ['Çekme / Eğilme Mukavemeti', 'ISO 527', 'MPa (Kopma mukavemeti)', 'Malzemenin fiziksel gerilme gücünü belgeler.'],
+                  ['Yoğunluk Analizi', 'ISO 1183', 'g / cm³', 'Kalsit (CaCO3) dolgu veya polimer saflık oranını doğrular.'],
+                  ['Nem Tayini', 'Kurutma / Tartım', 'Nem yüzdesi (%)', 'Ekstrüzyon öncesi nemin < %0.1 olduğunu garanti eder.'],
+                ]}
+              />
+            </section>
+            <Note type="tip">
+              <strong>ISO/IEC 17025 Laboratuvar Akreditasyonu:</strong> Büyük sanayi alıcıları (Unilever, Vestel vb.) sadece akredite laboratuvarlardan çıkan TDS (Technical Data Sheet) raporlarını kabul eder. Supabase veritabanında saklanan bu lot kalite parametreleri sevkiyat belgelerine otomatik yazdırılmalıdır.
+            </Note>
+          </div>
+        );
+      case 'lisans':
+        return (
+          <div className="space-y-5">
+            <section className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5 space-y-3">
+              <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white">TAT, GDT Lisansları ve Kütle Denge Raporlaması</h4>
+              <div className="space-y-2 text-[12.5px] text-gray-600 dark:text-gray-400">
+                <p><strong>TAT (Toplama Ayrırma Tesisi) Lisansı:</strong> Atıkları kabul etme, ayıklama ve balyalama yetkisi verir. Eritme veya kimyasal işleme yapamaz.</p>
+                <p><strong>GDT (Geri Kazanım Tesisi) Lisansı:</strong> Balyalanmış veya ayıklanmış plastik/kağıt atıkları mekanik veya kimyasal yöntemlerle eritmeye/işlemeye ve ham maddeye dönüştürmeye izin verir.</p>
+                <p><strong>MoTAT (Mobil Atık Takip):</strong> Tehlikeli veya ambalaj atıklarının tırlarla nakliyesi sırasında GPS üzerinden yasal takibini sağlayan Çevre Bakanlığı sistemidir.</p>
+                <p><strong>KDS (Kütle Denge Sistemi):</strong> Tesislerin en kritik yasal raporudur. Giren atık kodu tonajı ile çıkan ürün+bakiye+fire tonajı eşit olmalıdır.</p>
+              </div>
+            </section>
+            <Note type="warn">
+              <strong>Yazılım Uyum Otomasyonu:</strong> Enba platformu, üretim ve stok verilerini otomatik olarak Çevre Bakanlığı KDS rapor formatına (XML/Excel) dönüştürür. TAT/GDT lisans ve GFB geçici faaliyet süreleri `Licensing.tsx` modülünde 3 ay önceden uyarı verecek şekilde takip edilir.
+            </Note>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div>
-        <h3 className="text-[15px] font-bold text-gray-800 dark:text-white mb-3 flex items-center gap-2">
-          <FlaskConical size={16} className="text-orange-500" /> Sektörel Standartlar & Mevzuat
+        <h3 className="text-[15px] font-bold text-gray-800 dark:text-white mb-1 flex items-center gap-2">
+          <FlaskConical size={16} className="text-orange-500" /> Sektörel Standartlar, Mevzuat & Alan Bilgisi
         </h3>
-        <div className="flex gap-2 p-1 bg-gray-100/50 dark:bg-white/5 rounded-xl border border-gray-200 dark:border-white/10">
-          <button
-            onClick={() => setActiveSubTab('en643')}
-            className={cx(
-              'flex-1 py-2 text-[12px] font-semibold rounded-lg transition-all',
-              activeSubTab === 'en643'
-                ? 'bg-white dark:bg-[#2A2A2A] text-orange-600 dark:text-orange-400 shadow-sm'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
-            )}
-          >
-            EN 643 Kağıt Standartları
-          </button>
-          <button
-            onClick={() => setActiveSubTab('grs')}
-            className={cx(
-              'flex-1 py-2 text-[12px] font-semibold rounded-lg transition-all',
-              activeSubTab === 'grs'
-                ? 'bg-white dark:bg-[#2A2A2A] text-orange-600 dark:text-orange-400 shadow-sm'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
-            )}
-          >
-            GRS & Gıda Temas Mevzuatları
-          </button>
-        </div>
+        <p className="text-[12px] text-gray-500">Tesis planlama ve mevzuat uyumluluğu için altın standartlar ve hesaplar.</p>
       </div>
 
-      {activeSubTab === 'en643' ? (
-        <div className="space-y-6">
-          <section className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5">
-            <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white mb-2">EN 643 Nedir?</h4>
-            <p className="text-[12.5px] text-gray-600 dark:text-gray-400 leading-relaxed">
-              Avrupa standart geri kazanılmış kağıt ve karton kaliteleri listesidir. Geri dönüşüm tesislerine giren kağıt/karton ambalaj atıklarının kabul limitlerini ve ticari standartları belirler.
-            </p>
-          </section>
-
-          <section className="space-y-3">
-            <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white">5 Standart Kağıt Grubu</h4>
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-              {[
-                { title: '1. Grup: Sıradan', desc: 'OCC (Koli), mixed kağıt ve dergi kaliteleri.', non: '%1,5', unw: '%2,5 - %3' },
-                { title: '2. Grup: Orta', desc: 'Ofis yazıcı kağıtları ve gazete atıkları.', non: '%0,5 - %1', unw: '%1 - %2' },
-                { title: '3. Grup: Yüksek', desc: 'Baskısız beyaz yazı kağıtları ve matbaa talaşı.', non: '%0,25', unw: '%0,5 - %1' },
-                { title: '4. Grup: Kraft', desc: 'Kraft çuvallar ve kullanılmamış kraftliner kutular.', non: '%0,25 - %1', unw: '%0,5 - %2,5' },
-                { title: '5. Grup: Özel', desc: 'Tetrapak (sıvı ambalaj), ıslak etiket ve bardaklar.', non: '%0,5 - %3', unw: '%1 - %3' },
-              ].map(g => (
-                <div key={g.title} className="p-3 rounded-xl border border-gray-100 dark:border-white/8 bg-gray-50/50 dark:bg-white/3 flex flex-col justify-between">
-                  <div>
-                    <div className="text-[11.5px] font-bold text-gray-800 dark:text-white">{g.title}</div>
-                    <p className="text-[10.5px] text-gray-400 mt-1 leading-normal">{g.desc}</p>
-                  </div>
-                  <div className="mt-3 pt-2 border-t border-gray-200/50 dark:border-white/5 text-[9.5px] text-gray-400">
-                    <div>Kağıt Dışı: <span className="font-semibold text-orange-500">{g.non}</span></div>
-                    <div>İstenmeyen: <span className="font-semibold text-gray-500">{g.unw}</span></div>
-                  </div>
-                </div>
+      <div className="flex flex-col md:flex-row gap-5 items-start">
+        {/* Sol Menü (Desktop) / Dropdown (Mobil) */}
+        <div className="w-full md:w-[200px] flex-shrink-0">
+          <div className="md:hidden">
+            <select
+              value={activeSubTab}
+              onChange={(e: any) => setActiveSubTab(e.target.value)}
+              className="w-full p-2 text-[12.5px] border border-gray-200 dark:border-white/10 rounded-xl bg-white dark:bg-[#1A1A1A] text-gray-800 dark:text-white outline-none"
+            >
+              {subTabs.map(t => (
+                <option key={t.id} value={t.id}>{t.label}</option>
               ))}
-            </div>
-          </section>
-
-          <section className="space-y-3">
-            <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white">Kritik Kalite Kriterleri</h4>
-            <DataTable
-              headers={['Kod', 'Kalite Adı', 'Açıklama', 'Max Kağıt Dışı %', 'Max İstenmeyen %']}
-              rows={[
-                ['1.01.00', 'Karışık Kağıt/Karton', 'Çeşitli kağıt ve karton kalitelerinin karışımı.', '%1,50', '%3,00'],
-                ['1.04.00', 'Oluplu Mukavva (OCC)', 'Kullanılmış kutu ambalajları, min %70 oluklu mukavva.', '%1,50', '%3,00'],
-                ['2.05.01', 'Ofis Kağıtları', 'Ofislerden toplanan beyaz yazıcı kağıtları (min %80 wood-free).', '%1,00', '%2,00'],
-                ['3.05.01', 'Baskısız Beyaz', 'Baskısız ve tutkalsız birinci kalite beyaz kağıt kırpıntısı.', '%0,50', '%1,00'],
-                ['4.04.00', 'Kullanılmış Kraft Torba', 'Çimento veya un içermeyen temiz kraft çuvalları.', '%1,00', '%2,00'],
-                ['5.03.00', 'Tetrapak (Sıvı Ambalaj)', 'Plastik/alüminyum katmanlı, min %50 lifli içecek kutuları.', '%3,00', '%3,00'],
-              ]}
-            />
-          </section>
-
-          <Note type="warn">
-            <strong>Nem Standart Toleransı:</strong> EN 643 standardına göre geri kazanılmış kağıtların referans nem oranı <strong>%10</strong>'dur. %12 ve üzerindeki nem oranları alıcı tarafında doğrudan tonaj iskontosu (ağırlık cezası) veya balya reddi gerekçesidir.
-          </Note>
+            </select>
+          </div>
+          <div className="hidden md:flex flex-col gap-1 p-1 bg-gray-50 dark:bg-white/3 rounded-xl border border-gray-200/60 dark:border-white/5">
+            {subTabs.map(t => (
+              <button
+                key={t.id}
+                onClick={() => setActiveSubTab(t.id as any)}
+                className={cx(
+                  'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[11.5px] font-semibold text-left transition-all',
+                  activeSubTab === t.id
+                    ? 'bg-white dark:bg-[#2A2A2A] text-orange-600 dark:text-orange-400 shadow-sm border border-gray-200/50 dark:border-white/5'
+                    : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100/50 dark:hover:bg-white/2 hover:text-gray-700'
+                )}
+              >
+                {t.icon}
+                <span className="truncate">{t.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
-      ) : (
-        <div className="space-y-6">
-          <section className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5">
-            <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white mb-2">GRS (Global Recycled Standard)</h4>
-            <p className="text-[12.5px] text-gray-600 dark:text-gray-400 leading-relaxed mb-3">
-              Üründeki geri dönüştürülmüş malzemenin kaynağını kanıtlayan ve çevresel/sosyal uyumluluğu denetleyen uluslararası standarttır.
-            </p>
-            <DataTable
-              headers={['Kriter', 'Gereklilik', 'Enba Similasyon Rolü']}
-              rows={[
-                ['Geri Dönüştürülmüş Oranı', 'Etiketleme için min %20, logo hakkı için min %50 PCR.', 'Lot çıkışlarında PCR oranını hesaplayıp etikete yazar.'],
-                ['Kütle Dengesi (Mass Balance)', 'Giren balya tonajı ile çıkan ürün arasındaki fireler izlenmelidir.', 'DetailedPlan fire ve verim motoru ile kütlesel çevrimi belgeler.'],
-                ['İzlenebilirlik (Traceability)', 'Lot numarasının hammadde tedarikçisine kadar izlenmesi zorunludur.', 'Balyalama / Sevkiyat modülünde lot kartlarına GRS TC no bağlar.'],
-              ]}
-            />
-          </section>
 
-          <section className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5 space-y-4">
-            <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white flex items-center gap-1.5">
-              <FlaskConical size={16} className="text-blue-500" /> Gıda Temaslı Geri Dönüşüm (EFSA & FDA)
-            </h4>
-            <p className="text-[12.5px] text-gray-600 dark:text-gray-400 leading-relaxed">
-              PET şişelerin gıda ambalajında yeniden kullanılabilmesi için en katı gıda güvenliği sınırları uygulanır:
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-[12px]">
-              <div className="p-3 bg-blue-50/50 dark:bg-blue-500/5 rounded-xl border border-blue-100 dark:border-blue-500/10">
-                <div className="font-bold text-blue-700 dark:text-blue-400">Challenge Test</div>
-                <div className="mt-1 text-gray-600 dark:text-gray-400">Hattın kontaminasyon sökme gücünü kanıtlayan kirlilik temizleme testidir. Denetimde raporlanmalıdır.</div>
-              </div>
-              <div className="p-3 bg-blue-50/50 dark:bg-blue-500/5 rounded-xl border border-blue-100 dark:border-blue-500/10">
-                <div className="font-bold text-blue-700 dark:text-blue-400">≤ 50 ppm Sınırı</div>
-                <div className="mt-1 text-gray-600 dark:text-gray-400">Gıda temaslı pet pullarda (flake) veya peletlerde izin verilen maksimum toplam kontaminasyon limitidir.</div>
-              </div>
-              <div className="p-3 bg-blue-50/50 dark:bg-blue-500/5 rounded-xl border border-blue-100 dark:border-blue-500/10">
-                <div className="font-bold text-blue-700 dark:text-blue-400">SSP Reaktörü & IV</div>
-                <div className="mt-1 text-gray-600 dark:text-gray-400">PET viskozitesini (IV) gıda kalitesine yükseltmek için vakum altında ön kristalizasyon uygulanmasıdır.</div>
-              </div>
-            </div>
-          </section>
-
-          <Note type="tip">
-            <strong>Tesis Denetim Listesi:</strong> GRS veya Food-grade denetiminden geçebilmek için: Tedarikçi GRS TC (Transaction Certificate) kayıtları, Kaustik pH logları, Kütle Çevrim Raporları ve kalite laboratuvar test lot kartları sistemde tam tutulmalıdır.
-          </Note>
+        {/* Sağ İçerik Alanı */}
+        <div className="flex-1 min-w-0 w-full">
+          {renderSubContent()}
         </div>
-      )}
+      </div>
     </div>
   );
 };
+
+// ─── Malzemeler Sayfası ────────────────────────────────────────────────────────
+
+const PageMalzemeler: React.FC = () => {
+  const [activeMaterial, setActiveMaterial] = useState<'pet' | 'ldpe' | 'pp' | 'hdpe' | 'occ'>('pet');
+
+  const materials = [
+    { id: 'pet', label: 'PET Çapak', icon: <Package size={13} /> },
+    { id: 'ldpe', label: 'LDPE Film', icon: <Layers size={13} /> },
+    { id: 'pp', label: 'PP Polipropilen', icon: <Recycle size={13} /> },
+    { id: 'hdpe', label: 'HDPE & Sert Plastik', icon: <Cpu size={13} /> },
+    { id: 'occ', label: 'OCC Kağıt/Karton', icon: <Factory size={13} /> },
+  ];
+
+  const renderMaterialContent = () => {
+    switch (activeMaterial) {
+      case 'pet':
+        return (
+          <div className="space-y-5">
+            <section className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5">
+              <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white mb-2">PET Çapak Kalite Sınıfları</h4>
+              <DataTable
+                headers={['Kalite Sınıfı', 'PVC Oranı (ppm)', 'Nem Oranı (%)', 'Tipik Kullanım Alanı']}
+                rows={[
+                  ['A Sınıfı (Premium)', '< 10 ppm', '< %0.5', 'Şişeden Şişeye (Food-Grade)'],
+                  ['B Sınıfı', '< 50 ppm', '< %1.0', 'Levha (Sheet) & Ambalaj'],
+                  ['C Sınıfı', '< 150 ppm', '< %2.0', 'Sentetik Elyaf / Tekstil'],
+                ]}
+              />
+            </section>
+            <section className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5 space-y-3">
+              <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white">Proses ve Simülasyon Katsayıları (PET)</h4>
+              <ul className="list-disc pl-5 text-[12.5px] text-gray-600 dark:text-gray-400 space-y-1.5">
+                <li><strong>Giriş / Ayıklama Firesi:</strong> Balyadan gelen şişe dışı atıklar (kapak, etiket, metal tel) ortalama <strong>%8 - %15</strong> fire oluşturur.</li>
+                <li><strong>Yıkama Firesi:</strong> Yüzdürme tanklarında etiket ve PP kapak ayrımı sırasında <strong>%5 - %8</strong> ek fire oluşur.</li>
+                <li><strong>Enerji Yoğunluğu:</strong> Kırma ve sıcak yıkama için ton başına ortalama <strong>250 - 350 kWh</strong> elektrik tüketilir.</li>
+              </ul>
+            </section>
+            <Note type="tip">
+              <strong>SSP Reaktörü ve IV Yükseltme:</strong> Gıda temas (bottle-to-bottle) kalitesine ulaşmak için viskozite (IV) 0.70'ten 0.80-0.84 dL/g seviyesine SSP reaktöründe yükseltilir. Bu ünite ton başına ek <strong>+150 kWh</strong> enerji ve azot (N2) gazı maliyeti getirir.
+            </Note>
+          </div>
+        );
+      case 'ldpe':
+        return (
+          <div className="space-y-5">
+            <section className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5">
+              <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white mb-2">LDPE Film Proses Değerleri</h4>
+              <DataTable
+                headers={['Parametre', 'Değer / Oran', 'Detay / Açıklama']}
+                rows={[
+                  ['Tüketici Sonrası (Post-Consumer) Fire', '%30 - %45', 'Belediye poşet atıklarında organik çamur, ıslaklık ve etiket yüksektir.'],
+                  ['Sanayi Kaynaklı (Post-Industrial) Fire', '%3 - %8', 'Temiz fabrika şirink atıkları, minimum temizlik firesi.'],
+                  ['Su Tüketimi (Yıkama)', '4.0 - 6.0 m³/ton', 'Geniş yüzey alanı nedeniyle PET\'e göre %50 daha fazla su gerektirir.'],
+                  ['Spesifik Elektrik Tüketimi', '450 - 600 kWh/ton', 'Aglomer sıkıştırma ve çift aşamalı vakumlu ekstrüzyon güç tüketimi.'],
+                ]}
+              />
+            </section>
+            <section className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5 space-y-3">
+              <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white">Nem ve Sıkıştırma Yönetimi</h4>
+              <p className="text-[12.5px] text-gray-600 dark:text-gray-400 leading-relaxed">
+                Hafif plastik filmler yıkama sonrasında suyu sünger gibi tutar (nem %15-25 kalır). Ekstrüder girişinde nemin <strong>&lt; %2</strong> seviyesine indirilmesi için <strong>Sıkma Presleri (Squeezer)</strong> veya <strong>Aglomer</strong> makineleri kullanımı zorunludur. Aksi halde granülde hava gözenekleri oluşur.
+              </p>
+            </section>
+            <Note type="warn">
+              <strong>Lazer Filtre Kullanımı:</strong> LDPE filmlerdeki erimeyen yabancı maddeleri (kağıt lifi, alüminyum) sürekli temizleyen otomatik lazer filtreler, sarf malzeme maliyetlerine (filtre disk aşınması) ton başına ek işletme gideri yansıtmalıdır.
+            </Note>
+          </div>
+        );
+      case 'pp':
+        return (
+          <div className="space-y-5">
+            <section className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5 space-y-3">
+              <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white">Polipropilen (PP) ve Koku Sorunu</h4>
+              <p className="text-[12.5px] text-gray-600 dark:text-gray-400 leading-relaxed">
+                PP gözenekli yapısı nedeniyle organik molekülleri (gıda, deterjan, şampuan kokuları) emen bir moleküler sünger gibi davranır. Klasik yıkama bu kokuyu gideremez. Kokusuz rPP elde etmek için:
+              </p>
+              <ul className="list-disc pl-5 text-[12.5px] text-gray-600 dark:text-gray-400 space-y-1.5">
+                <li><strong>Çift Vakumlu Degazör:</strong> Ekstrüder üzerinde yüksek vakum altında uçucu organik bileşikleri (VOC) emme.</li>
+                <li><strong>Sıcak Hava ile Karıştırma (Stripping Silosu):</strong> Granüllerin 80-100°C\'de silo içinde 4-8 saat boyunca kuru sıcak havaya maruz bırakılması.</li>
+                <li><strong>Kimyasal Koku Absorberler:</strong> Ekstrüzyon esnasında formüle zeolit veya koku maskeleyici katkıların enjeksiyonu.</li>
+              </ul>
+            </section>
+            <Note type="warn">
+              <strong>Koku Giderme OPEX Maliyeti:</strong> Stripping fırın ve fan motorları nedeniyle PP geri dönüşüm planlarında elektrik bütçesine ton başına ek <strong>+80 - 120 kWh</strong> maliyet yansıtılmalıdır. Ortalama proses verimi %75-80 civarıdır.
+            </Note>
+          </div>
+        );
+      case 'hdpe':
+        return (
+          <div className="space-y-5">
+            <section className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5">
+              <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white mb-2">HDPE Renk Sınıfları ve Pazar Fiyatı Etkisi</h4>
+              <DataTable
+                headers={['Renk Sınıfı', 'Kaynak', 'Ekonomik Değeri', 'Kullanım Alanı']}
+                rows={[
+                  ['Naturel (Şeffaf/Doğal)', 'Kozmetik şişeleri, damacanalar', 'En Yüksek (Renkli HDPE\'ye göre +%50 pahalı)', 'İstenen renge boyanıp şişirme üretimi.'],
+                  ['Beyaz / Opak', 'Süt şişeleri, yoğurt kapları', 'Orta Derece', 'Beyaz plastik ambalajlar.'],
+                  ['Renkli (Mix)', 'Deterjan bidonları, plastik kasalar', 'Düşük Derece (Siyah/Koyu Gri)', 'Altyapı boruları, çöp kovaları.'],
+                ]}
+              />
+            </section>
+            <section className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5 space-y-3">
+              <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white">Şişirme (Blow) vs. Enjeksiyon Ayrımları</h4>
+              <p className="text-[12.5px] text-gray-600 dark:text-gray-400 leading-relaxed">
+                Şişirme kalite HDPE (deterjan bidonları) eriyik mukavemeti için düşük akışkanlığa (MFI &lt; 1.0) sahiptir. Enjeksiyon kalite kasa plastikleri ise yüksek akışkanlığa (MFI &gt; 4.0) sahiptir. Bu iki sınıf birbirine karışırsa, elde edilen granülden yeni şişe şişirilemez (eriyik kopar).
+              </p>
+            </section>
+            <Note type="warn">
+              <strong>Verim ve Enerji Değerleri:</strong> HDPE geri dönüşümünde kırma/yıkama firesi ortalama %10-15 olup, spesifik elektrik tüketimi 350-450 kWh/ton\'dur. Deterjan kalıntıları nedeniyle su arıtmada antifoam (köpük önleyici) dozajı zorunludur.
+            </Note>
+          </div>
+        );
+      case 'occ':
+        return (
+          <div className="space-y-5">
+            <section className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5 space-y-3">
+              <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white">OCC Kağıt & Karton Hamur Hazırlama (Pulper)</h4>
+              <p className="text-[12.5px] text-gray-600 dark:text-gray-400 leading-relaxed">
+                Plastiğin erime prensibinden farklı olarak kağıt, <strong>Pulper</strong> kazanlarında suyla karıştırılarak liflerine ayrıştırılır. Liflerin şişmesi ve mürekkep sökümü için soda (NaOH) dozajlanarak pH 8.5 - 9.5 aralığına getirilir. Yapışkan etiket ve koli bantlarının oluşturduğu <strong>stickies</strong> kalıntıları, kağıt makinelerinde duruşlara yol açan en büyük işletme riskidir.
+              </p>
+            </section>
+            <section className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5">
+              <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white mb-2">DetailedPlan Kağıt Üretim Değerleri</h4>
+              <DataTable
+                headers={['Parametre', 'Değer', 'Açıklama / Sektörel Karşılık']}
+                rows={[
+                  ['Toplam Malzeme Verimi', '%82 - %88', 'Plastik bantlar, zımbalar ve pulper altı lif kayıpları.'],
+                  ['Taze Su Tüketimi', '3.0 - 5.0 m³/ton', 'Kapalı devre sirküle edilse de elyaf durulama suyu.'],
+                  ['Spesifik Elektrik Tüketimi', '180 - 250 kWh/ton', 'Pulper rotorları ve hamur pompaları güç tüketimi.'],
+                  ['Doğalgaz / Buhar Tüketimi', '1.2 - 1.8 Gcal/ton', 'Kağıt hamurunu silindirlerde kurutmak için harcanan buhar.'],
+                ]}
+              />
+            </section>
+            <Note type="warn">
+              <strong>Selüloz Lif Kısalması (Degradation):</strong> Geri kazanılan selüloz lifleri maksimum <strong>5 - 7 kez</strong> geri dönüştürülebilir; her çevrimde lif boyu kısalır ve mukavemet düşer. Yüksek mukavemetli karton üretmek için DetailedPlan reçetesine belirli oranda orijinal (virgin) kraft lifi eklenmesi gerekir, bu da hammadde maliyetini artırır.
+            </Note>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h3 className="text-[15px] font-bold text-gray-800 dark:text-white mb-1 flex items-center gap-2">
+          <Layers size={16} className="text-orange-500" /> Malzemeler & Fraksiyon Dinamikleri
+        </h3>
+        <p className="text-[12px] text-gray-500">Geri dönüşüm tesislerinde işlenen hammaddelerin kimyasal, fiziksel ve maliyet katsayıları.</p>
+      </div>
+
+      <div className="flex flex-col md:flex-row gap-5 items-start">
+        {/* Sol Menü (Desktop) / Dropdown (Mobil) */}
+        <div className="w-full md:w-[200px] flex-shrink-0">
+          <div className="md:hidden">
+            <select
+              value={activeMaterial}
+              onChange={(e: any) => setActiveMaterial(e.target.value)}
+              className="w-full p-2 text-[12.5px] border border-gray-200 dark:border-white/10 rounded-xl bg-white dark:bg-[#1A1A1A] text-gray-800 dark:text-white outline-none"
+            >
+              {materials.map(t => (
+                <option key={t.id} value={t.id}>{t.label}</option>
+              ))}
+            </select>
+          </div>
+          <div className="hidden md:flex flex-col gap-1 p-1 bg-gray-50 dark:bg-white/3 rounded-xl border border-gray-200/60 dark:border-white/5">
+            {materials.map(t => (
+              <button
+                key={t.id}
+                onClick={() => setActiveMaterial(t.id as any)}
+                className={cx(
+                  'w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[11.5px] font-semibold text-left transition-all',
+                  activeMaterial === t.id
+                    ? 'bg-white dark:bg-[#2A2A2A] text-orange-600 dark:text-orange-400 shadow-sm border border-gray-200/50 dark:border-white/5'
+                    : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100/50 dark:hover:bg-white/2 hover:text-gray-700'
+                )}
+              >
+                {t.icon}
+                <span className="truncate">{t.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Sağ İçerik Alanı */}
+        <div className="flex-1 min-w-0 w-full">
+          {renderMaterialContent()}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 
 // ─── Sözlük sayfası ───────────────────────────────────────────────────────────
 
@@ -1928,7 +2393,8 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'overview', label: 'Genel Bakış',      icon: <BookOpen size={15} /> },
   { id: 'proses',   label: 'Prosesler',        icon: <Recycle size={15} /> },
   { id: 'hatlar',   label: 'Üretim Hatları',   icon: <Factory size={15} /> },
-  { id: 'standartlar', label: 'Standartlar & GRS', icon: <FlaskConical size={15} /> },
+  { id: 'standartlar', label: 'Standartlar & Sektörel', icon: <FlaskConical size={15} /> },
+  { id: 'malzemeler', label: 'Malzemeler & Fraksiyonlar', icon: <Layers size={15} /> },
   { id: 'makine',   label: 'Makine & Hat',     icon: <Cpu size={15} /> },
   { id: 'ekonomi',  label: 'Ekonomi',          icon: <Zap size={15} /> },
   { id: 'sozluk',   label: 'Terimler',         icon: <Hash size={15} />, count: WIKI_TERMS.length },
@@ -1951,12 +2417,14 @@ export function SektorNot() {
       case 'proses':   return <PageProses />;
       case 'hatlar':   return <PageHatlar />;
       case 'standartlar': return <PageStandartlar />;
+      case 'malzemeler': return <PageMalzemeler />;
       case 'makine':   return <PageMakine />;
       case 'ekonomi':  return <PageEkonomi />;
       case 'sozluk':   return <PageSozluk initialQuery={globalSearch} />;
       default:         return <PageOverview />;
     }
   };
+
 
   const activeNav = NAV_ITEMS.find(n => n.id === activePage);
 
