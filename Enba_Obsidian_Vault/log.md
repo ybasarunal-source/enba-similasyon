@@ -1059,3 +1059,15 @@ grep "^## \[" log.md | tail -5
   - [[Wiki/Sektor/Dairesel-Ekonomi-ve-EPR|Dairesel Ekonomi ve EPR]]: Genişletilmiş Üretici Sorumluluğu (EPR), GEKAP çevre vergisi muafiyetleri ve teşvikleri, Depozito İade Sistemi (DİS) ile fire oranlarında %30'dan %5'e düşüş verimleri.
   - [[Wiki/Sektor/Tesis-Bakim-ve-Asinma-Dinamikleri|Tesis Bakım ve Aşınma]]: Kırıcı bıçakları, ekstrüder bimetalik vidaları, lazer filtre elekleri aşınma periyotları, kör bıçakların elektrik tüketimine (+%15-30 SEC) ve toz çapak firesine etkisi ve DetailedPlan OEE/Opex duruş entegrasyonu.
 - **Dizin Güncellemesi:** `index.md` dosyasına 3 yeni sektörel sayfa eklendi.
+
+---
+
+## [2026-05-28 14:30] geliştirme | DetailedPlan UX düzeltmeleri — #5 #7 #6 #10
+- Yapılan:
+  - #5 Senaryo ekleme: allScenarios (sabit+özel), ScenarioModal (ad/açıklama/gelir%/maliyet%/renk seçici), düzenleme ve silme; I.X ikonu DPPrimitives'e eklendi
+  - #7 Negatif giriş: NumInput min=0 default + HTML attribute iletimi → tüm wizard alanları kapsandı; startYear 2020-2050; PnLPanel inline edit min=0 + Math.max clamp
+  - #6 Fire oranı: %80-99 amber, %100+ kırmızı+banner; Devam step=1'de bloklıyor
+  - #10 Ürün payları: outputShareOk kontrolü; Devam step=3'te bloklıyor
+- Etkilenen dosyalar: DPPrimitives.tsx, DPlanWizard.tsx, DetailedPlanShell.tsx, ScenarioPanel.tsx, PnLPanel.tsx, dpData.ts
+- Commit: 6800274
+- Bir sonraki: #8 P&L çift formül veya #9 BudgetTrack modal veri kaybı
