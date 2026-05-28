@@ -86,6 +86,8 @@
 | [[Wiki/Malzemeler/LDPE-Film-ve-Geri-Donusum-Zorluklari\|LDPE Film ve Geri Dönüşüm]] | LDPE film esnekliği, yüksek nem tutma sorunu, aglomerasyon ve eriyik filtreleme dinamikleri | 2026-05-28 |
 | [[Wiki/Malzemeler/PP-Polipropilen-ve-Koku-Sorunu\|PP Polipropilen ve Koku Sorunu]] | PP enjeksiyon/ekstrüzyon özellikleri, koku emme problemi ve koku giderme (deodorization) teknolojileri | 2026-05-28 |
 | [[Wiki/Malzemeler/HDPE-Yuksek-Yogunluk-Polietilen-Dinamikleri\|HDPE ve Sert Plastik Dinamikleri]] | HDPE renk ayrımının ekonomik önemi (naturel/mix), şişirme vs enjeksiyon MFI farkı | 2026-05-28 |
+| [[Wiki/Malzemeler/OCC-ve-Kagit-Geri-Donusum-Prosesleri\|OCC ve Kağıt Geri Dönüşüm]] | Kağıt/karton lif çözücü (pulper) teknolojisi, stickies yapışkan filtreleme ve selüloz lifi kısalma dinamikleri | 2026-05-28 |
+
 
 
 

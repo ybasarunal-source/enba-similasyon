@@ -1016,3 +1016,12 @@ grep "^## \[" log.md | tail -5
   - [[Wiki/Malzemeler/PP-Polipropilen-ve-Koku-Sorunu|PP Polipropilen ve Koku Giderme]]: PP enjeksiyon MFI değerleri, koku emme problemi (sünger etkisi) ve degazör/sıcak hava stripping koku giderme teknolojileri.
   - [[Wiki/Malzemeler/HDPE-Yuksek-Yogunluk-Polietilen-Dinamikleri|HDPE ve Sert Plastik]]: Naturel (şeffaf) ve renkli HDPE arasındaki ticari fiyat farkları, şişirme (blow) ve enjeksiyon kalite MFI ayrımları ve karışma riskleri.
 - **Dizin Güncellemesi:** `index.md` dosyasına yeni malzeme sayfaları eklendi.
+
+---
+
+## [2026-05-28 12:50] ingesting | OCC Kağıt Geri Dönüşüm Sayfası Eklendi
+
+**Yapılan işlemler:**
+- **Wiki Genişletme:** `Wiki/Malzemeler` klasörüne kağıt/karton geri dönüşümü için yeni bir sayfa eklendi:
+  - [[Wiki/Malzemeler/OCC-ve-Kagit-Geri-Donusum-Prosesleri|OCC ve Kağıt Geri Dönüşüm]]: Sulu süspansiyon (pulper) teknolojisi, stickies (koli bandı tutkalları) yapışkan krizleri, selüloz lifi kısalması (maks 5-7 geri dönüşüm ömrü) ve orijinal lif karışım katsayıları detaylandırıldı.
+- **Dizin Güncellemesi:** `index.md` dosyasına yeni malzeme sayfası eklendi.
