@@ -275,9 +275,9 @@ export const parasutService = {
     
     const resp = await fetch(url.toString());
     
-    if (resp.status === 429 && retryCount < 3) {
-      const wait = (retryCount + 1) * 3000; // 3s, 6s, 9s
-      console.warn(`Rate limited (429). Retrying in ${wait/1000}s...`);
+    if (resp.status === 429 && retryCount < 5) {
+      const wait = (retryCount + 1) * 5000; // 5s, 10s, 15s, 20s, 25s
+      console.warn(`Rate limited (429). Retrying in ${wait/1000}s... (attempt ${retryCount + 1})`);
       await this._sleep(wait);
       return this.request(path, params, retryCount + 1);
     }
@@ -300,15 +300,17 @@ export const parasutService = {
     let allData: any[] = [];
     let allIncluded: any[] = [];
     let page = 1;
-    const pageSize = '25';
+    const pageSize = '100';
 
-    while (page <= 200) { // Safety limit: max 5000 records (200 pages * 25)
+    while (page <= 50) { // Safety limit: max 5000 records (50 pages * 100)
       const resp = await this.request(path, { ...params, 'page[size]': pageSize, 'page[number]': String(page) });
       allData = [...allData, ...(resp.data || [])];
       allIncluded = [...allIncluded, ...(resp.included || [])];
-      
+
       if (!resp.links?.next) break;
       page++;
+      // Rate limit koruması — Paraşüt 429 üretmesin
+      await this._sleep(250);
     }
 
     return { data: allData, included: allIncluded };

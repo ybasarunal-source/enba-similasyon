@@ -140,7 +140,7 @@ const ImportModal: React.FC<ImportModalProps> = ({ companyId, onImported, onClos
     try {
       for (let i = 0; i < selected.length; i++) {
         const acc = selected[i];
-        setProgress({ label: `${acc.name} hareketleri alınıyor…`, pct: Math.round((i / selected.length) * 60) });
+        setProgress({ label: `${acc.name} hareketleri alınıyor… (${i + 1}/${selected.length})`, pct: Math.round((i / selected.length) * 60) });
         try {
           const txns = await parasutService.getAccountTransactions(parasutCompany.id, acc, fromDate, toDate);
           allTxns.push(...txns);
@@ -148,6 +148,8 @@ const ImportModal: React.FC<ImportModalProps> = ({ companyId, onImported, onClos
           const msg = e instanceof Error ? e.message : String(e);
           setErr(prev => prev ? `${prev}\n${acc.name}: ${msg}` : `${acc.name}: ${msg}`);
         }
+        // Hesaplar arası rate limit koruması
+        if (i < selected.length - 1) await new Promise(r => setTimeout(r, 500));
       }
 
       setProgress({ label: 'Mevcut kayıtlar kontrol ediliyor…', pct: 70 });
