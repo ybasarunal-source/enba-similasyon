@@ -144,8 +144,9 @@ const ImportModal: React.FC<ImportModalProps> = ({ companyId, onImported, onClos
         try {
           const txns = await parasutService.getAccountTransactions(parasutCompany.id, acc, fromDate, toDate);
           allTxns.push(...txns);
-        } catch {
-          // Hesap transaction desteklemiyor olabilir — atla
+        } catch (e: unknown) {
+          const msg = e instanceof Error ? e.message : String(e);
+          setErr(prev => prev ? `${prev}\n${acc.name}: ${msg}` : `${acc.name}: ${msg}`);
         }
       }
 

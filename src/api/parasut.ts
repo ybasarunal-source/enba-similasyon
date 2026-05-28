@@ -367,8 +367,8 @@ export const parasutService = {
   ): Promise<ParasutTransaction[]> {
     // Paraşüt v4: /accounts/{id}/transactions (route: transaction.show)
     const raw = await this.requestAll(`/${companyId}/accounts/${account.id}/transactions`, {
-      'filter[date][gte]': dateFrom,
-      'filter[date][lte]': dateTo,
+      'filter[date][gteq]': dateFrom,
+      'filter[date][lteq]': dateTo,
       'sort': 'date',
     });
     return (raw.data || []).map((d: any): ParasutTransaction => {
