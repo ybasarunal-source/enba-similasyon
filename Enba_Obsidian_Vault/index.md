@@ -94,8 +94,9 @@
 | [[Wiki/Sektor/Optik-Ayiklama-Teknolojileri\|Optik Ayıklama Teknolojileri]] | NIR spektroskopisi, renk ayıklama, AI kameralar, ejektör valfleri ve kompresör maliyetleri | 2026-05-28 |
 | [[Wiki/Sektor/Laboratuvar-Testleri-ve-Akreditasyon\|Laboratuvar Testleri ve TDS]] | ISO 1133 (MFI), ISO 179/180 (Darbe), ISO 527 (Mukavemet), ISO 17025 laboratuvar akreditasyonu | 2026-05-28 |
 | [[Wiki/Sektor/Yasal-Mevzuat-ve-Atik-Lisanslari\|Yasal Mevzuat ve Lisanslar]] | TAT ve GDT çevre lisansları, MoTAT atık takip sistemi, devlet kütle denge (KDS) raporlaması | 2026-05-28 |
-
-
+| [[Wiki/Sektor/AI-ve-Robotik-Ayiklama-Sistemleri\|AI ve Robotik Ayıklama]] | Yapay zeka destekli robot kollar (Delta Picker), bilgisayarlı görü ve manuel ayıklama ROI karşılaştırması | 2026-05-28 |
+| [[Wiki/Sektor/Endustri-4.0-ve-SCADA-Entegrasyonu\|Endüstri 4.0 ve SCADA]] | IoT sensörleri, akış/enerji analizörleri, SCADA OEE takibi ve kestirimci bakım modülü | 2026-05-28 |
+| [[Wiki/Sektor/Sinirda-Karbon-Duzenleme-Mekanizmasi\|Sınırda Karbon Vergisi (SKDM)]] | AB Yeşil Mutabakatı CBAM kuralları, r-Polimer karbon tasarrufları (Scope 1/2/3) ve sertifikasyon | 2026-05-28 |
 
 
 | [[Wiki/Malzemeler/PET-Capak-Dinamikleri\|PET Çapak Dinamikleri]] | PET çapak kalite sınıfları, PVC kontaminasyon limitleri, IV değerleri ve SSP reaktör katsayıları | 2026-05-28 |
@@ -103,6 +104,8 @@
 | [[Wiki/Malzemeler/PP-Polipropilen-ve-Koku-Sorunu\|PP Polipropilen ve Koku Sorunu]] | PP enjeksiyon/ekstrüzyon özellikleri, koku emme problemi ve koku giderme (deodorization) teknolojileri | 2026-05-28 |
 | [[Wiki/Malzemeler/HDPE-Yuksek-Yogunluk-Polietilen-Dinamikleri\|HDPE ve Sert Plastik Dinamikleri]] | HDPE renk ayrımının ekonomik önemi (naturel/mix), şişirme vs enjeksiyon MFI farkı | 2026-05-28 |
 | [[Wiki/Malzemeler/OCC-ve-Kagit-Geri-Donusum-Prosesleri\|OCC ve Kağıt Geri Dönüşüm]] | Kağıt/karton lif çözücü (pulper) teknolojisi, stickies yapışkan filtreleme ve selüloz lifi kısalma dinamikleri | 2026-05-28 |
+| [[Wiki/Malzemeler/PVC-ve-Kontaminasyon-Yonetimi\|PVC ve Kontaminasyon Yönetimi]] | PVC'nin PET geri dönüşümündeki asit/termal kriz etkileri, ayıklama teknolojileri ve kalite limitleri | 2026-05-28 |
+| [[Wiki/Malzemeler/PS-Polistiren-ve-EPS-Teknolojileri\|PS ve EPS Geri Dönüşümü]] | Polistiren özellikleri, köpük (strafor) termal sıkıştırma (densifier) ve hacimsel lojistik çözümleri | 2026-05-28 |
 
 
 

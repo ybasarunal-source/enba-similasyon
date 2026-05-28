@@ -1681,7 +1681,7 @@ const PageEkonomi: React.FC = () => (
 
 const PageStandartlar: React.FC = () => {
   const [activeSubTab, setActiveSubTab] = useState<
-    'en643' | 'grs' | 'kirleticiler' | 'enerji' | 'kimyasal' | 'lojistik' | 'epr' | 'bakim' | 'optik' | 'laboratuvar' | 'lisans'
+    'en643' | 'grs' | 'kirleticiler' | 'enerji' | 'kimyasal' | 'lojistik' | 'epr' | 'bakim' | 'optik' | 'laboratuvar' | 'lisans' | 'ai_sorting' | 'scada' | 'cbam'
   >('en643');
 
   const subTabs = [
@@ -1696,6 +1696,9 @@ const PageStandartlar: React.FC = () => {
     { id: 'optik', label: 'Optik Ayıklama', icon: <Eye size={13} /> },
     { id: 'laboratuvar', label: 'Laboratuvar & TDS', icon: <BarChart2 size={13} /> },
     { id: 'lisans', label: 'Yasal Mevzuat & Lisans', icon: <ShieldCheck size={13} /> },
+    { id: 'ai_sorting', label: 'AI & Robotik Ayıklama', icon: <Cpu size={13} /> },
+    { id: 'scada', label: 'Endüstri 4.0 & SCADA', icon: <BarChart2 size={13} /> },
+    { id: 'cbam', label: 'Karbon Vergisi (SKDM)', icon: <ShieldCheck size={13} /> },
   ];
 
   const renderSubContent = () => {
@@ -2026,6 +2029,85 @@ const PageStandartlar: React.FC = () => {
             </Note>
           </div>
         );
+      case 'ai_sorting':
+        return (
+          <div className="space-y-5">
+            <section className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5">
+              <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white mb-2">Yapay Zeka ve Robotik Ayıklama</h4>
+              <p className="text-[12.5px] text-gray-600 dark:text-gray-400 leading-relaxed">
+                Yapay zeka (AI) destekli robotik kollar (Delta Picker), bilgisayarlı görü ve spektral kameralar sayesinde hammadde kırma ve yıkama hatlarının giriş kalitesini optimize eder.
+              </p>
+            </section>
+            <section className="space-y-3">
+              <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white">Performans ve Operasyonel Karşılaştırma</h4>
+              <DataTable
+                headers={['Metrik', 'Manuel Ayıklama (1 İşçi)', 'AI Robotik Kol (Delta Picker)', 'Açıklama / Fark']}
+                rows={[
+                  ['Ayıklama Hızı', '30 - 45 adet/dk', '70 - 90 adet/dk', 'Robotik kol insan hızının en az 2 katı kapasitededir.'],
+                  ['Doğruluk Oranı', '%70 - %85', '%95 - %98', 'AI sistem yorulmadan ve konsantrasyon kaybı olmadan 7/24 çalışır.'],
+                  ['Çalışma Süresi', '8 saat (Mola gerekir)', '24 saat (Sadece bakım duruşu)', 'OEE kullanılabilirlik katsayısını artırır.'],
+                  ['Maks. Ağırlık Limiti', 'Sınırsız (Hafif/Ağır)', '< 1.5 kg (Vantuz sınırı)', 'Büyük/Ağır bidon veya kasalar için insan gücü gerekir.'],
+                ]}
+              />
+            </section>
+            <Note type="tip">
+              <strong>Yatırımın Geri Dönüşü (ROI):</strong> Tek bir AI Robotik kol yatırımı (CAPEX: ~90.000 € - 140.000 €), 3 vardiya çalışan bir tesiste ortalama <strong>3.2 FTE (Tam Zaman Eşdeğer) işçilik tasarrufu</strong> sağlar. Türkiye asgari ücret şartlarında amortisman süresi <strong>2.5 - 3.5 yıl</strong> arasındadır.
+            </Note>
+          </div>
+        );
+      case 'scada':
+        return (
+          <div className="space-y-5">
+            <section className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5 space-y-3">
+              <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white">Endüstri 4.0 ve SCADA Entegrasyonu</h4>
+              <p className="text-[12.5px] text-gray-600 dark:text-gray-400 leading-relaxed">
+                Tesis genelindeki enerji analizörleri, akış sensörleri ve titreşim ölçerler, PLC/Modbus haberleşme altyapısıyla SCADA ekranlarına bağlanır. Bu sayede OEE (Toplam Ekipman Etkinliği) anlık hesaplanır.
+              </p>
+            </section>
+            <section className="space-y-3">
+              <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white">SCADA Odaklı Proses Metrikleri</h4>
+              <DataTable
+                headers={['Metrik', 'Entegrasyon Öncesi', 'Entegrasyon Sonrası', 'Kazanım / Etki']}
+                rows={[
+                  ['Ortalama OEE Oranı', '%65 - %72', '%82 - %88', 'Anlık arıza müdahalesi ile performansta ~%20 artış.'],
+                  ['Plansız Duruş Süresi', 'Vardiya başı 45 dk', 'Vardiya başı 12 dk', 'Kestirimci bakım rulman/bıçak aşınma uyarıları.'],
+                  ['Hatalı Granül Oranı', '%2.5 - %4.0', '< %0.8', 'Ekstrüder eriyik nem ve basınç parametrelerinin stabilizasyonu.'],
+                  ['Spesifik Enerji (SEC)', '420 kWh/ton', '365 kWh/ton', 'Pik güç kontrolü, motor yük optimizasyonu ve reaktif güç yönetimi.'],
+                ]}
+              />
+            </section>
+            <Note type="warn">
+              <strong>Simülasyon Katsayıları:</strong> SCADA/IoT entegrasyonu aktif olan planlarda, OEE değeri otomatik olarak <strong>1.1 kat</strong> iyileştirilir ve yıllık plansız makine bakım bütçesi (yedek parça/aşınma) <strong>%15 oranında azaltılır</strong>.
+            </Note>
+          </div>
+        );
+      case 'cbam':
+        return (
+          <div className="space-y-5">
+            <section className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5">
+              <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white mb-2">AB Sınırda Karbon Düzenleme Mekanizması (SKDM - CBAM)</h4>
+              <p className="text-[12.5px] text-gray-600 dark:text-gray-400 leading-relaxed">
+                Avrupa Birliği ihracatında, birincil plastik yerine geri dönüştürülmüş plastik (r-Polimer) kullanan firmalar karbon ayak izlerini %70-%90 oranında düşürür. Bu durum, AB ETS karbon vergisi kapsamında ciddi bir mali muafiyet sağlar.
+              </p>
+            </section>
+            <section className="space-y-3">
+              <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white">Polimer Sınıflarına Göre Net CO₂e Tasarrufları</h4>
+              <DataTable
+                headers={['Polimer Türü', 'Orijinal Emisyon (t CO₂e/t)', 'r-Polimer Emisyonu (t CO₂e/t)', 'Net CO₂e Tasarrufu (t CO₂e/t)', 'Karbon Tasarruf Oranı']}
+                rows={[
+                  ['PET (Şişelik)', '2.15', '0.42', '1.73', '%80.4'],
+                  ['HDPE (Sert Plastik)', '1.90', '0.35', '1.55', '%81.5'],
+                  ['LDPE (Film/Poşet)', '2.05', '0.38', '1.67', '%81.4'],
+                  ['PP (Polipropilen)', '2.20', '0.45', '1.75', '%79.5'],
+                  ['Kağıt / OCC', '0.95', '0.28', '0.67', '%70.5'],
+                ]}
+              />
+            </section>
+            <Note type="tip">
+              <strong>İhracatta Karbon Primi (Green Premium):</strong> ISCC Plus ve GRS onaylı karbon ayak izi sertifikasına sahip geri dönüşüm tesisleri, r-Polimer granüllerini standart piyasaya göre ton başına <strong>50 € - 120 € arası primle</strong> satabilirler.
+            </Note>
+          </div>
+        );
       default:
         return null;
     }
@@ -2085,7 +2167,7 @@ const PageStandartlar: React.FC = () => {
 // ─── Malzemeler Sayfası ────────────────────────────────────────────────────────
 
 const PageMalzemeler: React.FC = () => {
-  const [activeMaterial, setActiveMaterial] = useState<'pet' | 'ldpe' | 'pp' | 'hdpe' | 'occ'>('pet');
+  const [activeMaterial, setActiveMaterial] = useState<'pet' | 'ldpe' | 'pp' | 'hdpe' | 'occ' | 'pvc' | 'ps'>('pet');
 
   const materials = [
     { id: 'pet', label: 'PET Çapak', icon: <Package size={13} /> },
@@ -2093,6 +2175,8 @@ const PageMalzemeler: React.FC = () => {
     { id: 'pp', label: 'PP Polipropilen', icon: <Recycle size={13} /> },
     { id: 'hdpe', label: 'HDPE & Sert Plastik', icon: <Cpu size={13} /> },
     { id: 'occ', label: 'OCC Kağıt/Karton', icon: <Factory size={13} /> },
+    { id: 'pvc', label: 'PVC Kontaminasyonu', icon: <ShieldCheck size={13} /> },
+    { id: 'ps', label: 'PS & EPS (Polistiren)', icon: <Layers size={13} /> },
   ];
 
   const renderMaterialContent = () => {
@@ -2217,6 +2301,58 @@ const PageMalzemeler: React.FC = () => {
             </section>
             <Note type="warn">
               <strong>Selüloz Lif Kısalması (Degradation):</strong> Geri kazanılan selüloz lifleri maksimum <strong>5 - 7 kez</strong> geri dönüştürülebilir; her çevrimde lif boyu kısalır ve mukavemet düşer. Yüksek mukavemetli karton üretmek için DetailedPlan reçetesine belirli oranda orijinal (virgin) kraft lifi eklenmesi gerekir, bu da hammadde maliyetini artırır.
+            </Note>
+          </div>
+        );
+      case 'pvc':
+        return (
+          <div className="space-y-5">
+            <section className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5 space-y-3">
+              <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white">PVC (Polivinil Klorür) ve Kontaminasyon Yönetimi</h4>
+              <p className="text-[12.5px] text-gray-600 dark:text-gray-400 leading-relaxed">
+                PET geri dönüşümünde PVC, en yıkıcı kontaminasyon kaynağıdır. Yoğunluklarının benzerliği (PET: ~1.38 g/cm³, PVC: ~1.38 g/cm³) float-sink ayrımını imkansızlaştırır. Ekstrüzyonda PVC 180-200°C'de bozunarak <strong>Hidroklorik Asit (HCl)</strong> gazı salar.
+              </p>
+            </section>
+            <section className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5">
+              <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white mb-2">PVC Kalite Limitleri ve Operasyonel Etki</h4>
+              <DataTable
+                headers={['Parametre', 'Değer', 'Açıklama / Sektörel Standart']}
+                rows={[
+                  ['Maksimum PVC Limit (Bottle-to-Bottle)', '< 10 ppm', 'Premium gıda temas rPET için zorunlu üst sınır.'],
+                  ['Standart rPET Flake Limiti (B Sınıfı)', '< 50 ppm', 'Standart elyaf ve levha üretimi kabul edilebilir kirlilik.'],
+                  ['Kırma / Yıkama İskontosu', '-%15 ila -%30', '500 ppm üzeri PVC tespiti durumunda hammadde fiyat kırılması.'],
+                  ['Filtre Elek Ömrü Azalımı', '-%25', 'Her 100 ppm ek PVC için lazer filtre elek temizleme sıklığı artışı.'],
+                ]}
+              />
+            </section>
+            <Note type="warn">
+              <strong>Asit Korozyon Maliyeti:</strong> Ekstrüzyon esnasında PVC bozunmasından kaynaklanan asit, vida ve kovanı aşındırır. PVC seviyesi yüksek girdilerde ekstrüder kovan/vida değişim ömrü <strong>0.6 katına</strong> düşer.
+            </Note>
+          </div>
+        );
+      case 'ps':
+        return (
+          <div className="space-y-5">
+            <section className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5 space-y-3">
+              <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white">PS & EPS (Polistiren ve Strafor) Prosesi</h4>
+              <p className="text-[12.5px] text-gray-600 dark:text-gray-400 leading-relaxed">
+                Expanded Polystyrene (EPS/Strafor) atıkları çok yüksek hacme ama çok düşük ağırlığa sahiptir (15-30 kg/m³). Bu durum lojistiği verimsiz kılar. Çözüm olarak atıklar tesise girmeden önce <strong>Termal Yoğunlaştırıcılar (Densifier)</strong> ile briketlenerek yoğunluk 300-450 kg/m³ seviyesine çıkarılır.
+              </p>
+            </section>
+            <section className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5">
+              <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white mb-2">PS/EPS Geri Dönüşüm Parametreleri</h4>
+              <DataTable
+                headers={['Parametre', 'Değer', 'Açıklama / Sektörel Karşılık']}
+                rows={[
+                  ['Yoğunluk (Katı PS)', '1.04 - 1.06 g/cm³', 'Yüzdürme tanklarında dibe batar, PE/PP\'den kolayca ayrışır.'],
+                  ['MFI (Melt Flow Index)', '3.0 - 15.0 g/10 dk', 'Akışkanlık derecesine göre enjeksiyon veya levhalık sınıf ayrımı.'],
+                  ['Briketleme Enerji Tüketimi', '120 - 180 kWh/ton', 'Densifier motorlarının spesifik elektrik yükü.'],
+                  ['Toz ve Uçucu Firesi', '%3 - %5', 'Köpük kırma esnasında uçuşan tozlar ve kalan pentan gazı kaybı.'],
+                ]}
+              />
+            </section>
+            <Note type="tip">
+              <strong>SBS/SEBS Reçete Katkısı:</strong> PS kırılgan bir polimerdir. Geri kazanılmış granüllerin darbe mukavemetini yükseltmek için ekstrüzyon esnasında reçeteye <strong>%5 - %8 oranında elastomerik SBS/SEBS kopolimeri</strong> eklenmelidir.
             </Note>
           </div>
         );
