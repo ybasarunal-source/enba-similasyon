@@ -123,6 +123,23 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
   const parasutCompany   = parasutService.getCompany();
   const isParasutConnected = parasutService.isLoggedIn() && !!parasutCompany;
 
+  // Hesap bazlı dahil/hariç ayarı — localStorage'da kalıcı, account.id ile keyed
+  const [excludedAccounts, setExcludedAccounts] = useState<Set<string>>(() => {
+    try {
+      const saved = localStorage.getItem('enba_nakit_excluded_accounts');
+      return new Set(saved ? JSON.parse(saved) : []);
+    } catch { return new Set(); }
+  });
+
+  function toggleAccountExclusion(accountId: string) {
+    setExcludedAccounts(prev => {
+      const next = new Set(prev);
+      if (next.has(accountId)) next.delete(accountId); else next.add(accountId);
+      localStorage.setItem('enba_nakit_excluded_accounts', JSON.stringify([...next]));
+      return next;
+    });
+  }
+
   function toggleSort(key: SortKey) {
     if (sortKey === key) setSortDir(p => p === 'asc' ? 'desc' : 'asc');
     else { setSortKey(key); setSortDir('desc'); }
@@ -277,7 +294,10 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
     // TRL→EUR döviz alımı money_transfer olarak dışlanırken EUR harcamalar
     // TL karşılığıyla gider sayılıyor → büyük yapay negatif bakiye oluşur.
     // EUR pozisyonu Hesaplar sekmesinde canlı bakiye olarak gösterilir.
-    const trlAccs = accs.filter(a => a.currency === 'TRL' || a.currency === 'TRY');
+    const trlAccs = accs.filter(a =>
+      (a.currency === 'TRL' || a.currency === 'TRY') &&
+      !excludedAccounts.has(a.id)
+    );
     for (let i = 0; i < trlAccs.length; i++) {
       const acc = trlAccs[i];
       setSyncProgress({ label: `${acc.name}… (${i + 1}/${trlAccs.length})`, pct: Math.round(5 + (i / trlAccs.length) * 65) });
@@ -512,36 +532,44 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                     {/* TRL hesaplar */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                       {accounts.filter(a => a.currency === 'TRL' || a.currency === 'TRY').map(acc => {
-                        const dbRows  = rows.filter(r => r.source_account === acc.name);
-                        const dbGelir = dbRows.filter(r => r.tip === 'gelir').reduce((s, r) => s + r.tutar_tl, 0);
-                        const dbGider = dbRows.filter(r => r.tip === 'gider').reduce((s, r) => s + r.tutar_tl, 0);
+                        const excluded = excludedAccounts.has(acc.id);
+                        const dbRows   = rows.filter(r => r.source_account === acc.name);
+                        const dbGelir  = dbRows.filter(r => r.tip === 'gelir').reduce((s, r) => s + r.tutar_tl, 0);
+                        const dbGider  = dbRows.filter(r => r.tip === 'gider').reduce((s, r) => s + r.tutar_tl, 0);
                         return (
-                          <button
-                            key={acc.id}
-                            onClick={() => { setAccountFilter(acc.name); setTab('hareketler'); }}
-                            className="text-left bg-[var(--enba-surface)] border border-[var(--enba-border)] rounded-2xl p-4 hover:border-[var(--enba-orange)]/50 hover:shadow-md transition-all"
-                          >
-                            <div className="flex items-start justify-between mb-3 gap-2">
-                              <div className="flex items-center gap-2 min-w-0">
+                          <div key={acc.id} className={`relative bg-[var(--enba-surface)] border rounded-2xl p-4 transition-all ${excluded ? 'border-dashed border-[var(--enba-border)] opacity-60' : 'border-[var(--enba-border)] hover:border-[var(--enba-orange)]/50 hover:shadow-md'}`}>
+                            {/* Dahil/Hariç toggle */}
+                            <button
+                              onClick={() => toggleAccountExclusion(acc.id)}
+                              className={`absolute top-3 right-3 text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-colors ${excluded ? 'bg-red-50 border-red-200 text-red-500 hover:bg-red-100' : 'bg-emerald-50 border-emerald-200 text-emerald-600 hover:bg-emerald-100'}`}
+                              title={excluded ? 'Tıkla: nakit akışına dahil et' : 'Tıkla: nakit akışından çıkar'}
+                            >
+                              {excluded ? 'Hariç' : 'Dahil'}
+                            </button>
+
+                            <button
+                              className="text-left w-full"
+                              onClick={() => { setAccountFilter(acc.name); setTab('hareketler'); }}
+                            >
+                              <div className="flex items-start gap-2 mb-3 pr-14">
                                 <Building2 size={13} className="text-[var(--enba-orange)] shrink-0 mt-0.5" />
-                                <span className="text-xs font-semibold text-[var(--enba-text)] leading-tight line-clamp-2">{acc.name}</span>
+                                <span className="text-xs font-semibold text-[var(--enba-text)] leading-tight">{acc.name}</span>
                               </div>
-                              <span className="text-[10px] bg-[var(--enba-bg)] border border-[var(--enba-border)] px-1.5 py-0.5 rounded-md text-[var(--enba-text-muted)] shrink-0">
-                                {acc.type === 'bank_accounts' ? 'Banka' : 'Kasa'}
-                              </span>
-                            </div>
-                            <div className={`text-lg font-bold mb-0.5 ${acc.balance >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
-                              {fmtAmount(acc.balance, acc.currency)}
-                            </div>
-                            <div className="text-[10px] text-[var(--enba-text-muted)]">Paraşüt canlı bakiye</div>
-                            {dbRows.length > 0 && (
-                              <div className="mt-2 pt-2 border-t border-[var(--enba-border)] flex items-center justify-between text-[10px]">
-                                <span className="text-emerald-600">+{fmtTL(dbGelir)}</span>
-                                <span className="text-red-500">−{fmtTL(dbGider)}</span>
-                                <span className="text-[var(--enba-text-muted)]">{dbRows.length} hk.</span>
+                              <div className={`text-lg font-bold mb-0.5 ${acc.balance >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                                {fmtAmount(acc.balance, acc.currency)}
                               </div>
-                            )}
-                          </button>
+                              <div className="text-[10px] text-[var(--enba-text-muted)]">
+                                {excluded ? 'Senkronize edilmiyor' : 'Paraşüt canlı bakiye'}
+                              </div>
+                              {dbRows.length > 0 && !excluded && (
+                                <div className="mt-2 pt-2 border-t border-[var(--enba-border)] flex items-center justify-between text-[10px]">
+                                  <span className="text-emerald-600">+{fmtTL(dbGelir)}</span>
+                                  <span className="text-red-500">−{fmtTL(dbGider)}</span>
+                                  <span className="text-[var(--enba-text-muted)]">{dbRows.length} hk.</span>
+                                </div>
+                              )}
+                            </button>
+                          </div>
                         );
                       })}
                     </div>
