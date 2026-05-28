@@ -57,10 +57,10 @@ function fmtDate(d: string) {
 
 // ── Paraşüt → FCImportRecord dönüşümü ───────────────────────
 function mapParasutInvoice(inv: ParasutInvoice): FCImportRecord {
-  const tip: FCTip = inv.type === 'sales_invoices' ? 'gelir' : 'gider';
+  const tip: FCTip = inv.type === 'receipts' ? 'gelir' : 'gider';
   const cat = inv.category_name?.replace(/^\d+\s*/, '').trim() || (
-    inv.type === 'sales_invoices'    ? 'Satış Geliri'     :
-    inv.type === 'purchase_bills'    ? 'Alış Gideri'      :
+    inv.type === 'receipts'       ? 'Tahsilat'         :
+    inv.type === 'expenditures'   ? 'Ödeme'            :
     'Diğer Gider'
   );
   const parts = [inv.description, inv.contact_name !== '—' ? inv.contact_name : ''].filter(Boolean);
@@ -96,16 +96,17 @@ const ImportModal: React.FC<ImportModalProps> = ({ companyId, onImported, onClos
 
   async function handleFetch() {
     if (!parasutCompany) return;
-    setLoading(true); setErr(''); setProgress({ label: 'Satış faturaları alınıyor…', pct: 10 });
+    setLoading(true); setErr(''); setProgress({ label: 'Tahsilat kayıtları alınıyor…', pct: 10 });
     try {
-      const sales = await parasutService.getSalesInvoices(parasutCompany.id, fromDate, toDate);
-      setProgress({ label: 'Ödemeler ve masraflar alınıyor…', pct: 50 });
+      // Gerçek nakit girişi: receipts (tahsilat belgesi)
+      const receipts = await parasutService.getReceipts(parasutCompany.id, fromDate, toDate);
+      setProgress({ label: 'Ödeme kayıtları alınıyor…', pct: 50 });
 
-      // purchase_bills çıkarıldı: nakit akışı için sadece gerçek ödemeler (expenditures) kullanılır
+      // Gerçek nakit çıkışı: expenditures (tediye belgesi)
       const exps = await parasutService.getExpenditures(parasutCompany.id, fromDate, toDate);
       setProgress({ label: 'Mevcut kayıtlar kontrol ediliyor…', pct: 85 });
 
-      const all = [...sales, ...exps].map(mapParasutInvoice);
+      const all = [...receipts, ...exps].map(mapParasutInvoice);
 
       const sb = (await import('../api/supabase')).supabase;
       let existingRaw: { parasut_id: string | null }[] = [];
@@ -202,7 +203,7 @@ const ImportModal: React.FC<ImportModalProps> = ({ companyId, onImported, onClos
                 </div>
               </div>
               <p className="text-xs text-[var(--enba-text-muted)]">
-                Satış faturaları ve gerçek ödemeler (masraflar) çekilecek. Alış faturaları hariç — çift sayım önlemek için. Zaten import edilmiş kayıtlar atlanır.
+                Yalnızca gerçek banka hareketleri: tahsilat belgeleri (gelir) ve tediye belgeleri (gider). Kesilmiş/gelen faturalar dahil edilmez. Zaten import edilmiş kayıtlar atlanır.
               </p>
             </>
           )}

@@ -19,7 +19,7 @@ export interface ParasutCompany {
 
 export interface ParasutInvoice {
   id: string;
-  type: 'sales_invoices' | 'purchase_bills' | 'expenditures';
+  type: 'sales_invoices' | 'purchase_bills' | 'expenditures' | 'receipts';
   category_name?: string;
   issue_date: string;
   due_date: string;
@@ -320,6 +320,15 @@ export const parasutService = {
     return this._mapInvoices(raw, 'expenditures');
   },
 
+  async getReceipts(companyId: string, dateFrom: string, dateTo: string): Promise<ParasutInvoice[]> {
+    const raw = await this.requestAll(`/${companyId}/receipts`, {
+      'filter[issue_date][gteq]': dateFrom,
+      'filter[issue_date][lteq]': dateTo,
+      'sort': '-issue_date',
+    });
+    return this._mapInvoices(raw, 'receipts');
+  },
+
   async getSalaries(companyId: string, dateFrom: string, dateTo: string): Promise<ParasutInvoice[]> {
     const raw = await this.requestAll(`/${companyId}/salaries`, {
       'filter[issue_date][gteq]': dateFrom,
@@ -345,7 +354,7 @@ export const parasutService = {
     return this._mapItems(raw);
   },
 
-  _mapInvoices(raw: any, type: 'sales_invoices' | 'purchase_bills' | 'expenditures'): ParasutInvoice[] {
+  _mapInvoices(raw: any, type: 'sales_invoices' | 'purchase_bills' | 'expenditures' | 'receipts'): ParasutInvoice[] {
     const included: any[] = raw.included || [];
     const findContact = (id: string) => {
       const c = included.find((i: any) => i.id === id && (i.type === 'contacts' || i.type === 'suppliers' || i.type === 'employees'));
@@ -371,6 +380,7 @@ export const parasutService = {
       
       if (!catName) {
         if (itemType === 'sales_invoices') catName = '600 Genel Satış Gelirleri';
+        else if (itemType === 'receipts')  catName = '600 Tahsilat';
         else if (itemType === 'purchase_bills') catName = '150 Genel Alış Maliyetleri';
         else if (itemType === 'expenditures') catName = '770 Genel İşletme Giderleri';
         else if (itemType === 'salaries') catName = '770 Personel Maaş ve Giderleri';
@@ -401,7 +411,7 @@ export const parasutService = {
       return {
         id: item.id,
         type,
-        issue_date: a.issue_date || '',
+        issue_date: a.issue_date || a.date || '',
         due_date: a.due_date || '',
         description: a.description || a.invoice_series || '—',
         contact_name: contactId ? findContact(contactId) : '—',
