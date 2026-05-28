@@ -145,7 +145,8 @@ const ImportModal: React.FC<ImportModalProps> = ({ companyId, onImported, onClos
         .from('founding_cashflow')
         .select('*')
         .eq('company_id', companyId)
-        .order('tarih', { ascending: true });
+        .order('tarih', { ascending: true })
+        .limit(10000);
       onImported((data ?? []).map((r: Record<string, unknown>) => ({
         id: String(r.id ?? ''),
         company_id: String(r.company_id ?? ''),

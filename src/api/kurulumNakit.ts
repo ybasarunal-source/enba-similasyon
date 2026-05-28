@@ -48,7 +48,8 @@ export const kurulumNakitAPI = {
       .from('founding_cashflow')
       .select('*')
       .eq('company_id', companyId)
-      .order('tarih', { ascending: true });
+      .order('tarih', { ascending: true })
+      .limit(10000);
     if (error) throw error;
     return (data ?? []).map(rowToFC);
   },
