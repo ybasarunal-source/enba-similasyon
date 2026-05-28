@@ -1006,3 +1006,13 @@ grep "^## \[" log.md | tail -5
   - [[Wiki/Malzemeler/PET-Capak-Dinamikleri|PET Çapak Dinamikleri]]: PVC limitleri, IV değerleri ve SSP reaktör katsayıları.
   - [[Wiki/Malzemeler/LDPE-Film-ve-Geri-Donusum-Zorluklari|LDPE Film ve Geri Dönüşüm]]: Aglomerasyon, hydrocyclone ayrıştırma ve nem sıkıştırma zorlukları.
 - **Dizin Güncellemesi:** `index.md` dosyasına yeni malzeme sayfaları eklendi.
+
+---
+
+## [2026-05-28 12:45] ingesting | PP ve HDPE Malzeme Sayfaları Eklendi
+
+**Yapılan işlemler:**
+- **Wiki Genişletme:** `Wiki/Malzemeler` klasörüne iki yeni kritik sert plastik malzemesi eklendi:
+  - [[Wiki/Malzemeler/PP-Polipropilen-ve-Koku-Sorunu|PP Polipropilen ve Koku Giderme]]: PP enjeksiyon MFI değerleri, koku emme problemi (sünger etkisi) ve degazör/sıcak hava stripping koku giderme teknolojileri.
+  - [[Wiki/Malzemeler/HDPE-Yuksek-Yogunluk-Polietilen-Dinamikleri|HDPE ve Sert Plastik]]: Naturel (şeffaf) ve renkli HDPE arasındaki ticari fiyat farkları, şişirme (blow) ve enjeksiyon kalite MFI ayrımları ve karışma riskleri.
+- **Dizin Güncellemesi:** `index.md` dosyasına yeni malzeme sayfaları eklendi.

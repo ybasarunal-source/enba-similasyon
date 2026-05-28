@@ -84,6 +84,9 @@
 | [[Wiki/Sektor/GRS-ve-Gida-Mevzuatlari\|GRS ve Gıda Mevzuatları]] | Global Recycled Standard kütle dengesi izlenebilirliği, EFSA/FDA challenge testleri | 2026-05-28 |
 | [[Wiki/Malzemeler/PET-Capak-Dinamikleri\|PET Çapak Dinamikleri]] | PET çapak kalite sınıfları, PVC kontaminasyon limitleri, IV değerleri ve SSP reaktör katsayıları | 2026-05-28 |
 | [[Wiki/Malzemeler/LDPE-Film-ve-Geri-Donusum-Zorluklari\|LDPE Film ve Geri Dönüşüm]] | LDPE film esnekliği, yüksek nem tutma sorunu, aglomerasyon ve eriyik filtreleme dinamikleri | 2026-05-28 |
+| [[Wiki/Malzemeler/PP-Polipropilen-ve-Koku-Sorunu\|PP Polipropilen ve Koku Sorunu]] | PP enjeksiyon/ekstrüzyon özellikleri, koku emme problemi ve koku giderme (deodorization) teknolojileri | 2026-05-28 |
+| [[Wiki/Malzemeler/HDPE-Yuksek-Yogunluk-Polietilen-Dinamikleri\|HDPE ve Sert Plastik Dinamikleri]] | HDPE renk ayrımının ekonomik önemi (naturel/mix), şişirme vs enjeksiyon MFI farkı | 2026-05-28 |
+
 
 
 ---
