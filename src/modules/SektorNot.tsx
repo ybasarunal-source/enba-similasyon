@@ -176,7 +176,7 @@ const Flow: React.FC<{ steps: { label: string; sub?: string; highlight?: boolean
 
 // ─── Sayfa tipleri ────────────────────────────────────────────────────────────
 
-type PageId = 'overview' | 'proses' | 'hatlar' | 'malzeme' | 'makine' | 'ekonomi' | 'sozluk';
+type PageId = 'overview' | 'proses' | 'hatlar' | 'makine' | 'ekonomi' | 'sozluk' | 'standartlar';
 
 interface NavItem {
   id: PageId;
@@ -1674,6 +1674,144 @@ const PageEkonomi: React.FC = () => (
   </div>
 );
 
+// ─── Standartlar ve GRS Sayfası ────────────────────────────────────────────────
+
+const PageStandartlar: React.FC = () => {
+  const [activeSubTab, setActiveSubTab] = useState<'en643' | 'grs'>('en643');
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-[15px] font-bold text-gray-800 dark:text-white mb-3 flex items-center gap-2">
+          <FlaskConical size={16} className="text-orange-500" /> Sektörel Standartlar & Mevzuat
+        </h3>
+        <div className="flex gap-2 p-1 bg-gray-100/50 dark:bg-white/5 rounded-xl border border-gray-200 dark:border-white/10">
+          <button
+            onClick={() => setActiveSubTab('en643')}
+            className={cx(
+              'flex-1 py-2 text-[12px] font-semibold rounded-lg transition-all',
+              activeSubTab === 'en643'
+                ? 'bg-white dark:bg-[#2A2A2A] text-orange-600 dark:text-orange-400 shadow-sm'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
+            )}
+          >
+            EN 643 Kağıt Standartları
+          </button>
+          <button
+            onClick={() => setActiveSubTab('grs')}
+            className={cx(
+              'flex-1 py-2 text-[12px] font-semibold rounded-lg transition-all',
+              activeSubTab === 'grs'
+                ? 'bg-white dark:bg-[#2A2A2A] text-orange-600 dark:text-orange-400 shadow-sm'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'
+            )}
+          >
+            GRS & Gıda Temas Mevzuatları
+          </button>
+        </div>
+      </div>
+
+      {activeSubTab === 'en643' ? (
+        <div className="space-y-6">
+          <section className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5">
+            <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white mb-2">EN 643 Nedir?</h4>
+            <p className="text-[12.5px] text-gray-600 dark:text-gray-400 leading-relaxed">
+              Avrupa standart geri kazanılmış kağıt ve karton kaliteleri listesidir. Geri dönüşüm tesislerine giren kağıt/karton ambalaj atıklarının kabul limitlerini ve ticari standartları belirler.
+            </p>
+          </section>
+
+          <section className="space-y-3">
+            <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white">5 Standart Kağıt Grubu</h4>
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+              {[
+                { title: '1. Grup: Sıradan', desc: 'OCC (Koli), mixed kağıt ve dergi kaliteleri.', non: '%1,5', unw: '%2,5 - %3' },
+                { title: '2. Grup: Orta', desc: 'Ofis yazıcı kağıtları ve gazete atıkları.', non: '%0,5 - %1', unw: '%1 - %2' },
+                { title: '3. Grup: Yüksek', desc: 'Baskısız beyaz yazı kağıtları ve matbaa talaşı.', non: '%0,25', unw: '%0,5 - %1' },
+                { title: '4. Grup: Kraft', desc: 'Kraft çuvallar ve kullanılmamış kraftliner kutular.', non: '%0,25 - %1', unw: '%0,5 - %2,5' },
+                { title: '5. Grup: Özel', desc: 'Tetrapak (sıvı ambalaj), ıslak etiket ve bardaklar.', non: '%0,5 - %3', unw: '%1 - %3' },
+              ].map(g => (
+                <div key={g.title} className="p-3 rounded-xl border border-gray-100 dark:border-white/8 bg-gray-50/50 dark:bg-white/3 flex flex-col justify-between">
+                  <div>
+                    <div className="text-[11.5px] font-bold text-gray-800 dark:text-white">{g.title}</div>
+                    <p className="text-[10.5px] text-gray-400 mt-1 leading-normal">{g.desc}</p>
+                  </div>
+                  <div className="mt-3 pt-2 border-t border-gray-200/50 dark:border-white/5 text-[9.5px] text-gray-400">
+                    <div>Kağıt Dışı: <span className="font-semibold text-orange-500">{g.non}</span></div>
+                    <div>İstenmeyen: <span className="font-semibold text-gray-500">{g.unw}</span></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="space-y-3">
+            <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white">Kritik Kalite Kriterleri</h4>
+            <DataTable
+              headers={['Kod', 'Kalite Adı', 'Açıklama', 'Max Kağıt Dışı %', 'Max İstenmeyen %']}
+              rows={[
+                ['1.01.00', 'Karışık Kağıt/Karton', 'Çeşitli kağıt ve karton kalitelerinin karışımı.', '%1,50', '%3,00'],
+                ['1.04.00', 'Oluplu Mukavva (OCC)', 'Kullanılmış kutu ambalajları, min %70 oluklu mukavva.', '%1,50', '%3,00'],
+                ['2.05.01', 'Ofis Kağıtları', 'Ofislerden toplanan beyaz yazıcı kağıtları (min %80 wood-free).', '%1,00', '%2,00'],
+                ['3.05.01', 'Baskısız Beyaz', 'Baskısız ve tutkalsız birinci kalite beyaz kağıt kırpıntısı.', '%0,50', '%1,00'],
+                ['4.04.00', 'Kullanılmış Kraft Torba', 'Çimento veya un içermeyen temiz kraft çuvalları.', '%1,00', '%2,00'],
+                ['5.03.00', 'Tetrapak (Sıvı Ambalaj)', 'Plastik/alüminyum katmanlı, min %50 lifli içecek kutuları.', '%3,00', '%3,00'],
+              ]}
+            />
+          </section>
+
+          <Note type="warn">
+            <strong>Nem Standart Toleransı:</strong> EN 643 standardına göre geri kazanılmış kağıtların referans nem oranı <strong>%10</strong>'dur. %12 ve üzerindeki nem oranları alıcı tarafında doğrudan tonaj iskontosu (ağırlık cezası) veya balya reddi gerekçesidir.
+          </Note>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          <section className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5">
+            <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white mb-2">GRS (Global Recycled Standard)</h4>
+            <p className="text-[12.5px] text-gray-600 dark:text-gray-400 leading-relaxed mb-3">
+              Üründeki geri dönüştürülmüş malzemenin kaynağını kanıtlayan ve çevresel/sosyal uyumluluğu denetleyen uluslararası standarttır.
+            </p>
+            <DataTable
+              headers={['Kriter', 'Gereklilik', 'Enba Similasyon Rolü']}
+              rows={[
+                ['Geri Dönüştürülmüş Oranı', 'Etiketleme için min %20, logo hakkı için min %50 PCR.', 'Lot çıkışlarında PCR oranını hesaplayıp etikete yazar.'],
+                ['Kütle Dengesi (Mass Balance)', 'Giren balya tonajı ile çıkan ürün arasındaki fireler izlenmelidir.', 'DetailedPlan fire ve verim motoru ile kütlesel çevrimi belgeler.'],
+                ['İzlenebilirlik (Traceability)', 'Lot numarasının hammadde tedarikçisine kadar izlenmesi zorunludur.', 'Balyalama / Sevkiyat modülünde lot kartlarına GRS TC no bağlar.'],
+              ]}
+            />
+          </section>
+
+          <section className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-gray-100 dark:border-white/8 p-5 space-y-4">
+            <h4 className="text-[13.5px] font-bold text-gray-800 dark:text-white flex items-center gap-1.5">
+              <FlaskConical size={16} className="text-blue-500" /> Gıda Temaslı Geri Dönüşüm (EFSA & FDA)
+            </h4>
+            <p className="text-[12.5px] text-gray-600 dark:text-gray-400 leading-relaxed">
+              PET şişelerin gıda ambalajında yeniden kullanılabilmesi için en katı gıda güvenliği sınırları uygulanır:
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-[12px]">
+              <div className="p-3 bg-blue-50/50 dark:bg-blue-500/5 rounded-xl border border-blue-100 dark:border-blue-500/10">
+                <div className="font-bold text-blue-700 dark:text-blue-400">Challenge Test</div>
+                <div className="mt-1 text-gray-600 dark:text-gray-400">Hattın kontaminasyon sökme gücünü kanıtlayan kirlilik temizleme testidir. Denetimde raporlanmalıdır.</div>
+              </div>
+              <div className="p-3 bg-blue-50/50 dark:bg-blue-500/5 rounded-xl border border-blue-100 dark:border-blue-500/10">
+                <div className="font-bold text-blue-700 dark:text-blue-400">≤ 50 ppm Sınırı</div>
+                <div className="mt-1 text-gray-600 dark:text-gray-400">Gıda temaslı pet pullarda (flake) veya peletlerde izin verilen maksimum toplam kontaminasyon limitidir.</div>
+              </div>
+              <div className="p-3 bg-blue-50/50 dark:bg-blue-500/5 rounded-xl border border-blue-100 dark:border-blue-500/10">
+                <div className="font-bold text-blue-700 dark:text-blue-400">SSP Reaktörü & IV</div>
+                <div className="mt-1 text-gray-600 dark:text-gray-400">PET viskozitesini (IV) gıda kalitesine yükseltmek için vakum altında ön kristalizasyon uygulanmasıdır.</div>
+              </div>
+            </div>
+          </section>
+
+          <Note type="tip">
+            <strong>Tesis Denetim Listesi:</strong> GRS veya Food-grade denetiminden geçebilmek için: Tedarikçi GRS TC (Transaction Certificate) kayıtları, Kaustik pH logları, Kütle Çevrim Raporları ve kalite laboratuvar test lot kartları sistemde tam tutulmalıdır.
+          </Note>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ─── Sözlük sayfası ───────────────────────────────────────────────────────────
 
 const PageSozluk: React.FC<{ initialQuery?: string }> = ({ initialQuery = '' }) => {
@@ -1790,6 +1928,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'overview', label: 'Genel Bakış',      icon: <BookOpen size={15} /> },
   { id: 'proses',   label: 'Prosesler',        icon: <Recycle size={15} /> },
   { id: 'hatlar',   label: 'Üretim Hatları',   icon: <Factory size={15} /> },
+  { id: 'standartlar', label: 'Standartlar & GRS', icon: <FlaskConical size={15} /> },
   { id: 'makine',   label: 'Makine & Hat',     icon: <Cpu size={15} /> },
   { id: 'ekonomi',  label: 'Ekonomi',          icon: <Zap size={15} /> },
   { id: 'sozluk',   label: 'Terimler',         icon: <Hash size={15} />, count: WIKI_TERMS.length },
@@ -1811,6 +1950,7 @@ export function SektorNot() {
       case 'overview': return <PageOverview />;
       case 'proses':   return <PageProses />;
       case 'hatlar':   return <PageHatlar />;
+      case 'standartlar': return <PageStandartlar />;
       case 'makine':   return <PageMakine />;
       case 'ekonomi':  return <PageEkonomi />;
       case 'sozluk':   return <PageSozluk initialQuery={globalSearch} />;
