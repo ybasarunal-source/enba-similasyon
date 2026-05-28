@@ -387,9 +387,9 @@ export const VarlikTakibi: React.FC<VarlikTakibiProps> = ({ profile }) => {
                   const gain     = (sold && a.sale_amount_tl != null && bvAtSale != null) ? a.sale_amount_tl - bvAtSale : null;
                   return (
                     <div key={a.id} className={`grid grid-cols-[1fr_90px_56px_100px_110px_130px_110px_80px] items-center hover:bg-gray-50/50 transition-colors ${sold ? 'opacity-60' : ''}`}>
-                      <div className="px-3 py-3">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-semibold text-gray-800 truncate">{a.name}</span>
+                      <div className="px-3 py-3 min-w-0 overflow-hidden">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-sm font-semibold text-gray-800 truncate min-w-0">{a.name}</span>
                           {a.demirbas_no && (
                             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 border border-gray-200 flex-shrink-0">
                               #{a.demirbas_no}
