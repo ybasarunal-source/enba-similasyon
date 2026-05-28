@@ -133,6 +133,7 @@ const ImportModal: React.FC<ImportModalProps> = ({ companyId, onImported, onClos
   const [accounts,        setAccounts]        = useState<ParasutAccount[]>([]);
   const [selectedIds,     setSelectedIds]     = useState<Set<string>>(new Set());
   const [pending,         setPending]         = useState<FCImportRecord[]>([]);
+  const [rawTxns,         setRawTxns]         = useState<import('../api/parasut').ParasutTransaction[]>([]);
   const [result,          setResult]          = useState<{ inserted: number; skipped: number } | null>(null);
 
   // Çakışan IBAN hesaplarını tespit et (e.g. Vakıfbank geçmiş + IBAN)
@@ -211,6 +212,7 @@ const ImportModal: React.FC<ImportModalProps> = ({ companyId, onImported, onClos
 
       setProgress({ label: 'Tamamlandı', pct: 100 });
       setPending(newRecs);
+      setRawTxns(allTxns);
       setStep('preview');
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : 'Paraşüt verisi alınamadı');
@@ -245,6 +247,32 @@ const ImportModal: React.FC<ImportModalProps> = ({ companyId, onImported, onClos
 
   const gelirCount = pending.filter(r => r.tip === 'gelir').length;
   const giderCount = pending.filter(r => r.tip === 'gider').length;
+
+  function exportRawExcel() {
+    const rows = rawTxns.map(t => ({
+      Hesap:            t.account_name,
+      Tarih:            t.date,
+      TipKodu:          t.transaction_type,
+      Açıklama:         t.description,
+      DebitTutar:       t.amount_tl > 0 && t.amount > 0 ? t.amount_tl : '',
+      CreditTutar:      t.amount_tl > 0 && t.amount < 0 ? t.amount_tl : '',
+      TutarTL:          t.amount_tl,
+      Para:             t.currency,
+      MappedTip:        t.amount >= 0 ? 'girdi' : 'çıktı',
+      MappedKategori:   txnKategori(t.transaction_type || '', t.amount >= 0 ? 'gelir' : 'gider', t.description),
+    }));
+    const header = Object.keys(rows[0] || {});
+    const csv = [
+      header.join('\t'),
+      ...rows.map(r => header.map(h => (r as Record<string, unknown>)[h] ?? '').join('\t')),
+    ].join('\n');
+    const bom = '﻿';
+    const blob = new Blob([bom + csv], { type: 'text/tab-separated-values;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url;
+    a.download = `parasut_ham_veriler_${new Date().toISOString().slice(0,10)}.xls`;
+    a.click(); URL.revokeObjectURL(url);
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
@@ -405,10 +433,17 @@ const ImportModal: React.FC<ImportModalProps> = ({ companyId, onImported, onClos
                 </button>
               )}
               {step === 'preview' && pending.length > 0 && (
-                <button onClick={handleImport}
-                  className="px-5 py-2 text-sm font-semibold text-white rounded-xl bg-emerald-600 hover:bg-emerald-700 transition-all flex items-center gap-2">
-                  {pending.length} Kaydı Aktar
-                </button>
+                <div className="flex items-center gap-2">
+                  <button onClick={exportRawExcel}
+                    className="px-4 py-2 text-sm font-semibold rounded-xl border border-[var(--enba-border)] text-[var(--enba-text)] hover:bg-[var(--enba-bg)] transition-all flex items-center gap-1.5">
+                    <FileSpreadsheet size={14} />
+                    Ham Veriyi İndir
+                  </button>
+                  <button onClick={handleImport}
+                    className="px-5 py-2 text-sm font-semibold text-white rounded-xl bg-emerald-600 hover:bg-emerald-700 transition-all flex items-center gap-2">
+                    {pending.length} Kaydı Aktar
+                  </button>
+                </div>
               )}
               {step === 'preview' && pending.length === 0 && (
                 <button onClick={onClose} className="px-5 py-2 text-sm font-semibold text-white rounded-xl bg-[var(--enba-orange)] transition-all">Tamam</button>
