@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Bar,
   LineChart, Line,
@@ -6,22 +6,33 @@ import {
 import {
   SCENARIOS, buildSeries, fmtTL, fmtPct,
   monthlyPriceFor, monthlyVolumeFor, varCostFor, fixedCostFor,
-  Scenario, usePlanData,
+  Scenario, DPlan, usePlanData,
 } from './dpData';
 import {
   cx, Card, SectionTitle, Btn, Badge, I, useChartColors, xInterval,
 } from './DPPrimitives';
 
-export const ScenarioPanel = ({ scenarioId, periodGranularity }:
-  { scenarioId: string; periodGranularity: string }) => {
+// Preset renkler — özel senaryolar için
+const CUSTOM_COLORS = ['#6366F1','#F59E0B','#8B5CF6','#06B6D4','#EC4899','#14B8A6'];
+
+export const ScenarioPanel = ({ scenarioId, periodGranularity, plan, onSave }:
+  { scenarioId: string; periodGranularity: string; plan?: DPlan; onSave?: (p: DPlan) => void }) => {
   const cc = useChartColors();
   const { products, fixedExpenses, periods, weeklyHorizon, rampUp, baseInputTons } = usePlanData();
   const [focused, setFocused] = useState(scenarioId);
   const [metricMode, setMetricMode] = useState<'total' | 'monthly'>('total');
+  const [modalOpen, setModalOpen]   = useState(false);
+  const [editingScen, setEditingScen] = useState<Scenario | null>(null);
+
+  // Sabit + özel senaryolar birleşik liste
+  const allScenarios = useMemo<Scenario[]>(() => [
+    ...Object.values(SCENARIOS),
+    ...(plan?.customScenarios ?? []),
+  ], [plan?.customScenarios]);
 
   const metrics = useMemo(() => {
     const all: Record<string, any> = {};
-    Object.values(SCENARIOS).forEach(s => {
+    allScenarios.forEach(s => {
       const series = buildSeries(products, fixedExpenses, periods, s, weeklyHorizon, rampUp, baseInputTons);
       const totalRev = series.reduce((a, x) => a + x.revenue, 0);
       const totalOp  = series.reduce((a, x) => a + x.opex, 0);
@@ -34,14 +45,31 @@ export const ScenarioPanel = ({ scenarioId, periodGranularity }:
       all[s.id] = { scenario: s, totalRev, totalOp, totalEb, totalNet, ebMargin, payback, series };
     });
     return all;
-  }, []);
+  }, [allScenarios, products, fixedExpenses, periods, weeklyHorizon, rampUp, baseInputTons]);
+
+  const handleSaveScenario = useCallback((scen: Scenario) => {
+    if (!plan || !onSave) return;
+    const existing = plan.customScenarios ?? [];
+    const has = existing.some(s => s.id === scen.id);
+    const updated = has
+      ? existing.map(s => s.id === scen.id ? scen : s)
+      : [...existing, scen];
+    onSave({ ...plan, customScenarios: updated });
+    setModalOpen(false);
+    setEditingScen(null);
+  }, [plan, onSave]);
+
+  const handleDeleteScenario = useCallback((id: string) => {
+    if (!plan || !onSave) return;
+    onSave({ ...plan, customScenarios: (plan.customScenarios ?? []).filter(s => s.id !== id) });
+  }, [plan, onSave]);
 
   const quarterlyCompare = useMemo(() => {
     const quarters: any[] = [];
     for (let q = 0; q < 8; q++) {
       const months = [q*3, q*3+1, q*3+2];
       const row: any = { label: `Ç${(q%4)+1} ${months[0] < 12 ? '25' : '26'}` };
-      Object.values(SCENARIOS).forEach(s => {
+      allScenarios.forEach(s => {
         let sum = 0;
         months.forEach(m => { sum += metrics[s.id]?.series[m]?.revenue ?? 0; });
         row[s.id] = sum;
@@ -49,29 +77,47 @@ export const ScenarioPanel = ({ scenarioId, periodGranularity }:
       quarters.push(row);
     }
     return quarters;
-  }, [metrics]);
+  }, [metrics, allScenarios]);
 
   return (
     <div className="space-y-5">
+      {modalOpen && (
+        <ScenarioModal
+          editing={editingScen}
+          usedColors={allScenarios.map(s => s.color)}
+          onClose={() => { setModalOpen(false); setEditingScen(null); }}
+          onSave={handleSaveScenario}
+        />
+      )}
       <Card className="!p-5">
         <div className="flex items-start justify-between">
           <div>
             <div className="text-[11px] uppercase tracking-[0.14em] text-enba-muted mb-1">Senaryo Yönetimi</div>
-            <h2 className="text-lg font-semibold">3 Senaryo · 24 Aylık Karşılaştırma</h2>
+            <h2 className="text-lg font-semibold">{allScenarios.length} Senaryo · 24 Aylık Karşılaştırma</h2>
             <p className="text-[12.5px] text-enba-muted mt-1.5 max-w-2xl">
               Her senaryo, gelir ve maliyet varsayımlarının üzerine çarpan uygular.
               Senaryolar arasındaki farkları görerek riski ölçer ve aksiyon planları hazırlarsınız.
             </p>
           </div>
-          <Btn variant="primary" icon={<I.Plus size={14}/>}>Yeni Senaryo</Btn>
+          {onSave && (
+            <Btn variant="primary" icon={<I.Plus size={14}/>} onClick={() => { setEditingScen(null); setModalOpen(true); }}>
+              Yeni Senaryo
+            </Btn>
+          )}
         </div>
       </Card>
 
       <div className="grid grid-cols-3 gap-4">
-        {Object.values(SCENARIOS).map(s => (
-          <ScenarioCard key={s.id} scenario={s} metrics={metrics[s.id]}
-            focused={focused === s.id} onFocus={() => setFocused(s.id)}/>
-        ))}
+        {allScenarios.map(s => {
+          const isCustom = !(s.id in SCENARIOS);
+          return (
+            <ScenarioCard key={s.id} scenario={s} metrics={metrics[s.id]}
+              focused={focused === s.id} onFocus={() => setFocused(s.id)}
+              onEdit={onSave ? () => { setEditingScen(s); setModalOpen(true); } : undefined}
+              onDelete={isCustom && onSave ? () => handleDeleteScenario(s.id) : undefined}
+            />
+          );
+        })}
       </div>
 
       <Card padded={false}>
@@ -106,7 +152,7 @@ export const ScenarioPanel = ({ scenarioId, periodGranularity }:
           </div>
           <Btn variant="outline" size="sm" icon={<I.Pdf size={12}/>}>Excel</Btn>
         </div>
-        <ComparisonTable metrics={metrics} mode={metricMode}/>
+        <ComparisonTable metrics={metrics} mode={metricMode} scenarios={allScenarios}/>
       </Card>
 
       <div className="grid grid-cols-12 gap-4">
@@ -117,7 +163,7 @@ export const ScenarioPanel = ({ scenarioId, periodGranularity }:
               <h3 className="text-base font-semibold">Senaryo Bazında Gelir Karşılaştırması</h3>
             </div>
             <div className="flex items-center gap-3 text-[10.5px] text-enba-muted">
-              {Object.values(SCENARIOS).map(s => (
+              {allScenarios.map(s => (
                 <span key={s.id} className="inline-flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-sm" style={{background: s.color}}/>{s.label}
                 </span>
@@ -131,7 +177,7 @@ export const ScenarioPanel = ({ scenarioId, periodGranularity }:
                 <XAxis dataKey="label" tickLine={false} axisLine={false} interval={xInterval(quarterlyCompare.length)} tick={{ fontSize: 10, fill: cc.muted }}/>
                 <YAxis tickFormatter={(v) => (v/1_000_000).toFixed(1)+'M'} tickLine={false} axisLine={false} width={48} tick={{ fontSize: 10, fill: cc.muted }}/>
                 <Tooltip formatter={(v: any, k: any) => [fmtTL(v), SCENARIOS[k]?.label || k]}/>
-                {Object.values(SCENARIOS).map(s => (
+                {allScenarios.map(s => (
                   <Bar key={s.id} dataKey={s.id} fill={s.color} radius={[3,3,0,0]}/>
                 ))}
               </BarChart>
@@ -152,7 +198,7 @@ export const ScenarioPanel = ({ scenarioId, periodGranularity }:
             <h3 className="text-base font-semibold">EBITDA Birikim Eğrisi</h3>
           </div>
           <div className="flex items-center gap-3 text-[10.5px] text-enba-muted">
-            {Object.values(SCENARIOS).map(s => (
+            {allScenarios.map(s => (
               <span key={s.id} className="inline-flex items-center gap-1.5">
                 <span className="w-3 h-[2px]" style={{background: s.color}}/>{s.label}
               </span>
@@ -164,7 +210,7 @@ export const ScenarioPanel = ({ scenarioId, periodGranularity }:
             <LineChart
               data={periods.slice(0, 24).map((p, i) => {
                 const row: any = { label: p.label };
-                Object.values(SCENARIOS).forEach(s => {
+                allScenarios.forEach(s => {
                   let cum = 0;
                   for (let j = 0; j <= i; j++) cum += metrics[s.id]?.series[j]?.ebitda ?? 0;
                   row[s.id] = cum;
@@ -175,8 +221,8 @@ export const ScenarioPanel = ({ scenarioId, periodGranularity }:
               <CartesianGrid strokeDasharray="2 4" stroke={cc.grid} vertical={false}/>
               <XAxis dataKey="label" tickLine={false} axisLine={false} interval={xInterval(periods.length)} tick={{ fontSize: 10, fill: cc.muted }}/>
               <YAxis tickFormatter={(v) => (v/1_000_000).toFixed(0)+'M'} tickLine={false} axisLine={false} width={48} tick={{ fontSize: 10, fill: cc.muted }}/>
-              <Tooltip formatter={(v: any, k: any) => [fmtTL(v), SCENARIOS[k]?.label || k]}/>
-              {Object.values(SCENARIOS).map(s => (
+              <Tooltip formatter={(v: any, k: any) => [fmtTL(v), allScenarios.find(s => s.id === k)?.label || k]}/>
+              {allScenarios.map(s => (
                 <Line key={s.id} type="monotone" dataKey={s.id} stroke={s.color} strokeWidth={2.2} dot={false} name={s.label}/>
               ))}
             </LineChart>
@@ -187,8 +233,8 @@ export const ScenarioPanel = ({ scenarioId, periodGranularity }:
   );
 };
 
-const ScenarioCard = ({ scenario, metrics, focused, onFocus }:
-  { scenario: Scenario; metrics: any; focused: boolean; onFocus: () => void }) => {
+const ScenarioCard = ({ scenario, metrics, focused, onFocus, onEdit, onDelete }:
+  { scenario: Scenario; metrics: any; focused: boolean; onFocus: () => void; onEdit?: () => void; onDelete?: () => void }) => {
   if (!metrics) return null;
   return (
     <div
@@ -203,8 +249,19 @@ const ScenarioCard = ({ scenario, metrics, focused, onFocus }:
       <div className="flex items-center gap-2.5 mb-3">
         <span className="w-2.5 h-2.5 rounded-full" style={{background: scenario.color, boxShadow: `0 0 12px ${scenario.color}`}}/>
         <h3 className="text-[15px] font-semibold" style={{color: scenario.color}}>{scenario.label}</h3>
-        <div className="ml-auto">
-          <button className="text-enba-dim hover:text-enba-text" onClick={(e) => e.stopPropagation()}><I.Edit size={13}/></button>
+        <div className="ml-auto flex items-center gap-1">
+          {onEdit && (
+            <button className="text-enba-dim hover:text-enba-text p-1 rounded hover:bg-enba-panel-2"
+              onClick={(e) => { e.stopPropagation(); onEdit(); }} title="Düzenle">
+              <I.Edit size={13}/>
+            </button>
+          )}
+          {onDelete && (
+            <button className="text-enba-dim hover:text-red-500 p-1 rounded hover:bg-red-50"
+              onClick={(e) => { e.stopPropagation(); if (window.confirm('Bu senaryoyu sil?')) onDelete(); }} title="Sil">
+              <I.Trash size={13}/>
+            </button>
+          )}
         </div>
       </div>
       <p className="text-[11.5px] text-enba-muted leading-snug mb-4 min-h-[34px]">{scenario.hint}</p>
@@ -239,12 +296,12 @@ const ScenarioMetric = ({ label, value, sub, accent }:
   </div>
 );
 
-const ComparisonTable = ({ metrics, mode }: { metrics: Record<string, any>; mode: 'total' | 'monthly' }) => {
-  const N   = 24; // projeksiyon süresi (ay)
+const ComparisonTable = ({ metrics, mode, scenarios }: { metrics: Record<string, any>; mode: 'total' | 'monthly'; scenarios: Scenario[] }) => {
+  const N   = 24;
   const div = mode === 'monthly' ? N : 1;
   const lbl = (base: string) => mode === 'monthly' ? `Aylık Ort. ${base}` : `Toplam ${base} (24 ay)`;
 
-  const ids = Object.keys(SCENARIOS);
+  const ids = scenarios.map(s => s.id);
   const baz = metrics.baz;
   const rows = [
     { label: 'Gelir Çarpanı',    getter: (m: any) => (m.scenario.rev  * 100).toFixed(0) + '%', raw: (m: any) => m.scenario.rev  },
@@ -413,3 +470,81 @@ const SensResult = ({ label, value, delta, better = true }:
     </div>
   </div>
 );
+
+// ─── Senaryo Ekleme / Düzenleme Modalı ───────────────────────────────────────
+
+const PRESET_COLORS = ['#6366F1','#F59E0B','#8B5CF6','#06B6D4','#EC4899','#14B8A6'];
+
+function ScenarioModal({ editing, usedColors, onClose, onSave }: {
+  editing:    Scenario | null;
+  usedColors: string[];
+  onClose:    () => void;
+  onSave:     (s: Scenario) => void;
+}) {
+  const isNew = !editing;
+  const availableColor = PRESET_COLORS.find(c => !usedColors.includes(c)) ?? PRESET_COLORS[0];
+  const [label, setLabel] = useState(editing?.label ?? '');
+  const [hint,  setHint]  = useState(editing?.hint  ?? '');
+  const [rev,   setRev]   = useState(Math.round((editing?.rev  ?? 1) * 100));
+  const [cost,  setCost]  = useState(Math.round((editing?.cost ?? 1) * 100));
+  const [color, setColor] = useState(editing?.color ?? availableColor);
+
+  const handleSubmit = () => {
+    if (!label.trim()) return;
+    onSave({ id: editing?.id ?? crypto.randomUUID(), label: label.trim(), hint: hint.trim(), rev: rev / 100, cost: cost / 100, color });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="bg-enba-panel border border-enba-line rounded-2xl shadow-2xl w-full max-w-md p-6 flex flex-col gap-5">
+        <div className="flex items-center justify-between">
+          <h3 className="text-[15px] font-semibold">{isNew ? 'Yeni Senaryo' : 'Senaryoyu Düzenle'}</h3>
+          <button onClick={onClose} className="text-enba-muted hover:text-enba-text"><I.X size={16}/></button>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[11.5px] font-medium text-enba-muted uppercase tracking-wide">Senaryo Adı *</label>
+          <input autoFocus value={label} onChange={e => setLabel(e.target.value)} placeholder="örn. Agresif Büyüme"
+            className="w-full bg-enba-panel-2 border border-enba-line rounded-lg px-3 py-2 text-[13px] outline-none focus:border-enba-orange"/>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[11.5px] font-medium text-enba-muted uppercase tracking-wide">Açıklama</label>
+          <input value={hint} onChange={e => setHint(e.target.value)} placeholder="Kısa varsayım özeti"
+            className="w-full bg-enba-panel-2 border border-enba-line rounded-lg px-3 py-2 text-[13px] outline-none focus:border-enba-orange"/>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[11.5px] font-medium text-enba-muted uppercase tracking-wide">
+              Gelir <span className={cx('font-semibold', rev >= 100 ? 'text-enba-green' : 'text-enba-red')}>{rev}%</span>
+            </label>
+            <input type="range" min={50} max={150} step={1} value={rev} onChange={e => setRev(Number(e.target.value))} className="dp-sens-slider w-full"/>
+            <div className="flex justify-between text-[9.5px] text-enba-dim tabular"><span>50%</span><span>100%</span><span>150%</span></div>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[11.5px] font-medium text-enba-muted uppercase tracking-wide">
+              Maliyet <span className={cx('font-semibold', cost <= 100 ? 'text-enba-green' : 'text-enba-red')}>{cost}%</span>
+            </label>
+            <input type="range" min={50} max={150} step={1} value={cost} onChange={e => setCost(Number(e.target.value))} className="dp-sens-slider w-full"/>
+            <div className="flex justify-between text-[9.5px] text-enba-dim tabular"><span>50%</span><span>100%</span><span>150%</span></div>
+          </div>
+        </div>
+        <div className="flex flex-col gap-2">
+          <label className="text-[11.5px] font-medium text-enba-muted uppercase tracking-wide">Renk</label>
+          <div className="flex items-center gap-2 flex-wrap">
+            {PRESET_COLORS.map(c => (
+              <button key={c} onClick={() => setColor(c)}
+                className={cx('w-7 h-7 rounded-full border-2 transition-transform', color === c ? 'border-enba-text scale-110' : 'border-transparent hover:scale-105')}
+                style={{ background: c }}/>
+            ))}
+          </div>
+        </div>
+        <div className="flex items-center justify-end gap-2 pt-1 border-t border-enba-line">
+          <button onClick={onClose} className="px-4 py-2 text-[12.5px] text-enba-muted hover:text-enba-text rounded-lg hover:bg-enba-panel-2">İptal</button>
+          <button onClick={handleSubmit} disabled={!label.trim()}
+            className="px-4 py-2 text-[12.5px] font-semibold rounded-lg bg-enba-orange text-white hover:bg-enba-orange/90 disabled:opacity-40 disabled:cursor-not-allowed">
+            {isNew ? 'Ekle' : 'Kaydet'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

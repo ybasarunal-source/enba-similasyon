@@ -520,10 +520,11 @@ function PnLRow({ mcode, label, level, value, col2, isExpense, isNA, isEmpty, is
             <input
               type="number"
               autoFocus
+              min={0}
               value={draft || ''}
               placeholder="0"
               step={1000}
-              onChange={e => setDraft(Number(e.target.value) || 0)}
+              onChange={e => setDraft(Math.max(0, Number(e.target.value) || 0))}
               onBlur={commitEdit}
               onKeyDown={e => { if (e.key === 'Enter') commitEdit(); if (e.key === 'Escape') setEditing(false); }}
               className="w-28 text-right px-2 py-0.5 rounded border border-enba-orange/50 bg-enba-panel text-[12px] text-enba-text outline-none"

@@ -546,7 +546,7 @@ export function DetailedPlanShell({ plan, costCenters = [], onSave, onBack, onEd
               {active === 'revenue'   && <RevenuePanel     scenarioId={scenarioId} periodGranularity={granularity} />}
               {active === 'expense'   && <ExpensePanel     scenarioId={scenarioId} periodGranularity={granularity} />}
               {active === 'cashflow'  && <CashFlowPanel    scenarioId={scenarioId} periodGranularity={granularity} />}
-              {active === 'scenario'  && <ScenarioPanel    scenarioId={scenarioId} periodGranularity={granularity} />}
+              {active === 'scenario'  && <ScenarioPanel    scenarioId={scenarioId} periodGranularity={granularity} plan={plan} onSave={onSave} />}
               {active === 'budget'    && <BudgetTrackPanel scenarioId={scenarioId} periodGranularity={granularity} />}
             </div>
           </div>

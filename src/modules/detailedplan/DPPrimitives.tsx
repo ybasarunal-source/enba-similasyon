@@ -65,6 +65,7 @@ export const I = {
   Lock:      (p: IconProps) => <Icon {...p}><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></Icon>,
   Copy:      (p: IconProps) => <Icon {...p}><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></Icon>,
   List:      (p: IconProps) => <Icon {...p}><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></Icon>,
+  X:         (p: IconProps) => <Icon {...p}><path d="M18 6L6 18M6 6l12 12"/></Icon>,
 };
 
 // ---- Card ----

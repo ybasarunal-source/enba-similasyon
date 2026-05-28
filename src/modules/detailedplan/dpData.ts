@@ -261,6 +261,8 @@ export interface DPlan {
   parentPlanId?: string;
   /** M-kod kayıt defteri — plan bazlı manuel gider/gelir kalemleri */
   mcodeEntries?: PlanMCodeEntry[];
+  /** Kullanıcı tanımlı özel senaryolar — SCENARIOS sabitine eklenir */
+  customScenarios?: Scenario[];
 }
 
 export interface SeriesPoint extends Period {

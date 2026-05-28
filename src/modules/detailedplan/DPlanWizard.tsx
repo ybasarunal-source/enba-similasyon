@@ -292,9 +292,17 @@ export function DPlanWizard({ initialPlan, costCenters, onDone, onSave, onCancel
   }, []);
 
   const showRightPanel = step >= 2;
-  const showAssistant  = step >= 2 && step <= 3;  // Üretim + Çıktı adımlarında asistan
-  const showPnLPreview = step === 4 || step === 5; // Maliyet + Rampa&Özet'te P&L önizleme
+  const showAssistant  = step >= 2 && step <= 3;
+  const showPnLPreview = step === 4 || step === 5;
   const isLastStep     = step === STEP_LABELS.length - 1;
+
+  const totalFireRate = state.moistureWasteRate + state.trashWasteRate + (
+    state.altKaliteMode === 'simple'
+      ? state.altKaliteSimpleRate
+      : state.inputFractions.filter(f => f.destination !== 'production').reduce((s, f) => s + f.percentage, 0)
+  );
+  const outputShareTotal = state.outputProducts.reduce((s, op) => s + op.shareOfNetTons, 0);
+  const outputShareOk    = state.outputProducts.length === 0 || Math.abs(outputShareTotal - 1) < 0.01;
 
   return (
     <div className="h-full flex flex-col bg-enba-bg overflow-hidden">
@@ -445,6 +453,14 @@ export function DPlanWizard({ initialPlan, costCenters, onDone, onSave, onCancel
                     setSaveError('Plan başlığı zorunludur. Devam etmek için bir başlık girin.');
                     return;
                   }
+                  if (step === 1 && totalFireRate >= 1) {
+                    setSaveError(`Toplam fire oranı %${(totalFireRate * 100).toFixed(1)} — %100 altına düşür.`);
+                    return;
+                  }
+                  if (step === 3 && !outputShareOk) {
+                    setSaveError(`Ürün payları toplamı %${(outputShareTotal * 100).toFixed(1)} — %100 olmalı.`);
+                    return;
+                  }
                   setSaveError(null);
                   setStep(step + 1);
                 }}
@@ -516,8 +532,8 @@ function Step1PlanInfo({ state, set, costCenters }: {
 
       <div className="grid grid-cols-3 gap-4">
         <FormGroup label="Başlangıç Yılı">
-          <input type="number" value={state.startYear}
-            onChange={e => set('startYear', Number(e.target.value))}
+          <input type="number" min={2020} max={2050} value={state.startYear}
+            onChange={e => { const v = Number(e.target.value); if (v >= 2020 && v <= 2050) set('startYear', v); }}
             className={inputCls} />
         </FormGroup>
         <FormGroup label="Başlangıç Ayı">
@@ -741,9 +757,11 @@ function Step2GirisFire({ state, set, calc }: {
 
         {/* Özet */}
         <div className="mt-4 pt-4 border-t border-enba-line grid grid-cols-2 gap-3 text-[12px]">
-          <div className="bg-enba-panel-2 rounded-lg px-3 py-2">
+          <div className={cx('rounded-lg px-3 py-2', totalFireRate >= 1 ? 'bg-red-500/10 border border-red-500/30' : 'bg-enba-panel-2')}>
             <div className="text-enba-dim mb-0.5">Toplam fire</div>
-            <div className="font-semibold text-red-400">{(totalFireRate * 100).toFixed(1)}%</div>
+            <div className={cx('font-semibold', totalFireRate >= 1 ? 'text-red-400' : totalFireRate >= 0.8 ? 'text-amber-400' : 'text-red-400')}>
+              {(totalFireRate * 100).toFixed(1)}%
+            </div>
           </div>
           <div className="bg-enba-panel-2 rounded-lg px-3 py-2">
             <div className="text-enba-dim mb-0.5">Ödenen ton / ay</div>
@@ -760,6 +778,12 @@ function Step2GirisFire({ state, set, calc }: {
             </div>
           )}
         </div>
+        {totalFireRate >= 1 && (
+          <div className="mt-3 flex items-start gap-2 bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-[12.5px] text-red-400">
+            <I.Info size={14} className="flex-none mt-0.5" />
+            <span>Toplam fire oranı <strong>%{(totalFireRate * 100).toFixed(1)}</strong> — bu adımda devam etmek için oranı %100 altına düşür. Girdi malı tamamen fire olursa üretim gerçekleşmez.</span>
+          </div>
+        )}
       </ParamSection>
 
       {/* Ön Seçim — Giriş & Fire'a dahil */}
@@ -1813,18 +1837,20 @@ function SummaryCard({ label, value, color }: { label: string; value: string; co
   );
 }
 
-function NumInput({ value, onChange, placeholder, step = 1, min, max, className = '' }: {
+function NumInput({ value, onChange, placeholder, step = 1, min = 0, max, className = '' }: {
   value: number; onChange: (v: number) => void; placeholder?: string;
   step?: number; min?: number; max?: number; className?: string;
 }) {
   return (
     <input
       type="number"
+      min={min}
+      max={max}
       value={value || ''}
       onChange={e => {
         const v = parseFloat(e.target.value);
         if (!isNaN(v)) {
-          if (min !== undefined && v < min) return;
+          if (v < min) return;
           if (max !== undefined && v > max) return;
           onChange(v);
         } else if (e.target.value === '') {
