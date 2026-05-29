@@ -285,23 +285,39 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
   const AYLAR = ['', 'Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
 
   const aylikData = useMemo(() => {
-    const byMonth: Record<string, { gelir: number; gider: number }> = {};
-    for (const r of nonTransfer) {
+    const byMonth: Record<string, { satis: number; sermaye: number; gider: number }> = {};
+    for (const r of rows) {
       const month = r.tarih.slice(0, 7);
-      if (!byMonth[month]) byMonth[month] = { gelir: 0, gider: 0 };
-      if (r.tip === 'gelir') byMonth[month].gelir += r.tutar_tl;
-      else byMonth[month].gider += r.tutar_tl;
+      if (!byMonth[month]) byMonth[month] = { satis: 0, sermaye: 0, gider: 0 };
+      if (r.tip === 'gelir') {
+        if (SATIS_TYPES.includes(r.transaction_type ?? '')) byMonth[month].satis += r.tutar_tl;
+        else byMonth[month].sermaye += r.tutar_tl;
+      } else {
+        byMonth[month].gider += r.tutar_tl;
+      }
     }
     let cumulative = 0;
     return Object.entries(byMonth)
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([month, v]) => {
-        const net = v.gelir - v.gider;
+        const net = v.satis + v.sermaye - v.gider;
         cumulative += net;
         const [y, m] = month.split('-');
-        return { label: `${AYLAR[parseInt(m)]} ${y}`, gelir: v.gelir, gider: v.gider, net, kumNet: cumulative };
+        return { label: `${AYLAR[parseInt(m)]} ${y}`, satis: v.satis, sermaye: v.sermaye, gider: v.gider, net, kumNet: cumulative };
       });
-  }, [nonTransfer]);
+  }, [rows]);
+
+  const hesapOdemeler = useMemo(() => {
+    const byAcc: Record<string, number> = {};
+    for (const r of rows) {
+      if (r.tip === 'gider' && r.source_account) {
+        byAcc[r.source_account] = (byAcc[r.source_account] ?? 0) + r.tutar_tl;
+      }
+    }
+    return Object.entries(byAcc)
+      .map(([name, total]) => ({ name, total }))
+      .sort((a, b) => b.total - a.total);
+  }, [rows]);
 
   const kategoriOzet = useMemo(() => {
     const map: Record<string, { gelir: number; gider: number }> = {};
@@ -541,10 +557,10 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
       )}
 
       {/* ── KPI row ── */}
-      <div className="grid grid-cols-4 gap-3 px-6 py-4 flex-shrink-0">
+      <div className="grid grid-cols-5 gap-3 px-6 py-4 flex-shrink-0">
         <div className="bg-[var(--enba-surface)] rounded-2xl px-4 py-3 border border-[var(--enba-border)]">
           <div className="flex items-center gap-1.5 text-xs text-[var(--enba-text-muted)] mb-1">
-            <TrendingUp size={11} className="text-emerald-500" /> Satış Tahsilatı
+            <TrendingUp size={11} className="text-emerald-500" /> Satış
           </div>
           <div className="text-base font-bold text-emerald-600">{fmtTL(totalSatisGeliri)}</div>
           <div className="text-[10px] text-[var(--enba-text-muted)] mt-0.5">
@@ -553,20 +569,23 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
         </div>
         <div className="bg-[var(--enba-surface)] rounded-2xl px-4 py-3 border border-blue-100">
           <div className="flex items-center gap-1.5 text-xs text-[var(--enba-text-muted)] mb-1">
-            <TrendingUp size={11} className="text-blue-400" /> Sermaye (Enes)
+            <TrendingUp size={11} className="text-blue-400" /> Sermaye Girişi
           </div>
-          <div className="text-base font-bold text-blue-600">
-            {enesSermai !== null
-              ? enesSermai.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' EUR'
-              : '— EUR'}
-          </div>
+          <div className="text-base font-bold text-blue-600">{fmtTL(transferGelir)}</div>
           <div className="text-[10px] text-[var(--enba-text-muted)] mt-0.5">
-            {enesSermai !== null ? 'şirketten alacak · Paraşüt canlı' : 'Hesaplar yükleniyor'}
+            {enesSermai !== null ? `${enesSermai.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} EUR alacak` : 'TL karşılığı'}
           </div>
+        </div>
+        <div className="bg-[var(--enba-surface)] rounded-2xl px-4 py-3 border border-indigo-100">
+          <div className="flex items-center gap-1.5 text-xs text-[var(--enba-text-muted)] mb-1">
+            <TrendingUp size={11} className="text-indigo-400" /> Toplam Giren
+          </div>
+          <div className="text-base font-bold text-indigo-600">{fmtTL(totalSatisGeliri + transferGelir)}</div>
+          <div className="text-[10px] text-[var(--enba-text-muted)] mt-0.5">satış + sermaye</div>
         </div>
         <div className="bg-[var(--enba-surface)] rounded-2xl px-4 py-3 border border-[var(--enba-border)]">
           <div className="flex items-center gap-1.5 text-xs text-[var(--enba-text-muted)] mb-1">
-            <TrendingDown size={11} className="text-red-500" /> Toplam Çıktı
+            <TrendingDown size={11} className="text-red-500" /> Ödemeler
           </div>
           <div className="text-base font-bold text-red-500">{fmtTL(totalGider)}</div>
           <div className="text-[10px] text-[var(--enba-text-muted)] mt-0.5">
@@ -574,12 +593,12 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
           </div>
         </div>
         <div className={`bg-[var(--enba-surface)] rounded-2xl px-4 py-3 border ${(parasutNetTRL ?? bakiye) >= 0 ? 'border-emerald-200' : 'border-red-200'}`}>
-          <div className="text-xs text-[var(--enba-text-muted)] mb-1">Net Bakiye</div>
+          <div className="text-xs text-[var(--enba-text-muted)] mb-1">Net Pozisyon</div>
           <div className={`text-base font-bold ${(parasutNetTRL ?? bakiye) >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
             {fmtTL(parasutNetTRL ?? bakiye)}
           </div>
           <div className="text-[10px] text-[var(--enba-text-muted)] mt-0.5">
-            {parasutNetTRL !== null ? 'Paraşüt canlı' : `net: ${fmtTL(bakiye)}`}
+            {parasutNetTRL !== null ? 'Paraşüt canlı' : `hesaplanan: ${fmtTL(bakiye)}`}
           </div>
         </div>
       </div>
@@ -914,19 +933,43 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                     </div>
 
                     <div className="bg-[var(--enba-surface)] border border-[var(--enba-border)] rounded-2xl p-5">
-                      <h3 className="text-sm font-semibold text-[var(--enba-text)] mb-4">Aylık Gelir & Gider</h3>
-                      <ResponsiveContainer width="100%" height={220}>
-                        <BarChart data={cumulativeData} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
+                      <h3 className="text-sm font-semibold text-[var(--enba-text)] mb-4">Aylık Nakit Akışı — Satış / Sermaye / Ödemeler</h3>
+                      <ResponsiveContainer width="100%" height={260}>
+                        <BarChart data={aylikData} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
                           <CartesianGrid strokeDasharray="3 3" stroke="var(--enba-border)" />
-                          <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'var(--enba-text-muted)' }} />
-                          <YAxis tickFormatter={v => (v / 1000).toFixed(0) + 'K'} tick={{ fontSize: 11, fill: 'var(--enba-text-muted)' }} />
+                          <XAxis dataKey="label" tick={{ fontSize: 10, fill: 'var(--enba-text-muted)' }} />
+                          <YAxis tickFormatter={v => {
+                            const abs = Math.abs(v);
+                            return abs >= 1_000_000 ? (v/1_000_000).toFixed(1)+'M' : (v/1000).toFixed(0)+'K';
+                          }} tick={{ fontSize: 10, fill: 'var(--enba-text-muted)' }} />
                           <Tooltip content={<CustomTooltip />} />
                           <Legend wrapperStyle={{ fontSize: 11 }} />
-                          <Bar dataKey="gelir" name="Girdi" fill="#10b981" radius={[4, 4, 0, 0]} />
-                          <Bar dataKey="gider" name="Çıktı" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                          <ReferenceLine y={0} stroke="#6b7280" strokeWidth={1} />
+                          <Bar dataKey="satis" name="Satış" stackId="a" fill="#10b981" radius={[0,0,0,0]} />
+                          <Bar dataKey="sermaye" name="Sermaye Girişi" stackId="a" fill="#3b82f6" radius={[4,4,0,0]} />
+                          <Bar dataKey="gider" name="Ödemeler" fill="#ef4444" radius={[4,4,0,0]} />
+                          <Line type="monotone" dataKey="net" name="Net" stroke="#1a1a1a" strokeWidth={2}
+                            dot={{ r: 2.5, fill: '#1a1a1a' }} activeDot={{ r: 5 }} />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
+
+                    {hesapOdemeler.length > 0 && (
+                      <div className="bg-[var(--enba-surface)] border border-[var(--enba-border)] rounded-2xl p-5">
+                        <h3 className="text-sm font-semibold text-[var(--enba-text)] mb-4">Hesap Bazlı Ödemeler</h3>
+                        <ResponsiveContainer width="100%" height={Math.max(160, hesapOdemeler.length * 36)}>
+                          <BarChart data={hesapOdemeler} layout="vertical" margin={{ top: 5, right: 60, left: 10, bottom: 5 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--enba-border)" horizontal={false} />
+                            <XAxis type="number" tickFormatter={v => (v/1000).toFixed(0)+'K'} tick={{ fontSize: 10, fill: 'var(--enba-text-muted)' }} />
+                            <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: 'var(--enba-text-muted)' }} width={140} />
+                            <Tooltip formatter={(v) => fmtTL(Number(v))} />
+                            <Bar dataKey="total" name="Ödeme" fill="#E35205" radius={[0,4,4,0]}
+                              label={{ position: 'right', fontSize: 10, fill: 'var(--enba-text-muted)',
+                                formatter: (v: unknown) => (Number(v)/1000).toFixed(0)+'K' }} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    )}
                   </>
                 )}
               </div>
@@ -1033,32 +1076,40 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                   <div className="bg-[var(--enba-surface)] border border-[var(--enba-border)] rounded-2xl overflow-hidden">
                     <div className="px-5 py-3 border-b border-[var(--enba-border)] flex items-center justify-between">
                       <h3 className="text-sm font-semibold text-[var(--enba-text)]">Aylık Nakit Tablosu</h3>
-                      <span className="text-[10px] text-[var(--enba-text-muted)]">Hesaplar arası transferler hariç</span>
+                      <div className="flex items-center gap-3 text-[10px] text-[var(--enba-text-muted)]">
+                        <span className="flex items-center gap-1"><span className="inline-block w-2 h-2 rounded-sm bg-emerald-500" />Satış</span>
+                        <span className="flex items-center gap-1"><span className="inline-block w-2 h-2 rounded-sm bg-blue-500" />Sermaye</span>
+                        <span className="flex items-center gap-1"><span className="inline-block w-2 h-2 rounded-sm bg-red-500" />Ödemeler</span>
+                      </div>
                     </div>
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-[var(--enba-border)] text-xs text-[var(--enba-text-muted)]">
-                          <th className="px-5 py-3 text-left font-medium">Ay</th>
-                          <th className="px-5 py-3 text-right font-medium">Gelir (TL)</th>
-                          <th className="px-5 py-3 text-right font-medium">Gider (TL)</th>
-                          <th className="px-5 py-3 text-right font-medium">Net (TL)</th>
-                          <th className="px-5 py-3 text-right font-medium">Kümülatif Net</th>
+                          <th className="px-4 py-3 text-left font-medium">Ay</th>
+                          <th className="px-4 py-3 text-right font-medium">Satış</th>
+                          <th className="px-4 py-3 text-right font-medium">Sermaye Girişi</th>
+                          <th className="px-4 py-3 text-right font-medium">Ödemeler</th>
+                          <th className="px-4 py-3 text-right font-medium">Net</th>
+                          <th className="px-4 py-3 text-right font-medium">Kümülatif</th>
                         </tr>
                       </thead>
                       <tbody>
                         {aylikData.map((row, i) => (
-                          <tr key={i} className="border-b border-[var(--enba-border)] last:border-0 hover:bg-[var(--enba-bg)] transition-colors">
-                            <td className="px-5 py-2.5 text-xs font-semibold text-[var(--enba-text)]">{row.label}</td>
-                            <td className="px-5 py-2.5 text-xs text-right text-emerald-600 font-medium">
-                              {row.gelir > 0 ? fmtTL(row.gelir) : '—'}
+                          <tr key={i} className={`border-b border-[var(--enba-border)] last:border-0 hover:bg-[var(--enba-bg)] transition-colors ${row.net < 0 && row.kumNet <= 0 ? 'bg-red-50/40' : ''}`}>
+                            <td className="px-4 py-2.5 text-xs font-semibold text-[var(--enba-text)]">{row.label}</td>
+                            <td className="px-4 py-2.5 text-xs text-right text-emerald-600 font-medium">
+                              {row.satis > 0 ? fmtTL(row.satis) : '—'}
                             </td>
-                            <td className="px-5 py-2.5 text-xs text-right text-red-500 font-medium">
+                            <td className="px-4 py-2.5 text-xs text-right text-blue-600 font-medium">
+                              {row.sermaye > 0 ? fmtTL(row.sermaye) : '—'}
+                            </td>
+                            <td className="px-4 py-2.5 text-xs text-right text-red-500 font-medium">
                               {row.gider > 0 ? fmtTL(row.gider) : '—'}
                             </td>
-                            <td className={`px-5 py-2.5 text-xs text-right font-bold ${row.net >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                            <td className={`px-4 py-2.5 text-xs text-right font-bold ${row.net >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
                               {row.net >= 0 ? '+' : ''}{fmtTL(row.net)}
                             </td>
-                            <td className={`px-5 py-2.5 text-xs text-right font-semibold ${row.kumNet >= 0 ? 'text-emerald-600' : 'text-[var(--enba-text-muted)]'}`}>
+                            <td className={`px-4 py-2.5 text-xs text-right font-semibold ${row.kumNet >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
                               {fmtTL(row.kumNet)}
                             </td>
                           </tr>
@@ -1066,18 +1117,15 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                       </tbody>
                       <tfoot>
                         <tr className="bg-[var(--enba-bg)] border-t-2 border-[var(--enba-border)]">
-                          <td className="px-5 py-3 text-xs font-bold text-[var(--enba-text)]">TOPLAM</td>
-                          <td className="px-5 py-3 text-xs font-bold text-emerald-600 text-right">
-                            {fmtTL(aylikData.reduce((s, r) => s + r.gelir, 0))}
-                          </td>
-                          <td className="px-5 py-3 text-xs font-bold text-red-500 text-right">
-                            {fmtTL(aylikData.reduce((s, r) => s + r.gider, 0))}
-                          </td>
-                          <td className={`px-5 py-3 text-xs font-bold text-right ${aylikData[aylikData.length - 1]?.kumNet >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                          <td className="px-4 py-3 text-xs font-bold text-[var(--enba-text)]">TOPLAM</td>
+                          <td className="px-4 py-3 text-xs font-bold text-emerald-600 text-right">{fmtTL(aylikData.reduce((s, r) => s + r.satis, 0))}</td>
+                          <td className="px-4 py-3 text-xs font-bold text-blue-600 text-right">{fmtTL(aylikData.reduce((s, r) => s + r.sermaye, 0))}</td>
+                          <td className="px-4 py-3 text-xs font-bold text-red-500 text-right">{fmtTL(aylikData.reduce((s, r) => s + r.gider, 0))}</td>
+                          <td className={`px-4 py-3 text-xs font-bold text-right ${aylikData[aylikData.length-1]?.kumNet >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
                             {(() => { const n = aylikData.reduce((s, r) => s + r.net, 0); return (n >= 0 ? '+' : '') + fmtTL(n); })()}
                           </td>
-                          <td className={`px-5 py-3 text-xs font-bold text-right ${aylikData[aylikData.length - 1]?.kumNet >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
-                            {fmtTL(aylikData[aylikData.length - 1]?.kumNet ?? 0)}
+                          <td className={`px-4 py-3 text-xs font-bold text-right ${aylikData[aylikData.length-1]?.kumNet >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                            {fmtTL(aylikData[aylikData.length-1]?.kumNet ?? 0)}
                           </td>
                         </tr>
                       </tfoot>
