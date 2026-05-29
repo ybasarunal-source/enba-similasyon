@@ -623,15 +623,22 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                   </div>
                 ) : (
                   <>
-                    {/* TRL hesaplar */}
+                    {/* Tüm hesaplar — TRL + döviz */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {accounts.filter(a => a.currency === 'TRL' || a.currency === 'TRY').map(acc => {
+                      {accounts.map(acc => {
+                        const isTRL    = acc.currency === 'TRL' || acc.currency === 'TRY';
                         const excluded = excludedAccounts.has(acc.id);
                         const dbRows   = rows.filter(r => r.source_account === acc.name);
                         const dbGelir  = dbRows.filter(r => r.tip === 'gelir').reduce((s, r) => s + r.tutar_tl, 0);
                         const dbGider  = dbRows.filter(r => r.tip === 'gider').reduce((s, r) => s + r.tutar_tl, 0);
                         return (
                           <div key={acc.id} className={`relative bg-[var(--enba-surface)] border rounded-2xl p-4 transition-all ${excluded ? 'border-dashed border-[var(--enba-border)] opacity-60' : 'border-[var(--enba-border)] hover:border-[var(--enba-orange)]/50 hover:shadow-md'}`}>
+                            {/* Para birimi rozeti (sadece döviz hesaplar) */}
+                            {!isTRL && (
+                              <span className="absolute top-3 left-3 text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-600">
+                                {acc.currency}
+                              </span>
+                            )}
                             {/* Dahil/Hariç toggle */}
                             <button
                               onClick={() => toggleAccountExclusion(acc.id)}
@@ -645,8 +652,8 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                               className="text-left w-full"
                               onClick={() => { setAccountFilter(acc.name); setTab('hareketler'); }}
                             >
-                              <div className="flex items-start gap-2 mb-3 pr-14">
-                                <Building2 size={13} className="text-[var(--enba-orange)] shrink-0 mt-0.5" />
+                              <div className={`flex items-start gap-2 mb-3 pr-14 ${!isTRL ? 'pl-8' : ''}`}>
+                                <Building2 size={13} className={`${isTRL ? 'text-[var(--enba-orange)]' : 'text-blue-500'} shrink-0 mt-0.5`} />
                                 <span className="text-xs font-semibold text-[var(--enba-text)] leading-tight">{acc.name}</span>
                               </div>
                               <div className={`text-lg font-bold mb-0.5 ${acc.balance >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
@@ -667,30 +674,6 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                         );
                       })}
                     </div>
-
-                    {/* EUR hesaplar — TRL nakit akışına dahil değil, ayrı gösterilir */}
-                    {accounts.some(a => a.currency !== 'TRL' && a.currency !== 'TRY') && (
-                      <div className="border border-[var(--enba-border)] rounded-2xl overflow-hidden">
-                        <div className="px-4 py-2.5 bg-[var(--enba-bg)] border-b border-[var(--enba-border)] flex items-center gap-2">
-                          <span className="text-[10px] font-bold uppercase tracking-widest text-[var(--enba-text-muted)]">Döviz Pozisyonu</span>
-                          <span className="text-[10px] text-[var(--enba-text-muted)]">· TRL nakit akışına dahil değil</span>
-                        </div>
-                        <div className="divide-y divide-[var(--enba-border)]">
-                          {accounts.filter(a => a.currency !== 'TRL' && a.currency !== 'TRY').map(acc => (
-                            <div key={acc.id} className="flex items-center justify-between px-4 py-3">
-                              <div className="flex items-center gap-2 min-w-0">
-                                <Building2 size={13} className="text-blue-500 shrink-0" />
-                                <span className="text-xs font-semibold text-[var(--enba-text)] truncate">{acc.name}</span>
-                                <span className="text-[10px] text-[var(--enba-text-muted)] shrink-0">{acc.currency}</span>
-                              </div>
-                              <span className={`text-sm font-bold flex-shrink-0 ${acc.balance >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
-                                {fmtAmount(acc.balance, acc.currency)}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
 
                     {accounts.length === 0 && (
                       <div className="text-center py-12 text-[var(--enba-text-muted)] text-sm">
