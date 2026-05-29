@@ -914,6 +914,20 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                         </tr>
                       </thead>
                       <tbody>
+                        {/* Sermaye / Diğer Girdi satırı (money_transfer girdi = Enes sermayesi) */}
+                        {totalDigerGelir > 0 && (
+                          <tr className="border-b border-[var(--enba-border)] bg-blue-50/40">
+                            <td className="px-5 py-2.5 text-xs font-semibold text-blue-700 flex items-center gap-1.5">
+                              <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-400 flex-shrink-0" />
+                              Sermaye / Diğer Girdi
+                            </td>
+                            <td className="px-5 py-2.5 text-xs text-blue-600 text-right font-semibold">{fmtTL(totalDigerGelir)}</td>
+                            <td className="px-5 py-2.5 text-xs text-[var(--enba-text-muted)] text-right">—</td>
+                            <td className="px-5 py-2.5 text-xs text-blue-600 text-right font-bold">{fmtTL(totalDigerGelir)}</td>
+                            <td className="px-5 py-2.5 text-xs text-[var(--enba-text-muted)] text-right">—</td>
+                          </tr>
+                        )}
+                        {/* Operasyonel kategoriler (transferler hariç) */}
                         {kategoriOzet.map(k => (
                           <tr key={k.kategori} className="border-b border-[var(--enba-border)] last:border-0 hover:bg-[var(--enba-bg)] transition-colors">
                             <td className="px-5 py-2.5 text-xs text-[var(--enba-text)] font-medium">{k.kategori}</td>
