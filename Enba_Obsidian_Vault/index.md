@@ -124,6 +124,7 @@
 | CLAUDE.md (vault içi) | Schema | Oturum protokolü, wiki bakım kuralları, mimari özet | 2026-05-04 |
 | [[Ham-Kaynaklar/2026-05-Nakit-Akisi-Uretim-Ozeti\|Nakit Akışı & Üretim Özeti]] | Operasyonel özet | Gerçek nakit tablosu, üretim parametreleri, 3 ay projeksiyon, KDV mahsup — DetailedPlan için ilk gerçek veri | 2026-05-19 |
 | [[Ham-Kaynaklar/2026-05-GranulUretimi-IsPlan\|Granül Üretimi İş Planı]] | Konuşma kaydı / hesap motoru | 21 iterasyonlu granül tesisi iş planı; 5 senaryo, Python motoru, modül boşlukları tespit edildi | 2026-05-23 |
+| [[Ham-Kaynaklar/2026-05-Sermaye-Analizi\|Sermaye Analizi]] | Finansal analiz / kesinleşmiş | Enes=216.911 EUR sermaye, Başar=0 kişisel sermaye + 738.793 TL şirkete borç, Enes TL geçiş kasası | 2026-05-29 |
 
 ---
 

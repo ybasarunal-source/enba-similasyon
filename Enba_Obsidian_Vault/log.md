@@ -1187,3 +1187,31 @@ grep "^## \[" log.md | tail -5
   6. **kurulumNakit.ts clearAll()**: company_id bazlı toplu silme fonksiyonu.
 - Etkilenen dosyalar: src/api/parasut.ts, src/api/kurulumNakit.ts, src/modules/KurulumNakit.tsx
 - Bir sonraki: "Yeniden Senkronize Et" ile mevcut kayıtları temizle → doğru kategorilerle yeniden çek → Net Bakiye doğruluğunu Paraşüt ile karşılaştır
+
+## [2026-05-28] geliştirme | Nakit Akışı modülü kapsamlı düzeltme
+
+## [2026-05-29] ingest | Enba Recycling — Sermaye Analizi Notları
+- Kaynak: Finansal analiz / 29.05.2026_masaustu_enba_sermaye_analizi_notlar.md
+- Güncellenen sayfalar: index.md
+- Yeni sayfalar: Ham-Kaynaklar/2026-05-Sermaye-Analizi.md
+- Önemli çıkarım: Tek gerçek sermaye kaynağı Enes'in EUR katkısıdır (216.911,64 EUR); Başar kişisel sermaye koymadı, Enes TL hesabı geçiş kasası olduğu için mükerrer sayılmamalı.
+
+### Yapılan (bu oturumda):
+- **txnKategori bug fix**: money_transfer her zaman 'Hesaplar Arası Transfer' etiketi alıyor (description override kaldırıldı)
+- **Paraşüt canlı bakiye**: Net Bakiye KPI artık Paraşüt TRL hesap toplamını gösteriyor (~971K doğru)
+- **Yeniden Senkronize Et butonu**: tüm kayıtlar silip yeniden çek
+- **EUR hesap ayrımı**: EUR hesaplar TRL nakit akışına dahil edilmiyor, ayrı "Döviz Pozisyonu" bölümünde gösteriliyor
+- **Hesap bazlı dahil/hariç toggle**: Enes Eşsiz (TL) gibi kişisel aracı hesaplar dışlanabilir
+- **Python analizi ingest**: 28.05.2026_masaustu_parasut_nakit_analizi.md — gerçek net -10.67M, Python açıklama bazlı transfer tespiti
+- **Açıklama bazlı iç transfer tespiti**: account_debit/credit için DÖVİZ/ENES EŞSİZ/BAŞAR ÜNAL/ENBA RECYCLING filtresi
+- **initial_account_balance**: her zaman dışla (nakit akışı değil, başlangıç noktası)
+- **Grafik**: operasyonel nakit pozisyonu (sermaye transferleri hariç) + başlık güncellendi
+
+### Sonuç:
+- DB hareket bazlı: -2.471.841 TL (money_transfer dışlandığı için Python -10.67M'den fark var)
+- Paraşüt canlı: 971.417 TL (doğru, KPI'da gösteriliyor)
+- Fark: money_transfer net çıkışı ~8.2M (tedarikçi ödemeleri, Enes geri ödemeleri)
+
+### Bir sonraki:
+- money_transfer'ı nonTransfer'a dahil edip Python -10.67M ile örtüştürme (kullanıcı "ok" dedi, şimdilik bekliyor)
+- Satış tahsilatı ayrımı (transaction_type kolonu — bekleyen_nakit_akis_ozellikleri.md)

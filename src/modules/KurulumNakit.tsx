@@ -211,6 +211,16 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
     return trlAccs.reduce((s, a) => s + a.balance, 0);
   }, [accounts]);
 
+  // Sermaye: EUR hesaplarının negatif bakiyeleri = o kişilerin şirketten alacağı = katkıları
+  // Negatif bakiye → şirkete borç verdiler demek → mutlak değer = sermaye
+  const enesSermai = useMemo(() => {
+    if (accounts.length === 0) return null;
+    const eurAccs = accounts.filter(a => a.currency === 'EUR');
+    if (eurAccs.length === 0) return null;
+    const total = eurAccs.filter(a => a.balance < 0).reduce((s, a) => s + a.balance, 0);
+    return Math.abs(total);
+  }, [accounts]);
+
   const allAccountNames = useMemo(() => {
     const names = new Set(rows.map(r => r.source_account).filter(Boolean) as string[]);
     return [...names].sort((a, b) => a.localeCompare(b, 'tr'));
@@ -541,15 +551,17 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
             {rows.filter(r => r.tip === 'gelir' && SATIS_TYPES.includes(r.transaction_type ?? '')).length} kayıt
           </div>
         </div>
-        <div className="bg-[var(--enba-surface)] rounded-2xl px-4 py-3 border border-[var(--enba-border)]">
+        <div className="bg-[var(--enba-surface)] rounded-2xl px-4 py-3 border border-blue-100">
           <div className="flex items-center gap-1.5 text-xs text-[var(--enba-text-muted)] mb-1">
-            <TrendingUp size={11} className="text-blue-400" /> Net Sermaye Girişi
+            <TrendingUp size={11} className="text-blue-400" /> Sermaye (Enes)
           </div>
-          <div className={`text-base font-bold ${(transferGelir - transferGider) >= 0 ? 'text-blue-500' : 'text-red-500'}`}>
-            {transferGelir - transferGider >= 0 ? '+' : ''}{fmtTL(transferGelir - transferGider)}
+          <div className="text-base font-bold text-blue-600">
+            {enesSermai !== null
+              ? enesSermai.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' EUR'
+              : '— EUR'}
           </div>
           <div className="text-[10px] text-[var(--enba-text-muted)] mt-0.5">
-            +{fmtTL(transferGelir)} / −{fmtTL(transferGider)}
+            {enesSermai !== null ? 'şirketten alacak · Paraşüt canlı' : 'Hesaplar yükleniyor'}
           </div>
         </div>
         <div className="bg-[var(--enba-surface)] rounded-2xl px-4 py-3 border border-[var(--enba-border)]">
