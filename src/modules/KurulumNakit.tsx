@@ -190,6 +190,14 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
   // KPI 3: Toplam Gider — tüm çıkışlar (transferler dahil, gerçek harcama)
   const totalGider = useMemo(() => rows.filter(r => r.tip === 'gider').reduce((s, r) => s + r.tutar_tl, 0), [rows]);
 
+  // Transfer detayları (Özet tablosu için)
+  const transferGelir = useMemo(() =>
+    rows.filter(r => r.kategori === 'Hesaplar Arası Transfer' && r.tip === 'gelir').reduce((s, r) => s + r.tutar_tl, 0),
+  [rows]);
+  const transferGider = useMemo(() =>
+    rows.filter(r => r.kategori === 'Hesaplar Arası Transfer' && r.tip === 'gider').reduce((s, r) => s + r.tutar_tl, 0),
+  [rows]);
+
   // Eskiyle uyumluluk
   const totalGelir = totalSatisGeliri + totalDigerGelir;
   const bakiye     = totalGelir - totalGider;
@@ -914,16 +922,23 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                         </tr>
                       </thead>
                       <tbody>
-                        {/* Sermaye / Diğer Girdi satırı (money_transfer girdi = Enes sermayesi) */}
-                        {totalDigerGelir > 0 && (
+                        {/* Sermaye Girdi — gelen transferler (Enes sermayesi dahil) */}
+                        {transferGelir > 0 && (
                           <tr className="border-b border-[var(--enba-border)] bg-blue-50/40">
-                            <td className="px-5 py-2.5 text-xs font-semibold text-blue-700 flex items-center gap-1.5">
-                              <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-400 flex-shrink-0" />
-                              Sermaye / Diğer Girdi
-                            </td>
-                            <td className="px-5 py-2.5 text-xs text-blue-600 text-right font-semibold">{fmtTL(totalDigerGelir)}</td>
+                            <td className="px-5 py-2.5 text-xs font-semibold text-blue-700">↓ Sermaye Girdi</td>
+                            <td className="px-5 py-2.5 text-xs text-blue-600 text-right font-semibold">{fmtTL(transferGelir)}</td>
                             <td className="px-5 py-2.5 text-xs text-[var(--enba-text-muted)] text-right">—</td>
-                            <td className="px-5 py-2.5 text-xs text-blue-600 text-right font-bold">{fmtTL(totalDigerGelir)}</td>
+                            <td className="px-5 py-2.5 text-xs text-blue-600 text-right font-bold">{fmtTL(transferGelir)}</td>
+                            <td className="px-5 py-2.5 text-xs text-[var(--enba-text-muted)] text-right">—</td>
+                          </tr>
+                        )}
+                        {/* Hesaplar Arası Transfer — giden transferler */}
+                        {transferGider > 0 && (
+                          <tr className="border-b border-[var(--enba-border)] bg-gray-50/60">
+                            <td className="px-5 py-2.5 text-xs font-semibold text-[var(--enba-text-muted)]">↑ Hesaplar Arası Transfer</td>
+                            <td className="px-5 py-2.5 text-xs text-[var(--enba-text-muted)] text-right">—</td>
+                            <td className="px-5 py-2.5 text-xs text-orange-500 text-right font-semibold">{fmtTL(transferGider)}</td>
+                            <td className="px-5 py-2.5 text-xs text-orange-600 text-right font-bold">−{fmtTL(transferGider)}</td>
                             <td className="px-5 py-2.5 text-xs text-[var(--enba-text-muted)] text-right">—</td>
                           </tr>
                         )}
