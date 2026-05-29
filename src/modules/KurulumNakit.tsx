@@ -17,7 +17,7 @@ interface KurulumNakitProps {
   profile: UserProfile | null;
 }
 
-type Tab = 'hesaplar' | 'hareketler' | 'grafik' | 'ozet';
+type Tab = 'hesaplar' | 'hareketler' | 'grafik' | 'ozet' | 'aylik';
 type TipFilter = 'tümü' | FCTip;
 type SortDir = 'asc' | 'desc';
 type SortKey = 'tarih' | 'kategori' | 'tutar_tl';
@@ -272,6 +272,27 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
     return all.filter(p => p.date >= from && p.date <= to);
   }, [nonTransfer, chartFrom, chartTo]);
 
+  const AYLAR = ['', 'Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+
+  const aylikData = useMemo(() => {
+    const byMonth: Record<string, { gelir: number; gider: number }> = {};
+    for (const r of nonTransfer) {
+      const month = r.tarih.slice(0, 7);
+      if (!byMonth[month]) byMonth[month] = { gelir: 0, gider: 0 };
+      if (r.tip === 'gelir') byMonth[month].gelir += r.tutar_tl;
+      else byMonth[month].gider += r.tutar_tl;
+    }
+    let cumulative = 0;
+    return Object.entries(byMonth)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([month, v]) => {
+        const net = v.gelir - v.gider;
+        cumulative += net;
+        const [y, m] = month.split('-');
+        return { label: `${AYLAR[parseInt(m)]} ${y}`, gelir: v.gelir, gider: v.gider, net, kumNet: cumulative };
+      });
+  }, [nonTransfer]);
+
   const kategoriOzet = useMemo(() => {
     const map: Record<string, { gelir: number; gider: number }> = {};
     for (const r of nonTransfer) {
@@ -520,7 +541,7 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
       {/* ── Tabs ── */}
       <div className="px-6 flex-shrink-0">
         <div className="flex gap-1 bg-[var(--enba-surface)] border border-[var(--enba-border)] rounded-xl p-1 w-fit">
-          {([['hesaplar','Hesaplar'],['hareketler','Hareketler'],['grafik','Grafik'],['ozet','Özet']] as [Tab,string][]).map(([id, label]) => (
+          {([['hesaplar','Hesaplar'],['hareketler','Hareketler'],['grafik','Grafik'],['ozet','Özet'],['aylik','Aylık Özet']] as [Tab,string][]).map(([id, label]) => (
             <button
               key={id}
               onClick={() => setTab(id)}
@@ -968,6 +989,71 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                   </div>
                 ) : (
                   <div className="text-center py-16 text-[var(--enba-text-muted)] text-sm">Özet için veri yok.</div>
+                )}
+              </div>
+            )}
+
+            {/* ══ AYLIK ÖZET ══ */}
+            {tab === 'aylik' && (
+              <div className="space-y-3">
+                {aylikData.length === 0 ? (
+                  <div className="text-center py-16 text-[var(--enba-text-muted)] text-sm">
+                    Veri yok. "Paraşüt'ten Güncelle" ile verileri çekin.
+                  </div>
+                ) : (
+                  <div className="bg-[var(--enba-surface)] border border-[var(--enba-border)] rounded-2xl overflow-hidden">
+                    <div className="px-5 py-3 border-b border-[var(--enba-border)] flex items-center justify-between">
+                      <h3 className="text-sm font-semibold text-[var(--enba-text)]">Aylık Nakit Tablosu</h3>
+                      <span className="text-[10px] text-[var(--enba-text-muted)]">Hesaplar arası transferler hariç</span>
+                    </div>
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-[var(--enba-border)] text-xs text-[var(--enba-text-muted)]">
+                          <th className="px-5 py-3 text-left font-medium">Ay</th>
+                          <th className="px-5 py-3 text-right font-medium">Gelir (TL)</th>
+                          <th className="px-5 py-3 text-right font-medium">Gider (TL)</th>
+                          <th className="px-5 py-3 text-right font-medium">Net (TL)</th>
+                          <th className="px-5 py-3 text-right font-medium">Kümülatif Net</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {aylikData.map((row, i) => (
+                          <tr key={i} className="border-b border-[var(--enba-border)] last:border-0 hover:bg-[var(--enba-bg)] transition-colors">
+                            <td className="px-5 py-2.5 text-xs font-semibold text-[var(--enba-text)]">{row.label}</td>
+                            <td className="px-5 py-2.5 text-xs text-right text-emerald-600 font-medium">
+                              {row.gelir > 0 ? fmtTL(row.gelir) : '—'}
+                            </td>
+                            <td className="px-5 py-2.5 text-xs text-right text-red-500 font-medium">
+                              {row.gider > 0 ? fmtTL(row.gider) : '—'}
+                            </td>
+                            <td className={`px-5 py-2.5 text-xs text-right font-bold ${row.net >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                              {row.net >= 0 ? '+' : ''}{fmtTL(row.net)}
+                            </td>
+                            <td className={`px-5 py-2.5 text-xs text-right font-semibold ${row.kumNet >= 0 ? 'text-emerald-600' : 'text-[var(--enba-text-muted)]'}`}>
+                              {fmtTL(row.kumNet)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr className="bg-[var(--enba-bg)] border-t-2 border-[var(--enba-border)]">
+                          <td className="px-5 py-3 text-xs font-bold text-[var(--enba-text)]">TOPLAM</td>
+                          <td className="px-5 py-3 text-xs font-bold text-emerald-600 text-right">
+                            {fmtTL(aylikData.reduce((s, r) => s + r.gelir, 0))}
+                          </td>
+                          <td className="px-5 py-3 text-xs font-bold text-red-500 text-right">
+                            {fmtTL(aylikData.reduce((s, r) => s + r.gider, 0))}
+                          </td>
+                          <td className={`px-5 py-3 text-xs font-bold text-right ${aylikData[aylikData.length - 1]?.kumNet >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                            {(() => { const n = aylikData.reduce((s, r) => s + r.net, 0); return (n >= 0 ? '+' : '') + fmtTL(n); })()}
+                          </td>
+                          <td className={`px-5 py-3 text-xs font-bold text-right ${aylikData[aylikData.length - 1]?.kumNet >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                            {fmtTL(aylikData[aylikData.length - 1]?.kumNet ?? 0)}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
                 )}
               </div>
             )}
