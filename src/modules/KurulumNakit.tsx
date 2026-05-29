@@ -405,6 +405,32 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
     setTimeout(() => setExportMsg(''), 2500);
   }
 
+  function exportHamVeri() {
+    const lines = [
+      'Tarih\tHesap\tParaşüt Tip Kodu\tKategori\tGelir/Gider\tTutar (TL)\tAçıklama\tParaşüt ID',
+      ...rows
+        .sort((a, b) => a.tarih.localeCompare(b.tarih))
+        .map(r => [
+          fmtDate(r.tarih),
+          r.source_account || '',
+          r.transaction_type || '',
+          r.kategori,
+          r.tip,
+          r.tutar_tl,
+          r.aciklama,
+          r.parasut_id || '',
+        ].join('\t')),
+    ];
+    const blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/tab-separated-values;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `nakit_ham_veri_${new Date().toISOString().slice(0, 10)}.xls`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    setExportMsg('Ham veri indirildi');
+    setTimeout(() => setExportMsg(''), 2500);
+  }
+
   async function exportPDF() {
     setExportMsg('PDF hazırlanıyor...');
     try {
@@ -468,6 +494,10 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
               </button>
             </>
           )}
+          <button onClick={exportHamVeri}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-[var(--enba-border)] text-[var(--enba-text-muted)] hover:text-blue-600 hover:border-blue-300 transition-colors">
+            <FileSpreadsheet size={13} /> Ham Veri
+          </button>
           <button onClick={exportExcel}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-[var(--enba-border)] text-[var(--enba-text-muted)] hover:text-emerald-600 hover:border-emerald-300 transition-colors">
             <FileSpreadsheet size={13} /> Excel
