@@ -73,6 +73,7 @@
 | [[Wiki/Is-Modeli\|İş Modeli & Hedefler]] | Kendi şirket ERP'i + SaaS demo/pazarlama, multi-tenancy kritik, SQL öncelikleri | 2026-05-04 |
 | [[Wiki/Geri-Donusum-Proses-Bilgisi\|Geri Dönüşüm Proses Bilgisi]] | Malzeme akışı, fire tipleri, hat uyumluluğu, wizard adımları — granül + ilerideki prosesler | 2026-05-24 |
 | [[Kararlar/2026-05-Mobil-Modul-Kararlari\|Mobil Modül Kararları]] | Hangi modüller mobil, hibrit teknik yaklaşım (C), mail inbox odaklı not | 2026-05-24 |
+| [[Wiki/Nakit-Akis-Takip-Rehberi\|Nakit Akışı Takip Rehberi]] | Şirkete özel hesap rolleri, para akış şeması, mükerrer sayım tuzakları, analiz kuralları | 2026-05-29 |
 | [[Wiki/Piyasaya-Cikis-Stratejisi\|Piyasaya Çıkış Stratejisi]] | Enba Similasyon SaaS lansmanı, konumlandırma, fiyatlandırma ve kanal stratejileri | 2026-05-28 |
 | [[Wiki/Sektor-Rehberi\|Geri Dönüşüm Sektör Rehberi]] | 5 geri dönüşüm hattının ve lojistik akışının entegrasyon hub sayfası | 2026-05-28 |
 | [[Wiki/Hatlar/Hat1-Mekanik-Geri-Donusum\|Hat 1 - Mekanik Geri Dönüşüm]] | Mekanik geri dönüşüm prosesi, makine listesi, kalite kriterleri ve Enba entegrasyonu | 2026-05-28 |
