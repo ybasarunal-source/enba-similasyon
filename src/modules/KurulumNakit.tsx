@@ -501,7 +501,7 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
       )}
 
       {/* ── KPI row ── */}
-      <div className="grid grid-cols-5 gap-3 px-6 py-4 flex-shrink-0">
+      <div className="grid grid-cols-4 gap-3 px-6 py-4 flex-shrink-0">
         <div className="bg-[var(--enba-surface)] rounded-2xl px-4 py-3 border border-[var(--enba-border)]">
           <div className="flex items-center gap-1.5 text-xs text-[var(--enba-text-muted)] mb-1">
             <TrendingUp size={11} className="text-emerald-500" /> Satış Tahsilatı
@@ -513,18 +513,13 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
         </div>
         <div className="bg-[var(--enba-surface)] rounded-2xl px-4 py-3 border border-[var(--enba-border)]">
           <div className="flex items-center gap-1.5 text-xs text-[var(--enba-text-muted)] mb-1">
-            <TrendingUp size={11} className="text-blue-400" /> Sermaye Girişi
+            <TrendingUp size={11} className="text-blue-400" /> Net Sermaye Girişi
           </div>
-          <div className="text-base font-bold text-blue-500">{fmtTL(transferGelir)}</div>
-          <div className="text-[10px] text-[var(--enba-text-muted)] mt-0.5">hesaplar arası transfer</div>
-        </div>
-        <div className="bg-[var(--enba-surface)] rounded-2xl px-4 py-3 border border-[var(--enba-border)]">
-          <div className="flex items-center gap-1.5 text-xs text-[var(--enba-text-muted)] mb-1">
-            <TrendingUp size={11} className="text-violet-400" /> Diğer Gelir
+          <div className={`text-base font-bold ${(transferGelir - transferGider) >= 0 ? 'text-blue-500' : 'text-red-500'}`}>
+            {transferGelir - transferGider >= 0 ? '+' : ''}{fmtTL(transferGelir - transferGider)}
           </div>
-          <div className="text-base font-bold text-violet-500">{fmtTL(totalDigerGelir - transferGelir)}</div>
           <div className="text-[10px] text-[var(--enba-text-muted)] mt-0.5">
-            {rows.filter(r => r.tip === 'gelir' && !SATIS_TYPES.includes(r.transaction_type ?? '') && r.kategori !== 'Hesaplar Arası Transfer').length} kayıt
+            +{fmtTL(transferGelir)} / −{fmtTL(transferGider)}
           </div>
         </div>
         <div className="bg-[var(--enba-surface)] rounded-2xl px-4 py-3 border border-[var(--enba-border)]">
