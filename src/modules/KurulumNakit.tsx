@@ -340,51 +340,24 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
     const bankaRows = rows.filter(r => r.source_account && bankaNames.has(r.source_account));
     if (bankaRows.length === 0) return [];
 
-    // Yöntem A: balance_after mevcut — her hesap için günlük son bakiye al, topla
-    const hasBalanceData = bankaRows.some(r => r.balance_after != null);
-    if (hasBalanceData) {
-      // Her hesap × her gün için son balance_after değeri
-      const byDateAcc: Record<string, Record<string, number>> = {};
-      for (const r of bankaRows) {
-        if (r.balance_after == null || !r.source_account) continue;
-        if (!byDateAcc[r.tarih]) byDateAcc[r.tarih] = {};
-        // Aynı gün birden fazla işlem varsa son olanı al (balance_after = o günkü son bakiye)
-        byDateAcc[r.tarih][r.source_account] = r.balance_after;
+    // Paraşüt'ün işlem başına kaydettiği balance_after değerlerini kullan
+    // Her hesap × her gün için son balance_after değerini al, banka hesaplarını topla
+    const byDateAcc: Record<string, Record<string, number>> = {};
+    for (const r of bankaRows) {
+      if (r.balance_after == null || !r.source_account) continue;
+      if (!byDateAcc[r.tarih]) byDateAcc[r.tarih] = {};
+      byDateAcc[r.tarih][r.source_account] = r.balance_after;
+    }
+    const allDates = Object.keys(byDateAcc).sort();
+    if (allDates.length === 0) return [];
+    const lastKnown: Record<string, number> = {};
+    const all = allDates.map(date => {
+      for (const [acc, bal] of Object.entries(byDateAcc[date])) {
+        lastKnown[acc] = bal;
       }
-      // Tüm tarihleri sırala, önceki gün bakiyesini ilerlet (hafta sonu fill-forward)
-      const allDates = Object.keys(byDateAcc).sort();
-      if (allDates.length === 0) return [];
-      const lastKnown: Record<string, number> = {};
-      const all = allDates.map(date => {
-        for (const [acc, bal] of Object.entries(byDateAcc[date])) {
-          lastKnown[acc] = bal;
-        }
-        const total = Object.values(lastKnown).reduce((s, v) => s + v, 0);
-        const [y, m, d] = date.split('-');
-        return { date, label: `${d}.${m}.${y.slice(2)}`, bakiye: total };
-      });
-      const from = chartFrom || (all[0]?.date ?? '');
-      const to   = chartTo   || new Date().toISOString().slice(0, 10);
-      return all.filter(p => p.date >= from && p.date <= to);
-    }
-
-    // Yöntem B: iç transferler hariç, canlı bakiyeye sabitleme
-    const opRows = bankaRows.filter(r =>
-      r.kategori !== 'Hesaplar Arası Transfer' && r.kategori !== 'Açılış Bakiyesi'
-    );
-    const byDate: Record<string, number> = {};
-    for (const r of opRows) {
-      byDate[r.tarih] = (byDate[r.tarih] ?? 0) + (r.tip === 'gelir' ? r.tutar_tl : -r.tutar_tl);
-    }
-    const dates = Object.keys(byDate).sort();
-    const liveBakiye = bankaAccs.reduce((s, a) => s + a.balance, 0);
-    const totalChange = dates.reduce((s, d) => s + byDate[d], 0);
-    const startBalance = liveBakiye - totalChange;
-    let cum = startBalance;
-    const all = dates.map(date => {
-      cum += byDate[date];
+      const total = Object.values(lastKnown).reduce((s, v) => s + v, 0);
       const [y, m, d] = date.split('-');
-      return { date, label: `${d}.${m}.${y.slice(2)}`, bakiye: cum };
+      return { date, label: `${d}.${m}.${y.slice(2)}`, bakiye: total };
     });
     const from = chartFrom || (all[0]?.date ?? '');
     const to   = chartTo   || new Date().toISOString().slice(0, 10);
@@ -1135,10 +1108,15 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                     </div>
                   </div>
                   {bankaDailyData.length === 0 ? (
-                    <div className="text-center py-8 text-[var(--enba-text-muted)] text-xs">
+                    <div className="text-center py-8 text-[var(--enba-text-muted)] text-xs space-y-1">
                       {accounts.filter(a => getAccType(a) === 'banka').length === 0
-                        ? 'Hesaplar sekmesinden en az bir hesabı "Banka" olarak işaretleyin.'
-                        : 'Seçilen aralıkta banka verisi yok.'}
+                        ? <p>Hesaplar sekmesinden en az bir hesabı <strong>"Banka"</strong> olarak işaretleyin.</p>
+                        : <>
+                            <p className="font-semibold text-[var(--enba-text)]">Bakiye verisi henüz yok.</p>
+                            <p>Supabase'de <code>migration_v30_balance_after.sql</code> çalıştırın,</p>
+                            <p>ardından <strong>"Yeniden Senkronize Et"</strong> butonuna basın.</p>
+                          </>
+                      }
                     </div>
                   ) : (
                     <ResponsiveContainer width="100%" height={280}>
