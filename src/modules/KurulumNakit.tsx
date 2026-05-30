@@ -528,6 +528,96 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
     setTimeout(() => setExportMsg(''), 2500);
   }
 
+  function exportAccountExcel(accountName: string, data: typeof rows) {
+    const safe = accountName.replace(/[\\/:*?"<>|]/g, '_').slice(0, 40);
+    const gelir = data.filter(r => r.tip === 'gelir').reduce((s, r) => s + r.tutar_tl, 0);
+    const gider = data.filter(r => r.tip === 'gider').reduce((s, r) => s + r.tutar_tl, 0);
+    const lines = [
+      `Hesap: ${accountName}`,
+      `Rapor tarihi: ${new Date().toLocaleDateString('tr-TR')}`,
+      '',
+      'Tarih\tKategori\tTutar (TL)\tTip\tAçıklama',
+      ...data
+        .sort((a, b) => a.tarih.localeCompare(b.tarih))
+        .map(r => `${fmtDate(r.tarih)}\t${r.kategori}\t${r.tutar_tl}\t${r.tip}\t${r.aciklama}`),
+      '',
+      `Toplam Gelir\t\t${gelir}`,
+      `Toplam Gider\t\t${gider}`,
+      `Net\t\t${gelir - gider}`,
+    ];
+    const blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/tab-separated-values;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${safe}_${new Date().toISOString().slice(0, 10)}.xls`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    setExportMsg(`${accountName.slice(0, 20)} indirildi`);
+    setTimeout(() => setExportMsg(''), 2500);
+  }
+
+  async function exportAccountPDF(accountName: string, data: typeof rows) {
+    setExportMsg('PDF hazırlanıyor...');
+    const safe = accountName.replace(/[\\/:*?"<>|]/g, '_').slice(0, 40);
+    const gelir = data.filter(r => r.tip === 'gelir').reduce((s, r) => s + r.tutar_tl, 0);
+    const gider = data.filter(r => r.tip === 'gider').reduce((s, r) => s + r.tutar_tl, 0);
+    const sorted = [...data].sort((a, b) => a.tarih.localeCompare(b.tarih));
+    const el = document.createElement('div');
+    el.style.fontFamily = 'Arial, sans-serif';
+    el.style.padding = '20px';
+    el.innerHTML = `
+      <h2 style="font-size:16px;margin-bottom:4px">${accountName}</h2>
+      <p style="font-size:11px;color:#666;margin-bottom:16px">Rapor: ${new Date().toLocaleDateString('tr-TR')} · ${data.length} kayıt</p>
+      <table style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead>
+          <tr style="background:#f5f5f5">
+            <th style="border:1px solid #ddd;padding:6px;text-align:left">Tarih</th>
+            <th style="border:1px solid #ddd;padding:6px;text-align:left">Kategori</th>
+            <th style="border:1px solid #ddd;padding:6px;text-align:right">Tutar (TL)</th>
+            <th style="border:1px solid #ddd;padding:6px;text-align:left">Tip</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${sorted.map(r => `
+            <tr>
+              <td style="border:1px solid #eee;padding:5px">${fmtDate(r.tarih)}</td>
+              <td style="border:1px solid #eee;padding:5px">${r.kategori}</td>
+              <td style="border:1px solid #eee;padding:5px;text-align:right;color:${r.tip === 'gider' ? '#dc2626' : '#16a34a'}">${r.tip === 'gider' ? '−' : '+'}${fmtTL(r.tutar_tl)}</td>
+              <td style="border:1px solid #eee;padding:5px">${r.tip}</td>
+            </tr>`).join('')}
+        </tbody>
+        <tfoot>
+          <tr style="background:#f5f5f5;font-weight:bold">
+            <td colspan="2" style="border:1px solid #ddd;padding:6px">TOPLAM</td>
+            <td style="border:1px solid #ddd;padding:6px;text-align:right;color:#16a34a">+${fmtTL(gelir)}</td>
+            <td style="border:1px solid #ddd;padding:6px"></td>
+          </tr>
+          <tr style="background:#f5f5f5;font-weight:bold">
+            <td colspan="2" style="border:1px solid #ddd;padding:6px"></td>
+            <td style="border:1px solid #ddd;padding:6px;text-align:right;color:#dc2626">−${fmtTL(gider)}</td>
+            <td style="border:1px solid #ddd;padding:6px"></td>
+          </tr>
+          <tr style="background:#e0f2fe;font-weight:bold">
+            <td colspan="2" style="border:1px solid #ddd;padding:6px">NET</td>
+            <td style="border:1px solid #ddd;padding:6px;text-align:right;color:${gelir-gider>=0?'#16a34a':'#dc2626'}">${gelir-gider>=0?'+':''}${fmtTL(gelir-gider)}</td>
+            <td style="border:1px solid #ddd;padding:6px"></td>
+          </tr>
+        </tfoot>
+      </table>`;
+    document.body.appendChild(el);
+    try {
+      const { default: html2pdf } = await import('html2pdf.js');
+      await html2pdf().set({
+        margin: [10, 10, 10, 10],
+        filename: `${safe}_${new Date().toISOString().slice(0, 10)}.pdf`,
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      }).from(el).save();
+      setExportMsg('PDF indirildi');
+    } catch { setExportMsg('PDF hatası'); }
+    document.body.removeChild(el);
+    setTimeout(() => setExportMsg(''), 3000);
+  }
+
   async function exportPDF() {
     setExportMsg('PDF hazırlanıyor...');
     try {
@@ -758,7 +848,20 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                             >
                               {excluded ? 'Hariç' : 'Dahil'}
                             </button>
-                            <button className="text-left w-full pt-1" onClick={() => { setAccountFilter(acc.name); setTab('hareketler'); }}>
+                            {/* Hesap bazlı export */}
+                            <div className="absolute bottom-3 right-3 flex gap-1">
+                              <button
+                                onClick={e => { e.stopPropagation(); exportAccountExcel(acc.name, rows.filter(r => r.source_account === acc.name)); }}
+                                className="text-[10px] px-1.5 py-0.5 rounded border border-[var(--enba-border)] text-[var(--enba-text-muted)] hover:text-emerald-600 hover:border-emerald-300 transition-colors"
+                                title="Excel indir"
+                              ><FileSpreadsheet size={10} /></button>
+                              <button
+                                onClick={e => { e.stopPropagation(); exportAccountPDF(acc.name, rows.filter(r => r.source_account === acc.name)); }}
+                                className="text-[10px] px-1.5 py-0.5 rounded border border-[var(--enba-border)] text-[var(--enba-text-muted)] hover:text-red-500 hover:border-red-300 transition-colors"
+                                title="PDF indir"
+                              ><FileText size={10} /></button>
+                            </div>
+                            <button className="text-left w-full pt-1 pb-6" onClick={() => { setAccountFilter(acc.name); setTab('hareketler'); }}>
                               <div className="flex items-start gap-2 mb-2 pr-14 pl-10">
                                 <Building2 size={13} className="text-[var(--enba-orange)] shrink-0 mt-0.5" />
                                 <span className="text-xs font-semibold text-[var(--enba-text)] leading-tight">{acc.name}</span>
@@ -880,7 +983,27 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                     </div>
                   )}
 
-                  <span className="ml-auto text-xs text-[var(--enba-text-muted)]">{displayed.length} kayıt</span>
+                  <div className="ml-auto flex items-center gap-2">
+                    <span className="text-xs text-[var(--enba-text-muted)]">{displayed.length} kayıt</span>
+                    {accountFilter && (
+                      <>
+                        <button
+                          onClick={() => exportAccountExcel(accountFilter, displayed)}
+                          className="flex items-center gap-1 px-2 py-1 text-xs rounded-lg border border-[var(--enba-border)] text-[var(--enba-text-muted)] hover:text-emerald-600 hover:border-emerald-300 transition-colors"
+                          title="Bu hesabı Excel'e aktar"
+                        >
+                          <FileSpreadsheet size={11} /> Excel
+                        </button>
+                        <button
+                          onClick={() => exportAccountPDF(accountFilter, displayed)}
+                          className="flex items-center gap-1 px-2 py-1 text-xs rounded-lg border border-[var(--enba-border)] text-[var(--enba-text-muted)] hover:text-red-500 hover:border-red-300 transition-colors"
+                          title="Bu hesabı PDF'e aktar"
+                        >
+                          <FileText size={11} /> PDF
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 {displayed.length === 0 ? (
