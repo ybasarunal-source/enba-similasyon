@@ -47,10 +47,20 @@ Yalnızca "Banka" tipindeki hesaplardaki nakit miktarını gün gün gösterir.
 5. chartFrom / chartTo tarih aralığına göre kırp
 ```
 
-### Başlangıç Bakiyesi
-- Grafik 0'dan başlar, `initial_account_balance` kaydı Paraşüt tarafından eklenir.
-- Bu kayıt `rows` içinde yer aldığı için kümülatif hesaba otomatik dahil olur.
-- Açılış bakiyesi girmek için ayrı bir adım gerekmez.
+### Başlangıç Bakiyesi — Paraşüt Canlı Bakiyeye Sabitleme
+
+Grafik 0'dan başlamaz. Bitiş noktası Paraşüt'ün bugün bildirdiği canlı bakiyedir:
+
+```
+liveBakiye  = banka hesaplarının Paraşüt canlı bakiye toplamı
+totalChange = tüm geçmiş hareketlerin kümülatif net değişimi
+startBalance = liveBakiye − totalChange
+```
+
+Bu sayede:
+- Grafik son noktası her zaman Paraşüt canlı bakiyesiyle eşleşir
+- Açılış bakiyesi hesaplama gerekmez, `initial_account_balance` ayrıca işlenmez
+- Gerçek banka hesabı hiçbir zaman negatife düşmediğinden grafik de negatife gitmez
 
 ### Grafik Özellikleri
 - Recharts `AreaChart`, yeşil dolgu (`#10b981`)

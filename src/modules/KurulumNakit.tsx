@@ -327,26 +327,37 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
     return all.filter(p => p.date >= from && p.date <= to);
   }, [nonTransfer, chartFrom, chartTo]);
 
-  // Banka tipindeki hesapların günlük kümülatif nakit bakiyesi
+  // Banka tipindeki hesapların günlük nakit bakiyesi
+  // Paraşüt canlı bakiyesi bitiş noktası — geriye doğru ölçeklenerek başlangıç bulunur
   const bankaDailyData = useMemo(() => {
-    const bankaNames = new Set(
-      accounts.filter(a => getAccType(a) === 'banka').map(a => a.name)
+    const bankaAccs = accounts.filter(a =>
+      getAccType(a) === 'banka' && (a.currency === 'TRL' || a.currency === 'TRY')
     );
-    if (bankaNames.size === 0) return [];
-    const bankaRows = rows.filter(r => r.source_account && bankaNames.has(r.source_account));
+    if (bankaAccs.length === 0) return [];
+    const bankaNames = new Set(bankaAccs.map(a => a.name));
+    const bankaRows  = rows.filter(r => r.source_account && bankaNames.has(r.source_account));
     if (bankaRows.length === 0) return [];
+
+    // Günlük net değişim
     const byDate: Record<string, number> = {};
     for (const r of bankaRows) {
       byDate[r.tarih] = (byDate[r.tarih] ?? 0) + (r.tip === 'gelir' ? r.tutar_tl : -r.tutar_tl);
     }
-    let cum = 0;
-    const all = Object.entries(byDate)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([date, v]) => {
-        cum += v;
-        const [y, m, d] = date.split('-');
-        return { date, label: `${d}.${m}.${y.slice(2)}`, bakiye: cum };
-      });
+    const dates = Object.keys(byDate).sort();
+
+    // Bitiş noktası: Paraşüt canlı bakiye
+    const liveBakiye = bankaAccs.reduce((s, a) => s + a.balance, 0);
+    // Tüm geçmiş hareketlerin toplamı
+    const totalChange = dates.reduce((s, d) => s + byDate[d], 0);
+    // Başlangıç bakiyesi = canlı bakiye − toplam değişim
+    const startBalance = liveBakiye - totalChange;
+
+    let cum = startBalance;
+    const all = dates.map(date => {
+      cum += byDate[date];
+      const [y, m, d] = date.split('-');
+      return { date, label: `${d}.${m}.${y.slice(2)}`, bakiye: cum };
+    });
     const from = chartFrom || (all[0]?.date ?? '');
     const to   = chartTo   || new Date().toISOString().slice(0, 10);
     return all.filter(p => p.date >= from && p.date <= to);
