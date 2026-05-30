@@ -52,6 +52,7 @@
 | Sayfa | Özet | Son Güncelleme |
 |-------|------|----------------|
 | [[Moduller/00-Modul-Listesi\|Modül Listesi]] | 23 modülün tam listesi, core vs izinli, sidebar grupları, yeni modül adımları | 2026-05-14 |
+| [[Moduller/KurulumNakit\|KurulumNakit Modülü]] | Hesap tipi sistemi, Banka Nakdi günlük grafik mantığı, KPI hesaplamaları, export seçenekleri | 2026-05-30 |
 | [[Moduller/Ayarlar\|Finansal Ayarlar]] | financial_categories Supabase tablosu, M-kodu hiyerarşi yönetimi, seed/özel kategori | 2026-05-14 |
 | [[Moduller/VarlikTakibi\|Varlık Takibi]] | Sabit varlıklar (amortisman) + depozitolar, TL/EUR çift görünüm, M/K/V filtre | 2026-05-14 |
 
