@@ -109,6 +109,30 @@ export const kurulumNakitAPI = {
     return { inserted, skipped };
   },
 
+  // Günlük bakiye tablosu
+  async listDailyBalances(companyId: string): Promise<{ account_name: string; tarih: string; bakiye: number }[]> {
+    const { data, error } = await supabase
+      .from('account_daily_balance')
+      .select('account_name, tarih, bakiye')
+      .eq('company_id', companyId)
+      .order('tarih', { ascending: true });
+    if (error) throw error;
+    return (data ?? []).map(r => ({ account_name: r.account_name, tarih: r.tarih, bakiye: Number(r.bakiye) }));
+  },
+
+  async upsertDailyBalances(
+    companyId: string,
+    rows: { account_name: string; tarih: string; bakiye: number }[],
+  ): Promise<number> {
+    if (rows.length === 0) return 0;
+    const records = rows.map(r => ({ company_id: companyId, ...r }));
+    const { error } = await supabase
+      .from('account_daily_balance')
+      .upsert(records, { onConflict: 'company_id,account_name,tarih' });
+    if (error) throw error;
+    return records.length;
+  },
+
   async clearAll(companyId: string): Promise<void> {
     const { error } = await supabase
       .from('founding_cashflow')

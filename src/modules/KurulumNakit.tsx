@@ -121,6 +121,12 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
   const [syncProgress, setSyncProgress]   = useState<{ label: string; pct: number } | null>(null);
   const [syncResult, setSyncResult]       = useState<{ inserted: number; skipped: number } | null>(null);
 
+  const [dailyBalances, setDailyBalances] = useState<{ account_name: string; tarih: string; bakiye: number }[]>([]);
+  const [importModal, setImportModal]     = useState(false);
+  const [importAccount, setImportAccount] = useState('');
+  const [importJson, setImportJson]       = useState('');
+  const [importMsg, setImportMsg]         = useState('');
+
   const companyId        = profile?.company_id ?? null;
   const parasutCompany   = parasutService.getCompany();
   const isParasutConnected = parasutService.isLoggedIn() && !!parasutCompany;
@@ -177,8 +183,12 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
     if (!companyId) return;
     setLoading(true);
     try {
-      const data = await kurulumNakitAPI.list(companyId);
+      const [data, balances] = await Promise.all([
+        kurulumNakitAPI.list(companyId),
+        kurulumNakitAPI.listDailyBalances(companyId),
+      ]);
       setRows(data);
+      setDailyBalances(balances);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Yükleme hatası');
     } finally {
@@ -329,32 +339,24 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
   }, [nonTransfer, chartFrom, chartTo]);
 
   // Banka tipindeki hesapların günlük nakit bakiyesi
-  // Yöntem A (tercihli): Paraşüt'ün işlem başına kaydettiği balance_after değerlerini kullan
-  // Yöntem B (fallback): balance_after yoksa iç transfer hariç akış + canlı bakiye sabitleme
+  // account_daily_balance tablosundaki içe aktarılmış bakiye verisi kullanılır
   const bankaDailyData = useMemo(() => {
     const bankaAccs = accounts.filter(a =>
       getAccType(a) === 'banka' && (a.currency === 'TRL' || a.currency === 'TRY')
     );
-    if (bankaAccs.length === 0) return [];
     const bankaNames = new Set(bankaAccs.map(a => a.name));
-    const bankaRows = rows.filter(r => r.source_account && bankaNames.has(r.source_account));
-    if (bankaRows.length === 0) return [];
+    const relevant = dailyBalances.filter(r => bankaNames.has(r.account_name));
+    if (relevant.length === 0) return [];
 
-    // Paraşüt'ün işlem başına kaydettiği balance_after değerlerini kullan
-    // Her hesap × her gün için son balance_after değerini al, banka hesaplarını topla
-    const byDateAcc: Record<string, Record<string, number>> = {};
-    for (const r of bankaRows) {
-      if (r.balance_after == null || !r.source_account) continue;
-      if (!byDateAcc[r.tarih]) byDateAcc[r.tarih] = {};
-      byDateAcc[r.tarih][r.source_account] = r.balance_after;
+    // Her gün banka hesaplarının toplam bakiyesi
+    const byDate: Record<string, Record<string, number>> = {};
+    for (const r of relevant) {
+      if (!byDate[r.tarih]) byDate[r.tarih] = {};
+      byDate[r.tarih][r.account_name] = r.bakiye;
     }
-    const allDates = Object.keys(byDateAcc).sort();
-    if (allDates.length === 0) return [];
     const lastKnown: Record<string, number> = {};
-    const all = allDates.map(date => {
-      for (const [acc, bal] of Object.entries(byDateAcc[date])) {
-        lastKnown[acc] = bal;
-      }
+    const all = Object.keys(byDate).sort().map(date => {
+      Object.assign(lastKnown, byDate[date]);
       const total = Object.values(lastKnown).reduce((s, v) => s + v, 0);
       const [y, m, d] = date.split('-');
       return { date, label: `${d}.${m}.${y.slice(2)}`, bakiye: total };
@@ -363,7 +365,7 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
     const to   = chartTo   || new Date().toISOString().slice(0, 10);
     return all.filter(p => p.date >= from && p.date <= to);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rows, accounts, accountTypesMap, chartFrom, chartTo]);
+  }, [dailyBalances, accounts, accountTypesMap, chartFrom, chartTo]);
 
   const AYLAR = ['', 'Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
 
@@ -1108,13 +1110,18 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                     </div>
                   </div>
                   {bankaDailyData.length === 0 ? (
-                    <div className="text-center py-8 text-[var(--enba-text-muted)] text-xs space-y-1">
+                    <div className="text-center py-8 text-[var(--enba-text-muted)] text-xs space-y-2">
                       {accounts.filter(a => getAccType(a) === 'banka').length === 0
                         ? <p>Hesaplar sekmesinden en az bir hesabı <strong>"Banka"</strong> olarak işaretleyin.</p>
                         : <>
-                            <p className="font-semibold text-[var(--enba-text)]">Bakiye verisi henüz yok.</p>
-                            <p>Supabase'de <code>migration_v30_balance_after.sql</code> çalıştırın,</p>
-                            <p>ardından <strong>"Yeniden Senkronize Et"</strong> butonuna basın.</p>
+                            <p className="font-semibold text-[var(--enba-text)]">Bakiye verisi yok.</p>
+                            <p>Paraşüt → Hesap → Excel export'taki bakiye verisini aktarın.</p>
+                            <button
+                              onClick={() => setImportModal(true)}
+                              className="mt-2 px-4 py-2 text-xs font-semibold rounded-lg bg-[var(--enba-orange)] text-white hover:opacity-90 transition-opacity"
+                            >
+                              Bakiye Verisi Aktar
+                            </button>
                           </>
                       }
                     </div>
@@ -1464,6 +1471,68 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
           </>
         )}
       </div>
+
+      {/* ── Bakiye İçe Aktar Modal ── */}
+      {importModal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div className="bg-[var(--enba-surface)] rounded-2xl p-6 w-full max-w-lg shadow-2xl border border-[var(--enba-border)]">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-[var(--enba-text)]">Bakiye Verisi Aktar</h3>
+              <button onClick={() => { setImportModal(false); setImportMsg(''); }} className="text-[var(--enba-text-muted)] hover:text-[var(--enba-text)]"><X size={16} /></button>
+            </div>
+            <p className="text-xs text-[var(--enba-text-muted)] mb-3">
+              <code>banka_nakit_grafik.html</code> dosyasını aç, içindeki <code>const RAW = [...]</code> dizisini kopyala ve buraya yapıştır.
+            </p>
+            <div className="mb-3">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--enba-text-muted)] mb-1 block">Hesap Adı (Paraşüt'teki tam isim)</label>
+              <select
+                value={importAccount}
+                onChange={e => setImportAccount(e.target.value)}
+                className="w-full bg-[var(--enba-bg)] border border-[var(--enba-border)] rounded-lg px-3 py-2 text-xs text-[var(--enba-text)] focus:outline-none"
+              >
+                <option value="">Hesap seç…</option>
+                {accounts.filter(a => getAccType(a) === 'banka').map(a => (
+                  <option key={a.id} value={a.name}>{a.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="mb-3">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--enba-text-muted)] mb-1 block">JSON Verisi</label>
+              <textarea
+                value={importJson}
+                onChange={e => setImportJson(e.target.value)}
+                placeholder='[{"tarih":"2025-10-13","bakiye":126295.54}, ...]'
+                rows={6}
+                className="w-full bg-[var(--enba-bg)] border border-[var(--enba-border)] rounded-lg px-3 py-2 text-xs text-[var(--enba-text)] font-mono focus:outline-none resize-none"
+              />
+            </div>
+            {importMsg && (
+              <p className={`text-xs mb-3 ${importMsg.startsWith('✅') ? 'text-emerald-600' : 'text-red-500'}`}>{importMsg}</p>
+            )}
+            <button
+              disabled={!importAccount || !importJson.trim() || !companyId}
+              onClick={async () => {
+                if (!companyId) return;
+                setImportMsg('İşleniyor…');
+                try {
+                  const parsed: { tarih: string; bakiye: number }[] = JSON.parse(importJson);
+                  const records = parsed.map(r => ({ account_name: importAccount, tarih: r.tarih, bakiye: r.bakiye }));
+                  const n = await kurulumNakitAPI.upsertDailyBalances(companyId, records);
+                  const updated = await kurulumNakitAPI.listDailyBalances(companyId);
+                  setDailyBalances(updated);
+                  setImportMsg(`✅ ${n} kayıt aktarıldı`);
+                  setTimeout(() => { setImportModal(false); setImportMsg(''); setImportJson(''); }, 1500);
+                } catch (e) {
+                  setImportMsg(`Hata: ${e instanceof Error ? e.message : String(e)}`);
+                }
+              }}
+              className="w-full py-2.5 text-xs font-bold rounded-xl bg-[var(--enba-orange)] text-white hover:opacity-90 disabled:opacity-40 transition-opacity"
+            >
+              Aktar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

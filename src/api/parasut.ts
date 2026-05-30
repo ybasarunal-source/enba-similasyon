@@ -382,12 +382,6 @@ export const parasutService = {
       const txType: string = (a.transaction_type || '').toLowerCase();
       const isBankSynced = !!(a.bank_sync_datetime || a.bank_sync_bank_transaction_id);
 
-      // DEBUG — ilk kayıtta API alanlarını logla (balance var mı?)
-      if ((raw.data || []).indexOf(d) === 0) {
-        console.log('[Paraşüt TX fields]', Object.keys(a));
-        console.log('[Paraşüt TX balance sample]', a.balance, a.running_balance, a.debit_balance, a.credit_balance);
-      }
-
       // Açılış bakiyesi ve mutabakat kayıtları: nakit akışı değil, dışla
       if (txType === 'initial_account_balance' || txType === 'balance_adjustment') {
         return [];
