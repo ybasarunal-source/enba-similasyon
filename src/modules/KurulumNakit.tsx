@@ -203,12 +203,41 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
   const bakiye     = totalGelir - totalGider;
   const transferCount = useMemo(() => rows.filter(r => r.kategori === 'Hesaplar Arası Transfer').length, [rows]);
 
+  // Hesap tipi: Banka (gerçek nakit) | Cari (alacak/borç) | Sermaye EUR
+  function getAccountType(name: string): 'banka' | 'cari' | 'sermaye_eur' {
+    const bankaKeywords = ['VakıfBank', 'Vakıfbank', 'Ziraat Bankası TL', 'Ziraat TL Hesabı'];
+    if (bankaKeywords.some(k => name.toLowerCase().includes(k.toLowerCase()))) return 'banka';
+    const eurKeywords = ['Euro', 'euro'];
+    if (eurKeywords.some(k => name.includes(k))) return 'sermaye_eur';
+    return 'cari';
+  }
+
   // Paraşüt canlı bakiyesi (TRL hesaplar toplamı) — DB hesabından daha güvenilir
   const parasutNetTRL = useMemo(() => {
     if (accounts.length === 0) return null;
     const trlAccs = accounts.filter(a => a.currency === 'TRL' || a.currency === 'TRY');
     if (trlAccs.length === 0) return null;
     return trlAccs.reduce((s, a) => s + a.balance, 0);
+  }, [accounts]);
+
+  // Banka nakdi: sadece gerçek banka hesapları
+  const bankaNakdi = useMemo(() => {
+    if (accounts.length === 0) return null;
+    const bankaAccs = accounts.filter(a =>
+      (a.currency === 'TRL' || a.currency === 'TRY') && getAccountType(a.name) === 'banka'
+    );
+    if (bankaAccs.length === 0) return null;
+    return bankaAccs.reduce((s, a) => s + a.balance, 0);
+  }, [accounts]);
+
+  // Cari alacaklar: Başar, Enes TL, PET Deşe — pozitif bakiye = şirkete borçlu
+  const cariAlacak = useMemo(() => {
+    if (accounts.length === 0) return null;
+    const cariAccs = accounts.filter(a =>
+      (a.currency === 'TRL' || a.currency === 'TRY') && getAccountType(a.name) === 'cari'
+    );
+    if (cariAccs.length === 0) return null;
+    return cariAccs.filter(a => a.balance > 0).reduce((s, a) => s + a.balance, 0);
   }, [accounts]);
 
   // Sermaye: EUR hesaplarının negatif bakiyeleri = o kişilerin şirketten alacağı = katkıları
@@ -557,49 +586,44 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
       )}
 
       {/* ── KPI row ── */}
-      <div className="grid grid-cols-5 gap-3 px-6 py-4 flex-shrink-0">
-        <div className="bg-[var(--enba-surface)] rounded-2xl px-4 py-3 border border-[var(--enba-border)]">
+      <div className="grid grid-cols-4 gap-3 px-6 py-4 flex-shrink-0">
+        <div className="bg-[var(--enba-surface)] rounded-2xl px-4 py-3 border border-emerald-200">
           <div className="flex items-center gap-1.5 text-xs text-[var(--enba-text-muted)] mb-1">
-            <TrendingUp size={11} className="text-emerald-500" /> Satış
+            <TrendingUp size={11} className="text-emerald-500" /> Banka Nakdi
           </div>
-          <div className="text-base font-bold text-emerald-600">{fmtTL(totalSatisGeliri)}</div>
-          <div className="text-[10px] text-[var(--enba-text-muted)] mt-0.5">
-            {rows.filter(r => r.tip === 'gelir' && SATIS_TYPES.includes(r.transaction_type ?? '')).length} kayıt
+          <div className="text-base font-bold text-emerald-600">
+            {bankaNakdi !== null ? fmtTL(bankaNakdi) : '—'}
           </div>
+          <div className="text-[10px] text-[var(--enba-text-muted)] mt-0.5">VakıfBank + Ziraat</div>
         </div>
         <div className="bg-[var(--enba-surface)] rounded-2xl px-4 py-3 border border-blue-100">
           <div className="flex items-center gap-1.5 text-xs text-[var(--enba-text-muted)] mb-1">
-            <TrendingUp size={11} className="text-blue-400" /> Sermaye Girişi
+            <TrendingUp size={11} className="text-blue-400" /> Cari Alacak
           </div>
-          <div className="text-base font-bold text-blue-600">{fmtTL(transferGelir)}</div>
-          <div className="text-[10px] text-[var(--enba-text-muted)] mt-0.5">
-            {enesSermai !== null ? `${enesSermai.toLocaleString('tr-TR', { maximumFractionDigits: 0 })} EUR alacak` : 'TL karşılığı'}
+          <div className="text-base font-bold text-blue-600">
+            {cariAlacak !== null ? '+' + fmtTL(cariAlacak) : '—'}
           </div>
+          <div className="text-[10px] text-[var(--enba-text-muted)] mt-0.5">Başar + Enes TL + PET Deşe</div>
         </div>
-        <div className="bg-[var(--enba-surface)] rounded-2xl px-4 py-3 border border-indigo-100">
-          <div className="flex items-center gap-1.5 text-xs text-[var(--enba-text-muted)] mb-1">
-            <TrendingUp size={11} className="text-indigo-400" /> Toplam Giren
-          </div>
-          <div className="text-base font-bold text-indigo-600">{fmtTL(totalSatisGeliri + transferGelir)}</div>
-          <div className="text-[10px] text-[var(--enba-text-muted)] mt-0.5">satış + sermaye</div>
-        </div>
-        <div className="bg-[var(--enba-surface)] rounded-2xl px-4 py-3 border border-[var(--enba-border)]">
-          <div className="flex items-center gap-1.5 text-xs text-[var(--enba-text-muted)] mb-1">
-            <TrendingDown size={11} className="text-red-500" /> Ödemeler
-          </div>
-          <div className="text-base font-bold text-red-500">{fmtTL(totalGider)}</div>
-          <div className="text-[10px] text-[var(--enba-text-muted)] mt-0.5">
-            {rows.filter(r => r.tip === 'gider').length} kayıt
-          </div>
-        </div>
-        <div className={`bg-[var(--enba-surface)] rounded-2xl px-4 py-3 border ${(parasutNetTRL ?? bakiye) >= 0 ? 'border-emerald-200' : 'border-red-200'}`}>
-          <div className="text-xs text-[var(--enba-text-muted)] mb-1">Net Pozisyon</div>
+        <div className={`bg-[var(--enba-surface)] rounded-2xl px-4 py-3 border ${(parasutNetTRL ?? bakiye) >= 0 ? 'border-emerald-100' : 'border-red-200'}`}>
+          <div className="text-xs text-[var(--enba-text-muted)] mb-1">Toplam Pozisyon</div>
           <div className={`text-base font-bold ${(parasutNetTRL ?? bakiye) >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
             {fmtTL(parasutNetTRL ?? bakiye)}
           </div>
           <div className="text-[10px] text-[var(--enba-text-muted)] mt-0.5">
-            {parasutNetTRL !== null ? 'Paraşüt canlı' : `hesaplanan: ${fmtTL(bakiye)}`}
+            {parasutNetTRL !== null ? 'Paraşüt canlı · konsolide' : 'hesaplanan'}
           </div>
+        </div>
+        <div className="bg-[var(--enba-surface)] rounded-2xl px-4 py-3 border border-orange-100">
+          <div className="flex items-center gap-1.5 text-xs text-[var(--enba-text-muted)] mb-1">
+            <TrendingDown size={11} className="text-orange-400" /> Enes Alacağı
+          </div>
+          <div className="text-base font-bold text-orange-500">
+            {enesSermai !== null
+              ? enesSermai.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' EUR'
+              : '— EUR'}
+          </div>
+          <div className="text-[10px] text-[var(--enba-text-muted)] mt-0.5">şirkete kredi · Paraşüt canlı</div>
         </div>
       </div>
 
@@ -654,44 +678,43 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                   </div>
                 ) : (
                   <>
-                    {/* Tüm hesaplar — TRL + döviz */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {accounts.map(acc => {
+                    {/* Hesap kartı render yardımcısı */}
+                    {(() => {
+                      const renderCard = (acc: ParasutAccount) => {
+                        const accType  = getAccountType(acc.name);
                         const isTRL    = acc.currency === 'TRL' || acc.currency === 'TRY';
                         const excluded = excludedAccounts.has(acc.id);
                         const dbRows   = rows.filter(r => r.source_account === acc.name);
                         const dbGelir  = dbRows.filter(r => r.tip === 'gelir').reduce((s, r) => s + r.tutar_tl, 0);
                         const dbGider  = dbRows.filter(r => r.tip === 'gider').reduce((s, r) => s + r.tutar_tl, 0);
+                        const cariYorum = !isTRL ? null : accType === 'cari'
+                          ? (acc.balance > 0 ? 'şirkete borçlu' : acc.balance < 0 ? 'şirket borçlu' : 'bakiye sıfır')
+                          : null;
                         return (
                           <div key={acc.id} className={`relative bg-[var(--enba-surface)] border rounded-2xl p-4 transition-all ${excluded ? 'border-dashed border-[var(--enba-border)] opacity-60' : 'border-[var(--enba-border)] hover:border-[var(--enba-orange)]/50 hover:shadow-md'}`}>
-                            {/* Para birimi rozeti (sadece döviz hesaplar) */}
-                            {!isTRL && (
-                              <span className="absolute top-3 left-3 text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-600">
-                                {acc.currency}
-                              </span>
-                            )}
-                            {/* Dahil/Hariç toggle */}
+                            <span className={`absolute top-3 left-3 text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                              accType === 'banka' ? 'bg-emerald-100 text-emerald-700' :
+                              accType === 'cari'  ? 'bg-blue-100 text-blue-700' :
+                                                    'bg-orange-100 text-orange-700'
+                            }`}>
+                              {accType === 'banka' ? 'Banka' : accType === 'cari' ? 'Cari' : 'EUR'}
+                            </span>
                             <button
                               onClick={() => toggleAccountExclusion(acc.id)}
                               className={`absolute top-3 right-3 text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-colors ${excluded ? 'bg-red-50 border-red-200 text-red-500 hover:bg-red-100' : 'bg-emerald-50 border-emerald-200 text-emerald-600 hover:bg-emerald-100'}`}
-                              title={excluded ? 'Tıkla: nakit akışına dahil et' : 'Tıkla: nakit akışından çıkar'}
                             >
                               {excluded ? 'Hariç' : 'Dahil'}
                             </button>
-
-                            <button
-                              className="text-left w-full"
-                              onClick={() => { setAccountFilter(acc.name); setTab('hareketler'); }}
-                            >
-                              <div className={`flex items-start gap-2 mb-3 pr-14 ${!isTRL ? 'pl-8' : ''}`}>
-                                <Building2 size={13} className={`${isTRL ? 'text-[var(--enba-orange)]' : 'text-blue-500'} shrink-0 mt-0.5`} />
+                            <button className="text-left w-full pt-1" onClick={() => { setAccountFilter(acc.name); setTab('hareketler'); }}>
+                              <div className="flex items-start gap-2 mb-2 pr-14 pl-10">
+                                <Building2 size={13} className="text-[var(--enba-orange)] shrink-0 mt-0.5" />
                                 <span className="text-xs font-semibold text-[var(--enba-text)] leading-tight">{acc.name}</span>
                               </div>
                               <div className={`text-lg font-bold mb-0.5 ${acc.balance >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
                                 {fmtAmount(acc.balance, acc.currency)}
                               </div>
                               <div className="text-[10px] text-[var(--enba-text-muted)]">
-                                {excluded ? 'Senkronize edilmiyor' : 'Paraşüt canlı bakiye'}
+                                {cariYorum ?? (excluded ? 'Senkronize edilmiyor' : 'Paraşüt canlı bakiye')}
                               </div>
                               {dbRows.length > 0 && !excluded && (
                                 <div className="mt-2 pt-2 border-t border-[var(--enba-border)] flex items-center justify-between text-[10px]">
@@ -703,34 +726,50 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                             </button>
                           </div>
                         );
-                      })}
-                    </div>
+                      };
 
-                    {accounts.length === 0 && (
-                      <div className="text-center py-12 text-[var(--enba-text-muted)] text-sm">
-                        Paraşüt'te kasa/banka hesabı bulunamadı.
-                      </div>
-                    )}
+                      const bankaAccs = accounts.filter(a => (a.currency === 'TRL' || a.currency === 'TRY') && getAccountType(a.name) === 'banka');
+                      const cariAccs  = accounts.filter(a => (a.currency === 'TRL' || a.currency === 'TRY') && getAccountType(a.name) === 'cari');
+                      const eurAccs   = accounts.filter(a => a.currency === 'EUR');
 
-                    {accounts.length > 0 && (
-                      <div className="bg-[var(--enba-surface)] border border-[var(--enba-border)] rounded-2xl px-5 py-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="text-xs font-semibold text-[var(--enba-text)]">
-                              {parasutNetTRL !== null ? 'Canlı TL Bakiyesi (Paraşüt)' : 'Konsolide Net Bakiye'}
+                      return (
+                        <div className="space-y-4">
+                          {bankaAccs.length > 0 && (
+                            <div>
+                              <div className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 mb-2">Banka Hesapları</div>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">{bankaAccs.map(renderCard)}</div>
                             </div>
-                            <div className="text-[10px] text-[var(--enba-text-muted)] mt-0.5">
-                              {parasutNetTRL !== null
-                                ? `${accounts.filter(a => a.currency === 'TRL' || a.currency === 'TRY').length} TL hesap · DB hareket bazlı: ${fmtTL(bakiye)}`
-                                : `Veritabanındaki hareketlerden · ${rows.length} kayıt`}
+                          )}
+                          {cariAccs.length > 0 && (
+                            <div>
+                              <div className="text-[10px] font-bold uppercase tracking-widest text-blue-600 mb-2">Cari Hesaplar</div>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">{cariAccs.map(renderCard)}</div>
                             </div>
-                          </div>
-                          <div className={`text-xl font-bold ${(parasutNetTRL ?? bakiye) >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
-                            {fmtTL(parasutNetTRL ?? bakiye)}
-                          </div>
+                          )}
+                          {eurAccs.length > 0 && (
+                            <div>
+                              <div className="text-[10px] font-bold uppercase tracking-widest text-orange-500 mb-2">Sermaye (EUR)</div>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">{eurAccs.map(renderCard)}</div>
+                            </div>
+                          )}
+                          {accounts.length > 0 && (
+                            <div className="bg-[var(--enba-surface)] border border-[var(--enba-border)] rounded-2xl px-5 py-4">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <div className="text-xs font-semibold text-[var(--enba-text)]">Toplam Pozisyon</div>
+                                  <div className="text-[10px] text-[var(--enba-text-muted)] mt-0.5">
+                                    {bankaNakdi !== null ? `Banka: ${fmtTL(bankaNakdi)}` : ''}{cariAlacak !== null ? ` · Cari Alacak: +${fmtTL(cariAlacak)}` : ''}
+                                  </div>
+                                </div>
+                                <div className={`text-xl font-bold ${(parasutNetTRL ?? bakiye) >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                                  {fmtTL(parasutNetTRL ?? bakiye)}
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
                   </>
                 )}
               </div>
