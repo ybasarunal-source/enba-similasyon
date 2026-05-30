@@ -110,8 +110,9 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
   const [sortKey, setSortKey]       = useState<SortKey>('tarih');
   const [sortDir, setSortDir]       = useState<SortDir>('desc');
   const [accountFilter, setAccountFilter] = useState<string>('');
-  const [chartFrom, setChartFrom]   = useState('');
-  const [chartTo, setChartTo]       = useState(() => new Date().toISOString().slice(0, 10));
+  const [chartFrom, setChartFrom]       = useState('');
+  const [chartTo, setChartTo]           = useState(() => new Date().toISOString().slice(0, 10));
+  const [chartAccountFilter, setChartAccountFilter] = useState<string>(''); // '' = tümü
   const [exportMsg, setExportMsg]   = useState('');
 
   const [accounts, setAccounts]           = useState<ParasutAccount[]>([]);
@@ -365,7 +366,9 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
   // Yöntem B: rows'dan hesapla — initial_account_balance açılış noktası, tüm hareketler üstüne eklenir
   const bankaDailyData = useMemo(() => {
     const bankaAccs = accounts.filter(a =>
-      getAccType(a) === 'banka' && (a.currency === 'TRL' || a.currency === 'TRY')
+      getAccType(a) === 'banka' &&
+      (a.currency === 'TRL' || a.currency === 'TRY') &&
+      (chartAccountFilter === '' || a.id === chartAccountFilter || continuationOf[a.id] === chartAccountFilter)
     );
     if (bankaAccs.length === 0) return [];
     const bankaNames = new Set(bankaAccs.map(a => a.name));
@@ -417,7 +420,7 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
     const to   = chartTo   || new Date().toISOString().slice(0, 10);
     return all.filter(p => p.date >= from && p.date <= to);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rows, dailyBalances, accounts, accountTypesMap, continuationOf, chartFrom, chartTo]);
+  }, [rows, dailyBalances, accounts, accountTypesMap, continuationOf, chartAccountFilter, chartFrom, chartTo]);
 
   const AYLAR = ['', 'Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
 
@@ -1156,12 +1159,19 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                 <div className="bg-[var(--enba-surface)] border border-[var(--enba-border)] rounded-2xl p-5">
                   <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
                     <div>
-                      <h3 className="text-sm font-semibold text-[var(--enba-text)]">
-                        Banka Nakdi — Günlük
-                        <span className="ml-2 text-[10px] font-normal text-[var(--enba-text-muted)]">
-                          yalnızca "Banka" tipindeki hesaplar
-                        </span>
-                      </h3>
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <h3 className="text-sm font-semibold text-[var(--enba-text)]">Banka Nakdi — Günlük</h3>
+                        <select
+                          value={chartAccountFilter}
+                          onChange={e => setChartAccountFilter(e.target.value)}
+                          className="bg-[var(--enba-bg)] border border-[var(--enba-border)] rounded-lg px-2 py-1 text-xs text-[var(--enba-text)] focus:outline-none focus:ring-1 focus:ring-[var(--enba-orange)]/30"
+                        >
+                          <option value="">Tüm banka hesapları</option>
+                          {accounts.filter(a => getAccType(a) === 'banka' && !continuationOf[a.id]).map(a => (
+                            <option key={a.id} value={a.id}>{a.name}</option>
+                          ))}
+                        </select>
+                      </div>
                       {bankaDailyData.length > 0 && (
                         <div className="flex items-center gap-4 mt-1">
                           <span className="text-xs text-[var(--enba-text-muted)]">
