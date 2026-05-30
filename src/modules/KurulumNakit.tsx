@@ -132,6 +132,32 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
     } catch { return new Set(); }
   });
 
+  type AccType = 'banka' | 'cari' | 'doviz';
+  // Kullanıcı tarafından atanan hesap tipleri — localStorage'da kalıcı
+  const [accountTypesMap, setAccountTypesMap] = useState<Record<string, AccType>>(() => {
+    try {
+      const saved = localStorage.getItem('enba_nakit_account_types');
+      return saved ? JSON.parse(saved) : {};
+    } catch { return {}; }
+  });
+
+  function autoDetectType(acc: ParasutAccount): AccType {
+    if (acc.currency === 'EUR') return 'doviz';
+    return 'banka';
+  }
+
+  function getAccType(acc: ParasutAccount): AccType {
+    return accountTypesMap[acc.id] ?? autoDetectType(acc);
+  }
+
+  function cycleAccType(accId: string, current: AccType) {
+    const order: AccType[] = ['banka', 'cari', 'doviz'];
+    const next = order[(order.indexOf(current) + 1) % order.length];
+    const updated = { ...accountTypesMap, [accId]: next };
+    setAccountTypesMap(updated);
+    localStorage.setItem('enba_nakit_account_types', JSON.stringify(updated));
+  }
+
   function toggleAccountExclusion(accountId: string) {
     setExcludedAccounts(prev => {
       const next = new Set(prev);
@@ -203,15 +229,6 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
   const bakiye     = totalGelir - totalGider;
   const transferCount = useMemo(() => rows.filter(r => r.kategori === 'Hesaplar Arası Transfer').length, [rows]);
 
-  // Hesap tipi: Banka (gerçek nakit) | Cari (alacak/borç) | Sermaye EUR
-  function getAccountType(name: string): 'banka' | 'cari' | 'sermaye_eur' {
-    const bankaKeywords = ['VakıfBank', 'Vakıfbank', 'Ziraat Bankası TL', 'Ziraat TL Hesabı'];
-    if (bankaKeywords.some(k => name.toLowerCase().includes(k.toLowerCase()))) return 'banka';
-    const eurKeywords = ['Euro', 'euro'];
-    if (eurKeywords.some(k => name.includes(k))) return 'sermaye_eur';
-    return 'cari';
-  }
-
   // Paraşüt canlı bakiyesi (TRL hesaplar toplamı) — DB hesabından daha güvenilir
   const parasutNetTRL = useMemo(() => {
     if (accounts.length === 0) return null;
@@ -220,25 +237,24 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
     return trlAccs.reduce((s, a) => s + a.balance, 0);
   }, [accounts]);
 
-  // Banka nakdi: sadece gerçek banka hesapları
+  // Banka nakdi: kullanıcının "banka" olarak işaretlediği TRL hesaplar
   const bankaNakdi = useMemo(() => {
     if (accounts.length === 0) return null;
-    const bankaAccs = accounts.filter(a =>
-      (a.currency === 'TRL' || a.currency === 'TRY') && getAccountType(a.name) === 'banka'
-    );
+    const bankaAccs = accounts.filter(a => getAccType(a) === 'banka' && (a.currency === 'TRL' || a.currency === 'TRY'));
     if (bankaAccs.length === 0) return null;
     return bankaAccs.reduce((s, a) => s + a.balance, 0);
-  }, [accounts]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accounts, accountTypesMap]);
 
-  // Cari alacaklar: Başar, Enes TL, PET Deşe — pozitif bakiye = şirkete borçlu
+  // Cari alacaklar: kullanıcının "cari" olarak işaretlediği hesaplar, pozitif bakiyeler
   const cariAlacak = useMemo(() => {
     if (accounts.length === 0) return null;
-    const cariAccs = accounts.filter(a =>
-      (a.currency === 'TRL' || a.currency === 'TRY') && getAccountType(a.name) === 'cari'
-    );
+    const cariAccs = accounts.filter(a => getAccType(a) === 'cari' && (a.currency === 'TRL' || a.currency === 'TRY'));
     if (cariAccs.length === 0) return null;
-    return cariAccs.filter(a => a.balance > 0).reduce((s, a) => s + a.balance, 0);
-  }, [accounts]);
+    const total = cariAccs.filter(a => a.balance > 0).reduce((s, a) => s + a.balance, 0);
+    return total > 0 ? total : null;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accounts, accountTypesMap]);
 
   // Sermaye: EUR hesaplarının negatif bakiyeleri = o kişilerin şirketten alacağı = katkıları
   // Negatif bakiye → şirkete borç verdiler demek → mutlak değer = sermaye
@@ -616,14 +632,18 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
         </div>
         <div className="bg-[var(--enba-surface)] rounded-2xl px-4 py-3 border border-orange-100">
           <div className="flex items-center gap-1.5 text-xs text-[var(--enba-text-muted)] mb-1">
-            <TrendingDown size={11} className="text-orange-400" /> Enes Alacağı
+            <TrendingDown size={11} className="text-orange-400" /> Döviz Pozisyonu
           </div>
           <div className="text-base font-bold text-orange-500">
             {enesSermai !== null
               ? enesSermai.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' EUR'
               : '— EUR'}
           </div>
-          <div className="text-[10px] text-[var(--enba-text-muted)] mt-0.5">şirkete kredi · Paraşüt canlı</div>
+          <div className="text-[10px] text-[var(--enba-text-muted)] mt-0.5">
+            {accounts.filter(a => a.currency === 'EUR').length > 0
+              ? `${accounts.filter(a => a.currency === 'EUR').length} EUR hesap · Paraşüt canlı`
+              : 'EUR hesap yok'}
+          </div>
         </div>
       </div>
 
@@ -680,25 +700,32 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                   <>
                     {/* Hesap kartı render yardımcısı */}
                     {(() => {
+                      const TYPE_LABELS: Record<AccType, string> = { banka: 'Banka', cari: 'Cari', doviz: 'Döviz' };
+                      const TYPE_COLORS: Record<AccType, string> = {
+                        banka: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200',
+                        cari:  'bg-blue-100 text-blue-700 hover:bg-blue-200',
+                        doviz: 'bg-orange-100 text-orange-700 hover:bg-orange-200',
+                      };
+
                       const renderCard = (acc: ParasutAccount) => {
-                        const accType  = getAccountType(acc.name);
-                        const isTRL    = acc.currency === 'TRL' || acc.currency === 'TRY';
+                        const accType  = getAccType(acc);
                         const excluded = excludedAccounts.has(acc.id);
                         const dbRows   = rows.filter(r => r.source_account === acc.name);
                         const dbGelir  = dbRows.filter(r => r.tip === 'gelir').reduce((s, r) => s + r.tutar_tl, 0);
                         const dbGider  = dbRows.filter(r => r.tip === 'gider').reduce((s, r) => s + r.tutar_tl, 0);
-                        const cariYorum = !isTRL ? null : accType === 'cari'
-                          ? (acc.balance > 0 ? 'şirkete borçlu' : acc.balance < 0 ? 'şirket borçlu' : 'bakiye sıfır')
+                        const cariYorum = accType === 'cari'
+                          ? (acc.balance > 0 ? 'karşı taraf şirkete borçlu' : acc.balance < 0 ? 'şirket karşı tarafa borçlu' : 'bakiye sıfır')
                           : null;
                         return (
                           <div key={acc.id} className={`relative bg-[var(--enba-surface)] border rounded-2xl p-4 transition-all ${excluded ? 'border-dashed border-[var(--enba-border)] opacity-60' : 'border-[var(--enba-border)] hover:border-[var(--enba-orange)]/50 hover:shadow-md'}`}>
-                            <span className={`absolute top-3 left-3 text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                              accType === 'banka' ? 'bg-emerald-100 text-emerald-700' :
-                              accType === 'cari'  ? 'bg-blue-100 text-blue-700' :
-                                                    'bg-orange-100 text-orange-700'
-                            }`}>
-                              {accType === 'banka' ? 'Banka' : accType === 'cari' ? 'Cari' : 'EUR'}
-                            </span>
+                            {/* Tip rozeti — tıklayınca değişir */}
+                            <button
+                              onClick={() => cycleAccType(acc.id, accType)}
+                              title="Hesap tipini değiştir: Banka → Cari → Döviz"
+                              className={`absolute top-3 left-3 text-[10px] font-bold px-1.5 py-0.5 rounded transition-colors ${TYPE_COLORS[accType]}`}
+                            >
+                              {TYPE_LABELS[accType]}
+                            </button>
                             <button
                               onClick={() => toggleAccountExclusion(acc.id)}
                               className={`absolute top-3 right-3 text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-colors ${excluded ? 'bg-red-50 border-red-200 text-red-500 hover:bg-red-100' : 'bg-emerald-50 border-emerald-200 text-emerald-600 hover:bg-emerald-100'}`}
@@ -728,28 +755,42 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                         );
                       };
 
-                      const bankaAccs = accounts.filter(a => (a.currency === 'TRL' || a.currency === 'TRY') && getAccountType(a.name) === 'banka');
-                      const cariAccs  = accounts.filter(a => (a.currency === 'TRL' || a.currency === 'TRY') && getAccountType(a.name) === 'cari');
-                      const eurAccs   = accounts.filter(a => a.currency === 'EUR');
+                      const bankaAccs = accounts.filter(a => getAccType(a) === 'banka');
+                      const cariAccs  = accounts.filter(a => getAccType(a) === 'cari');
+                      const eurAccs   = accounts.filter(a => getAccType(a) === 'doviz');
 
                       return (
                         <div className="space-y-4">
                           {bankaAccs.length > 0 && (
                             <div>
-                              <div className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 mb-2">Banka Hesapları</div>
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-600">Banka Hesapları</span>
+                                <span className="text-[10px] text-[var(--enba-text-muted)]">— gerçek nakit</span>
+                              </div>
                               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">{bankaAccs.map(renderCard)}</div>
                             </div>
                           )}
                           {cariAccs.length > 0 && (
                             <div>
-                              <div className="text-[10px] font-bold uppercase tracking-widest text-blue-600 mb-2">Cari Hesaplar</div>
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-blue-600">Cari Hesaplar</span>
+                                <span className="text-[10px] text-[var(--enba-text-muted)]">— alacak/borç takibi</span>
+                              </div>
                               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">{cariAccs.map(renderCard)}</div>
                             </div>
                           )}
                           {eurAccs.length > 0 && (
                             <div>
-                              <div className="text-[10px] font-bold uppercase tracking-widest text-orange-500 mb-2">Sermaye (EUR)</div>
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-orange-500">Döviz Hesapları</span>
+                                <span className="text-[10px] text-[var(--enba-text-muted)]">— TL nakit akışına dahil değil</span>
+                              </div>
                               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">{eurAccs.map(renderCard)}</div>
+                            </div>
+                          )}
+                          {accounts.length > 0 && (
+                            <div className="text-[10px] text-[var(--enba-text-muted)] bg-[var(--enba-bg)] rounded-xl px-4 py-2">
+                              Hesap tipini değiştirmek için rozete tıkla: <strong>Banka</strong> (gerçek nakit) · <strong>Cari</strong> (alacak/borç) · <strong>Döviz</strong>
                             </div>
                           )}
                           {accounts.length > 0 && (
@@ -758,7 +799,7 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                                 <div>
                                   <div className="text-xs font-semibold text-[var(--enba-text)]">Toplam Pozisyon</div>
                                   <div className="text-[10px] text-[var(--enba-text-muted)] mt-0.5">
-                                    {bankaNakdi !== null ? `Banka: ${fmtTL(bankaNakdi)}` : ''}{cariAlacak !== null ? ` · Cari Alacak: +${fmtTL(cariAlacak)}` : ''}
+                                    {bankaNakdi !== null ? `Banka nakdi: ${fmtTL(bankaNakdi)}` : ''}{cariAlacak !== null ? ` · Cari alacak: +${fmtTL(cariAlacak)}` : ''}
                                   </div>
                                 </div>
                                 <div className={`text-xl font-bold ${(parasutNetTRL ?? bakiye) >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
