@@ -75,6 +75,7 @@ function mapTransaction(txn: import('../api/parasut').ParasutTransaction): FCImp
     parasut_id:       `txn-${txn.account_id}-${txn.id}`,
     source_account:   txn.account_name,
     transaction_type: txn.transaction_type || '',
+    balance_after:    txn.balance_after,
   };
 }
 
@@ -328,30 +329,57 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
   }, [nonTransfer, chartFrom, chartTo]);
 
   // Banka tipindeki hesapların günlük nakit bakiyesi
-  // Paraşüt canlı bakiyesi bitiş noktası — geriye doğru ölçeklenerek başlangıç bulunur
+  // Yöntem A (tercihli): Paraşüt'ün işlem başına kaydettiği balance_after değerlerini kullan
+  // Yöntem B (fallback): balance_after yoksa iç transfer hariç akış + canlı bakiye sabitleme
   const bankaDailyData = useMemo(() => {
     const bankaAccs = accounts.filter(a =>
       getAccType(a) === 'banka' && (a.currency === 'TRL' || a.currency === 'TRY')
     );
     if (bankaAccs.length === 0) return [];
     const bankaNames = new Set(bankaAccs.map(a => a.name));
-    const bankaRows  = rows.filter(r => r.source_account && bankaNames.has(r.source_account));
+    const bankaRows = rows.filter(r => r.source_account && bankaNames.has(r.source_account));
     if (bankaRows.length === 0) return [];
 
-    // Günlük net değişim
+    // Yöntem A: balance_after mevcut — her hesap için günlük son bakiye al, topla
+    const hasBalanceData = bankaRows.some(r => r.balance_after != null);
+    if (hasBalanceData) {
+      // Her hesap × her gün için son balance_after değeri
+      const byDateAcc: Record<string, Record<string, number>> = {};
+      for (const r of bankaRows) {
+        if (r.balance_after == null || !r.source_account) continue;
+        if (!byDateAcc[r.tarih]) byDateAcc[r.tarih] = {};
+        // Aynı gün birden fazla işlem varsa son olanı al (balance_after = o günkü son bakiye)
+        byDateAcc[r.tarih][r.source_account] = r.balance_after;
+      }
+      // Tüm tarihleri sırala, önceki gün bakiyesini ilerlet (hafta sonu fill-forward)
+      const allDates = Object.keys(byDateAcc).sort();
+      if (allDates.length === 0) return [];
+      const lastKnown: Record<string, number> = {};
+      const all = allDates.map(date => {
+        for (const [acc, bal] of Object.entries(byDateAcc[date])) {
+          lastKnown[acc] = bal;
+        }
+        const total = Object.values(lastKnown).reduce((s, v) => s + v, 0);
+        const [y, m, d] = date.split('-');
+        return { date, label: `${d}.${m}.${y.slice(2)}`, bakiye: total };
+      });
+      const from = chartFrom || (all[0]?.date ?? '');
+      const to   = chartTo   || new Date().toISOString().slice(0, 10);
+      return all.filter(p => p.date >= from && p.date <= to);
+    }
+
+    // Yöntem B: iç transferler hariç, canlı bakiyeye sabitleme
+    const opRows = bankaRows.filter(r =>
+      r.kategori !== 'Hesaplar Arası Transfer' && r.kategori !== 'Açılış Bakiyesi'
+    );
     const byDate: Record<string, number> = {};
-    for (const r of bankaRows) {
+    for (const r of opRows) {
       byDate[r.tarih] = (byDate[r.tarih] ?? 0) + (r.tip === 'gelir' ? r.tutar_tl : -r.tutar_tl);
     }
     const dates = Object.keys(byDate).sort();
-
-    // Bitiş noktası: Paraşüt canlı bakiye
     const liveBakiye = bankaAccs.reduce((s, a) => s + a.balance, 0);
-    // Tüm geçmiş hareketlerin toplamı
     const totalChange = dates.reduce((s, d) => s + byDate[d], 0);
-    // Başlangıç bakiyesi = canlı bakiye − toplam değişim
     const startBalance = liveBakiye - totalChange;
-
     let cum = startBalance;
     const all = dates.map(date => {
       cum += byDate[date];

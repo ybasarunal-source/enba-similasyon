@@ -13,6 +13,7 @@ export interface FoundingCashflow {
   parasut_id?:      string | null;
   source_account?:  string | null;
   transaction_type?: string | null;
+  balance_after?:   number | null;  // işlem sonrası hesap bakiyesi (Paraşüt)
   created_at:       string;
   updated_at:       string;
 }
@@ -28,6 +29,7 @@ export interface FCImportRecord {
   parasut_id:       string;
   source_account?:  string;
   transaction_type: string;
+  balance_after?:   number;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -43,6 +45,7 @@ function rowToFC(r: any): FoundingCashflow {
     parasut_id:       r.parasut_id       ?? null,
     source_account:   r.source_account   ?? null,
     transaction_type: r.transaction_type ?? null,
+    balance_after:    r.balance_after != null ? Number(r.balance_after) : null,
     created_at:       r.created_at       ?? '',
     updated_at:       r.updated_at       ?? '',
   };

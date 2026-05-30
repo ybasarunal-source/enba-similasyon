@@ -53,6 +53,7 @@ export interface ParasutTransaction {
   currency: string;
   exchange_rate: number;
   amount_tl: number;
+  balance_after?: number; // işlem sonrası hesap bakiyesi (Paraşüt'ten)
 }
 
 export interface ParasutItem {
@@ -482,6 +483,7 @@ export const parasutService = {
           ? trlAmt / Math.max(debitAmt, creditAmt)
           : 1,
         amount_tl: absAmount,
+        balance_after: a.balance != null ? parseFloat(a.balance) : undefined,
       }];
     });
   },
