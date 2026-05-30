@@ -339,33 +339,55 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
   }, [nonTransfer, chartFrom, chartTo]);
 
   // Banka tipindeki hesapların günlük nakit bakiyesi
-  // account_daily_balance tablosundaki içe aktarılmış bakiye verisi kullanılır
+  // Yöntem A: account_daily_balance tablosunda içe aktarılmış veri varsa onu kullan
+  // Yöntem B: rows'dan hesapla — initial_account_balance açılış noktası, tüm hareketler üstüne eklenir
   const bankaDailyData = useMemo(() => {
     const bankaAccs = accounts.filter(a =>
       getAccType(a) === 'banka' && (a.currency === 'TRL' || a.currency === 'TRY')
     );
+    if (bankaAccs.length === 0) return [];
     const bankaNames = new Set(bankaAccs.map(a => a.name));
-    const relevant = dailyBalances.filter(r => bankaNames.has(r.account_name));
-    if (relevant.length === 0) return [];
 
-    // Her gün banka hesaplarının toplam bakiyesi
-    const byDate: Record<string, Record<string, number>> = {};
-    for (const r of relevant) {
-      if (!byDate[r.tarih]) byDate[r.tarih] = {};
-      byDate[r.tarih][r.account_name] = r.bakiye;
+    // Yöntem A: içe aktarılmış bakiye verisi
+    const relevant = dailyBalances.filter(r => bankaNames.has(r.account_name));
+    if (relevant.length > 0) {
+      const byDate: Record<string, Record<string, number>> = {};
+      for (const r of relevant) {
+        if (!byDate[r.tarih]) byDate[r.tarih] = {};
+        byDate[r.tarih][r.account_name] = r.bakiye;
+      }
+      const lastKnown: Record<string, number> = {};
+      const all = Object.keys(byDate).sort().map(date => {
+        Object.assign(lastKnown, byDate[date]);
+        const total = Object.values(lastKnown).reduce((s, v) => s + v, 0);
+        const [y, m, d] = date.split('-');
+        return { date, label: `${d}.${m}.${y.slice(2)}`, bakiye: total };
+      });
+      const from = chartFrom || (all[0]?.date ?? '');
+      const to   = chartTo   || new Date().toISOString().slice(0, 10);
+      return all.filter(p => p.date >= from && p.date <= to);
     }
-    const lastKnown: Record<string, number> = {};
+
+    // Yöntem B: initial_account_balance açılış + tüm banka hareketleri kümülatif
+    const bankaRows = rows.filter(r => r.source_account && bankaNames.has(r.source_account));
+    const hasOpening = bankaRows.some(r => r.transaction_type === 'initial_account_balance');
+    if (!hasOpening) return [];  // açılış kaydı yoksa → yeniden senkronize et
+
+    const byDate: Record<string, number> = {};
+    for (const r of bankaRows) {
+      byDate[r.tarih] = (byDate[r.tarih] ?? 0) + (r.tip === 'gelir' ? r.tutar_tl : -r.tutar_tl);
+    }
+    let cum = 0;
     const all = Object.keys(byDate).sort().map(date => {
-      Object.assign(lastKnown, byDate[date]);
-      const total = Object.values(lastKnown).reduce((s, v) => s + v, 0);
+      cum += byDate[date];
       const [y, m, d] = date.split('-');
-      return { date, label: `${d}.${m}.${y.slice(2)}`, bakiye: total };
+      return { date, label: `${d}.${m}.${y.slice(2)}`, bakiye: cum };
     });
     const from = chartFrom || (all[0]?.date ?? '');
     const to   = chartTo   || new Date().toISOString().slice(0, 10);
     return all.filter(p => p.date >= from && p.date <= to);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dailyBalances, accounts, accountTypesMap, chartFrom, chartTo]);
+  }, [rows, dailyBalances, accounts, accountTypesMap, chartFrom, chartTo]);
 
   const AYLAR = ['', 'Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
 
@@ -1115,10 +1137,11 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                         ? <p>Hesaplar sekmesinden en az bir hesabı <strong>"Banka"</strong> olarak işaretleyin.</p>
                         : <>
                             <p className="font-semibold text-[var(--enba-text)]">Bakiye verisi yok.</p>
-                            <p>Paraşüt → Hesap → Excel export'taki bakiye verisini aktarın.</p>
+                            <p className="mt-1"><strong>"Yeniden Senkronize Et"</strong> butonuna bas — açılış bakiyesi çekilecek.</p>
+                            <p className="mt-1 text-[var(--enba-text-muted)]">Veya Excel bakiye verisini manuel aktar:</p>
                             <button
                               onClick={() => setImportModal(true)}
-                              className="mt-2 px-4 py-2 text-xs font-semibold rounded-lg bg-[var(--enba-orange)] text-white hover:opacity-90 transition-opacity"
+                              className="mt-2 px-4 py-2 text-xs font-semibold rounded-lg border border-[var(--enba-border)] text-[var(--enba-text-muted)] hover:text-[var(--enba-orange)] hover:border-[var(--enba-orange)] transition-colors"
                             >
                               Bakiye Verisi Aktar
                             </button>

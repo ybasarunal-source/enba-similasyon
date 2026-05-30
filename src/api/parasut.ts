@@ -382,9 +382,28 @@ export const parasutService = {
       const txType: string = (a.transaction_type || '').toLowerCase();
       const isBankSynced = !!(a.bank_sync_datetime || a.bank_sync_bank_transaction_id);
 
-      // Açılış bakiyesi ve mutabakat kayıtları: nakit akışı değil, dışla
-      if (txType === 'initial_account_balance' || txType === 'balance_adjustment') {
+      // Mutabakat düzeltmeleri: sistem kaydı, dışla
+      if (txType === 'balance_adjustment') {
         return [];
+      }
+      // Açılış bakiyesi: nakit akışı değil ama günlük bakiye grafiği için gerekli
+      // Gelir olarak işaretlenir (debit_amount = hesabın başlangıç bakiyesi)
+      if (txType === 'initial_account_balance') {
+        const openingAmt = parseFloat(a.debit_amount || '0');
+        if (openingAmt === 0) return [];
+        return [{
+          id: d.id,
+          account_id: account.id,
+          account_name: account.name,
+          account_type: account.type,
+          date: a.date || '',
+          amount: openingAmt,
+          description: 'Açılış Bakiyesi',
+          transaction_type: 'initial_account_balance',
+          currency: account.currency,
+          exchange_rate: 1,
+          amount_tl: openingAmt,
+        }];
       }
 
       // Açıklama bazlı iç transfer tespiti
