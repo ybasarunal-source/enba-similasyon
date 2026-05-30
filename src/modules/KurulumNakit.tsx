@@ -327,6 +327,32 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
     return all.filter(p => p.date >= from && p.date <= to);
   }, [nonTransfer, chartFrom, chartTo]);
 
+  // Banka tipindeki hesapların günlük kümülatif nakit bakiyesi
+  const bankaDailyData = useMemo(() => {
+    const bankaNames = new Set(
+      accounts.filter(a => getAccType(a) === 'banka').map(a => a.name)
+    );
+    if (bankaNames.size === 0) return [];
+    const bankaRows = rows.filter(r => r.source_account && bankaNames.has(r.source_account));
+    if (bankaRows.length === 0) return [];
+    const byDate: Record<string, number> = {};
+    for (const r of bankaRows) {
+      byDate[r.tarih] = (byDate[r.tarih] ?? 0) + (r.tip === 'gelir' ? r.tutar_tl : -r.tutar_tl);
+    }
+    let cum = 0;
+    const all = Object.entries(byDate)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, v]) => {
+        cum += v;
+        const [y, m, d] = date.split('-');
+        return { date, label: `${d}.${m}.${y.slice(2)}`, bakiye: cum };
+      });
+    const from = chartFrom || (all[0]?.date ?? '');
+    const to   = chartTo   || new Date().toISOString().slice(0, 10);
+    return all.filter(p => p.date >= from && p.date <= to);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows, accounts, accountTypesMap, chartFrom, chartTo]);
+
   const AYLAR = ['', 'Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
 
   const aylikData = useMemo(() => {
@@ -912,6 +938,86 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
             {/* ══ GRAFİK ══ */}
             {tab === 'grafik' && (
               <div className="space-y-6">
+                {/* Banka Nakdi Günlük — en üstte, en önemli */}
+                <div className="bg-[var(--enba-surface)] border border-[var(--enba-border)] rounded-2xl p-5">
+                  <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+                    <div>
+                      <h3 className="text-sm font-semibold text-[var(--enba-text)]">
+                        Banka Nakdi — Günlük
+                        <span className="ml-2 text-[10px] font-normal text-[var(--enba-text-muted)]">
+                          yalnızca "Banka" tipindeki hesaplar
+                        </span>
+                      </h3>
+                      {bankaDailyData.length > 0 && (
+                        <div className="flex items-center gap-4 mt-1">
+                          <span className="text-xs text-[var(--enba-text-muted)]">
+                            Son:&nbsp;
+                            <span className={`font-semibold ${bankaDailyData[bankaDailyData.length-1].bakiye >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                              {fmtTL(bankaDailyData[bankaDailyData.length-1].bakiye)}
+                            </span>
+                          </span>
+                          <span className="text-xs text-[var(--enba-text-muted)]">
+                            Min:&nbsp;
+                            <span className="font-semibold text-red-500">
+                              {fmtTL(Math.min(...bankaDailyData.map(d => d.bakiye)))}
+                            </span>
+                          </span>
+                          <span className="text-xs text-[var(--enba-text-muted)]">
+                            Max:&nbsp;
+                            <span className="font-semibold text-emerald-600">
+                              {fmtTL(Math.max(...bankaDailyData.map(d => d.bakiye)))}
+                            </span>
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  {bankaDailyData.length === 0 ? (
+                    <div className="text-center py-8 text-[var(--enba-text-muted)] text-xs">
+                      {accounts.filter(a => getAccType(a) === 'banka').length === 0
+                        ? 'Hesaplar sekmesinden en az bir hesabı "Banka" olarak işaretleyin.'
+                        : 'Seçilen aralıkta banka verisi yok.'}
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={280}>
+                      <AreaChart data={bankaDailyData} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
+                        <defs>
+                          <linearGradient id="bankaGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.25} />
+                            <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--enba-border)" />
+                        <XAxis dataKey="label" tick={{ fontSize: 10, fill: 'var(--enba-text-muted)' }}
+                          interval={Math.max(0, Math.floor(bankaDailyData.length / 12) - 1)}
+                          angle={bankaDailyData.length > 30 ? -35 : 0}
+                          textAnchor={bankaDailyData.length > 30 ? 'end' : 'middle'}
+                          height={bankaDailyData.length > 30 ? 40 : 20} />
+                        <YAxis tickFormatter={v => {
+                          const abs = Math.abs(v);
+                          if (abs >= 1_000_000) return (v / 1_000_000).toFixed(1) + 'M';
+                          return (v / 1000).toFixed(0) + 'K';
+                        }} tick={{ fontSize: 10, fill: 'var(--enba-text-muted)' }} />
+                        <Tooltip content={({ active, payload, label }) => {
+                          if (!active || !payload?.length) return null;
+                          const b = (payload[0]?.value as number) ?? 0;
+                          return (
+                            <div className="bg-[var(--enba-surface)] border border-[var(--enba-border)] rounded-xl px-3 py-2 shadow-lg text-xs">
+                              <div className="font-semibold text-[var(--enba-text)] mb-1">{label}</div>
+                              <div className={`font-bold text-sm ${b >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>{fmtTL(b)}</div>
+                            </div>
+                          );
+                        }} />
+                        <ReferenceLine y={0} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} />
+                        <Area type="monotone" dataKey="bakiye" name="Banka Nakdi" stroke="#10b981" strokeWidth={2}
+                          fill="url(#bankaGrad)"
+                          dot={bankaDailyData.length <= 60 ? { r: 2.5, fill: '#10b981', strokeWidth: 0 } : false}
+                          activeDot={{ r: 5, fill: '#10b981' }} />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
+
                 {cumulativeData.length === 0 ? (
                   <div className="text-center py-16 text-[var(--enba-text-muted)] text-sm">Grafik için veri yok.</div>
                 ) : (
