@@ -414,8 +414,26 @@ export const parasutService = {
       const accName  = account.name.toUpperCase();
 
       if (txType === 'account_debit') {
-        // Döviz konversiyon = gerçek nakit çıkışı değil
-        if (rawDesc.includes('DÖVİZ') || rawDesc.includes('İNTERNET DÖVİZ')) return [];
+        // Döviz bozdurma: banka hesabına TL girişi (EUR→TL).
+        // Filtrelemek yerine 'döviz_bozdurma' tipiyle kaydet —
+        // bakiye grafiği için gerekli; txnKategori bunu 'Hesaplar Arası Transfer' yapar.
+        if (rawDesc.includes('DÖVİZ') || rawDesc.includes('İNTERNET DÖVİZ')) {
+          const dovizTrlAmt = parseFloat(a.amount_in_trl || '0') || parseFloat(a.debit_amount || '0');
+          if (dovizTrlAmt === 0) return [];
+          return [{
+            id: d.id,
+            account_id: account.id,
+            account_name: account.name,
+            account_type: account.type,
+            date: a.date || '',
+            amount: dovizTrlAmt,
+            description: a.description || a.auto_description || 'Döviz Bozdurma',
+            transaction_type: 'döviz_bozdurma',
+            currency: account.currency,
+            exchange_rate: 1,
+            amount_tl: dovizTrlAmt,
+          }];
+        }
         // Şirket içi kişi hesaplarına gelen havale
         if (rawDesc.includes('ENES EŞSİZ') || rawDesc.includes('MÜCAHİD ENES')) return [];
         if (rawDesc.includes('BAŞAR ÜNAL') || rawDesc.includes('YILDIRIM BAŞAR')) return [];

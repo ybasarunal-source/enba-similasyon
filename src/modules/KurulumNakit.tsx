@@ -42,6 +42,7 @@ function txnKategori(txType: string, tip: FCTip, description: string): string {
   // Tip bazlı kategoriler her zaman description'dan önce gelir (transfer çift sayımını önler)
   if (t === 'initial_account_balance') return 'Açılış Bakiyesi';
   if (t === 'money_transfer')          return 'Hesaplar Arası Transfer';
+  if (t === 'döviz_bozdurma')          return 'Hesaplar Arası Transfer';
   if (t === 'bank_fee_payment')        return 'Banka Masrafı';
   if (t === 'employee_debit')          return tip === 'gelir' ? 'Personel Tahsilatı' : 'Personel Ödemesi';
   if (description && description !== '—' && description.trim().length > 1) {
