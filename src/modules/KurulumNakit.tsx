@@ -140,6 +140,28 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
   });
 
   type AccType = 'banka' | 'cari' | 'doviz';
+
+  // Devam hesabı: continuationOf[accountId] = primaryAccountId
+  // "Bu hesap, birincil hesabın kapandıktan sonra açılan devamıdır"
+  // Birincil hesabın kapanış bakiyesi = devam hesabının açılış bakiyesi → çift sayımı önlemek için
+  // devam hesabının initial_account_balance'ı atlanır.
+  const [continuationOf, setContinuationOf] = useState<Record<string, string>>(() => {
+    try {
+      const saved = localStorage.getItem('enba_nakit_continuation');
+      return saved ? JSON.parse(saved) : {};
+    } catch { return {}; }
+  });
+
+  function setContinuation(continuationId: string, primaryId: string | null) {
+    setContinuationOf(prev => {
+      const next = { ...prev };
+      if (primaryId) next[continuationId] = primaryId;
+      else delete next[continuationId];
+      localStorage.setItem('enba_nakit_continuation', JSON.stringify(next));
+      return next;
+    });
+  }
+
   // Kullanıcı tarafından atanan hesap tipleri — localStorage'da kalıcı
   const [accountTypesMap, setAccountTypesMap] = useState<Record<string, AccType>>(() => {
     try {
@@ -369,7 +391,15 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
     }
 
     // Yöntem B: initial_account_balance açılış + tüm banka hareketleri kümülatif
-    const bankaRows = rows.filter(r => r.source_account && bankaNames.has(r.source_account));
+    // Devam hesaplarının initial_account_balance'ı atlanır (birincil hesabın kapanış bakiyesi = devamın açılışı)
+    const continuationAccIds = new Set(
+      accounts.filter(a => continuationOf[a.id]).map(a => a.name)
+    );
+    const bankaRows = rows.filter(r => {
+      if (!r.source_account || !bankaNames.has(r.source_account)) return false;
+      if (continuationAccIds.has(r.source_account) && r.transaction_type === 'initial_account_balance') return false;
+      return true;
+    });
     const hasOpening = bankaRows.some(r => r.transaction_type === 'initial_account_balance');
     if (!hasOpening) return [];  // açılış kaydı yoksa → yeniden senkronize et
 
@@ -387,7 +417,7 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
     const to   = chartTo   || new Date().toISOString().slice(0, 10);
     return all.filter(p => p.date >= from && p.date <= to);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rows, dailyBalances, accounts, accountTypesMap, chartFrom, chartTo]);
+  }, [rows, dailyBalances, accounts, accountTypesMap, continuationOf, chartFrom, chartTo]);
 
   const AYLAR = ['', 'Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
 
@@ -860,17 +890,20 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                       };
 
                       const renderCard = (acc: ParasutAccount) => {
-                        const accType  = getAccType(acc);
-                        const excluded = excludedAccounts.has(acc.id);
-                        const dbRows   = rows.filter(r => r.source_account === acc.name);
-                        const dbGelir  = dbRows.filter(r => r.tip === 'gelir').reduce((s, r) => s + r.tutar_tl, 0);
-                        const dbGider  = dbRows.filter(r => r.tip === 'gider').reduce((s, r) => s + r.tutar_tl, 0);
-                        const cariYorum = accType === 'cari'
+                        const accType    = getAccType(acc);
+                        const excluded   = excludedAccounts.has(acc.id);
+                        const primaryId  = continuationOf[acc.id];
+                        const primaryAcc = primaryId ? accounts.find(a => a.id === primaryId) : null;
+                        const isCont     = !!primaryId;
+                        const dbRows     = rows.filter(r => r.source_account === acc.name);
+                        const dbGelir    = dbRows.filter(r => r.tip === 'gelir').reduce((s, r) => s + r.tutar_tl, 0);
+                        const dbGider    = dbRows.filter(r => r.tip === 'gider').reduce((s, r) => s + r.tutar_tl, 0);
+                        const cariYorum  = accType === 'cari'
                           ? (acc.balance > 0 ? 'karşı taraf şirkete borçlu' : acc.balance < 0 ? 'şirket karşı tarafa borçlu' : 'bakiye sıfır')
                           : null;
                         return (
-                          <div key={acc.id} className={`relative bg-[var(--enba-surface)] border rounded-2xl p-4 transition-all ${excluded ? 'border-dashed border-[var(--enba-border)] opacity-60' : 'border-[var(--enba-border)] hover:border-[var(--enba-orange)]/50 hover:shadow-md'}`}>
-                            {/* Tip rozeti — tıklayınca değişir */}
+                          <div key={acc.id} className={`relative bg-[var(--enba-surface)] border rounded-2xl p-4 transition-all ${excluded ? 'border-dashed border-[var(--enba-border)] opacity-60' : isCont ? 'border-blue-200 bg-blue-50/30' : 'border-[var(--enba-border)] hover:border-[var(--enba-orange)]/50 hover:shadow-md'}`}>
+                            {/* Tip rozeti */}
                             <button
                               onClick={() => cycleAccType(acc.id, accType)}
                               title="Hesap tipini değiştir: Banka → Cari → Döviz"
@@ -884,18 +917,14 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                             >
                               {excluded ? 'Hariç' : 'Dahil'}
                             </button>
-                            {/* Hesap bazlı export */}
+                            {/* Export */}
                             <div className="absolute bottom-3 right-3 flex gap-1">
-                              <button
-                                onClick={e => { e.stopPropagation(); exportAccountExcel(acc.name, rows.filter(r => r.source_account === acc.name)); }}
-                                className="text-[10px] px-1.5 py-0.5 rounded border border-[var(--enba-border)] text-[var(--enba-text-muted)] hover:text-emerald-600 hover:border-emerald-300 transition-colors"
-                                title="Excel indir"
-                              ><FileSpreadsheet size={10} /></button>
-                              <button
-                                onClick={e => { e.stopPropagation(); exportAccountPDF(acc.name, rows.filter(r => r.source_account === acc.name)); }}
-                                className="text-[10px] px-1.5 py-0.5 rounded border border-[var(--enba-border)] text-[var(--enba-text-muted)] hover:text-red-500 hover:border-red-300 transition-colors"
-                                title="PDF indir"
-                              ><FileText size={10} /></button>
+                              <button onClick={e => { e.stopPropagation(); exportAccountExcel(acc.name, rows.filter(r => r.source_account === acc.name)); }}
+                                className="text-[10px] px-1.5 py-0.5 rounded border border-[var(--enba-border)] text-[var(--enba-text-muted)] hover:text-emerald-600 hover:border-emerald-300 transition-colors" title="Excel indir">
+                                <FileSpreadsheet size={10} /></button>
+                              <button onClick={e => { e.stopPropagation(); exportAccountPDF(acc.name, rows.filter(r => r.source_account === acc.name)); }}
+                                className="text-[10px] px-1.5 py-0.5 rounded border border-[var(--enba-border)] text-[var(--enba-text-muted)] hover:text-red-500 hover:border-red-300 transition-colors" title="PDF indir">
+                                <FileText size={10} /></button>
                             </div>
                             <button className="text-left w-full pt-1 pb-6" onClick={() => { setAccountFilter(acc.name); setTab('hareketler'); }}>
                               <div className="flex items-start gap-2 mb-2 pr-14 pl-10">
@@ -906,7 +935,9 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                                 {fmtAmount(acc.balance, acc.currency)}
                               </div>
                               <div className="text-[10px] text-[var(--enba-text-muted)]">
-                                {cariYorum ?? (excluded ? 'Senkronize edilmiyor' : 'Paraşüt canlı bakiye')}
+                                {isCont
+                                  ? `↪ ${primaryAcc?.name ?? primaryId} hesabının devamı`
+                                  : cariYorum ?? (excluded ? 'Senkronize edilmiyor' : 'Paraşüt canlı bakiye')}
                               </div>
                               {dbRows.length > 0 && !excluded && (
                                 <div className="mt-2 pt-2 border-t border-[var(--enba-border)] flex items-center justify-between text-[10px]">
@@ -916,6 +947,23 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                                 </div>
                               )}
                             </button>
+                            {/* Devam hesabı seçici */}
+                            <div className="mt-2 pt-2 border-t border-[var(--enba-border)]">
+                              <label className="text-[9px] font-bold uppercase tracking-widest text-[var(--enba-text-muted)] block mb-1">
+                                Bu hesap şunun devamı:
+                              </label>
+                              <select
+                                value={primaryId ?? ''}
+                                onChange={e => setContinuation(acc.id, e.target.value || null)}
+                                onClick={e => e.stopPropagation()}
+                                className="w-full bg-[var(--enba-bg)] border border-[var(--enba-border)] rounded-lg px-2 py-1 text-[10px] text-[var(--enba-text)] focus:outline-none focus:ring-1 focus:ring-[var(--enba-orange)]/30"
+                              >
+                                <option value="">— yok (bağımsız hesap)</option>
+                                {accounts.filter(a => a.id !== acc.id).map(a => (
+                                  <option key={a.id} value={a.id}>{a.name}</option>
+                                ))}
+                              </select>
+                            </div>
                           </div>
                         );
                       };
@@ -954,8 +1002,15 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                             </div>
                           )}
                           {accounts.length > 0 && (
-                            <div className="text-[10px] text-[var(--enba-text-muted)] bg-[var(--enba-bg)] rounded-xl px-4 py-2">
-                              Hesap tipini değiştirmek için rozete tıkla: <strong>Banka</strong> (gerçek nakit) · <strong>Cari</strong> (alacak/borç) · <strong>Döviz</strong>
+                            <div className="space-y-2">
+                              <div className="text-[10px] text-[var(--enba-text-muted)] bg-[var(--enba-bg)] rounded-xl px-4 py-2">
+                                Hesap tipini değiştirmek için rozete tıkla: <strong>Banka</strong> (gerçek nakit) · <strong>Cari</strong> (alacak/borç) · <strong>Döviz</strong>
+                              </div>
+                              <div className="text-[10px] bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 text-amber-800">
+                                <strong>⚠️ Paraşüt'te hesap silmeyin.</strong> Eski dönem hesapları (örn. "geçmiş işlemler") silinirse tarihsel veriler kaybolur.
+                                Hesap kapandıysa, aşağıdaki <em>"Bu hesap şunun devamı"</em> seçeneğiyle birleştirin —
+                                grafik kesintisiz tek çizgi olarak gösterir.
+                              </div>
                             </div>
                           )}
                           {accounts.length > 0 && (
