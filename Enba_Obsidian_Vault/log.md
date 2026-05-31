@@ -1191,6 +1191,16 @@ grep "^## \[" log.md | tail -5
 ## [2026-05-28] geliştirme | Nakit Akışı modülü kapsamlı düzeltme
 
 ## [2026-05-29] ingest | Enba Recycling — Sermaye Analizi Notları
+
+## [2026-05-30] geliştirme | KurulumNakit kapsamlı yeniden tasarım
+- Yapılan: Aylık Özet sekmesi (Satış/Sermaye/Ödemeler/Net/Kümülatif), KPI 4 kart (Banka Nakdi/Cari Alacak/Toplam/Döviz), hesap tipi sistemi (Banka/Cari/Döviz localStorage), devam hesabı kuralı, Ham Veri + hesap bazlı Excel/PDF export, stacked bar grafik, hesap bazlı ödeme grafiği, döviz bozdurma fix
+- Etkilenen: KurulumNakit.tsx, kurulumNakit.ts, parasut.ts, migration_v30, migration_v31
+- Wiki eklendi: Kararlar/2026-05-KurulumNakit-Kararlar.md, Wiki/Nakit-Akis-Takip-Rehberi.md, Ham-Kaynaklar/2026-05-Sermaye-Analizi.md, Moduller/KurulumNakit.md
+- Açık sorun: Banka Nakdi Günlük grafik — işlem bazlı hesaplama her denemede hata veriyor, yeni yaklaşım gerekiyor (bkz. Kararlar/2026-05-KurulumNakit-Kararlar.md Bölüm 5)
+
+## [2026-05-31] geliştirme | KurulumNakit layout fix
+- Yapılan: Export butonları hesap kartında dropdown üzerine binen konumdan alınıp dropdown'ın yanına taşındı
+- Etkilenen: KurulumNakit.tsx
 - Kaynak: Finansal analiz / 29.05.2026_masaustu_enba_sermaye_analizi_notlar.md
 - Güncellenen sayfalar: index.md
 - Yeni sayfalar: Ham-Kaynaklar/2026-05-Sermaye-Analizi.md

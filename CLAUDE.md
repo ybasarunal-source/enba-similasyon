@@ -407,12 +407,22 @@ Veri kaybı riski olan her adımı kullanıcıya açıkça belirt ve onay al.
 ### Bekleyen Kullanıcı Aksiyonu — migration_v29
 - [x] **Supabase SQL:** `migration_v29_founding_cashflow.sql` çalıştırıldı (2026-05-28)
 
+### Tamamlanan (2026-05-30 – 2026-05-31)
+- [x] **KurulumNakit tam yeniden tasarım** — Aylık Özet sekmesi, KPI 4 kart (Banka/Cari/Toplam/Döviz), hesap tipi sistemi (Banka/Cari/Döviz), devam hesabı kuralı, stacked bar grafik, hesap bazlı export, döviz bozdurma fix
+- [x] **migration_v30** — `balance_after` kolonu `founding_cashflow` tablosuna eklendi (çalıştırıldı)
+- [x] **migration_v31** — `account_daily_balance` tablosu oluşturuldu (çalıştırıldı)
+- [x] **Sermaye analizi ingest** — Wiki/Nakit-Akis-Takip-Rehberi.md, Ham-Kaynaklar/2026-05-Sermaye-Analizi.md eklendi
+- [x] **KurulumNakit karar defteri** — Kararlar/2026-05-KurulumNakit-Kararlar.md oluşturuldu
+
+### ⚠️ Açık Sorun — Banka Nakdi Günlük Grafik
+Tüm işlem bazlı hesaplama yaklaşımları başarısız oldu (negatife düşüyor, yanlış değerler).
+**Bir sonraki oturumda**: kararlar defterini okuyarak SIFIRDAN yeni yaklaşım tasarla.
+Referans: `Enba_Obsidian_Vault/Kararlar/2026-05-KurulumNakit-Kararlar.md` Bölüm 4-5
+
 ### Bir Sonraki Oturumda İlk Yapılacak
-1. **migration_v29 çalıştır** — Supabase SQL Editor'de `migration_v29_founding_cashflow.sql` içeriğini çalıştır
-2. **KurulumNakit tarayıcı testi** — kayıt ekle, grafik doğrula, Excel/PDF export test et
-3. **AI Danışman tarayıcı testi** — soru-cevap özelliğini canlıda doğrula (plan seç → analiz → soru sor → yanıt)
-4. **BudgetTrack gerçek veri testi** — plan aktive et, BudgetTrack modalını aç, veriler doğru kaydediliyor mu doğrula
-5. **Paraşüt → financial_categories** — eşleştirme modalı Supabase tablosundan çeksin
+1. **Banka Nakdi Günlük Grafik** — kararlar defterini oku, sıfırdan yaklaşım tasarla
+2. **Paraşüt → financial_categories** — eşleştirme modalı Supabase tablosundan çeksin
+3. **AI Danışman tarayıcı testi** — plan seç → analiz → soru sor → yanıt doğrula
 
 ### Gelecek Planlar (Öncelikli değil, ileride)
 - [ ] **Çoklu dil genişletme** — mevcut TR/EN çerçevesi var (translations.ts); yeni dil eklemek için: (a) translations.ts'e yeni dil anahtarı ekle, (b) I18nProvider'a seçenek ekle, (c) dil seçici UI genişlet. Şu an talep gelene kadar beklemede.
