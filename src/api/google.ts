@@ -270,21 +270,29 @@ export const googleService = {
       let listUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${maxResults}`;
       if (labelId) listUrl += `&labelIds=${encodeURIComponent(labelId)}`;
       if (unreadOnly) listUrl += '&labelIds=UNREAD';
-      const listResponse = await fetch(listUrl, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+
+      // Ek tespiti: aynı sorguya has:attachment ekle — sadece ID listesi döner
+      const attachListUrl = listUrl + '&q=has%3Aattachment';
+
+      const [listResponse, attachResponse] = await Promise.all([
+        fetch(listUrl, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch(attachListUrl, { headers: { 'Authorization': `Bearer ${token}` } }),
+      ]);
       if (!listResponse.ok) {
         throw new Error(`Gmail messages fetch failed: ${listResponse.status}`);
       }
-      const listData = await listResponse.json();
+      const [listData, attachData] = await Promise.all([
+        listResponse.json(),
+        attachResponse.ok ? attachResponse.json() : Promise.resolve({ messages: [] }),
+      ]);
       const messages = (listData.messages || []).filter((m: any) => m?.id);
+      const attachmentIds = new Set<string>((attachData.messages || []).map((m: any) => m.id as string));
 
-      // 10'arlı batch: 50 paralel istek rate limit'e çarpıyor
+      // format=metadata: labelIds güvenilir döner (isRead tespiti için kritik)
       const BATCH = 10;
-      const FIELDS = 'id,snippet,labelIds,payload(headers(name,value),parts(mimeType,filename,body(attachmentId,size),parts(mimeType,filename,body(attachmentId,size))))';
       const fetchOne = async (msg: any) => {
         const detailResponse = await fetch(
-          `https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}?format=full&fields=${encodeURIComponent(FIELDS)}`,
+          `https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}?format=metadata&metadataHeaders=Subject&metadataHeaders=From&metadataHeaders=Date`,
           { headers: { 'Authorization': `Bearer ${token}` } }
         );
         if (!detailResponse.ok) return null;
@@ -304,8 +312,6 @@ export const googleService = {
           senderEmail = match[2].trim();
         }
 
-        const attachments = extractAttachments(detailData.payload?.parts || []);
-
         return {
           id: detailData.id as string,
           subject,
@@ -317,7 +323,7 @@ export const googleService = {
           isRead: !labelIds.includes('UNREAD'),
           isStarred: labelIds.includes('STARRED'),
           source: 'gmail' as const,
-          hasAttachments: attachments.length > 0,
+          hasAttachments: attachmentIds.has(msg.id as string),
         };
       };
 
