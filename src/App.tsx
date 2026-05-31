@@ -94,6 +94,8 @@ import {
   Boxes,
   CircleUser,
   BookOpen,
+  WifiOff,
+  X,
 } from 'lucide-react';
 
 type ModuleType =
@@ -135,6 +137,8 @@ export const App: React.FC = () => {
   const [unreadMailCount, setUnreadMailCount] = useState(0);
   const [overdueTaskCount, setOverdueTaskCount] = useState(0);
   const [openTaskCount, setOpenTaskCount] = useState(0);
+  const [gmailDisconnectBanner, setGmailDisconnectBanner] = useState(false);
+  const [gmailConnectPrompt, setGmailConnectPrompt] = useState(false);
 
   // ── Global Pomodoro ───────────────────────────────────────
   const [pomSecs, setPomSecs] = useState<number>(() => {
@@ -269,6 +273,14 @@ export const App: React.FC = () => {
                   google_data: { token: lsToken, expiry: lsExpiry },
                 });
               }
+            }
+            // Gmail bağlantı durumu uyarıları
+            const everConnected = !!localStorage.getItem('google_ever_connected');
+            const tokenValid = !!googleService.getAccessToken();
+            if (everConnected && !tokenValid) {
+              setGmailDisconnectBanner(true);
+            } else if (!everConnected && !localStorage.getItem('enba_gmail_prompt_dismissed')) {
+              setGmailConnectPrompt(true);
             }
             if (profile.company_id) {
               parasutService.loadTokenFromSupabase(profile.company_id).then(restored => {
@@ -1069,6 +1081,23 @@ export const App: React.FC = () => {
           </div>
         )}
 
+        {/* ─── Gmail Disconnect Banner ─────────────────────── */}
+        {gmailDisconnectBanner && (
+          <div className="flex items-center gap-3 px-6 py-2 bg-amber-50 border-b border-amber-100 flex-shrink-0">
+            <WifiOff size={13} className="text-amber-500 flex-shrink-0" />
+            <span className="text-[11px] font-semibold text-amber-700 flex-1">Gmail bağlantısı kesildi — oturum süresi dolmuş olabilir.</span>
+            <button
+              onClick={() => { navigate('mail'); setGmailDisconnectBanner(false); }}
+              className="text-[10px] font-black text-amber-600 hover:text-amber-800 uppercase tracking-widest border border-amber-200 px-3 py-1 rounded-lg hover:bg-amber-100 transition-all whitespace-nowrap"
+            >
+              Yeniden Bağlan
+            </button>
+            <button onClick={() => setGmailDisconnectBanner(false)} className="text-amber-400 hover:text-amber-600 transition-colors">
+              <X size={14} />
+            </button>
+          </div>
+        )}
+
         {/* ─── Module Content ──────────────────────────────── */}
         <div className="flex-1 overflow-y-auto custom-scrollbar bg-enba-bg enba-module">
           <div className="h-full">
@@ -1179,6 +1208,41 @@ export const App: React.FC = () => {
         </div>
       )}
       <DerenEasterEgg />
+
+      {/* ─── Gmail Bağlan Hatırlatması (sağ alt toast) ──── */}
+      {gmailConnectPrompt && (
+        <div className="fixed bottom-6 right-6 z-50 bg-white rounded-2xl shadow-2xl shadow-black/10 border border-gray-100 p-4 w-72 animate-in slide-in-from-bottom-4 duration-300">
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 bg-red-50 rounded-xl flex items-center justify-center flex-shrink-0">
+              <MailIcon size={18} className="text-red-500" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[12px] font-bold text-enba-dark mb-0.5">Gmail'inizi bağlayın</p>
+              <p className="text-[10px] text-gray-400 leading-relaxed">E-postalarınıza Enba üzerinden erişmek ister misiniz?</p>
+            </div>
+            <button
+              onClick={() => { setGmailConnectPrompt(false); localStorage.setItem('enba_gmail_prompt_dismissed', '1'); }}
+              className="text-gray-300 hover:text-gray-500 transition-colors flex-shrink-0 mt-0.5"
+            >
+              <X size={14} />
+            </button>
+          </div>
+          <div className="flex gap-2 mt-3">
+            <button
+              onClick={() => { navigate('mail'); setGmailConnectPrompt(false); localStorage.setItem('enba_gmail_prompt_dismissed', '1'); }}
+              className="flex-1 py-2 bg-enba-dark text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all"
+            >
+              Bağlan
+            </button>
+            <button
+              onClick={() => { setGmailConnectPrompt(false); localStorage.setItem('enba_gmail_prompt_dismissed', '1'); }}
+              className="flex-1 py-2 bg-gray-50 text-gray-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-100 transition-all"
+            >
+              Şimdi Değil
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

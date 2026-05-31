@@ -426,6 +426,7 @@ Referans: `Enba_Obsidian_Vault/Kararlar/2026-05-KurulumNakit-Kararlar.md` Bölü
 
 ### Gelecek Planlar (Öncelikli değil, ileride)
 - [ ] **Çoklu dil genişletme** — mevcut TR/EN çerçevesi var (translations.ts); yeni dil eklemek için: (a) translations.ts'e yeni dil anahtarı ekle, (b) I18nProvider'a seçenek ekle, (c) dil seçici UI genişlet. Şu an talep gelene kadar beklemede.
+- [ ] **Google PKCE Flow** — implicit flow yerine PKCE: refresh_token desteği, kullanıcı 1 saat sonra token sürünce yeniden login olmak zorunda kalmaz. Vercel Edge Function (benzeri /parasut-oauth) gerekiyor. Tahmini ~2-3 saat.
 
 ### Bekleyen Kullanıcı Aksiyonu
 - [x] **Supabase SQL:** `migration_v25b_parasut_superadmin_rls.sql` çalıştırıldı (2026-05-19)
