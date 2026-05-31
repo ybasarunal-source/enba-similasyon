@@ -358,7 +358,7 @@ export const googleService = {
     const token = this.getAccessToken();
     if (!token) return 0;
     try {
-      const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/labels/INBOX', {
+      const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/labels/CATEGORY_PERSONAL', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!response.ok) {
