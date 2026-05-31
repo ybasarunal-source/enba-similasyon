@@ -260,6 +260,16 @@ export const App: React.FC = () => {
             // Otomatik Entegrasyon Geri Yükleme
             microsoftService.resumeSession(profile);
             googleService.resumeSession(profile);
+            // Google token'ı Supabase'e sync et (yeni token varsa)
+            const lsToken = localStorage.getItem('google_access_token');
+            const lsExpiry = localStorage.getItem('google_token_expiry');
+            if (lsToken && lsExpiry && Date.now() < parseInt(lsExpiry)) {
+              if (profile.google_data?.expiry !== lsExpiry) {
+                profileAPI.updateProfile(session!.user.id, {
+                  google_data: { token: lsToken, expiry: lsExpiry },
+                });
+              }
+            }
             if (profile.company_id) {
               parasutService.loadTokenFromSupabase(profile.company_id).then(restored => {
                 if (!restored) parasutService.resumeSession(profile);
