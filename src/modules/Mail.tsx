@@ -18,8 +18,11 @@ import {
   ChevronRight,
   Star,
   ExternalLink,
+  Paperclip,
+  Download,
   type LucideIcon,
 } from 'lucide-react';
+import { type GmailAttachment } from '../api/google';
 import { tasksAPI, projectsAPI, type SupabaseTask, type SupabaseProject } from '../api/supabase';
 
 interface Email {
@@ -33,6 +36,8 @@ interface Email {
   isRead: boolean;
   isStarred?: boolean;
   source: 'outlook' | 'gmail';
+  hasAttachments?: boolean;
+  attachments?: GmailAttachment[];
 }
 
 export const Mail: React.FC = () => {
@@ -306,14 +311,14 @@ export const Mail: React.FC = () => {
       if (email.source === 'gmail') googleService.markAsRead(email.id);
       else if (email.source === 'outlook') microsoftService.markAsRead(email.id);
     }
-    // Gmail tam içerik çek
+    // Gmail tam içerik + ekler
     if (email.source === 'gmail' && !email.body.includes('<')) {
       setIsBodyLoading(true);
       try {
-        const fullBody = await googleService.getEmailBody(email.id);
-        if (fullBody) {
-          setSelectedEmail(prev => prev ? { ...prev, body: fullBody } : prev);
-          setEmails(prev => prev.map(e => e.id === email.id ? { ...e, body: fullBody } : e));
+        const { body, attachments } = await googleService.getEmailBody(email.id);
+        if (body) {
+          setSelectedEmail(prev => prev ? { ...prev, body, attachments } : prev);
+          setEmails(prev => prev.map(e => e.id === email.id ? { ...e, body, attachments } : e));
         }
       } catch (err) {
         console.error('Error fetching full body:', err);
@@ -754,7 +759,21 @@ export const Mail: React.FC = () => {
           {(['all', 'unread', 'starred'] as const).map(f => (
             <button
               key={f}
-              onClick={() => setReadFilter(f)}
+              onClick={() => {
+                setReadFilter(f);
+                if (f === 'unread' && googleConnected) {
+                  // Gmail'den sadece okunmamışları çek ve mevcut listeye ekle
+                  googleService.getRecentEmails(50, activeGmailLabel || undefined, true).then(unread => {
+                    if (unread.length > 0) {
+                      setEmails(prev => {
+                        const existingIds = new Set(prev.map(e => e.id));
+                        const newOnes = unread.filter(e => !existingIds.has(e.id));
+                        return newOnes.length > 0 ? [...prev, ...newOnes] : prev;
+                      });
+                    }
+                  });
+                }
+              }}
               className={`px-2 py-0.5 rounded-md text-[9px] font-bold transition-all ${readFilter === f ? 'bg-enba-dark text-white' : 'text-gray-400 hover:bg-gray-200'}`}
             >
               {f === 'all' ? 'Hepsi' : f === 'unread' ? 'Okunmamış' : '★ Yıldızlı'}
@@ -831,7 +850,10 @@ export const Mail: React.FC = () => {
                         </span>
                       </div>
                     </div>
-                    <p className={`text-[11px] truncate mb-0.5 ${email.isRead ? 'text-gray-500' : 'font-semibold text-gray-800'}`}>{email.subject}</p>
+                    <div className="flex items-center gap-1 mb-0.5">
+                      <p className={`text-[11px] truncate flex-1 ${email.isRead ? 'text-gray-500' : 'font-semibold text-gray-800'}`}>{email.subject}</p>
+                      {email.hasAttachments && <Paperclip size={10} className="text-gray-400 flex-shrink-0" />}
+                    </div>
                     <p className="text-[10px] text-gray-400 truncate">{email.bodyPreview}</p>
                   </div>
                 </div>
@@ -903,6 +925,29 @@ export const Mail: React.FC = () => {
               className="text-sm text-gray-700 leading-relaxed max-w-none prose prose-sm prose-a:text-enba-orange"
               dangerouslySetInnerHTML={{ __html: selectedEmail.body || selectedEmail.bodyPreview }}
             />
+            {selectedEmail.attachments && selectedEmail.attachments.length > 0 && (
+              <div className="mt-5 pt-4 border-t border-gray-100">
+                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-1">
+                  <Paperclip size={10} /> {selectedEmail.attachments.length} Ek
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {selectedEmail.attachments.map(att => (
+                    <button
+                      key={att.attachmentId}
+                      onClick={() => googleService.downloadAttachment(selectedEmail.id, att.attachmentId, att.filename, att.mimeType)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-100 transition-all group"
+                    >
+                      <Paperclip size={10} className="text-gray-400 flex-shrink-0" />
+                      <span className="text-[10px] font-medium text-gray-600 max-w-[140px] truncate">{att.filename}</span>
+                      <span className="text-[9px] text-gray-400 flex-shrink-0">
+                        {att.size < 1024 ? `${att.size}B` : att.size < 1024 * 1024 ? `${Math.round(att.size / 1024)}KB` : `${(att.size / (1024 * 1024)).toFixed(1)}MB`}
+                      </span>
+                      <Download size={10} className="text-gray-300 group-hover:text-enba-orange transition-colors flex-shrink-0" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       ) : (

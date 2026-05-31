@@ -28,6 +28,29 @@ interface GoogleTask {
   due?: string;
 }
 
+export interface GmailAttachment {
+  attachmentId: string;
+  filename: string;
+  mimeType: string;
+  size: number;
+}
+
+function extractAttachments(parts: any[]): GmailAttachment[] {
+  const result: GmailAttachment[] = [];
+  for (const part of parts || []) {
+    if (part.filename && part.body?.attachmentId) {
+      result.push({
+        attachmentId: part.body.attachmentId as string,
+        filename: part.filename as string,
+        mimeType: (part.mimeType || 'application/octet-stream') as string,
+        size: (part.body.size || 0) as number,
+      });
+    }
+    if (part.parts) result.push(...extractAttachments(part.parts));
+  }
+  return result;
+}
+
 export const googleService = {
   loginRedirect() {
     const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token&scope=${encodeURIComponent(SCOPES)}&include_granted_scopes=true&state=google_auth&prompt=consent`;
@@ -239,13 +262,14 @@ export const googleService = {
     }
   },
 
-  async getRecentEmails(maxResults: number = 20, labelId?: string) {
+  async getRecentEmails(maxResults: number = 20, labelId?: string, unreadOnly = false) {
     const token = this.getAccessToken();
     if (!token) return [];
 
     try {
       let listUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${maxResults}`;
       if (labelId) listUrl += `&labelIds=${encodeURIComponent(labelId)}`;
+      if (unreadOnly) listUrl += '&labelIds=UNREAD';
       const listResponse = await fetch(listUrl, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -257,9 +281,10 @@ export const googleService = {
 
       // 10'arlı batch: 50 paralel istek rate limit'e çarpıyor
       const BATCH = 10;
+      const FIELDS = 'id,snippet,labelIds,payload(headers(name,value),parts(mimeType,filename,body(attachmentId,size),parts(mimeType,filename,body(attachmentId,size))))';
       const fetchOne = async (msg: any) => {
         const detailResponse = await fetch(
-          `https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}?format=metadata&metadataHeaders=Subject&metadataHeaders=From&metadataHeaders=Date`,
+          `https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}?format=full&fields=${encodeURIComponent(FIELDS)}`,
           { headers: { 'Authorization': `Bearer ${token}` } }
         );
         if (!detailResponse.ok) return null;
@@ -279,6 +304,8 @@ export const googleService = {
           senderEmail = match[2].trim();
         }
 
+        const attachments = extractAttachments(detailData.payload?.parts || []);
+
         return {
           id: detailData.id as string,
           subject,
@@ -290,6 +317,7 @@ export const googleService = {
           isRead: !labelIds.includes('UNREAD'),
           isStarred: labelIds.includes('STARRED'),
           source: 'gmail' as const,
+          hasAttachments: attachments.length > 0,
         };
       };
 
@@ -307,16 +335,17 @@ export const googleService = {
     }
   },
 
-  async getEmailBody(id: string) {
+  async getEmailBody(id: string): Promise<{ body: string; attachments: GmailAttachment[] }> {
+    const empty = { body: '', attachments: [] };
     const token = this.getAccessToken();
-    if (!token) return '';
+    if (!token) return empty;
     try {
       const response = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}?format=full`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
+      if (!response.ok) return empty;
       const data = await response.json();
 
-      // Base64url → UTF-8 string (TextDecoder ile Türkçe karakter desteği)
       const decodeB64 = (b64: string): string => {
         try {
           const binary = atob(b64.replace(/-/g, '+').replace(/_/g, '/'));
@@ -347,10 +376,41 @@ export const googleService = {
         return '';
       };
 
-      return getBodyStr(data.payload);
+      return {
+        body: getBodyStr(data.payload),
+        attachments: extractAttachments(data.payload?.parts || []),
+      };
     } catch (err) {
       console.error('Google Get Body Error:', err);
-      return '';
+      return empty;
+    }
+  },
+
+  async downloadAttachment(messageId: string, attachmentId: string, filename: string, mimeType: string): Promise<void> {
+    const token = this.getAccessToken();
+    if (!token) return;
+    try {
+      const response = await fetch(
+        `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}/attachments/${attachmentId}`,
+        { headers: { 'Authorization': `Bearer ${token}` } }
+      );
+      if (!response.ok) return;
+      const data = await response.json();
+      const base64 = (data.data as string).replace(/-/g, '+').replace(/_/g, '/');
+      const binary = atob(base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      const blob = new Blob([bytes], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Download attachment error:', err);
     }
   },
 
