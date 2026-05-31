@@ -253,43 +253,52 @@ export const googleService = {
         throw new Error(`Gmail messages fetch failed: ${listResponse.status}`);
       }
       const listData = await listResponse.json();
-      const messages = listData.messages || [];
+      const messages = (listData.messages || []).filter((m: any) => m?.id);
 
-      const detailedMessages = await Promise.all(
-        messages.map(async (msg: any) => {
-          const detailResponse = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}?format=metadata&metadataHeaders=Subject&metadataHeaders=From&metadataHeaders=Date`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          const detailData = await detailResponse.json();
+      // 10'arlı batch: 50 paralel istek rate limit'e çarpıyor
+      const BATCH = 10;
+      const fetchOne = async (msg: any) => {
+        const detailResponse = await fetch(
+          `https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}?format=metadata&metadataHeaders=Subject&metadataHeaders=From&metadataHeaders=Date`,
+          { headers: { 'Authorization': `Bearer ${token}` } }
+        );
+        if (!detailResponse.ok) return null;
+        const detailData = await detailResponse.json();
 
-          const headers = detailData.payload?.headers || [];
-          const subject = headers.find((h: any) => h.name.toLowerCase() === 'subject')?.value || 'Konu Yok';
-          const from = headers.find((h: any) => h.name.toLowerCase() === 'from')?.value || 'Bilinmiyor';
-          const date = headers.find((h: any) => h.name.toLowerCase() === 'date')?.value || '';
-          const labelIds: string[] = detailData.labelIds || [];
+        const headers: { name: string; value: string }[] = detailData.payload?.headers || [];
+        const subject = headers.find(h => h.name.toLowerCase() === 'subject')?.value || 'Konu Yok';
+        const from = headers.find(h => h.name.toLowerCase() === 'from')?.value || 'Bilinmiyor';
+        const date = headers.find(h => h.name.toLowerCase() === 'date')?.value || '';
+        const labelIds: string[] = detailData.labelIds || [];
 
-          let senderName = from;
-          let senderEmail = from;
-          const match = from.match(/(.*)<(.*)>/);
-          if (match) {
-            senderName = match[1].trim() || match[2].trim();
-            senderEmail = match[2].trim();
-          }
+        let senderName = from;
+        let senderEmail = from;
+        const match = from.match(/(.*)<(.*)>/);
+        if (match) {
+          senderName = match[1].trim() || match[2].trim();
+          senderEmail = match[2].trim();
+        }
 
-          return {
-            id: detailData.id,
-            subject,
-            bodyPreview: detailData.snippet || '',
-            body: '', // tam içerik handleOpenEmail'de çekilir
-            sender: senderName,
-            senderEmail,
-            date: date ? new Date(date).toISOString() : new Date().toISOString(),
-            isRead: !labelIds.includes('UNREAD'),
-            isStarred: labelIds.includes('STARRED'),
-            source: 'gmail' as const,
-          };
-        })
-      );
+        return {
+          id: detailData.id as string,
+          subject,
+          bodyPreview: detailData.snippet || '',
+          body: '',
+          sender: senderName,
+          senderEmail,
+          date: date ? new Date(date).toISOString() : new Date().toISOString(),
+          isRead: !labelIds.includes('UNREAD'),
+          isStarred: labelIds.includes('STARRED'),
+          source: 'gmail' as const,
+        };
+      };
+
+      const detailedMessages = [];
+      for (let i = 0; i < messages.length; i += BATCH) {
+        const batch = messages.slice(i, i + BATCH);
+        const results = await Promise.all(batch.map(fetchOne));
+        detailedMessages.push(...results.filter((m): m is NonNullable<typeof m> => m !== null));
+      }
 
       return detailedMessages;
     } catch (err) {

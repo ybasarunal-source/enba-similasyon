@@ -119,7 +119,7 @@ export const App: React.FC = () => {
   const [historyIndex, setHistoryIndex] = useState(0);
   // Modül-içi geri navigasyonu — aktif modül kendi geri işleyicisini buraya kaydedebilir
   const backOverrideRef = useRef<(() => boolean) | null>(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   // Alt menüsü açık olan sanal parent item'lar — hem açık hem kapalı sidebar'da
   const [expandedSubmenus, setExpandedSubmenus] = useState<Set<string>>(new Set());
@@ -518,8 +518,9 @@ export const App: React.FC = () => {
       <aside
         className={`
           enba-sidebar-glass text-white flex flex-col flex-shrink-0
-          transition-all duration-500 ease-in-out z-20 overflow-hidden
+          transition-all duration-500 ease-in-out z-20 overflow-hidden relative
           ${isSidebarOpen ? 'w-[240px]' : expandedSubmenus.size > 0 ? 'w-[72px]' : 'w-16'}
+          ${!isSidebarOpen ? 'border-r-2 border-[var(--enba-orange)]/40' : ''}
         `}
       >
         <div className={`flex items-center flex-shrink-0 border-b border-white/5 relative
@@ -545,12 +546,13 @@ export const App: React.FC = () => {
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             title={isSidebarOpen ? 'Menüyü Gizle' : 'Menüyü Göster'}
             className={`
-              flex items-center justify-center rounded-lg
-              text-white/40 hover:text-white transition-all duration-300
-              ${isSidebarOpen ? 'absolute right-3 p-1.5 hover:bg-white/10' : 'p-2 bg-white/5 hover:bg-white/10'}
+              flex items-center justify-center rounded-lg transition-all duration-300
+              ${isSidebarOpen
+                ? 'absolute right-3 p-1.5 text-white/40 hover:text-white hover:bg-white/10'
+                : 'p-2 text-[var(--enba-orange)] bg-[var(--enba-orange)]/10 hover:bg-[var(--enba-orange)]/20 ring-1 ring-[var(--enba-orange)]/30'}
             `}
           >
-            {isSidebarOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+            {isSidebarOpen ? <ChevronLeft size={16} /> : <ChevronRight size={18} />}
           </button>
         </div>
 
