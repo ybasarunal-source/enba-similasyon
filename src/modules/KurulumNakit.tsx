@@ -411,12 +411,20 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
     for (const r of bankaRows) {
       byDate[r.tarih] = (byDate[r.tarih] ?? 0) + (r.tip === 'gelir' ? r.tutar_tl : -r.tutar_tl);
     }
+    // Kümülatif seri hesapla
     let cum = 0;
-    const all = Object.keys(byDate).sort().map(date => {
+    const raw = Object.keys(byDate).sort().map(date => {
       cum += byDate[date];
       const [y, m, d] = date.split('-');
       return { date, label: `${d}.${m}.${y.slice(2)}`, bakiye: cum };
     });
+    if (raw.length === 0) return [];
+
+    // Paraşüt canlı bakiyesine sabitle: son nokta = gerçek bakiye
+    const liveBakiye = bankaAccs.reduce((s, a) => s + a.balance, 0);
+    const offset = liveBakiye - raw[raw.length - 1].bakiye;
+    const all = raw.map(p => ({ ...p, bakiye: p.bakiye + offset }));
+
     const from = chartFrom || (all[0]?.date ?? '');
     const to   = chartTo   || new Date().toISOString().slice(0, 10);
     return all.filter(p => p.date >= from && p.date <= to);
@@ -921,16 +929,7 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                             >
                               {excluded ? 'Hariç' : 'Dahil'}
                             </button>
-                            {/* Export */}
-                            <div className="absolute bottom-3 right-3 flex gap-1">
-                              <button onClick={e => { e.stopPropagation(); exportAccountExcel(acc.name, rows.filter(r => r.source_account === acc.name)); }}
-                                className="text-[10px] px-1.5 py-0.5 rounded border border-[var(--enba-border)] text-[var(--enba-text-muted)] hover:text-emerald-600 hover:border-emerald-300 transition-colors" title="Excel indir">
-                                <FileSpreadsheet size={10} /></button>
-                              <button onClick={e => { e.stopPropagation(); exportAccountPDF(acc.name, rows.filter(r => r.source_account === acc.name)); }}
-                                className="text-[10px] px-1.5 py-0.5 rounded border border-[var(--enba-border)] text-[var(--enba-text-muted)] hover:text-red-500 hover:border-red-300 transition-colors" title="PDF indir">
-                                <FileText size={10} /></button>
-                            </div>
-                            <button className="text-left w-full pt-1 pb-6" onClick={() => { setAccountFilter(acc.name); setTab('hareketler'); }}>
+                            <button className="text-left w-full pt-1" onClick={() => { setAccountFilter(acc.name); setTab('hareketler'); }}>
                               <div className="flex items-start gap-2 mb-2 pr-14 pl-10">
                                 <Building2 size={13} className="text-[var(--enba-orange)] shrink-0 mt-0.5" />
                                 <span className="text-xs font-semibold text-[var(--enba-text)] leading-tight">{acc.name}</span>
@@ -951,22 +950,30 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                                 </div>
                               )}
                             </button>
-                            {/* Devam hesabı seçici */}
+                            {/* Devam hesabı seçici + export */}
                             <div className="mt-2 pt-2 border-t border-[var(--enba-border)]">
                               <label className="text-[9px] font-bold uppercase tracking-widest text-[var(--enba-text-muted)] block mb-1">
                                 Bu hesap şunun devamı:
                               </label>
-                              <select
-                                value={primaryId ?? ''}
-                                onChange={e => setContinuation(acc.id, e.target.value || null)}
-                                onClick={e => e.stopPropagation()}
-                                className="w-full bg-[var(--enba-bg)] border border-[var(--enba-border)] rounded-lg px-2 py-1 text-[10px] text-[var(--enba-text)] focus:outline-none focus:ring-1 focus:ring-[var(--enba-orange)]/30"
-                              >
-                                <option value="">— yok (bağımsız hesap)</option>
-                                {accounts.filter(a => a.id !== acc.id).map(a => (
-                                  <option key={a.id} value={a.id}>{a.name}</option>
-                                ))}
-                              </select>
+                              <div className="flex items-center gap-1">
+                                <select
+                                  value={primaryId ?? ''}
+                                  onChange={e => setContinuation(acc.id, e.target.value || null)}
+                                  onClick={e => e.stopPropagation()}
+                                  className="flex-1 bg-[var(--enba-bg)] border border-[var(--enba-border)] rounded-lg px-2 py-1 text-[10px] text-[var(--enba-text)] focus:outline-none focus:ring-1 focus:ring-[var(--enba-orange)]/30"
+                                >
+                                  <option value="">— yok (bağımsız hesap)</option>
+                                  {accounts.filter(a => a.id !== acc.id).map(a => (
+                                    <option key={a.id} value={a.id}>{a.name}</option>
+                                  ))}
+                                </select>
+                                <button onClick={e => { e.stopPropagation(); exportAccountExcel(acc.name, rows.filter(r => r.source_account === acc.name)); }}
+                                  className="shrink-0 p-1 rounded border border-[var(--enba-border)] text-[var(--enba-text-muted)] hover:text-emerald-600 hover:border-emerald-300 transition-colors" title="Excel indir">
+                                  <FileSpreadsheet size={11} /></button>
+                                <button onClick={e => { e.stopPropagation(); exportAccountPDF(acc.name, rows.filter(r => r.source_account === acc.name)); }}
+                                  className="shrink-0 p-1 rounded border border-[var(--enba-border)] text-[var(--enba-text-muted)] hover:text-red-500 hover:border-red-300 transition-colors" title="PDF indir">
+                                  <FileText size={11} /></button>
+                              </div>
                             </div>
                           </div>
                         );
