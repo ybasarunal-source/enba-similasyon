@@ -365,7 +365,7 @@ export const googleService = {
         return 0;
       }
       const data = await response.json();
-      return data.messagesUnread || 0;
+      return data.threadsUnread || 0;
     } catch (err) {
       console.error('Google Unread Count Error:', err);
       return 0;
