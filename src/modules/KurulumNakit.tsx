@@ -11,6 +11,7 @@ import {
 } from 'recharts';
 import { kurulumNakitAPI, type FoundingCashflow, type FCTip, type FCImportRecord } from '../api/kurulumNakit';
 import { parasutService, type ParasutAccount } from '../api/parasut';
+import { parasutExporter, type ExportState } from '../api/parasutExporter';
 import type { UserProfile } from '../api/supabase';
 
 interface KurulumNakitProps {
@@ -127,7 +128,7 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
   const [importModal, setImportModal]     = useState(false);
   const [importAccount, setImportAccount] = useState('');
   const [importJson, setImportJson]       = useState('');
-  const [exportState, setExportState]     = useState<{ accountName: string; current: number; total: number; errors: string[] } | null>(null);
+  const [exportState, setExportState]     = useState<ExportState | null>(() => parasutExporter.getState());
   const [importMsg, setImportMsg]         = useState('');
 
   const companyId        = profile?.company_id ?? null;
@@ -239,6 +240,9 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
   }, [companyId]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Singleton exporter'a abone ol — sayfa değişse de export devam eder
+  useEffect(() => parasutExporter.subscribe(setExportState), []);
 
   useEffect(() => {
     if (!isParasutConnected || !parasutCompany) return;
@@ -518,30 +522,8 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
 
   async function handleExportToParasut(acc: ParasutAccount) {
     if (!isParasutConnected || !parasutCompany || !companyId) return;
-    const pending = rows.filter(r => r.source_account === acc.name && !r.parasut_id);
-    if (pending.length === 0) return;
-    setExportState({ accountName: acc.name, current: 0, total: pending.length, errors: [] });
-    const errors: string[] = [];
-    for (let i = 0; i < pending.length; i++) {
-      const r = pending[i];
-      try {
-        const parasutId = await parasutService.createAccountTransaction(
-          parasutCompany.id,
-          acc.id,
-          r.tip,
-          r.tarih,
-          r.tutar_tl,
-          r.aciklama,
-        );
-        if (parasutId) await kurulumNakitAPI.markExported(r.id, parasutId);
-      } catch (e) {
-        errors.push(`${r.tarih} ${r.tutar_tl} TL: ${e instanceof Error ? e.message.slice(0, 60) : 'hata'}`);
-      }
-      setExportState(s => s ? { ...s, current: i + 1, errors } : null);
-      await new Promise(res => setTimeout(res, 350)); // Paraşüt rate-limit koruması
-    }
-    const updated = await kurulumNakitAPI.list(companyId).catch(() => rows);
-    setRows(updated);
+    parasutExporter.start(rows, acc, companyId, parasutCompany.id)
+      .then(() => kurulumNakitAPI.list(companyId).then(setRows).catch(() => {}));
   }
 
   async function handleSync() {
@@ -1707,12 +1689,12 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
         </div>
       )}
 
-      {exportState && exportState.current === exportState.total && (
+      {exportState?.done && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
           <div className="bg-[var(--enba-surface)] rounded-2xl p-6 w-full max-w-md shadow-2xl border border-[var(--enba-border)]">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-[var(--enba-text)]">Paraşüt Aktarım Tamamlandı</h3>
-              <button onClick={() => setExportState(null)} className="text-[var(--enba-text-muted)] hover:text-[var(--enba-text)]"><X size={16} /></button>
+              <button onClick={parasutExporter.clear} className="text-[var(--enba-text-muted)] hover:text-[var(--enba-text)]"><X size={16} /></button>
             </div>
             <div className="space-y-2 text-xs">
               <div className="flex items-center gap-2 text-emerald-600 font-semibold">
@@ -1728,7 +1710,7 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                 </div>
               )}
             </div>
-            <button onClick={() => setExportState(null)}
+            <button onClick={parasutExporter.clear}
               className="mt-4 w-full py-2 text-xs font-semibold rounded-xl bg-[var(--enba-orange)] text-white hover:opacity-90 transition-opacity">
               Tamam
             </button>

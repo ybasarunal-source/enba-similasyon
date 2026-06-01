@@ -9,6 +9,7 @@ import { profileAPI, companiesAPI, tasksAPI, type UserProfile, type UserRole } f
 import { parasutService } from './api/parasut';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { DerenEasterEgg } from './components/DerenEasterEgg';
+import { parasutExporter, type ExportState } from './api/parasutExporter';
 
 // Modül yükleme hatalarını (chunk load error) yakalayıp sayfayı yenileyen yardımcı fonksiyon
 const lazyRetry = (componentImport: () => Promise<any>) => 
@@ -84,6 +85,8 @@ import {
   Building2,
   Building,
   Timer,
+  Upload,
+  Loader2,
   Landmark,
   Users,
   MessageSquare,
@@ -160,6 +163,8 @@ export const App: React.FC = () => {
     return 'work';
   });
   const [pomPanelOpen, setPomPanelOpen] = useState(false);
+  const [exportState, setExportState]   = useState<ExportState | null>(() => parasutExporter.getState());
+  useEffect(() => parasutExporter.subscribe(setExportState), []);
   const [pomEnabled, setPomEnabled]     = useState<boolean>(() => {
     const v = localStorage.getItem('enba_pomodoro_enabled');
     return v === null ? true : v === 'true';
@@ -1208,6 +1213,18 @@ export const App: React.FC = () => {
         </div>
       )}
       <DerenEasterEgg />
+
+      {/* ─── Paraşüt Export Progress Pill ──── */}
+      {exportState && !exportState.done && (
+        <div className="fixed bottom-6 left-6 z-50 flex items-center gap-2.5 bg-white border border-blue-200 rounded-2xl shadow-lg shadow-blue-100/50 px-4 py-2.5 text-xs font-semibold text-blue-700">
+          <Loader2 size={14} className="animate-spin text-blue-500 shrink-0" />
+          <span>Paraşüt'e aktarılıyor</span>
+          <span className="bg-blue-50 border border-blue-200 rounded-full px-2 py-0.5 text-[10px] font-bold tabular-nums">
+            {exportState.current}/{exportState.total}
+          </span>
+          <Upload size={12} className="text-blue-400 shrink-0" />
+        </div>
+      )}
 
       {/* ─── Gmail Bağlan Hatırlatması (sağ alt toast) ──── */}
       {gmailConnectPrompt && (
