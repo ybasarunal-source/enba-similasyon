@@ -14,6 +14,7 @@ export interface FoundingCashflow {
   source_account?:  string | null;
   transaction_type?: string | null;
   balance_after?:   number | null;  // işlem sonrası hesap bakiyesi (Paraşüt)
+  is_reconciled?:   boolean | null; // Paraşüt banka mutabakatı: true=tik var, false=dengeleme kaydı
   created_at:       string;
   updated_at:       string;
 }
@@ -30,6 +31,7 @@ export interface FCImportRecord {
   source_account?:  string;
   transaction_type: string;
   balance_after?:   number;
+  is_reconciled?:   boolean;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -46,6 +48,7 @@ function rowToFC(r: any): FoundingCashflow {
     source_account:   r.source_account   ?? null,
     transaction_type: r.transaction_type ?? null,
     balance_after:    r.balance_after != null ? Number(r.balance_after) : null,
+    is_reconciled:    r.is_reconciled    ?? null,
     created_at:       r.created_at       ?? '',
     updated_at:       r.updated_at       ?? '',
   };

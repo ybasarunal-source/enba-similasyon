@@ -79,6 +79,7 @@ function mapTransaction(txn: import('../api/parasut').ParasutTransaction): FCImp
     source_account:   txn.account_name,
     transaction_type: txn.transaction_type || '',
     balance_after:    txn.balance_after,
+    is_reconciled:    txn.is_reconciled,
   };
 }
 
@@ -110,6 +111,8 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState('');
   const [tipFilter, setTipFilter]   = useState<TipFilter>('tümü');
+  type RecFilter = 'tümü' | 'mutabık' | 'dengeleme';
+  const [recFilter, setRecFilter]   = useState<RecFilter>('tümü');
   const [sortKey, setSortKey]       = useState<SortKey>('tarih');
   const [sortDir, setSortDir]       = useState<SortDir>('desc');
   const [accountFilter, setAccountFilter] = useState<string>('');
@@ -338,6 +341,8 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
     let list = rows;
     if (tipFilter !== 'tümü') list = list.filter(r => r.tip === tipFilter);
     if (accountFilter) list = list.filter(r => r.source_account === accountFilter);
+    if (recFilter === 'mutabık')   list = list.filter(r => r.is_reconciled === true);
+    if (recFilter === 'dengeleme') list = list.filter(r => r.is_reconciled === false);
     list = [...list].sort((a, b) => {
       let d = 0;
       if (sortKey === 'tarih')         d = a.tarih.localeCompare(b.tarih);
@@ -346,7 +351,7 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
       return sortDir === 'asc' ? d : -d;
     });
     return list;
-  }, [rows, tipFilter, accountFilter, sortKey, sortDir]);
+  }, [rows, tipFilter, recFilter, accountFilter, sortKey, sortDir]);
 
   // Grafik: operasyonel nakit akışı (transfer hariç).
   // "Kasa bakiyesi" değil, "operasyonel nakit pozisyonu" gösterir.
@@ -1160,6 +1165,18 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                     ))}
                   </div>
 
+                  {/* Mutabakat filtresi */}
+                  <div className="flex gap-1 bg-[var(--enba-surface)] border border-[var(--enba-border)] rounded-lg p-0.5">
+                    {([['tümü','Tümü'],['mutabık','✓ Mutabık'],['dengeleme','— Dengeleme']] as [RecFilter,string][]).map(([id, label]) => (
+                      <button key={id} onClick={() => setRecFilter(id)}
+                        className={`px-2.5 py-1 text-[10px] font-medium rounded-md transition-all ${
+                          recFilter === id ? 'bg-[var(--enba-orange)] text-white' : 'text-[var(--enba-text-muted)] hover:text-[var(--enba-text)]'
+                        }`}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+
                   {allAccountNames.length > 0 && (
                     <div className="flex items-center gap-1.5">
                       <select
@@ -1230,7 +1247,22 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                         {displayed.map((r, i) => (
                           <tr key={r.id}
                             className={`border-b border-[var(--enba-border)] last:border-0 hover:bg-[var(--enba-bg)] transition-colors ${i % 2 === 1 ? 'bg-[var(--enba-bg)]/30' : ''}`}>
-                            <td className="px-4 py-2.5 text-xs text-[var(--enba-text-muted)] whitespace-nowrap">{fmtDate(r.tarih)}</td>
+                            <td className="px-4 py-2.5 text-xs text-[var(--enba-text-muted)] whitespace-nowrap">
+                              <span className="flex items-center gap-1.5">
+                                {r.is_reconciled === true && (
+                                  <span title="Banka mutabakatı — gerçek işlem">
+                                    <CheckCircle2 size={11} className="text-emerald-500 shrink-0" />
+                                  </span>
+                                )}
+                                {r.is_reconciled === false && (
+                                  <span className="w-2.5 h-2.5 rounded-full border border-[var(--enba-border)] bg-[var(--enba-bg)] shrink-0 inline-block" title="Mutabakat yok — dengeleme kaydı" />
+                                )}
+                                {r.is_reconciled == null && (
+                                  <span className="w-2.5 h-2.5 shrink-0 inline-block" />
+                                )}
+                                {fmtDate(r.tarih)}
+                              </span>
+                            </td>
                             <td className="px-4 py-2.5 text-xs text-[var(--enba-text)]">{r.kategori}</td>
                             <td className={`px-4 py-2.5 text-xs font-semibold text-right whitespace-nowrap ${r.tip === 'gider' ? 'text-red-500' : 'text-emerald-600'}`}>
                               {r.tip === 'gider' ? '−' : '+'} {fmtTL(r.tutar_tl)}

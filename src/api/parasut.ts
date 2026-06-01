@@ -54,6 +54,7 @@ export interface ParasutTransaction {
   exchange_rate: number;
   amount_tl: number;
   balance_after?: number; // işlem sonrası hesap bakiyesi (Paraşüt'ten)
+  is_reconciled: boolean; // Paraşüt banka mutabakatı: true=tik var, false=dengeleme kaydı
 }
 
 export interface ParasutItem {
@@ -451,6 +452,7 @@ export const parasutService = {
           currency: account.currency,
           exchange_rate: 1,
           amount_tl: openingAmt,
+          is_reconciled: isBankSynced,
         }];
       }
 
@@ -480,6 +482,7 @@ export const parasutService = {
             currency: account.currency,
             exchange_rate: 1,
             amount_tl: dovizTrlAmt,
+            is_reconciled: isBankSynced,
           }];
         }
         // Şirket içi kişi hesaplarına gelen havale
@@ -569,6 +572,7 @@ export const parasutService = {
           : 1,
         amount_tl: absAmount,
         balance_after: a.balance != null ? parseFloat(a.balance) : undefined,
+        is_reconciled: isBankSynced,
       }];
     });
   },
