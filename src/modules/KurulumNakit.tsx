@@ -300,42 +300,59 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
   const bakiye     = totalGelir - totalGider;
   const transferCount = useMemo(() => calcRows.filter(r => r.kategori === 'Hesaplar Arası Transfer').length, [calcRows]);
 
-  // Paraşüt canlı bakiyesi (TRL hesaplar toplamı) — DB hesabından daha güvenilir
+  // Devam hesabı atanan geçmiş (pasif) hesapların ID kümesi
+  // continuationOf[B] = A  →  A pasif, B aktif
+  // KPI hesaplamalarında ve kart listesinde A gösterilmez.
+  const continuationTargets = useMemo(
+    () => new Set(Object.values(continuationOf)),
+    [continuationOf],
+  );
+
+  // Paraşüt canlı bakiyesi (TRL hesaplar toplamı) — pasif hesaplar hariç
   const parasutNetTRL = useMemo(() => {
     if (accounts.length === 0) return null;
-    const trlAccs = accounts.filter(a => a.currency === 'TRL' || a.currency === 'TRY');
+    const trlAccs = accounts.filter(a =>
+      (a.currency === 'TRL' || a.currency === 'TRY') && !continuationTargets.has(a.id),
+    );
     if (trlAccs.length === 0) return null;
     return trlAccs.reduce((s, a) => s + a.balance, 0);
-  }, [accounts]);
+  }, [accounts, continuationTargets]);
 
-  // Banka nakdi: kullanıcının "banka" olarak işaretlediği TRL hesaplar
+  // Banka nakdi: "banka" tipindeki TRL hesaplar — pasif hesaplar hariç
   const bankaNakdi = useMemo(() => {
     if (accounts.length === 0) return null;
-    const bankaAccs = accounts.filter(a => getAccType(a) === 'banka' && (a.currency === 'TRL' || a.currency === 'TRY'));
+    const bankaAccs = accounts.filter(a =>
+      getAccType(a) === 'banka' &&
+      (a.currency === 'TRL' || a.currency === 'TRY') &&
+      !continuationTargets.has(a.id),
+    );
     if (bankaAccs.length === 0) return null;
     return bankaAccs.reduce((s, a) => s + a.balance, 0);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accounts, accountTypesMap]);
+  }, [accounts, accountTypesMap, continuationTargets]);
 
-  // Cari alacaklar: kullanıcının "cari" olarak işaretlediği hesaplar, pozitif bakiyeler
+  // Cari alacaklar: "cari" tipindeki TRL hesaplar — pasif hesaplar hariç
   const cariAlacak = useMemo(() => {
     if (accounts.length === 0) return null;
-    const cariAccs = accounts.filter(a => getAccType(a) === 'cari' && (a.currency === 'TRL' || a.currency === 'TRY'));
+    const cariAccs = accounts.filter(a =>
+      getAccType(a) === 'cari' &&
+      (a.currency === 'TRL' || a.currency === 'TRY') &&
+      !continuationTargets.has(a.id),
+    );
     if (cariAccs.length === 0) return null;
     const total = cariAccs.filter(a => a.balance > 0).reduce((s, a) => s + a.balance, 0);
     return total > 0 ? total : null;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accounts, accountTypesMap]);
+  }, [accounts, accountTypesMap, continuationTargets]);
 
-  // Sermaye: EUR hesaplarının negatif bakiyeleri = o kişilerin şirketten alacağı = katkıları
-  // Negatif bakiye → şirkete borç verdiler demek → mutlak değer = sermaye
+  // Sermaye: EUR hesaplarının negatif bakiyeleri — pasif hesaplar hariç
   const enesSermai = useMemo(() => {
     if (accounts.length === 0) return null;
-    const eurAccs = accounts.filter(a => a.currency === 'EUR');
+    const eurAccs = accounts.filter(a => a.currency === 'EUR' && !continuationTargets.has(a.id));
     if (eurAccs.length === 0) return null;
     const total = eurAccs.filter(a => a.balance < 0).reduce((s, a) => s + a.balance, 0);
     return Math.abs(total);
-  }, [accounts]);
+  }, [accounts, continuationTargets]);
 
   const allAccountNames = useMemo(() => {
     const names = new Set(rows.map(r => r.source_account).filter(Boolean) as string[]);
@@ -1010,10 +1027,15 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                                 {fmtAmount(acc.balance, acc.currency)}
                               </div>
                               <div className="text-[10px] text-[var(--enba-text-muted)]">
-                                {isCont
-                                  ? `↪ ${primaryAcc?.name ?? primaryId} hesabının devamı`
-                                  : cariYorum ?? (excluded ? 'Senkronize edilmiyor' : 'Paraşüt canlı bakiye')}
+                                {cariYorum ?? (excluded ? 'Senkronize edilmiyor' : 'Paraşüt canlı bakiye')}
                               </div>
+                              {isCont && primaryAcc && (
+                                <div className="mt-1.5 flex items-center gap-1.5 bg-[var(--enba-bg)] border border-[var(--enba-border)] rounded-lg px-2 py-1">
+                                  <span className="text-[9px] text-[var(--enba-text-muted)]">Geçmiş dönem saklı:</span>
+                                  <span className="text-[9px] font-semibold text-[var(--enba-text)] truncate">{primaryAcc.name}</span>
+                                  <span className="text-[9px] text-[var(--enba-text-muted)] ml-auto">{fmtAmount(primaryAcc.balance, primaryAcc.currency)}</span>
+                                </div>
+                              )}
                               {dbRows.length > 0 && !excluded && (
                                 <div className="mt-2 pt-2 border-t border-[var(--enba-border)] flex items-center justify-between text-[10px]">
                                   <span className="text-emerald-600">+{fmtTL(dbGelir)}</span>
@@ -1082,9 +1104,10 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                         );
                       };
 
-                      const bankaAccs = accounts.filter(a => getAccType(a) === 'banka');
-                      const cariAccs  = accounts.filter(a => getAccType(a) === 'cari');
-                      const eurAccs   = accounts.filter(a => getAccType(a) === 'doviz');
+                      // Pasif hesaplar (başka hesabın devamı olarak işaretlenenler) kart listesinden çıkar
+                      const bankaAccs = accounts.filter(a => getAccType(a) === 'banka' && !continuationTargets.has(a.id));
+                      const cariAccs  = accounts.filter(a => getAccType(a) === 'cari'  && !continuationTargets.has(a.id));
+                      const eurAccs   = accounts.filter(a => getAccType(a) === 'doviz' && !continuationTargets.has(a.id));
 
                       return (
                         <div className="space-y-4">
