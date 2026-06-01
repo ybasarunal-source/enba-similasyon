@@ -266,34 +266,39 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
   // Satış tipi işlemler: gerçek gelir kaynakları
   const SATIS_TYPES = ['contact_credit', 'sales_invoice_payment', 'sales_receipt_payment', 'account_debit'];
 
+  // Hesaplamalarda yalnızca mutabık (is_reconciled !== false) satırlar kullanılır.
+  // is_reconciled === false → Paraşüt'te tik yok, dengeleme kaydı — tüm KPI/grafik/özet dışında tutulur.
+  // is_reconciled === null  → eski kayıt (bilinmiyor) → dahil edilir.
+  const calcRows = useMemo(() => rows.filter(r => r.is_reconciled !== false), [rows]);
+
   // Hesaplar arası transferler görsel listede gösterilir ama KPI'dan hariç (chart/ozet için)
-  const nonTransfer   = useMemo(() => rows.filter(r => r.kategori !== 'Hesaplar Arası Transfer'), [rows]);
+  const nonTransfer   = useMemo(() => calcRows.filter(r => r.kategori !== 'Hesaplar Arası Transfer'), [calcRows]);
 
   // KPI 1: Satış Tahsilatı — contact_credit, sales_* tipler
   const totalSatisGeliri = useMemo(() =>
-    rows.filter(r => r.tip === 'gelir' && SATIS_TYPES.includes(r.transaction_type ?? '')).reduce((s, r) => s + r.tutar_tl, 0),
-  [rows]);
+    calcRows.filter(r => r.tip === 'gelir' && SATIS_TYPES.includes(r.transaction_type ?? '')).reduce((s, r) => s + r.tutar_tl, 0),
+  [calcRows]);
 
   // KPI 2: Diğer Girdi — money_transfer girdi (sermaye/borç) ve diğerleri
   const totalDigerGelir = useMemo(() =>
-    rows.filter(r => r.tip === 'gelir' && !SATIS_TYPES.includes(r.transaction_type ?? '')).reduce((s, r) => s + r.tutar_tl, 0),
-  [rows]);
+    calcRows.filter(r => r.tip === 'gelir' && !SATIS_TYPES.includes(r.transaction_type ?? '')).reduce((s, r) => s + r.tutar_tl, 0),
+  [calcRows]);
 
   // KPI 3: Toplam Gider — tüm çıkışlar (transferler dahil, gerçek harcama)
-  const totalGider = useMemo(() => rows.filter(r => r.tip === 'gider').reduce((s, r) => s + r.tutar_tl, 0), [rows]);
+  const totalGider = useMemo(() => calcRows.filter(r => r.tip === 'gider').reduce((s, r) => s + r.tutar_tl, 0), [calcRows]);
 
   // Transfer detayları (Özet tablosu için)
   const transferGelir = useMemo(() =>
-    rows.filter(r => r.kategori === 'Hesaplar Arası Transfer' && r.tip === 'gelir').reduce((s, r) => s + r.tutar_tl, 0),
-  [rows]);
+    calcRows.filter(r => r.kategori === 'Hesaplar Arası Transfer' && r.tip === 'gelir').reduce((s, r) => s + r.tutar_tl, 0),
+  [calcRows]);
   const transferGider = useMemo(() =>
-    rows.filter(r => r.kategori === 'Hesaplar Arası Transfer' && r.tip === 'gider').reduce((s, r) => s + r.tutar_tl, 0),
-  [rows]);
+    calcRows.filter(r => r.kategori === 'Hesaplar Arası Transfer' && r.tip === 'gider').reduce((s, r) => s + r.tutar_tl, 0),
+  [calcRows]);
 
   // Eskiyle uyumluluk
   const totalGelir = totalSatisGeliri + totalDigerGelir;
   const bakiye     = totalGelir - totalGider;
-  const transferCount = useMemo(() => rows.filter(r => r.kategori === 'Hesaplar Arası Transfer').length, [rows]);
+  const transferCount = useMemo(() => calcRows.filter(r => r.kategori === 'Hesaplar Arası Transfer').length, [calcRows]);
 
   // Paraşüt canlı bakiyesi (TRL hesaplar toplamı) — DB hesabından daha güvenilir
   const parasutNetTRL = useMemo(() => {
@@ -432,7 +437,7 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
     const continuationAccIds = new Set(
       accounts.filter(a => continuationOf[a.id]).map(a => a.name)
     );
-    const bankaRows = rows.filter(r => {
+    const bankaRows = calcRows.filter(r => {
       if (!r.source_account || !bankaNames.has(r.source_account)) return false;
       if (continuationAccIds.has(r.source_account) && r.transaction_type === 'initial_account_balance') return false;
       return true;
@@ -462,13 +467,13 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
     const to   = chartTo   || new Date().toISOString().slice(0, 10);
     return all.filter(p => p.date >= from && p.date <= to);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rows, dailyBalances, accounts, accountTypesMap, continuationOf, chartAccountFilter, chartFrom, chartTo]);
+  }, [calcRows, dailyBalances, accounts, accountTypesMap, continuationOf, chartAccountFilter, chartFrom, chartTo]);
 
   const AYLAR = ['', 'Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
 
   const aylikData = useMemo(() => {
     const byMonth: Record<string, { satis: number; sermaye: number; gider: number }> = {};
-    for (const r of rows) {
+    for (const r of calcRows) {
       const month = r.tarih.slice(0, 7);
       if (!byMonth[month]) byMonth[month] = { satis: 0, sermaye: 0, gider: 0 };
       if (r.tip === 'gelir') {
@@ -487,11 +492,11 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
         const [y, m] = month.split('-');
         return { label: `${AYLAR[parseInt(m)]} ${y}`, satis: v.satis, sermaye: v.sermaye, gider: v.gider, net, kumNet: cumulative };
       });
-  }, [rows]);
+  }, [calcRows]);
 
   const hesapOdemeler = useMemo(() => {
     const byAcc: Record<string, number> = {};
-    for (const r of rows) {
+    for (const r of calcRows) {
       if (r.tip === 'gider' && r.source_account) {
         byAcc[r.source_account] = (byAcc[r.source_account] ?? 0) + r.tutar_tl;
       }
@@ -499,7 +504,7 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
     return Object.entries(byAcc)
       .map(([name, total]) => ({ name, total }))
       .sort((a, b) => b.total - a.total);
-  }, [rows]);
+  }, [calcRows]);
 
   const kategoriOzet = useMemo(() => {
     const map: Record<string, { gelir: number; gider: number }> = {};
