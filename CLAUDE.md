@@ -432,6 +432,9 @@ Referans: `Enba_Obsidian_Vault/Kararlar/2026-05-KurulumNakit-Kararlar.md` Bölü
 - [x] **Supabase SQL:** `migration_v25b_parasut_superadmin_rls.sql` çalıştırıldı (2026-05-19)
 - [x] **Supabase SQL:** `migration_v26_custom_holidays.sql` çalıştırıldı (2026-05-21)
 - [x] **Supabase SQL:** `seed_granul_makineleri.sql` çalıştırıldı (2026-05-23)
+- [ ] **Supabase SQL:** `migration_v31b_vakifbank_daily_balance.sql` — VakıfBank 1062 günlük bakiye, 227 gün (Banka Nakdi Günlük grafik için)
+- [ ] **Supabase SQL:** `migration_v32_ziraat_kesin_dokum.sql` — Ziraat Kesin Döküm, 256 hareket + 39 günlük bakiye (2025-05-15 → 2025-12-30)
+- [ ] **KurulumNakit UI:** VakıfBank 1062 kartında "Bu hesap şunun devamı: Vakıfbank Ana Hesap (geçmiş)" seç → grafik Ekim 2025'ten itibaren gösterecek
 
 ---
 

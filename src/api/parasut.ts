@@ -299,6 +299,54 @@ export const parasutService = {
     return resp.json();
   },
 
+  async requestPost(path: string, body: object, retryCount = 0): Promise<any> {
+    const token = await this.getToken();
+    if (!token) throw new Error('SESSION_EXPIRED');
+    const url = new URL(API_BASE, window.location.origin);
+    url.searchParams.set('path', `/v4${path}`);
+    url.searchParams.set('_token', token);
+    const resp = await fetch(url.toString(), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/vnd.api+json' },
+      body: JSON.stringify(body),
+    });
+    if (resp.status === 429 && retryCount < 3) {
+      await this._sleep((retryCount + 1) * 5000);
+      return this.requestPost(path, body, retryCount + 1);
+    }
+    if (!resp.ok) {
+      const text = await resp.text().catch(() => '');
+      throw new Error(`Paraşüt yazma hatası ${resp.status}: ${text.slice(0, 300)}`);
+    }
+    return resp.json();
+  },
+
+  async createAccountTransaction(
+    companyId: string,
+    accountId: string,
+    tip: 'gelir' | 'gider',
+    date: string,
+    amount: number,
+    description: string,
+  ): Promise<string> {
+    const resourceType = tip === 'gelir' ? 'account_credits' : 'account_debits';
+    const body = {
+      data: {
+        type: resourceType,
+        attributes: {
+          date,
+          amount: amount.toFixed(2),
+          description: description.slice(0, 200),
+        },
+        relationships: {
+          account: { data: { type: 'accounts', id: accountId } },
+        },
+      },
+    };
+    const result = await this.requestPost(`/${companyId}/${resourceType}`, body);
+    return result?.data?.id ?? '';
+  },
+
   async requestAll(path: string, params: Record<string, string> = {}): Promise<any> {
     let allData: any[] = [];
     let allIncluded: any[] = [];

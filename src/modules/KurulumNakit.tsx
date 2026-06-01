@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   TrendingUp, TrendingDown, FileSpreadsheet, FileText,
   Loader2, ChevronDown, ChevronUp, RefreshCw, CheckCircle2,
-  Link2, AlertCircle, Building2, X,
+  Link2, AlertCircle, Building2, X, Upload,
 } from 'lucide-react';
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line,
@@ -127,6 +127,7 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
   const [importModal, setImportModal]     = useState(false);
   const [importAccount, setImportAccount] = useState('');
   const [importJson, setImportJson]       = useState('');
+  const [exportState, setExportState]     = useState<{ accountName: string; current: number; total: number; errors: string[] } | null>(null);
   const [importMsg, setImportMsg]         = useState('');
 
   const companyId        = profile?.company_id ?? null;
@@ -160,6 +161,23 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
       if (primaryId) next[continuationId] = primaryId;
       else delete next[continuationId];
       localStorage.setItem('enba_nakit_continuation', JSON.stringify(next));
+      return next;
+    });
+  }
+
+  // Paraşüt'e aktarım için işaretlenmiş hesaplar — localStorage'da kalıcı
+  const [parasutExportAccounts, setParasutExportAccounts] = useState<Set<string>>(() => {
+    try {
+      const saved = localStorage.getItem('enba_nakit_parasut_export');
+      return new Set(saved ? JSON.parse(saved) : []);
+    } catch { return new Set(); }
+  });
+
+  function toggleParasutExport(accId: string) {
+    setParasutExportAccounts(prev => {
+      const next = new Set(prev);
+      if (next.has(accId)) next.delete(accId); else next.add(accId);
+      localStorage.setItem('enba_nakit_parasut_export', JSON.stringify([...next]));
       return next;
     });
   }
@@ -496,6 +514,34 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
       return;
     }
     await handleSync();
+  }
+
+  async function handleExportToParasut(acc: ParasutAccount) {
+    if (!isParasutConnected || !parasutCompany || !companyId) return;
+    const pending = rows.filter(r => r.source_account === acc.name && !r.parasut_id);
+    if (pending.length === 0) return;
+    setExportState({ accountName: acc.name, current: 0, total: pending.length, errors: [] });
+    const errors: string[] = [];
+    for (let i = 0; i < pending.length; i++) {
+      const r = pending[i];
+      try {
+        const parasutId = await parasutService.createAccountTransaction(
+          parasutCompany.id,
+          acc.id,
+          r.tip,
+          r.tarih,
+          r.tutar_tl,
+          r.aciklama,
+        );
+        if (parasutId) await kurulumNakitAPI.markExported(r.id, parasutId);
+      } catch (e) {
+        errors.push(`${r.tarih} ${r.tutar_tl} TL: ${e instanceof Error ? e.message.slice(0, 60) : 'hata'}`);
+      }
+      setExportState(s => s ? { ...s, current: i + 1, errors } : null);
+      await new Promise(res => setTimeout(res, 350)); // Paraşüt rate-limit koruması
+    }
+    const updated = await kurulumNakitAPI.list(companyId).catch(() => rows);
+    setRows(updated);
   }
 
   async function handleSync() {
@@ -974,6 +1020,37 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                                   className="shrink-0 p-1 rounded border border-[var(--enba-border)] text-[var(--enba-text-muted)] hover:text-red-500 hover:border-red-300 transition-colors" title="PDF indir">
                                   <FileText size={11} /></button>
                               </div>
+                              {/* Paraşüt senkronizasyon seçimi */}
+                              {isParasutConnected && (
+                                <div className="mt-1.5 flex items-center justify-between">
+                                  <button
+                                    onClick={e => { e.stopPropagation(); toggleParasutExport(acc.id); }}
+                                    className={`flex items-center gap-1 text-[9px] font-semibold px-2 py-0.5 rounded-full border transition-colors ${
+                                      parasutExportAccounts.has(acc.id)
+                                        ? 'bg-blue-50 border-blue-300 text-blue-600 hover:bg-blue-100'
+                                        : 'border-[var(--enba-border)] text-[var(--enba-text-muted)] hover:border-blue-300 hover:text-blue-500'
+                                    }`}
+                                  >
+                                    <Upload size={8} />
+                                    {parasutExportAccounts.has(acc.id) ? 'Paraşüt\'e aktar ✓' : 'Paraşüt\'e aktar'}
+                                  </button>
+                                  {parasutExportAccounts.has(acc.id) && (() => {
+                                    const pendingCount = dbRows.filter(r => !r.parasut_id).length;
+                                    if (pendingCount === 0) return <span className="text-[9px] text-emerald-600 font-semibold">✓ Tümü aktarıldı</span>;
+                                    const isExporting = exportState?.accountName === acc.name;
+                                    return (
+                                      <button
+                                        onClick={e => { e.stopPropagation(); handleExportToParasut(acc); }}
+                                        disabled={isExporting}
+                                        className="flex items-center gap-1 px-2 py-0.5 rounded-full border border-blue-300 bg-blue-50 text-blue-600 hover:bg-blue-100 disabled:opacity-50 transition-colors text-[9px] font-semibold"
+                                      >
+                                        {isExporting ? <Loader2 size={9} className="animate-spin" /> : <Upload size={9} />}
+                                        {isExporting ? `${exportState!.current}/${exportState!.total}` : `${pendingCount} hareketi aktar`}
+                                      </button>
+                                    );
+                                  })()}
+                                </div>
+                              )}
                             </div>
                           </div>
                         );
@@ -1625,6 +1702,35 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
               className="w-full py-2.5 text-xs font-bold rounded-xl bg-[var(--enba-orange)] text-white hover:opacity-90 disabled:opacity-40 transition-opacity"
             >
               Aktar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {exportState && exportState.current === exportState.total && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div className="bg-[var(--enba-surface)] rounded-2xl p-6 w-full max-w-md shadow-2xl border border-[var(--enba-border)]">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-[var(--enba-text)]">Paraşüt Aktarım Tamamlandı</h3>
+              <button onClick={() => setExportState(null)} className="text-[var(--enba-text-muted)] hover:text-[var(--enba-text)]"><X size={16} /></button>
+            </div>
+            <div className="space-y-2 text-xs">
+              <div className="flex items-center gap-2 text-emerald-600 font-semibold">
+                <CheckCircle2 size={15} />
+                {exportState.total - exportState.errors.length} / {exportState.total} işlem Paraşüt'e aktarıldı
+              </div>
+              {exportState.errors.length > 0 && (
+                <div className="mt-3 bg-red-50 border border-red-200 rounded-xl p-3">
+                  <div className="text-red-600 font-semibold mb-1">{exportState.errors.length} hata:</div>
+                  <ul className="text-red-500 space-y-0.5">
+                    {exportState.errors.map((e, i) => <li key={i} className="truncate">{e}</li>)}
+                  </ul>
+                </div>
+              )}
+            </div>
+            <button onClick={() => setExportState(null)}
+              className="mt-4 w-full py-2 text-xs font-semibold rounded-xl bg-[var(--enba-orange)] text-white hover:opacity-90 transition-opacity">
+              Tamam
             </button>
           </div>
         </div>

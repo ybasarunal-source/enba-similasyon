@@ -1198,6 +1198,34 @@ grep "^## \[" log.md | tail -5
 - Wiki eklendi: Kararlar/2026-05-KurulumNakit-Kararlar.md, Wiki/Nakit-Akis-Takip-Rehberi.md, Ham-Kaynaklar/2026-05-Sermaye-Analizi.md, Moduller/KurulumNakit.md
 - Açık sorun: Banka Nakdi Günlük grafik — işlem bazlı hesaplama her denemede hata veriyor, yeni yaklaşım gerekiyor (bkz. Kararlar/2026-05-KurulumNakit-Kararlar.md Bölüm 5)
 
+## [2026-06-01] geliştirme | KurulumNakit — Paraşüt'e Aktar özelliği
+
+- Yapılan: Manuel import edilmiş hareketleri Paraşüt hesabına aktarma
+- `parasut.ts`: `requestPost()` (POST proxy) + `createAccountTransaction()` (account_credits / account_debits)
+- `kurulumNakit.ts`: `markExported(id, parasutId)` — aktarılan satıra parasut_id yaz
+- `KurulumNakit.tsx`: Hesaplar sekmesi hesap kartı alt kısmına "↑ N" butonu — aktarılmamış N hareket varken görünür, aktarım sırasında progress (current/total) gösterir, bitince özet modal (başarılı / hata sayısı)
+- TypeScript: tsc --noEmit sıfır hata
+- Etkilenen dosyalar: src/api/parasut.ts, src/api/kurulumNakit.ts, src/modules/KurulumNakit.tsx
+- Bir sonraki: migration_v31b + migration_v32 Supabase'de çalıştır → Ziraat Kesin Döküm butona bas → Paraşüt'e aktar
+
+## [2026-06-01] geliştirme | migration_v32 Ziraat Kesin Döküm SQL üretildi
+
+- Yapılan: HESAP HAR. HK.xlsx (T.C. Ziraat Bankası, Döşemealti/Antalya Şubesi) okundu, migration_v32_ziraat_kesin_dokum.sql üretildi
+- İçerik: 256 founding_cashflow hareketi (2025-05-15 → 2025-12-30) + 39 account_daily_balance günlük snapshot
+- Hesap adı: `source_account = 'Ziraat Kesin Döküm'` (kullanıcının oluşturduğu kasa hesabı)
+- Kategoriler: doviz_bozdurma / havale_eft / banka_gideri / fatura_odeme / para_girisi / para_cikisi
+- Etkilenen dosya: `migration_v32_ziraat_kesin_dokum.sql` (kök dizin)
+- ⚠️ Bekleyen kullanıcı aksiyonu: Supabase SQL Editor'de çalıştır
+
+## [2026-06-01] geliştirme | Açık konular özeti — oturum başlangıcı
+
+- Açık: Banka Nakdi Günlük Grafik (migration_v31b henüz çalıştırılmadı)
+- Açık: Paraşüt → financial_categories eşleştirme modalı
+- Açık: CashFlow cashEvents girişi (wizard'da düzenlenemiyor)
+- Test bekliyor: AI Danışman sohbet (commit 30b141c)
+
+---
+
 ## [2026-05-31] geliştirme | KurulumNakit layout fix
 - Yapılan: Export butonları hesap kartında dropdown üzerine binen konumdan alınıp dropdown'ın yanına taşındı
 - Etkilenen: KurulumNakit.tsx

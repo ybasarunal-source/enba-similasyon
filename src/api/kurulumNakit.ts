@@ -133,6 +133,14 @@ export const kurulumNakitAPI = {
     return records.length;
   },
 
+  async markExported(id: string, parasutId: string): Promise<void> {
+    const { error } = await supabase
+      .from('founding_cashflow')
+      .update({ parasut_id: parasutId, updated_at: new Date().toISOString() })
+      .eq('id', id);
+    if (error) throw error;
+  },
+
   async clearAll(companyId: string): Promise<void> {
     const { error } = await supabase
       .from('founding_cashflow')
