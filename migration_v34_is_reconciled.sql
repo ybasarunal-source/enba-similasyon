@@ -7,6 +7,4 @@ ALTER TABLE founding_cashflow
   ADD COLUMN IF NOT EXISTS is_reconciled BOOLEAN;
 
 COMMENT ON COLUMN founding_cashflow.is_reconciled IS
-  'Paraşüt banka mutabakatı: true=tik var/gerçek işlem, false=dengeleme kaydı, NULL=bilinmiyor';
-
-RAISE NOTICE 'migration_v34 tamamlandı: is_reconciled kolonu eklendi';
+  'Parasut banka mutabakati: true=tik var/gercek islem, false=denge kayd, NULL=bilinmiyor';
