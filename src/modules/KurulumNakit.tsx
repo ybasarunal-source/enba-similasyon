@@ -459,8 +459,7 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
       if (continuationAccIds.has(r.source_account) && r.transaction_type === 'initial_account_balance') return false;
       return true;
     });
-    const hasOpening = bankaRows.some(r => r.transaction_type === 'initial_account_balance');
-    if (!hasOpening) return [];  // açılış kaydı yoksa → yeniden senkronize et
+    if (bankaRows.length === 0) return [];
 
     const byDate: Record<string, number> = {};
     for (const r of bankaRows) {
@@ -1730,7 +1729,8 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
               <button onClick={() => { setImportModal(false); setImportMsg(''); }} className="text-[var(--enba-text-muted)] hover:text-[var(--enba-text)]"><X size={16} /></button>
             </div>
             <p className="text-xs text-[var(--enba-text-muted)] mb-3">
-              <code>banka_nakit_grafik.html</code> dosyasını aç, içindeki <code>const RAW = [...]</code> dizisini kopyala ve buraya yapıştır.
+              Hesabın günlük kapanış bakiyelerini JSON olarak yapıştır. Her satır bir gün:
+              <code className="block mt-1 text-[10px] bg-[var(--enba-bg)] rounded px-2 py-1">{`[{"tarih":"2025-10-13","bakiye":126295.54}, ...]`}</code>
             </p>
             <div className="mb-3">
               <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--enba-text-muted)] mb-1 block">Hesap Adı (Paraşüt'teki tam isim)</label>
