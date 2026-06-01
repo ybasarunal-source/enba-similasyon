@@ -454,8 +454,12 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
     const continuationAccIds = new Set(
       accounts.filter(a => continuationOf[a.id]).map(a => a.name)
     );
-    const bankaRows = calcRows.filter(r => {
+    // Banka günlük grafik: tüm rows kullan (calcRows değil) —
+    // is_reconciled Paraşüt otomatik senkronunu temsil eder, manuel mutabakat farklı alan.
+    // Dengeleme kayıtları zaten 'Hesaplar Arası Transfer' kategorisinde → filtrele.
+    const bankaRows = rows.filter(r => {
       if (!r.source_account || !bankaNames.has(r.source_account)) return false;
+      if (r.kategori === 'Hesaplar Arası Transfer') return false;
       if (continuationAccIds.has(r.source_account) && r.transaction_type === 'initial_account_balance') return false;
       return true;
     });
@@ -483,7 +487,7 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
     const to   = chartTo   || new Date().toISOString().slice(0, 10);
     return all.filter(p => p.date >= from && p.date <= to);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [calcRows, dailyBalances, accounts, accountTypesMap, continuationOf, chartAccountFilter, chartFrom, chartTo]);
+  }, [rows, dailyBalances, accounts, accountTypesMap, continuationOf, continuationTargets, chartAccountFilter, chartFrom, chartTo]);
 
   const AYLAR = ['', 'Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
 
