@@ -41,6 +41,15 @@ export interface ParasutAccount {
   iban?: string;
 }
 
+// Kullanıcı tarafından yapılandırılan işlem filtresi.
+// Koda özgü isimleri kaldırır — KurulumNakit Hesaplar sekmesinden yönetilir.
+export interface AccountTxnFilterConfig {
+  // account_debit türünde: açıklamada bu terimlerden biri varsa → gerçek satış (dahil)
+  satisTerimleri: string[];
+  // account_debit / account_credit: hesap ADINDA bu terimlerden biri varsa → özel muamele (dahil)
+  tahsilatHesaplari: string[];
+}
+
 export interface ParasutTransaction {
   id: string;
   account_id: string;
@@ -419,7 +428,10 @@ export const parasutService = {
     account: ParasutAccount,
     dateFrom: string,
     dateTo: string,
+    filterConfig?: AccountTxnFilterConfig,
   ): Promise<ParasutTransaction[]> {
+    const satisTerimleri    = (filterConfig?.satisTerimleri    ?? []).map(t => t.toUpperCase());
+    const tahsilatHesaplari = (filterConfig?.tahsilatHesaplari ?? []).map(t => t.toUpperCase());
     // Paraşüt v4: /accounts/{id}/transactions (route: transaction.show)
     const raw = await this.requestAll(`/${companyId}/accounts/${account.id}/transactions`, {
       'filter[date][gteq]': dateFrom,
@@ -464,9 +476,7 @@ export const parasutService = {
       const accName  = account.name.toUpperCase();
 
       if (txType === 'account_debit') {
-        // Döviz bozdurma: banka hesabına TL girişi (EUR→TL).
-        // Filtrelemek yerine 'döviz_bozdurma' tipiyle kaydet —
-        // bakiye grafiği için gerekli; txnKategori bunu 'Hesaplar Arası Transfer' yapar.
+        // Döviz bozdurma: yapısal kural, her zaman dahil (konfigürasyondan bağımsız)
         if (rawDesc.includes('DÖVİZ') || rawDesc.includes('İNTERNET DÖVİZ')) {
           const dovizTrlAmt = parseFloat(a.amount_in_trl || '0') || parseFloat(a.debit_amount || '0');
           if (dovizTrlAmt === 0) return [];
@@ -485,23 +495,17 @@ export const parasutService = {
             is_reconciled: isBankSynced,
           }];
         }
-        // Şirket içi kişi hesaplarına gelen havale
-        if (rawDesc.includes('ENES EŞSİZ') || rawDesc.includes('MÜCAHİD ENES')) return [];
-        if (rawDesc.includes('BAŞAR ÜNAL') || rawDesc.includes('YILDIRIM BAŞAR')) return [];
-        if (rawDesc.includes('ENBA RECYCLING')) return [];
-        // İstisna: gerçek satış tahsilatı
-        if (rawDesc.includes('KIRICI') || rawDesc.includes('HAVUZ')) { /* devam et, gerçek gelir */ }
-        // Başar Ünal şahıs hesabı: account_debit = müşteri tahsilatı veya harici gelir
-        else if (accName.includes('BAŞAR ÜNAL') || accName.includes('YILDIRIM BAŞAR')) { /* devam et */ }
-        // Diğer tüm account_debit = Enes / iç transfer → dışla
-        else return [];
+        // Kullanıcı yapılandırması: açıklamada satış terimi varsa → gerçek gelir
+        const isSale   = satisTerimleri.length > 0 && satisTerimleri.some(t => rawDesc.includes(t));
+        // Kullanıcı yapılandırması: hesap adı tahsilat hesabıysa → gerçek gelir
+        const isColAcc = tahsilatHesaplari.length > 0 && tahsilatHesaplari.some(t => accName.includes(t));
+        if (!isSale && !isColAcc) return []; // iç transfer → dışla
       }
 
       if (txType === 'account_credit') {
-        // Başar Ünal şahıs hesabı: account_credit = gerçek harcama (avans)
-        if (accName.includes('BAŞAR ÜNAL') || accName.includes('YILDIRIM BAŞAR')) { /* devam et, gider */ }
-        // Diğer hesaplardaki account_credit = iç muhasebe hareketi → dışla
-        else return [];
+        // Kullanıcı yapılandırması: hesap adı tahsilat hesabıysa → gerçek gider
+        const isColAcc = tahsilatHesaplari.length > 0 && tahsilatHesaplari.some(t => accName.includes(t));
+        if (!isColAcc) return []; // iç muhasebe → dışla
       }
 
       // Yön: transaction_type'tan belirle

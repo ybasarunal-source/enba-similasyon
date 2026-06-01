@@ -10,7 +10,7 @@ import {
   ResponsiveContainer, ReferenceLine,
 } from 'recharts';
 import { kurulumNakitAPI, type FoundingCashflow, type FCTip, type FCImportRecord } from '../api/kurulumNakit';
-import { parasutService, type ParasutAccount } from '../api/parasut';
+import { parasutService, type ParasutAccount, type AccountTxnFilterConfig } from '../api/parasut';
 import { parasutExporter, type ExportState } from '../api/parasutExporter';
 import { supabase } from '../api/supabase';
 import type { UserProfile } from '../api/supabase';
@@ -133,6 +133,26 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
   const [importAccount, setImportAccount] = useState('');
   const [importJson, setImportJson]       = useState('');
   const [exportState, setExportState]     = useState<ExportState | null>(() => parasutExporter.getState());
+  const [filterConfig, setFilterConfig]   = useState<AccountTxnFilterConfig>(() => {
+    try {
+      const saved = localStorage.getItem('enba_nakit_filter_config');
+      return saved ? JSON.parse(saved) : { satisTerimleri: [], tahsilatHesaplari: [] };
+    } catch { return { satisTerimleri: [], tahsilatHesaplari: [] }; }
+  });
+  const [filterInput, setFilterInput]     = useState({ satis: '', tahsilat: '' });
+
+  function saveFilterConfig(next: AccountTxnFilterConfig) {
+    setFilterConfig(next);
+    localStorage.setItem('enba_nakit_filter_config', JSON.stringify(next));
+  }
+  function addTerm(key: keyof AccountTxnFilterConfig, val: string) {
+    const term = val.trim().toUpperCase();
+    if (!term || filterConfig[key].includes(term)) return;
+    saveFilterConfig({ ...filterConfig, [key]: [...filterConfig[key], term] });
+  }
+  function removeTerm(key: keyof AccountTxnFilterConfig, term: string) {
+    saveFilterConfig({ ...filterConfig, [key]: filterConfig[key].filter(t => t !== term) });
+  }
   type DeleteStep = 'warn' | 'auth' | 'deleting' | 'done';
   const [deleteModal, setDeleteModal]     = useState<{ acc: ParasutAccount; step: DeleteStep; error?: string; result?: { deletedRows: number; deletedBalances: number } } | null>(null);
   const [deleteEmail, setDeleteEmail]     = useState('');
@@ -624,7 +644,7 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
       const acc = trlAccs[i];
       setSyncProgress({ label: `${acc.name}… (${i + 1}/${trlAccs.length})`, pct: Math.round(5 + (i / trlAccs.length) * 65) });
       try {
-        const txns = await parasutService.getAccountTransactions(parasutCompany.id, acc, '2020-01-01', today);
+        const txns = await parasutService.getAccountTransactions(parasutCompany.id, acc, '2020-01-01', today, filterConfig);
         allTxns.push(...txns);
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
@@ -900,7 +920,9 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
           <div className="text-base font-bold text-emerald-600">
             {bankaNakdi !== null ? fmtTL(bankaNakdi) : '—'}
           </div>
-          <div className="text-[10px] text-[var(--enba-text-muted)] mt-0.5">VakıfBank + Ziraat</div>
+          <div className="text-[10px] text-[var(--enba-text-muted)] mt-0.5">
+            {accounts.filter(a => getAccType(a) === 'banka' && !continuationTargets.has(a.id)).map(a => a.name.split(/[\s-]/)[0]).join(' + ') || 'Banka hesabı yok'}
+          </div>
         </div>
         <div className="bg-[var(--enba-surface)] rounded-2xl px-4 py-3 border border-blue-100">
           <div className="flex items-center gap-1.5 text-xs text-[var(--enba-text-muted)] mb-1">
@@ -909,7 +931,9 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
           <div className="text-base font-bold text-blue-600">
             {cariAlacak !== null ? '+' + fmtTL(cariAlacak) : '—'}
           </div>
-          <div className="text-[10px] text-[var(--enba-text-muted)] mt-0.5">Başar + Enes TL + PET Deşe</div>
+          <div className="text-[10px] text-[var(--enba-text-muted)] mt-0.5">
+            {accounts.filter(a => getAccType(a) === 'cari' && !continuationTargets.has(a.id)).map(a => a.name.split(' ')[0]).join(' + ') || 'Cari hesap yok'}
+          </div>
         </div>
         <div className={`bg-[var(--enba-surface)] rounded-2xl px-4 py-3 border ${(parasutNetTRL ?? bakiye) >= 0 ? 'border-emerald-100' : 'border-red-200'}`}>
           <div className="text-xs text-[var(--enba-text-muted)] mb-1">Toplam Pozisyon</div>
@@ -1181,6 +1205,89 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                               </div>
                             </div>
                           )}
+
+                          {/* ─── Sync Filtre Ayarları ──────────────────────── */}
+                          <details className="bg-[var(--enba-surface)] border border-[var(--enba-border)] rounded-2xl px-5 py-4">
+                            <summary className="cursor-pointer text-xs font-semibold text-[var(--enba-text)] select-none">
+                              Sync Filtre Ayarları
+                              <span className="ml-2 text-[10px] font-normal text-[var(--enba-text-muted)]">
+                                — Paraşüt işlem sınıflandırması (koda özgü isimsiz)
+                              </span>
+                            </summary>
+                            <div className="mt-4 space-y-4">
+                              {/* Satış Terimleri */}
+                              <div>
+                                <div className="text-[10px] font-bold uppercase tracking-widest text-[var(--enba-text-muted)] mb-1">
+                                  Gerçek Satış Terimleri
+                                </div>
+                                <div className="text-[10px] text-[var(--enba-text-muted)] mb-2">
+                                  account_debit türündeki işlemlerde açıklamada bu terimlerden biri varsa gerçek satış tahsilatı sayılır. Büyük/küçük harf fark etmez.
+                                </div>
+                                <div className="flex flex-wrap gap-1.5 mb-2">
+                                  {filterConfig.satisTerimleri.map(t => (
+                                    <span key={t} className="flex items-center gap-1 bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                                      {t}
+                                      <button onClick={() => removeTerm('satisTerimleri', t)} className="hover:text-red-500 transition-colors"><X size={10} /></button>
+                                    </span>
+                                  ))}
+                                  {filterConfig.satisTerimleri.length === 0 && (
+                                    <span className="text-[10px] text-[var(--enba-text-muted)] italic">Henüz terim eklenmedi</span>
+                                  )}
+                                </div>
+                                <div className="flex gap-2">
+                                  <input
+                                    value={filterInput.satis}
+                                    onChange={e => setFilterInput(f => ({ ...f, satis: e.target.value }))}
+                                    onKeyDown={e => { if (e.key === 'Enter') { addTerm('satisTerimleri', filterInput.satis); setFilterInput(f => ({ ...f, satis: '' })); } }}
+                                    placeholder="örn: KIRICI, HAVUZ"
+                                    className="flex-1 bg-[var(--enba-bg)] border border-[var(--enba-border)] rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-[var(--enba-orange)]/30"
+                                  />
+                                  <button onClick={() => { addTerm('satisTerimleri', filterInput.satis); setFilterInput(f => ({ ...f, satis: '' })); }}
+                                    className="px-3 py-1.5 text-xs font-semibold bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors">
+                                    Ekle
+                                  </button>
+                                </div>
+                              </div>
+
+                              {/* Tahsilat Hesapları */}
+                              <div>
+                                <div className="text-[10px] font-bold uppercase tracking-widest text-[var(--enba-text-muted)] mb-1">
+                                  Tahsilat / Ödeme Hesap Terimleri
+                                </div>
+                                <div className="text-[10px] text-[var(--enba-text-muted)] mb-2">
+                                  account_debit/credit türünde: işlemi yapan hesap ADINDA bu terimlerden biri varsa gerçek işlem sayılır (şahıs hesabı vb.).
+                                </div>
+                                <div className="flex flex-wrap gap-1.5 mb-2">
+                                  {filterConfig.tahsilatHesaplari.map(t => (
+                                    <span key={t} className="flex items-center gap-1 bg-blue-50 border border-blue-200 text-blue-700 text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                                      {t}
+                                      <button onClick={() => removeTerm('tahsilatHesaplari', t)} className="hover:text-red-500 transition-colors"><X size={10} /></button>
+                                    </span>
+                                  ))}
+                                  {filterConfig.tahsilatHesaplari.length === 0 && (
+                                    <span className="text-[10px] text-[var(--enba-text-muted)] italic">Henüz terim eklenmedi</span>
+                                  )}
+                                </div>
+                                <div className="flex gap-2">
+                                  <input
+                                    value={filterInput.tahsilat}
+                                    onChange={e => setFilterInput(f => ({ ...f, tahsilat: e.target.value }))}
+                                    onKeyDown={e => { if (e.key === 'Enter') { addTerm('tahsilatHesaplari', filterInput.tahsilat); setFilterInput(f => ({ ...f, tahsilat: '' })); } }}
+                                    placeholder="örn: BAŞAR ÜNAL, YILDIRIM"
+                                    className="flex-1 bg-[var(--enba-bg)] border border-[var(--enba-border)] rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-[var(--enba-orange)]/30"
+                                  />
+                                  <button onClick={() => { addTerm('tahsilatHesaplari', filterInput.tahsilat); setFilterInput(f => ({ ...f, tahsilat: '' })); }}
+                                    className="px-3 py-1.5 text-xs font-semibold bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                                    Ekle
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+                                ⚠️ Değişiklik sonrası <strong>Yeniden Senkronize Et</strong> gerekli — yeni filtreler sadece bir sonraki sync'te uygulanır.
+                              </div>
+                            </div>
+                          </details>
                         </div>
                       );
                     })()}
