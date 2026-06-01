@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   TrendingUp, TrendingDown, FileSpreadsheet, FileText,
   Loader2, ChevronDown, ChevronUp, RefreshCw, CheckCircle2,
-  Link2, AlertCircle, Building2, X, Upload,
+  Link2, AlertCircle, Building2, X, Upload, Trash2, Eye, EyeOff,
 } from 'lucide-react';
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line,
@@ -12,6 +12,7 @@ import {
 import { kurulumNakitAPI, type FoundingCashflow, type FCTip, type FCImportRecord } from '../api/kurulumNakit';
 import { parasutService, type ParasutAccount } from '../api/parasut';
 import { parasutExporter, type ExportState } from '../api/parasutExporter';
+import { supabase } from '../api/supabase';
 import type { UserProfile } from '../api/supabase';
 
 interface KurulumNakitProps {
@@ -129,6 +130,11 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
   const [importAccount, setImportAccount] = useState('');
   const [importJson, setImportJson]       = useState('');
   const [exportState, setExportState]     = useState<ExportState | null>(() => parasutExporter.getState());
+  type DeleteStep = 'warn' | 'auth' | 'deleting' | 'done';
+  const [deleteModal, setDeleteModal]     = useState<{ acc: ParasutAccount; step: DeleteStep; error?: string; result?: { deletedRows: number; deletedBalances: number } } | null>(null);
+  const [deleteEmail, setDeleteEmail]     = useState('');
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteShowPw, setDeleteShowPw]   = useState(false);
   const [importMsg, setImportMsg]         = useState('');
 
   const companyId        = profile?.company_id ?? null;
@@ -524,6 +530,25 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
     if (!isParasutConnected || !parasutCompany || !companyId) return;
     parasutExporter.start(rows, acc, companyId, parasutCompany.id)
       .then(() => kurulumNakitAPI.list(companyId).then(setRows).catch(() => {}));
+  }
+
+  async function handleConfirmDelete() {
+    if (!deleteModal || !companyId) return;
+    setDeleteModal(m => m ? { ...m, step: 'deleting', error: undefined } : null);
+    try {
+      const { error: authErr } = await supabase.auth.signInWithPassword({ email: deleteEmail, password: deletePassword });
+      if (authErr) throw new Error('E-posta veya şifre hatalı');
+      const result = await kurulumNakitAPI.deleteAccountWithBackup(companyId, deleteModal.acc.name, deleteEmail);
+      const updated = await kurulumNakitAPI.list(companyId);
+      setRows(updated);
+      const updatedBal = await kurulumNakitAPI.listDailyBalances(companyId);
+      setDailyBalances(updatedBal);
+      setDeleteModal(m => m ? { ...m, step: 'done', result } : null);
+      setDeleteEmail('');
+      setDeletePassword('');
+    } catch (e) {
+      setDeleteModal(m => m ? { ...m, step: 'auth', error: e instanceof Error ? e.message : 'Hata' } : null);
+    }
   }
 
   async function handleSync() {
@@ -951,12 +976,21 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
                             >
                               {TYPE_LABELS[accType]}
                             </button>
-                            <button
-                              onClick={() => toggleAccountExclusion(acc.id)}
-                              className={`absolute top-3 right-3 text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-colors ${excluded ? 'bg-red-50 border-red-200 text-red-500 hover:bg-red-100' : 'bg-emerald-50 border-emerald-200 text-emerald-600 hover:bg-emerald-100'}`}
-                            >
-                              {excluded ? 'Hariç' : 'Dahil'}
-                            </button>
+                            <div className="absolute top-3 right-3 flex items-center gap-1">
+                              <button
+                                onClick={e => { e.stopPropagation(); setDeleteModal({ acc, step: 'warn' }); }}
+                                className="p-0.5 rounded text-[var(--enba-text-muted)] hover:text-red-500 transition-colors"
+                                title="Hesabı sil"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                              <button
+                                onClick={() => toggleAccountExclusion(acc.id)}
+                                className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-colors ${excluded ? 'bg-red-50 border-red-200 text-red-500 hover:bg-red-100' : 'bg-emerald-50 border-emerald-200 text-emerald-600 hover:bg-emerald-100'}`}
+                              >
+                                {excluded ? 'Hariç' : 'Dahil'}
+                              </button>
+                            </div>
                             <button className="text-left w-full pt-1" onClick={() => { setAccountFilter(acc.name); setTab('hareketler'); }}>
                               <div className="flex items-start gap-2 mb-2 pr-14 pl-10">
                                 <Building2 size={13} className="text-[var(--enba-orange)] shrink-0 mt-0.5" />
@@ -1688,6 +1722,205 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
           </div>
         </div>
       )}
+
+      {/* ─── Hesap Silme Modalı ──── */}
+      {deleteModal && (() => {
+        const acc       = deleteModal.acc;
+        const accRows   = rows.filter(r => r.source_account === acc.name);
+        const accGelir  = accRows.filter(r => r.tip === 'gelir').reduce((s, r) => s + r.tutar_tl, 0);
+        const accGider  = accRows.filter(r => r.tip === 'gider').reduce((s, r) => s + r.tutar_tl, 0);
+        const accDates  = accRows.map(r => r.tarih).sort();
+        const accBals   = dailyBalances.filter(b => b.account_name === acc.name);
+        const isWarn    = deleteModal.step === 'warn';
+        const isAuth    = deleteModal.step === 'auth';
+        const isDeleting = deleteModal.step === 'deleting';
+        const isDone    = deleteModal.step === 'done';
+
+        return (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div className="bg-[var(--enba-surface)] rounded-2xl w-full max-w-md shadow-2xl border border-[var(--enba-border)] overflow-hidden">
+              {/* Header */}
+              <div className={`px-6 py-4 flex items-center justify-between ${isDone ? 'bg-emerald-50 border-b border-emerald-100' : 'bg-red-50 border-b border-red-100'}`}>
+                <div className="flex items-center gap-2">
+                  {isDone ? <CheckCircle2 size={18} className="text-emerald-600" /> : <Trash2 size={18} className="text-red-500" />}
+                  <h3 className="text-sm font-bold text-[var(--enba-text)]">
+                    {isDone ? 'Hesap Silindi' : 'Hesabı Sil'}
+                  </h3>
+                </div>
+                {!isDeleting && (
+                  <button onClick={() => { setDeleteModal(null); setDeleteEmail(''); setDeletePassword(''); }}
+                    className="text-[var(--enba-text-muted)] hover:text-[var(--enba-text)]"><X size={16} /></button>
+                )}
+              </div>
+
+              <div className="px-6 py-5 space-y-4 max-h-[70vh] overflow-y-auto">
+
+                {/* ADIM 1: Uyarı */}
+                {(isWarn || isAuth) && (
+                  <>
+                    {/* Hesap bilgisi */}
+                    <div className="bg-[var(--enba-bg)] rounded-xl p-4 space-y-2 text-xs">
+                      <div className="font-bold text-[var(--enba-text)] text-sm">{acc.name}</div>
+                      <div className="flex justify-between text-[var(--enba-text-muted)]">
+                        <span>Canlı bakiye</span>
+                        <span className={`font-semibold ${acc.balance >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>{fmtAmount(acc.balance, acc.currency)}</span>
+                      </div>
+                    </div>
+
+                    {/* Silinecek veri özeti */}
+                    <div className="border border-red-200 bg-red-50 rounded-xl p-4 space-y-2 text-xs">
+                      <div className="font-semibold text-red-700 mb-2">Silinecek veriler:</div>
+                      <div className="flex justify-between">
+                        <span className="text-[var(--enba-text-muted)]">Hareket kaydı</span>
+                        <span className="font-bold text-red-600">{accRows.length} adet</span>
+                      </div>
+                      {accRows.length > 0 && (
+                        <>
+                          <div className="flex justify-between">
+                            <span className="text-[var(--enba-text-muted)]">Dönem</span>
+                            <span className="font-semibold text-[var(--enba-text)]">{accDates[0]} → {accDates[accDates.length - 1]}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-[var(--enba-text-muted)]">Toplam gelir</span>
+                            <span className="font-semibold text-emerald-700">+{fmtTL(accGelir)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-[var(--enba-text-muted)]">Toplam gider</span>
+                            <span className="font-semibold text-red-600">−{fmtTL(accGider)}</span>
+                          </div>
+                        </>
+                      )}
+                      {accBals.length > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-[var(--enba-text-muted)]">Günlük bakiye kaydı</span>
+                          <span className="font-bold text-red-600">{accBals.length} gün</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 30 gün yedek uyarısı */}
+                    <div className="border border-amber-200 bg-amber-50 rounded-xl p-3 text-xs text-amber-800">
+                      <div className="font-bold mb-1">⚠️ Bu işlem geri alınamaz</div>
+                      Silinen veriler <strong>30 gün</strong> boyunca yedeklenir. Bu süre sonunda kalıcı olarak silinir.
+                      Paraşüt'teki hesap <strong>silinmez</strong> — yalnızca bu uygulamadaki kayıtlar temizlenir.
+                    </div>
+                  </>
+                )}
+
+                {/* ADIM 2: Kimlik doğrulama */}
+                {(isAuth || isDeleting) && (
+                  <div className="space-y-3">
+                    <div className="text-xs font-semibold text-[var(--enba-text)]">İşlemi onaylamak için hesap bilgilerinizi girin:</div>
+                    <div>
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--enba-text-muted)] block mb-1">E-posta</label>
+                      <input
+                        type="email"
+                        value={deleteEmail}
+                        onChange={e => setDeleteEmail(e.target.value)}
+                        disabled={isDeleting}
+                        placeholder="ornek@firma.com"
+                        className="w-full bg-[var(--enba-bg)] border border-[var(--enba-border)] rounded-lg px-3 py-2 text-xs text-[var(--enba-text)] focus:outline-none focus:ring-2 focus:ring-red-300 disabled:opacity-50"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-[var(--enba-text-muted)] block mb-1">Şifre</label>
+                      <div className="relative">
+                        <input
+                          type={deleteShowPw ? 'text' : 'password'}
+                          value={deletePassword}
+                          onChange={e => setDeletePassword(e.target.value)}
+                          disabled={isDeleting}
+                          placeholder="••••••••"
+                          onKeyDown={e => { if (e.key === 'Enter' && deleteEmail && deletePassword) handleConfirmDelete(); }}
+                          className="w-full bg-[var(--enba-bg)] border border-[var(--enba-border)] rounded-lg px-3 py-2 pr-9 text-xs text-[var(--enba-text)] focus:outline-none focus:ring-2 focus:ring-red-300 disabled:opacity-50"
+                        />
+                        <button type="button" onClick={() => setDeleteShowPw(v => !v)}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--enba-text-muted)] hover:text-[var(--enba-text)]">
+                          {deleteShowPw ? <EyeOff size={13} /> : <Eye size={13} />}
+                        </button>
+                      </div>
+                    </div>
+                    {deleteModal.error && (
+                      <div className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 flex items-center gap-2">
+                        <AlertCircle size={13} className="shrink-0" />{deleteModal.error}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* ADIM 3: Siliniyor */}
+                {isDeleting && (
+                  <div className="flex items-center gap-3 text-xs text-[var(--enba-text-muted)] py-2">
+                    <Loader2 size={16} className="animate-spin text-red-400" />
+                    Hesap verileri yedekleniyor ve siliniyor…
+                  </div>
+                )}
+
+                {/* ADIM 4: Tamamlandı */}
+                {isDone && deleteModal.result && (
+                  <div className="space-y-2 text-xs">
+                    <div className="flex items-center gap-2 text-emerald-600 font-semibold">
+                      <CheckCircle2 size={15} />
+                      İşlem başarıyla tamamlandı
+                    </div>
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 space-y-1">
+                      <div className="flex justify-between">
+                        <span className="text-[var(--enba-text-muted)]">Silinen hareket</span>
+                        <span className="font-bold">{deleteModal.result.deletedRows} adet</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-[var(--enba-text-muted)]">Silinen bakiye kaydı</span>
+                        <span className="font-bold">{deleteModal.result.deletedBalances} gün</span>
+                      </div>
+                    </div>
+                    <div className="text-[10px] text-[var(--enba-text-muted)]">Veriler 30 gün boyunca yedekte tutulacak.</div>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer butonları */}
+              {!isDeleting && !isDone && (
+                <div className="px-6 py-4 border-t border-[var(--enba-border)] flex gap-2">
+                  {isWarn && (
+                    <>
+                      <button onClick={() => { setDeleteModal(null); setDeleteEmail(''); setDeletePassword(''); }}
+                        className="flex-1 py-2 text-xs font-semibold rounded-xl border border-[var(--enba-border)] text-[var(--enba-text-muted)] hover:text-[var(--enba-text)] transition-colors">
+                        İptal
+                      </button>
+                      <button onClick={() => setDeleteModal(m => m ? { ...m, step: 'auth' } : null)}
+                        className="flex-1 py-2 text-xs font-semibold rounded-xl bg-red-500 text-white hover:bg-red-600 transition-colors flex items-center justify-center gap-1.5">
+                        <Trash2 size={13} /> Devam Et
+                      </button>
+                    </>
+                  )}
+                  {isAuth && (
+                    <>
+                      <button onClick={() => setDeleteModal(m => m ? { ...m, step: 'warn', error: undefined } : null)}
+                        className="flex-1 py-2 text-xs font-semibold rounded-xl border border-[var(--enba-border)] text-[var(--enba-text-muted)] hover:text-[var(--enba-text)] transition-colors">
+                        Geri
+                      </button>
+                      <button
+                        onClick={handleConfirmDelete}
+                        disabled={!deleteEmail || !deletePassword}
+                        className="flex-1 py-2 text-xs font-semibold rounded-xl bg-red-500 text-white hover:bg-red-600 disabled:opacity-40 transition-colors flex items-center justify-center gap-1.5">
+                        <Trash2 size={13} /> Hesabı Sil
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+              {isDone && (
+                <div className="px-6 py-4 border-t border-[var(--enba-border)]">
+                  <button onClick={() => { setDeleteModal(null); setDeleteEmail(''); setDeletePassword(''); }}
+                    className="w-full py-2 text-xs font-semibold rounded-xl bg-[var(--enba-orange)] text-white hover:opacity-90 transition-opacity">
+                    Kapat
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {exportState?.done && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">

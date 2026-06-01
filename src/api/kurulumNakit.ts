@@ -133,6 +133,64 @@ export const kurulumNakitAPI = {
     return records.length;
   },
 
+  async deleteAccountWithBackup(
+    companyId: string,
+    accountName: string,
+    userEmail: string,
+  ): Promise<{ deletedRows: number; deletedBalances: number }> {
+    // 1. Silinecek hareketleri çek
+    const { data: toDelete, error: fetchErr } = await supabase
+      .from('founding_cashflow')
+      .select('*')
+      .eq('company_id', companyId)
+      .eq('source_account', accountName);
+    if (fetchErr) throw fetchErr;
+
+    // 2. Yedek tabloya kopyala
+    if (toDelete && toDelete.length > 0) {
+      const backupRows = toDelete.map(r => ({
+        ...r,
+        deleted_at: new Date().toISOString(),
+        deleted_by_email: userEmail,
+        deletion_reason: 'Kullanıcı isteğiyle silindi',
+      }));
+      const CHUNK = 200;
+      for (let i = 0; i < backupRows.length; i += CHUNK) {
+        const { error } = await supabase
+          .from('founding_cashflow_deleted')
+          .insert(backupRows.slice(i, i + CHUNK));
+        if (error) throw error;
+      }
+    }
+
+    // 3. Ana tablodan sil
+    const { error: delErr } = await supabase
+      .from('founding_cashflow')
+      .delete()
+      .eq('company_id', companyId)
+      .eq('source_account', accountName);
+    if (delErr) throw delErr;
+
+    // 4. Günlük bakiye snapshots'larını sil
+    const { data: balRows, error: balErr } = await supabase
+      .from('account_daily_balance')
+      .select('id')
+      .eq('company_id', companyId)
+      .eq('account_name', accountName);
+    if (balErr) throw balErr;
+
+    if (balRows && balRows.length > 0) {
+      const { error: balDelErr } = await supabase
+        .from('account_daily_balance')
+        .delete()
+        .eq('company_id', companyId)
+        .eq('account_name', accountName);
+      if (balDelErr) throw balDelErr;
+    }
+
+    return { deletedRows: toDelete?.length ?? 0, deletedBalances: balRows?.length ?? 0 };
+  },
+
   async markExported(id: string, parasutId: string): Promise<void> {
     const { error } = await supabase
       .from('founding_cashflow')
