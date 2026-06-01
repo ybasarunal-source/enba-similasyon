@@ -128,7 +128,7 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
   const [syncProgress, setSyncProgress]   = useState<{ label: string; pct: number } | null>(null);
   const [syncResult, setSyncResult]       = useState<{ inserted: number; skipped: number } | null>(null);
 
-  const [dailyBalances, setDailyBalances] = useState<{ account_name: string; tarih: string; bakiye: number }[]>([]);
+  const [dailyBalances, setDailyBalances] = useState<{ account_name: string; parasut_account_id: string | null; tarih: string; bakiye: number }[]>([]);
   const [importModal, setImportModal]     = useState(false);
   const [importAccount, setImportAccount] = useState('');
   const [importJson, setImportJson]       = useState('');
@@ -254,10 +254,14 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
   useEffect(() => parasutExporter.subscribe(setExportState), []);
 
   useEffect(() => {
-    if (!isParasutConnected || !parasutCompany) return;
+    if (!isParasutConnected || !parasutCompany || !companyId) return;
     setAccountsLoading(true);
     parasutService.getFinancialAccounts(parasutCompany.id)
-      .then(setAccounts)
+      .then(accs => {
+        setAccounts(accs);
+        // account_name → parasut_account_id backfill (migration_v36 sonrası bir kez çalışır)
+        kurulumNakitAPI.backfillDailyBalanceIds(companyId, accs).catch(() => {});
+      })
       .catch(() => {})
       .finally(() => setAccountsLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -427,15 +431,23 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
       (chartAccountFilter === '' || a.id === chartAccountFilter || continuationOf[a.id] === chartAccountFilter)
     );
     if (bankaAccs.length === 0) return [];
+    const bankaIds   = new Set(bankaAccs.map(a => a.id));
     const bankaNames = new Set(bankaAccs.map(a => a.name));
 
-    // Yöntem A: içe aktarılmış bakiye verisi
-    const relevant = dailyBalances.filter(r => bankaNames.has(r.account_name));
+    // Yöntem A: account_daily_balance verisi — önce parasut_account_id ile eşleştir,
+    // id yoksa (eski kayıt) account_name ile fallback yap
+    const relevant = dailyBalances.filter(r =>
+      r.parasut_account_id
+        ? bankaIds.has(r.parasut_account_id)
+        : bankaNames.has(r.account_name),
+    );
     if (relevant.length > 0) {
       const byDate: Record<string, Record<string, number>> = {};
       for (const r of relevant) {
         if (!byDate[r.tarih]) byDate[r.tarih] = {};
-        byDate[r.tarih][r.account_name] = r.bakiye;
+        // ID varsa anahtar olarak ID kullan — hesap adı değişse de aynı hesap sayılır
+        const key = r.parasut_account_id ?? r.account_name;
+        byDate[r.tarih][key] = r.bakiye;
       }
       const lastKnown: Record<string, number> = {};
       const all = Object.keys(byDate).sort().map(date => {

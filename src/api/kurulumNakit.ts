@@ -113,19 +113,39 @@ export const kurulumNakitAPI = {
   },
 
   // Günlük bakiye tablosu
-  async listDailyBalances(companyId: string): Promise<{ account_name: string; tarih: string; bakiye: number }[]> {
+  async listDailyBalances(companyId: string): Promise<{ account_name: string; parasut_account_id: string | null; tarih: string; bakiye: number }[]> {
     const { data, error } = await supabase
       .from('account_daily_balance')
-      .select('account_name, tarih, bakiye')
+      .select('account_name, parasut_account_id, tarih, bakiye')
       .eq('company_id', companyId)
       .order('tarih', { ascending: true });
     if (error) throw error;
-    return (data ?? []).map(r => ({ account_name: r.account_name, tarih: r.tarih, bakiye: Number(r.bakiye) }));
+    return (data ?? []).map(r => ({
+      account_name:       r.account_name,
+      parasut_account_id: r.parasut_account_id ?? null,
+      tarih:              r.tarih,
+      bakiye:             Number(r.bakiye),
+    }));
+  },
+
+  // Paraşüt account_id'lerini account_name eşleşmesiyle backfill et (bir kez çalışır)
+  async backfillDailyBalanceIds(
+    companyId: string,
+    accounts: { id: string; name: string }[],
+  ): Promise<void> {
+    for (const acc of accounts) {
+      await supabase
+        .from('account_daily_balance')
+        .update({ parasut_account_id: acc.id })
+        .eq('company_id', companyId)
+        .eq('account_name', acc.name)
+        .is('parasut_account_id', null);
+    }
   },
 
   async upsertDailyBalances(
     companyId: string,
-    rows: { account_name: string; tarih: string; bakiye: number }[],
+    rows: { account_name: string; parasut_account_id?: string; tarih: string; bakiye: number }[],
   ): Promise<number> {
     if (rows.length === 0) return 0;
     const records = rows.map(r => ({ company_id: companyId, ...r }));
