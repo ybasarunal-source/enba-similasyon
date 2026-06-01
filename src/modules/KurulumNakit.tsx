@@ -259,13 +259,14 @@ export const KurulumNakit: React.FC<KurulumNakitProps> = ({ profile }) => {
     parasutService.getFinancialAccounts(parasutCompany.id)
       .then(accs => {
         setAccounts(accs);
-        // account_name → parasut_account_id backfill (migration_v36 sonrası bir kez çalışır)
         kurulumNakitAPI.backfillDailyBalanceIds(companyId, accs).catch(() => {});
       })
       .catch(() => {})
       .finally(() => setAccountsLoading(false));
+  // isParasutConnected ve parasutCompany profile yüklendikten sonra hazır olur;
+  // bu effect o an tekrar çalışmalı — [] yerine bu iki değeri izle.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isParasutConnected, parasutCompany?.id, companyId]);
 
   // Satış tipi işlemler: gerçek gelir kaynakları
   const SATIS_TYPES = ['contact_credit', 'sales_invoice_payment', 'sales_receipt_payment', 'account_debit'];
